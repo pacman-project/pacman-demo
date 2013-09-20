@@ -28,9 +28,13 @@ Installation
 
 General prerequisites
 
+* `sudo apt-get install cmake build-essential`
+
 * `sudo apt-get install git`
 
 * `sudo apt-get install cmake-gui`
+
+* Boost installation: `sudo apt-get install libboost-date-time1.46.1 libboost-date-time1.46-dev libboost-filesystem1.46.1 libboost-filesystem1.46-dev libboost-iostreams1.46.1 libboost-iostreams1.46-dev libboost-mpi1.46.1 libboost-mpi1.46-dev libboost-serialization1.46.1 libboost-serialization1.46-dev libboost-system1.46.1 libboost-system1.46-dev libboost-thread1.46.1 libboost-thread1.46-dev`
 
 PCL and ROS prerequisites
 
@@ -51,4 +55,14 @@ PCL and ROS prerequisites
 * `cmake-gui ..`
 
 * Press **Configure** and then choose Unix makefiles target.
+
+* Set **Grouped** to group options.
+
+* In **BUILD** group set options: **BUILD_apps** 
+
+* Press **Configure** and then choose **BUILD_app_3d_rec_framework**.
+
+* Press **Configure** and then **Generate**.
+
+* Build and install PCL: `sudo make install`
 
