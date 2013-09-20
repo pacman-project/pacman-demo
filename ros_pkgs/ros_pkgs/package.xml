@@ -1,0 +1,39 @@
+<package>
+  <name>ros_pkgs</name>
+  <version>0.0.0</version>
+  <description>
+    Meta-package containing pacman ROS packages.
+  </description>
+  <maintainer email="Mirela.Popa@uibk.ac.at">Mirela Popa</maintainer>
+  <maintainer email="carlos.rosales@for.unipi.it">Carlos Rosales</maintainer>
+  <maintainer email="manuel.bonilla@centropiaggio.unipi.it">Manuel Bonilla</maintainer>
+  <license>GPLv2</license>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!--> META PACKAGES with reasearch code </-->
+
+  <!--> Hardware meta package </-->
+  <run_depend>hardware</run_depend>
+
+  <!--> Controllers meta package</-->
+  <run_depend>controllers</run_depend>
+
+  <!--> Perceptio meta package </-->
+  <run_depend>perception</run_depend>
+
+  <!--> Planners meta package </-->
+  <run_depend>planners</run_depend>
+
+  <!--> PACKAGES with interfaces and demos </-->
+  
+  <!--> Interface package </-->
+  <run_depend>msgs</run_depend>
+
+  <!--> Demos package </-->
+  <run_depend>demos</run_depend>
+
+  <export>
+    <metapackage/>
+  </export>
+</package>

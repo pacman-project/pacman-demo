@@ -1,0 +1,22 @@
+<package>
+  <name>perception</name>
+  <version>0.0.0</version>
+  <description>
+    ROS meta-package containing pacman perception.
+  </description>
+  <maintainer email="Mirela.Popa@uibk.ac.at">Mirela Popa</maintainer>
+  <maintainer email="carlos.rosales@for.unipi.it">Carlos Rosales</maintainer>
+  <maintainer email="manuel.bonilla@centropiaggio.unipi.it">Manuel Bonilla</maintainer>
+  <license>GPLv2</license>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!--> PACKAGES </-->
+  
+  <!--> PCL-based pose estimation </-->
+  <run_depend>pose_estimation_UIBK</run_depend>
+
+  <export>
+    <metapackage/>
+  </export>
+</package>

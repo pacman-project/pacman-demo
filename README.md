@@ -1,4 +1,2 @@
-pacman
-======
-
-PaCMan workspace
+PaCMan Workspace
+================
