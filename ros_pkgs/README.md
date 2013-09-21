@@ -31,7 +31,10 @@ Other folders might be added as well, such as include, urdf, models, geometry, e
         #include "MY_CLASSES_HEADERS.h"
     
         // ROS generated headers
-        // typically these ones are generated at compilation time, for instance, for a service called ClassParameterSetting.srv within package_name, we need to include this #include "package_name/ClassParameterSetting.h" 
+        // typically these ones are generated at compilation time, 
+        // for instance, for a service called ClassParameterSetting.srv 
+        // within package_name, we need to include this 
+        // #include "package_name/ClassParameterSetting.h" 
     
     
         namespace package_name {
@@ -70,7 +73,8 @@ Other folders might be added as well, such as include, urdf, models, geometry, e
     
             // callback functions
             void doClassComputations(const X_msgs::Wrench & msg);
-            bool setClassParameters(ClassParameterSetting::Request &request, ClassParameterSetting::Response &response);
+            bool setClassParameters(ClassParameterSetting::Request &request, 
+                                      ClassParameterSetting::Response &response);
             void doSomething();
     
             // constructor
@@ -80,13 +84,17 @@ Other folders might be added as well, such as include, urdf, models, geometry, e
                 class1_object_ = new MY_CLASS1();
     
                 // subscribe to topics
-                sub_some_node_messages_ = nh_.subscribe(nh_.resolveName("topic_name_you_want_to_subscribe_to"), 10, &NamePerformer::doClassComputations, this);
+                sub_some_node_messages_ = nh_.subscribe(nh_.resolveName("topic_name_you_want_to_subscribe_to"), 
+                                                          10, &NamePerformer::doClassComputations, this);
     
                 // advertise topics
-                pub_class_postprocessing_info_ = nh_.advertise<type_msgs::MessageType>(nh_.resolveName("topic_name_you_want_to_pusblih"), 10);
+                pub_class_postprocessing_info_ =
+                  nh_.advertise<type_msgs::MessageType>(nh_.resolveName("topic_name_you_want_to_pusblih"), 10);
                 
                 // advertise service
-                srv_set_parameters_ = nh_.advertiseService(nh_.resolveName("service_name_you_want_to_advertise"), &NamePerformer::setClassParameterss, this)
+                srv_set_parameters_ = 
+                  nh_.advertiseService(nh_.resolveName("service_name_you_want_to_advertise"), 
+                                                                &NamePerformer::setClassParameterss, this)
             }
     
             //! Empty stub
@@ -110,7 +118,8 @@ Other folders might be added as well, such as include, urdf, models, geometry, e
         }
     
         // this function is called when service_name_you_want_to_advertise is advertise
-        bool NamePerformer::setClassParameterss(ClassParameterSetting::Request &request, ClassParameterSetting::Response &response)
+        bool NamePerformer::setClassParameterss(ClassParameterSetting::Request &request, 
+                                                  ClassParameterSetting::Response &response)
         {
             // 1. convert the message into a useful data type for instance, used by your class
     
