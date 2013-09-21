@@ -217,7 +217,7 @@ namespace pacman {
 	class RobotUIBK {
 	public:
 		/** Number of joints= */
-		static const std::uintptr_t JOINTS = 7;
+		static const std::uintptr_t JOINTS = KukaLWR::JOINTS + ShunkDexHand::JOINTS;
 
 		/** Innsbruck robot configuration */
 		class Config {
