@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(interfaces)
+project(definitions)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -50,7 +50,7 @@ find_package(catkin REQUIRED)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES interfaces
+#  LIBRARIES definitions
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
 )
@@ -64,19 +64,19 @@ catkin_package(
 # include_directories(include)
 
 ## Declare a cpp library
-# add_library(interfaces
-#   src/${PROJECT_NAME}/interfaces.cpp
+# add_library(definitions
+#   src/${PROJECT_NAME}/definitions.cpp
 # )
 
 ## Declare a cpp executable
-# add_executable(interfaces_node src/interfaces_node.cpp)
+# add_executable(definitions_node src/definitions_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(interfaces_node interfaces_generate_messages_cpp)
+# add_dependencies(definitions_node definitions_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(interfaces_node
+# target_link_libraries(definitions_node
 #   ${catkin_LIBRARIES}
 # )
 
@@ -95,7 +95,7 @@ catkin_package(
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS interfaces interfaces_node
+# install(TARGETS definitions definitions_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -120,7 +120,7 @@ catkin_package(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_interfaces.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_definitions.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
