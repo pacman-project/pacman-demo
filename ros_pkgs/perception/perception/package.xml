@@ -16,6 +16,9 @@
   <!--> PCL-based pose estimation </-->
   <run_depend>pose_estimation_UIBK</run_depend>
 
+  <!--> OCTOMAP-based collision map </-->
+  <run_depend>collision_map_octomap</run_depend>
+
   <export>
     <metapackage/>
   </export>
