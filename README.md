@@ -1,15 +1,12 @@
-PaCMan
-======
+# PaCMan
 
-Overview
---------
+## Overview
 
 PaCMan demo.
 
-Dependencies
-------------
+## Dependencies
 
-General 3rd party software dependencies
+### General 3rd party software dependencies
 
 * Boost >= 1.46 (PCL)
 * FLANN >= 1.7.1 (PCL)
@@ -23,10 +20,9 @@ General 3rd party software dependencies
 * Freeglut (bham)
 * NVIDIA PhysX 2.8 (bham)
 
-Installation
-------------
+## Installation
 
-General prerequisites
+### General prerequisites
 
 * `sudo apt-get install cmake build-essential`
 
@@ -36,7 +32,7 @@ General prerequisites
 
 * Boost installation: `sudo apt-get install libboost-date-time1.46.1 libboost-date-time1.46-dev libboost-filesystem1.46.1 libboost-filesystem1.46-dev libboost-iostreams1.46.1 libboost-iostreams1.46-dev libboost-mpi1.46.1 libboost-mpi1.46-dev libboost-serialization1.46.1 libboost-serialization1.46-dev libboost-system1.46.1 libboost-system1.46-dev libboost-thread1.46.1 libboost-thread1.46-dev`
 
-PCL and ROS prerequisites
+### PCL and ROS prerequisites
 
 * `sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'`
 
@@ -46,7 +42,7 @@ PCL and ROS prerequisites
 
 * `sudo apt-get install libflann1 libflann-dev libeigen3-dev libvtk5.8 libvtk5.8-qt4 libvtk5-dev libvtk5-qt4-dev libopenni-dev`
 
-[Installation PCL 1.7 (from sources)](http://pointclouds.org/downloads/source.html)
+### [Installation PCL 1.7 (from sources)](http://pointclouds.org/downloads/source.html)
 
 * `git clone https://github.com/PointCloudLibrary/pcl pcl-trunk`
 
