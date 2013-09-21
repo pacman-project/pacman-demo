@@ -1,0 +1,11 @@
+<launch>
+  
+  <!-- DEFINE WHICH CAMERA ARE YOU USING AND REMAP TOPICS AT WILL HERE /-->
+  
+  <!--OPENNI LAUNCH FOR KINECT SENSOR /-->
+  <include file="$(find openni_launch)/launch/openni.launch" />
+
+  <!-- OPENNI2 LAUNCH FOR NEW PRIMESENSE/ASUS SENSOR /-->
+  <!-- <include file="$(find openni2_launch)/launch/openni2.launch"></include> /-->
+
+</launch>

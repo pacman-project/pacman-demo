@@ -23,9 +23,9 @@
 
   <!--> Pisa/IIT Soft Hand </-->
 
-  <!--> Primesense Sensor </-->
-
-  <!--> Kinect Sensor </-->
+  <!--> RGBD Sensor </-->
+  <run_depend> rgbd_sensor </run_depend>
+  
 
 
   <export>
