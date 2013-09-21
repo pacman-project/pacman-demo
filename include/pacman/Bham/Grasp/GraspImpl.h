@@ -1,4 +1,4 @@
-/** @file Grasp.h
+/** @file GraspImpl.h
  * 
  * Bham Grasp interface implementation
  *
