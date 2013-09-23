@@ -60,10 +60,6 @@ namespace pacman {
 		*/
 		virtual void list(std::vector<std::string>& idSeq) const = 0;
 
-		/** Process grasp examples
-		*/
-		virtual void process() = 0;
-
 		/** Estimate possible grasps together with their with approach trajectories from a given point cloud
 		 *	@param[in]	points			query point cloud
 		 *	@param[out]	trajectories	weighted approach trajectories, each tajectory consists of at least two waypoints with the last waypoint defining a grip

@@ -27,9 +27,6 @@ namespace pacman {
 		/** Lists all grasp examples */
 		virtual void list(std::vector<std::string>& idSeq) const;
 
-		/** Process grasp examples */
-		virtual void process();
-
 		/** Estimate possible grasps together with their with approach trajectories from a given point cloud */
 		virtual void estimate(const Point3D::Seq& points, Trajectory::Seq& trajectories);
 	};
