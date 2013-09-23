@@ -1,6 +1,6 @@
 ## THIS FILE DEFINES THE POSE ESTIMATION SERVICE
 
-sensor_msgs::PointCloud2 scene
+sensor_msgs/PointCloud2 scene
 
 ---
 
@@ -9,5 +9,6 @@ ObjectList detected_objects
 # whether the service succeded or not
 int32 OTHER_ERROR = 0
 int32 SUCCESS = 1
-int32 NO_OBJECTS_DETECTED = 2
+int32 NO_CLOUD_RECEIVED = 2
+int32 NO_OBJECTS_DETECTED = 3
 int32 result
