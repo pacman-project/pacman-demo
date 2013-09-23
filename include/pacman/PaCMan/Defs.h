@@ -193,6 +193,7 @@ namespace pacman {
 
 		/** Shunk Dexterous Hand configuration + pose */
 		class Pose {
+		public:
 			/** Sequence */
 			typedef std::vector<Pose> Seq;
 
