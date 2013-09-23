@@ -16,6 +16,28 @@ namespace pacman {
 	/** Birmingham grasp interface */
 	class BhamGrasp {
 	public:
+		/** Weighted approach trajectory */
+		class Trajectory {
+		public:
+			/** */
+			typedef std::vector<Trajectory> Seq;
+
+			/** Approach trajectory */
+			ShunkDexHand::Pose::Seq trajectory;
+			/** Weight */
+			float_t weight;
+
+			/** Default constructor sets the default configuration. */
+			inline Trajectory() {
+				setToDefault();
+			}
+			/** The default configuration. */
+			inline void setToDefault() {
+				trajectory.clear();
+				weight = float_t(1.);
+			}
+		};
+
 		/** Creates Birmingham grasp
 		 *	@param[in]	path			configuration file
 		*/
@@ -26,28 +48,23 @@ namespace pacman {
 		 *	@param[in]	points			point cloud particular to a grasp
 		 *	@param[in]	trajectory		the grasp approach tajectory consists of at least two waypoints with the last waypoint defining a grip
 		*/
-		virtual void add(const std::string& id, const Point3D::Seq& points, const ShunkDexHand::Pose& trajectory) = 0;
+		virtual void add(const std::string& id, const Point3D::Seq& points, const ShunkDexHand::Pose::Seq& trajectory) = 0;
 
 		/** Removes a given grasp example
-		 *	@param[in]	id				grasp identifier to remove
+		 *	@param[in]	id				grasp to remove
 		*/
 		virtual void remove(const std::string& id) = 0;
 
 		/** Lists all grasp examples
-		 *	@param[out]	id				grasp identifier to remove
+		 *	@param[out]	idSeq			list of all grasp examples
 		*/
 		virtual void list(std::vector<std::string>& idSeq) const = 0;
 
-		/** Process grasp examples
-		*/
-		virtual void process() = 0;
-
 		/** Estimate possible grasps together with their with approach trajectories from a given point cloud
 		 *	@param[in]	points			query point cloud
-		 *	@param[out]	trajectories	estimated trajectories, each tajectory consists of at least two waypoints with the last waypoint defining a grip
-		 *	@param[out]	weights			associated trajectory weights
+		 *	@param[out]	trajectories	weighted approach trajectories, each tajectory consists of at least two waypoints with the last waypoint defining a grip
 		*/
-		virtual void estimate(const Point3D::Seq& points, ShunkDexHand::Pose::Seq& trajectories, std::vector<float_t>& weights) = 0;
+		virtual void estimate(const Point3D::Seq& points, Trajectory::Seq& trajectories) = 0;
 	};
 };
 
