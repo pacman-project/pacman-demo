@@ -1,0 +1,15 @@
+## THIS FILE DEFINES THE GRASP PLANNING SERVICE
+
+# we take always the first in the list
+ObjectList ordered_objects
+
+---
+
+# this grasp list are different grasps for the first object in the list
+GraspList grasp_list
+
+# whether the service succeded or not
+int32 OTHER_ERROR = 0
+int32 SUCCESS = 1
+int32 NO_FEASIBLE_GRASP_FOUND = 2
+int32 result

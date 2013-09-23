@@ -1,10 +1,11 @@
 <launch>
 
-
   <include file="$(find rgbd_sensor)/launch/RGBDsensor.launch"/>
 
+  <node pkg="tf" type="static_transform_publisher" name="world_base" args="0 0 1.45 0 0 0 /world_link /camera_link 100"/> 
 
   <node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
+
     <param name="resolution" value="0.05" />
 
     <!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
@@ -12,6 +13,12 @@
 
     <!-- maximum range to integrate (speedup!) -->
     <param name="/sensor_model/max_range" value="5.0" />
+
+    <!-- maximum range to integrate (speedup, accuracy) -->
+    <param name="max_sensor_range" value="6.0" />
+    
+    <!-- Save octomap here on destruction of the server -->
+    <param name="save_directory" value="$(optenv OCTOMAP_SAVE_DIR ./)" />
 
     <!-- data source to integrate (PointCloud2) -->
     <remap from="/cloud_in" to="/camera/depth_registered/points" />
