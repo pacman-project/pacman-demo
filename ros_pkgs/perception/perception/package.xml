@@ -19,6 +19,9 @@
   <!--> OCTOMAP-based collision map </-->
   <run_depend>collision_map_octomap</run_depend>
 
+    <!--> CONVERSION between point cloud types </-->
+  <run_depend>point_cloud_conversion</run_depend>
+
   <export>
     <metapackage/>
   </export>
