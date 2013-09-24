@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" 
+       name="kuka_lwr_assembled">
+       
+  <xacro:include filename="materials.urdf"/>
+  <xacro:include filename="torso.xacro"/>
+  <xacro:include filename="table.xacro"/>
+  <xacro:include filename="kuka_lwr_arm_defs.xacro"/>
+  <xacro:include filename="$(find schunk_description)/urdf/sdh/sdh.urdf.xacro" />
+  
+  <link name="world_link" />
+  
+  <xacro:model_torso name="torso" parent="world">
+    <origin xyz="0 0 0"/>
+  </xacro:model_torso>
+  
+  <xacro:model_table name="table" parent="world">
+    <origin xyz="0.75 -0.0748 0"/>
+  </xacro:model_table>
+  
+  <xacro:kuka_lwr_arm parent="torso" name="leftArm" right="1">
+    <origin xyz="-0.0199 0.0661 1.34" 
+	    rpy="-1.9392 -0.3456 -0.2952"/>
+  </xacro:kuka_lwr_arm>
+  
+  <xacro:kuka_lwr_arm parent="torso" name="rightArm" right="1">
+    <origin xyz="-0.0202 -0.0663 1.3401" 
+	    rpy="1.9386 0.3471 0.6879"/>
+  </xacro:kuka_lwr_arm>
+  
+  <xacro:schunk_sdh parent="leftArm_arm_7_link" name="leftGripper">
+    <origin xyz="0 0 0"
+	    rpy="0 0 0"/>
+  </xacro:schunk_sdh>
+  
+  <xacro:schunk_sdh parent="rightArm_arm_7_link" name="rightGripper">
+    <origin xyz="0 0 0"
+	    rpy="0 0 0"/>
+  </xacro:schunk_sdh>
+  
+</robot>

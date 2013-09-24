@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <macro name="model_table" params="parent name *origin">
+    
+    <joint name="${parent}_${name}_base_joint" type="fixed">
+      <insert_block name="origin"/>
+      <parent link="${parent}_link"/>
+      <child link="${name}_link"/>
+    </joint>
+    
+    <link name="${name}_link">
+      
+      <visual>
+	<origin xyz="0.29 0.355 0.34"/>
+	<geometry>
+	  <box size="0.04 0.04 0.68"/>
+	</geometry>
+	<material name="LightGrey"/>
+      </visual>
+      <visual>
+	<origin xyz="-0.29 0.355 0.34"/>
+	<geometry>
+	  <box size="0.04 0.04 0.68"/>
+	</geometry>
+	<material name="DarkGrey"/>
+      </visual>
+      <visual>
+	<origin xyz="0.29 -0.355 0.34"/>
+	<geometry>
+	  <box size="0.04 0.04 0.68"/>
+	</geometry>
+	<material name="DarkGrey"/>
+      </visual>
+      <visual>
+	<origin xyz="-0.29 -0.355 0.34"/>
+	<geometry>
+	  <box size="0.04 0.04 0.68"/>
+	</geometry>
+	<material name="DarkGrey"/>
+      </visual>
+      <!-- platte -->
+      <visual>
+	<origin xyz="0 0 0.695"/>
+	<geometry>
+	  <box size="0.7 1.4 0.03"/>
+	</geometry>
+	<material name="LightGrey"/>
+      </visual>
+      
+      <collision>
+	<origin xyz="0.29 0.355 0.34"/>
+	<geometry>
+	  <box size="0.04 0.04 0.68"/>
+	</geometry>
+      </collision>
+      <collision>
+	<origin xyz="-0.29 0.355 0.34"/>
+	<geometry>
+	  <box size="0.04 0.04 0.68"/>
+	</geometry>
+      </collision>
+      <collision>
+	<origin xyz="0.29 -0.355 0.34"/>
+	<geometry>
+	  <box size="0.04 0.04 0.68"/>
+	</geometry>
+      </collision>
+      <collision>
+	<origin xyz="-0.29 -0.355 0.34"/>
+	<geometry>
+	  <box size="0.04 0.04 0.68"/>
+	</geometry>
+      </collision>
+      <!-- platte -->
+      <collision>
+	<origin xyz="0 0 0.695"/>
+	<geometry>
+	  <box size="0.7 1.4 0.03"/>
+	</geometry>
+      </collision>
+      
+    </link>
+    
+  </macro>
+
+</robot>

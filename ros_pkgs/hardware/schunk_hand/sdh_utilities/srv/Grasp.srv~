@@ -1,0 +1,4 @@
+string graspId
+float64 close
+float64 velocity
+bool sequ
