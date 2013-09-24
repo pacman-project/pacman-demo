@@ -1,0 +1,85 @@
+ToDo:
+
+Bugfixed in ROS version:
+
+1. I_segmentedObjects.h
+......
+const char* pathToFiles; 
+
+        public:        
+
+        I_SegmentedObjects()
+        {
+         //check whether pathToFiles directory exists, otherwise create it
+         pathToFiles = "/home/alexander/fuerte_workspace/pacman_pose_estimation/data/recognizedObjects/";
+.......
+
+2.
+dps.objectheight -> 0.005
+        
+--------
+
+- I think the ROS version of the pcl 1.7 (pcl perception unstable) has still not fixed the 3D recognition frameworks VTK bug. No viewpoint generation possible here: http://www.pcl-users.org/3d-rec-framework-error-td4026855.html
+
+- Right now I put visualization of the detected scene to RViz - but it is damn slow: Maybe we should use the PCL visualizer for this
+
+- Right now the parameter setting are parsed from your configuration files, I don't think its necessary to load them from the parameter server
+
+- I adapted some of the paths to absolute paths from my computer because I was confused and some things didn't work, we should completely load all the standard paths as realative paths
+
+- Add matching score to the object class
+
+--------- 
+
+Wiki:
+
+Installing ROS version of pacman_pose_estimation package:
+
+Download ROS fuerte full from www.ros.org
+and set up a "ros_workspace" which is in the $ROS_PACKAGE_PATH
+
+Install openni packages:
+   
+   sudo apt-get install ros-fuerte-openni-camera ros-fuerte-openni-launch
+
+Install PCL 1.7 for ROS: http://www.ros.org/wiki/pcl17
+
+   cd ~/ros_workspace
+   git clone https://github.com/ros-perception/perception_pcl.git -b fuerte-unstable-devel fuerte-unstable-devel
+
+No rosmake here because the makefile is modified! You have to modify the makefile 
+for special compilation of this PCL version: 
+
+Open Makefile (in pcl17/):
+change the following lines:
+
+-DBUILD_apps=ON \
+
+and add
+
+-DBUILD_app_3d_rec_framework=ON \
+
+You can also try to fix the following bug (not tested!)
+http://www.pcl-users.org/3d-rec-framework-error-td4026855.html
+
+   make GIT_UP
+
+Next clone the pacman_pose_estimation package from the PacMan github repository into the ros_workspace
+
+Restart bash to update ROS_PACKAGE_PATH, plug in the kinect and do:
+
+   rosmake pacman_pose_estimation
+   roslaunch pacman_pose_estimation pacman_pose_estimation.launch
+   
+Read the file pacman_pose_estimation.launch to know how to visualize the result in RViz, read also the file execution_control.cpp
+
+To call the program from external node
+
+   rosrun pacman_pose_estimation execution_control __name:=control_node
+
+
+
+
+
+
+

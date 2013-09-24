@@ -4,10 +4,14 @@ project(pose_estimation_uibk)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED)
+#find_package(catkin REQUIRED pcl_ros pcl_conversions roscpp genmsg std_msgs geometry_msgs sensor_msgs)
+find_package(catkin REQUIRED roscpp genmsg std_msgs geometry_msgs sensor_msgs)
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS filesystem system)
+find_package(Eigen REQUIRED)
+
+find_package(PCL 1.7 REQUIRED )
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -27,17 +31,18 @@ find_package(catkin REQUIRED)
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
+#add_service_files(
 #   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+#   msg.srv
+#)
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+   DEPENDENCIES
+   std_msgs  # Or other packages containing msgs
+   sensor_msgs
+   geometry_msgs
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -49,8 +54,8 @@ find_package(catkin REQUIRED)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES UIBK_pose_estimation
+#   INCLUDE_DIRS include
+#  LIBRARIES lwr_test
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
 )
@@ -61,24 +66,39 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-# include_directories(include)
+include_directories(
+  include
+  ${PCL_INCLUDE_DIRS}
+  /home/pacman/poseEstimation/include
+)
+
+add_definitions(
+  ${PCL_DEFINITIONS}
+)
+
+link_directories(
+  ${PCL_LIBRARY_DIRS}
+  /home/pacman/poseEstimation/build
+)
 
 ## Declare a cpp library
-# add_library(UIBK_pose_estimation
-#   src/${PROJECT_NAME}/UIBK_pose_estimation.cpp
-# )
+#add_library(pose_estimation
+#   src/ParametersPoseEstimation.cpp 
+#   src/I_SegmentedObjects.cpp
+#)
 
 ## Declare a cpp executable
-# add_executable(UIBK_pose_estimation_node src/UIBK_pose_estimation_node.cpp)
+add_executable(pose_estimation_node src/pose_estimation_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(UIBK_pose_estimation_node UIBK_pose_estimation_generate_messages_cpp)
+# add_dependencies(pose_estimation_node pose_estimation)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(UIBK_pose_estimation_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(pose_estimation_node
+   ${catkin_LIBRARIES} ${boost_LIBRARIES} ${PCL_LIBRARIES} pose_estimation  pcl_3d_rec_framework
+)
+
 
 #############
 ## Install ##
@@ -95,7 +115,7 @@ catkin_package(
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS UIBK_pose_estimation UIBK_pose_estimation_node
+# install(TARGETS lwr_test lwr_test_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -120,7 +140,7 @@ catkin_package(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_UIBK_pose_estimation.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_lwr_test.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
