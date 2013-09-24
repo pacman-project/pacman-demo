@@ -17,9 +17,6 @@ void BhamGraspImpl::remove(const std::string& id) {
 void BhamGraspImpl::list(std::vector<std::string>& idSeq) const {
 }
 
-void BhamGraspImpl::process() {
-}
-
 void BhamGraspImpl::estimate(const Point3D::Seq& points, Trajectory::Seq& trajectories) {
 }
 
