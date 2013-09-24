@@ -41,8 +41,8 @@ void BhamGraspImpl::estimate(const Point3D::Seq& points, Trajectory::Seq& trajec
 
 //-----------------------------------------------------------------------------
 
-Context::Ptr pContext;
-Universe::Ptr pUniverse;
+Context::Ptr context;
+Universe::Ptr universe;
 
 BhamGrasp* BhamGrasp::create(const std::string& path) {
 	// Create XML parser and load configuration file
@@ -56,31 +56,31 @@ BhamGrasp* BhamGrasp::create(const std::string& path) {
 	// Create program context
 	golem::Context::Desc contextDesc;
 	XMLData(contextDesc, pXMLContext);
-	pContext = contextDesc.create(); // throws
+	context = contextDesc.create(); // throws
 		
 	// Create Universe
 	Universe::Desc universeDesc;
 	XMLData(universeDesc, pXMLContext->getContextFirst("universe"));
-	pUniverse = universeDesc.create(*pContext);
+	universe = universeDesc.create(*context);
 		
 	// Create scene
 	Scene::Desc sceneDesc;
 	XMLData(sceneDesc, pXMLContext->getContextFirst("scene"));
-	Scene *pScene = pUniverse->createScene(sceneDesc);
+	Scene *pScene = universe->createScene(sceneDesc);
 		
 	// Launch universe
-	pUniverse->launch();
+	universe->launch();
 
 	// Setup Birmingham grasp interface
 	BhamGraspImpl::Desc bhamGraspDesc;
-	XMLData(bhamGraspDesc, pContext.get(), pXMLContext);
+	XMLData(bhamGraspDesc, context.get(), pXMLContext);
 
 	BhamGraspImpl *pBhamGrasp = dynamic_cast<BhamGraspImpl*>(pScene->createObject(bhamGraspDesc)); // throws
 	if (pBhamGrasp == NULL)
 		throw Message(Message::LEVEL_CRIT, "BhamGrasp::create(): Unable to create Birmingham grasp interface");
 
 	// Random number generator seed
-	pContext->info("Random number generator seed %d\n", pContext->getRandSeed()._U32[0]);
+	context->info("Random number generator seed %d\n", context->getRandSeed()._U32[0]);
 	
 	return pBhamGrasp;
 }
