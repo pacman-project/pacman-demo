@@ -12,7 +12,6 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <!--> PACKAGES </-->
-  
   <!--> PCL-based pose estimation </-->
   <run_depend>pose_estimation_UIBK</run_depend>
 
