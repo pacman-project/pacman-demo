@@ -9,14 +9,18 @@
 #define _PACMAN_BHAM_GRASP_GRASP_IMPL_H_
 
 #include <pacman/Bham/Grasp/Grasp.h>
+#include <Grasp/ShapePlanner/ShapePlanner.h>
 
 /** PaCMan name space */
 namespace pacman {
 	/** Birmingham grasp interface implementation */
-	class BhamGraspImpl : public BhamGrasp {
+	class BhamGraspImpl : public BhamGrasp, public grasp::ShapePlanner {
 	public:
-		/** Construct from configuration file */
-		BhamGraspImpl(const std::string& path);
+		/** Construct Birmingham grasp interface */
+		class Desc : public grasp::ShapePlanner::Desc {
+		protected:
+			CREATE_FROM_OBJECT_DESC1(BhamGraspImpl, golem::Object::Ptr, golem::Scene&)
+		};
 
 		/**	Adds a single grasp example */
 		virtual void add(const std::string& id, const Point3D::Seq& points, const ShunkDexHand::Pose::Seq& trajectory);
@@ -29,6 +33,13 @@ namespace pacman {
 
 		/** Estimate possible grasps together with their with approach trajectories from a given point cloud */
 		virtual void estimate(const Point3D::Seq& points, Trajectory::Seq& trajectories);
+
+		/** Process messages */
+		virtual void spin();
+
+	protected:
+		BhamGraspImpl(golem::Scene &scene);
+		bool create(const grasp::ShapePlanner::Desc& desc);
 	};
 };
 
