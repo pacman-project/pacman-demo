@@ -1,6 +1,6 @@
 ## THIS FILE DEFINES THE TRAJECTORY EXECUTION SERVICE
 
-TrajectoryList trajectory
+Trajectory[] trajectory
 
 ---
 

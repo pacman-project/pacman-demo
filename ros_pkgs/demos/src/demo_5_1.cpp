@@ -52,22 +52,20 @@
 
 #include <ros/ros.h>
 #include <ros/message_operations.h>
-
 #include <std_msgs/String.h>
+#include <vector>
 
 // for the messages used in the services
-#include <definitions/PoseEstimation.h>
-#include <definitions/GraspPlanning.h>
-#include <definitions/TrajectoryPlanning.h>
-#include <definitions/TrajectoryExecution.h>
-
-
+#include "definitions/PoseEstimation.h"
+#include "definitions/GraspPlanning.h"
+#include "definitions/TrajectoryPlanning.h"
+#include "definitions/TrajectoryExecution.h"
 
 // the variable for the message
 bool status_robot, status_ros;
-definitions::ObjectList my_detected_objects;
-definitions::GraspList my_calculated_grasp;
-definitions::TrajectoryList my_calculated_trajectory;
+std::vector<definitions::Object> my_detected_objects;
+std::vector<definitions::Grasp> my_calculated_grasp;
+std::vector<definitions::Trajectory> my_calculated_trajectory;
 
 int main(int argc, char **argv)
 {
@@ -109,7 +107,7 @@ int main(int argc, char **argv)
       ros::Duration(2).sleep();  
       continue;  //exit(0);
     }
-    
+
     // pose estimation response validation
     switch (estimation_srv.response.result)
     { case 0:
@@ -148,7 +146,7 @@ int main(int argc, char **argv)
     bool grasp_service_error=false;
     bool trajectory_planning_service_error=false;
     
-    int objects_list_size=my_detected_objects.object_list.size();
+    int objects_list_size=my_detected_objects.size();
     objects_list_size=10;
   
     while(object_to_grasp_id<objects_list_size && !grasp_service_error && !trajectory_planning_service_error)
