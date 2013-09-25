@@ -34,7 +34,7 @@ Other folders might be added as well, such as include, urdf, models, geometry, e
         // typically these ones are generated at compilation time, 
         // for instance, for a service called ClassParameterSetting.srv 
         // within package_name, we need to include this 
-        // #include "package_name/ClassParameterSetting.h" 
+        // #include "other_package_name/ClassParameterSetting.h" 
     
     
         namespace package_name {
@@ -94,7 +94,7 @@ Other folders might be added as well, such as include, urdf, models, geometry, e
                 // advertise service
                 srv_set_parameters_ = 
                   nh_.advertiseService(nh_.resolveName("service_name_you_want_to_advertise"), 
-                                                                &NamePerformer::setClassParameterss, this)
+                                                                &NamePerformer::setClassParameterss, this);
             }
     
             //! Empty stub
@@ -138,7 +138,7 @@ Other folders might be added as well, such as include, urdf, models, geometry, e
     
         int main(int argc, char **argv)
         {
-            ros::init(argc, argv, "stewart_wrist_node");
+            ros::init(argc, argv, "name_performer_node");
             ros::NodeHandle nh;
     
             package_name::NamePerformer node(nh);
