@@ -227,9 +227,9 @@ namespace pacman {
 			typedef std::vector<Config> Seq;
 
 			/** Arm configuration. */
-			KukaLWR::Config configArm;
+			KukaLWR::Config arm;
 			/** Hand configuration. */
-			ShunkDexHand::Config configHand;
+			ShunkDexHand::Config hand;
 
 			/** Default constructor sets the default configuration. */
 			inline Config() {
@@ -237,8 +237,29 @@ namespace pacman {
 			}
 			/** The default configuration. */
 			inline void setToDefault() {
-				configArm.setToDefault();
-				configHand.setToDefault();
+				arm.setToDefault();
+				hand.setToDefault();
+			}
+		};
+
+		/** Innsbruck robot configuration + pose */
+		class Pose : public Config {
+		public:
+			/** Sequence */
+			typedef std::vector<Pose> Seq;
+
+			/** 3D pose */
+			Mat34 pose;
+
+			/** Default constructor sets the default configuration. */
+			inline Pose() {
+				setToDefault();
+			}
+			/** The default configuration. */
+			inline void setToDefault() {
+				arm.setToDefault();
+				hand.setToDefault();
+				pose.setToDefault();
 			}
 		};
 	};

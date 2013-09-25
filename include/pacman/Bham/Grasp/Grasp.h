@@ -22,7 +22,7 @@ namespace pacman {
 			/** */
 			typedef std::vector<Trajectory> Seq;
 
-			/** Approach trajectory */
+			/** Trajectory */
 			ShunkDexHand::Pose::Seq trajectory;
 			/** Weight */
 			float_t weight;
@@ -48,7 +48,7 @@ namespace pacman {
 		 *	@param[in]	points			point cloud particular to a grasp
 		 *	@param[in]	trajectory		the grasp approach tajectory consists of at least two waypoints with the last waypoint defining a grip
 		*/
-		virtual void add(const std::string& id, const Point3D::Seq& points, const ShunkDexHand::Pose::Seq& trajectory) = 0;
+		virtual void add(const std::string& id, const Point3D::Seq& points, const RobotUIBK::Config::Seq& trajectory) = 0;
 
 		/** Removes a given grasp example
 		 *	@param[in]	id				grasp to remove
@@ -81,9 +81,9 @@ namespace pacman {
 	/** Point cloud load */
 	void load(const std::string& path, Point3D::Seq& points);
 	/** Trajectory save */
-	void save(const std::string& path, const ShunkDexHand::Pose::Seq& trajectory);
+	void save(const std::string& path, const RobotUIBK::Config::Seq& trajectory);
 	/** Trajectory load */
-	void load(const std::string& path, ShunkDexHand::Pose::Seq& trajectory);
+	void load(const std::string& path, RobotUIBK::Config::Seq& trajectory);
 };
 
 #endif // _PACMAN_BHAM_GRASP_GRASP_H_

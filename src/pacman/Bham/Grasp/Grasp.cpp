@@ -24,7 +24,7 @@ bool BhamGraspImpl::create(const grasp::ShapePlanner::Desc& desc) {
 	return true;
 }
 
-void BhamGraspImpl::add(const std::string& id, const Point3D::Seq& points, const ShunkDexHand::Pose::Seq& trajectory) {
+void BhamGraspImpl::add(const std::string& id, const Point3D::Seq& points, const RobotUIBK::Config::Seq& trajectory) {
 }
 
 void BhamGraspImpl::remove(const std::string& id) {
@@ -47,41 +47,60 @@ void BhamGraspImpl::spin() {
 void BhamGraspImpl::function(TrialData::Map::iterator& dataPtr, int key) {
 	switch (key) {
 	case 'A':
-		switch (waitKey("IE", "Press a key to (I)mport, (E)xport data...")) {
+	{
+		switch (waitKey("IE", "Press a key to (I)mport/(E)xport data...")) {
 		case 'I':
 		{
-			// import data
-			std::string path;
+			const int key = waitKey("PT", "Press a key to import (P)oint cloud/(T)trajectory...");
+			// export data
+			std::string path = dataPtr->first;
 			readString("Enter file path: ", path);
-			context.write("Importing data from: %s\n", path.c_str());
+			// point cloud
+			if (key == 'P') {
+				context.write("Importing point cloud from: %s\n", path.c_str());
+				Point3D::Seq seq;
+				load(path, seq);
+				convert(seq, dataPtr->second.pointCloud);
+				renderTrialData(dataPtr);
+			}
+			// appproach trajectory
+			if (key == 'T') {
+				context.write("Importing approach trajectory from: %s\n", path.c_str());
+				RobotUIBK::Config::Seq seq;
+				load(path, seq);
+				convert(seq, dataPtr->second.approachAction);
+			}
 			break;
 		}
 		case 'E':
 		{
+			const int key = waitKey("PT", "Press a key to export (P)oint cloud/(T)trajectory...");
 			// export data
-			std::string path;
+			std::string path = dataPtr->first;
 			readString("Enter file path: ", path);
-			context.write("Exporting data from: %s\n", path.c_str());
+			// point cloud
+			if (key == 'P') {
+				context.write("Exporting point cloud to: %s\n", path.c_str());
+				Point3D::Seq seq;
+				convert(dataPtr->second.pointCloud, seq);
+				save(path, seq);
+			}
+			// appproach trajectory
+			if (key == 'T') {
+				context.write("Exporting approach trajectory to: %s\n", path.c_str());
+				RobotUIBK::Config::Seq seq;
+				convert(dataPtr->second.approachAction, seq);
+				save(path, seq);
+			}
 			break;
 		}
-		};
+		}
 		context.write("Done!\n");
 		break;
+	}
 	};
 
 	ShapePlanner::function(dataPtr, key);
-}
-
-void BhamGraspImpl::convert(const Point3D::Seq& src, ::grasp::Point::Seq& dst) const {
-	dst.resize(0);
-	dst.reserve(src.size());
-	for (auto i: src) {
-		grasp::Point point;
-		point.frame.p.set(&i.position.x);
-		point.normal.set(&i.normal.x);
-		point.colour.set(&i.colour.r);
-		dst.push_back(point);
-	}
 }
 
 void BhamGraspImpl::convert(const ::grasp::Point::Seq& src, Point3D::Seq& dst) const {
@@ -93,6 +112,75 @@ void BhamGraspImpl::convert(const ::grasp::Point::Seq& src, Point3D::Seq& dst) c
 		i.normal.get(&point.normal.x);
 		i.colour.get(&point.colour.r);
 		dst.push_back(point);
+	}
+}
+
+void BhamGraspImpl::convert(const Point3D::Seq& src, ::grasp::Point::Seq& dst) const {
+	dst.resize(0);
+	dst.reserve(src.size());
+	for (auto i: src) {
+		Point point;
+		point.frame.p.set(&i.position.x);
+		point.normal.set(&i.normal.x);
+		point.colour.set(&i.colour.r);
+		dst.push_back(point);
+	}
+}
+
+void BhamGraspImpl::convert(const ::grasp::RobotState::List& src, RobotUIBK::Config::Seq& dst) const {
+	if (grasp.second->getManipulator().getJoints() < (U32)pacman::RobotUIBK::JOINTS)
+		throw Message(Message::LEVEL_ERROR, "BhamGraspImpl::convert(): invalid number of joints");
+
+	dst.resize(0);
+	dst.reserve(src.size());
+	for (auto i: src) {
+		RobotUIBK::Config configDst;
+		
+		// configuration
+		const Manipulator::Config configSrc(grasp.second->getManipulator().getConfig(i.config));
+		// KukaLWR
+		for (std::uintptr_t j = 0; j < grasp.second->getManipulator().getArmJoints(); ++j)
+			configDst.arm.c[j] = (float_t)configSrc.jc[j];
+		// ShunkDexHand
+		const std::uintptr_t offset = grasp.second->getManipulator().getArmJoints();
+		configDst.hand.middle[0] = (float_t)configSrc.jc[offset + 0];
+		configDst.hand.middle[1] = (float_t)configSrc.jc[offset + 1];
+		configDst.hand.left[0] = (float_t)configSrc.jc[offset + 3];
+		configDst.hand.left[1] = (float_t)configSrc.jc[offset + 4];
+		configDst.hand.right[0] = (float_t)configSrc.jc[offset + 6];
+		configDst.hand.right[1] = (float_t)configSrc.jc[offset + 7];
+		configDst.hand.rotation = (float_t)configSrc.jc[offset + 2];
+		
+		dst.push_back(configDst);
+	}
+}
+
+void BhamGraspImpl::convert(const RobotUIBK::Config::Seq& src, ::grasp::RobotState::List& dst) const {
+	if (grasp.second->getManipulator().getJoints() < (U32)pacman::RobotUIBK::JOINTS)
+		throw Message(Message::LEVEL_ERROR, "BhamGraspImpl::convert(): invalid number of joints");
+
+	dst.clear();
+	for (auto i: src) {
+		::grasp::RobotState configDst(*grasp.second->getManipulator().getController());
+		::grasp::Manipulator::Config config;
+
+		// KukaLWR
+		for (std::uintptr_t j = 0; j < grasp.second->getManipulator().getArmJoints(); ++j)
+			config.jc[j] = (Real)i.arm.c[j];
+		// ShunkDexHand
+		const std::uintptr_t offset = grasp.second->getManipulator().getArmJoints();
+		config.jc[offset + 0] = (Real)i.hand.middle[0];
+		config.jc[offset + 1] = (Real)i.hand.middle[1];
+		config.jc[offset + 3] = (Real)i.hand.left[0];
+		config.jc[offset + 4] = (Real)i.hand.left[1];
+		config.jc[offset + 6] = (Real)i.hand.right[0];
+		config.jc[offset + 7] = (Real)i.hand.right[1];
+		config.jc[offset + 2] = (Real)i.hand.rotation;
+		config.jc[offset + 5] = -(Real)i.hand.rotation;
+
+		configDst.command = configDst.config = grasp.second->getManipulator().getState(config);
+		configDst.ftSensor.setToDefault();
+		dst.push_back(configDst);
 	}
 }
 
@@ -112,10 +200,10 @@ void pacman::load(const std::string& path, Point3D::Seq& points) {
 	pacman::convert(pclCloud, points);
 }
 
-void pacman::save(const std::string& path, const ShunkDexHand::Pose::Seq& trajectory) {
+void pacman::save(const std::string& path, const RobotUIBK::Config::Seq& trajectory) {
 }
 
-void pacman::load(const std::string& path, ShunkDexHand::Pose::Seq& trajectory) {
+void pacman::load(const std::string& path, RobotUIBK::Config::Seq& trajectory) {
 }
 
 //-----------------------------------------------------------------------------
