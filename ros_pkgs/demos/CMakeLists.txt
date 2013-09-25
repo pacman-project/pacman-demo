@@ -4,7 +4,7 @@ project(demos)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED roscpp)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -69,17 +69,16 @@ catkin_package(
 # )
 
 ## Declare a cpp executable
-# add_executable(demos_node src/demos_node.cpp)
+add_executable(demo_5_1 src/demo_5_1.cpp)
+add_executable(test_demo_5_1 src/test_demo_5_1.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(demos_node demos_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(demos_node
-#   ${catkin_LIBRARIES}
-# )
-
+target_link_libraries(demo_5_1 ${catkin_LIBRARIES} )
+target_link_libraries(test_demo_5_1 ${catkin_LIBRARIES} )
 #############
 ## Install ##
 #############

@@ -1,10 +1,13 @@
 ## THIS FILE DEFINES THE TRAJECTORY PLANNING SERVICE
 
-# the id of the object this grasp list was obtained for is needed
+# this grasp list was obtained for is needed
 GraspList ordered_grasp
 
 # this is needed for collision detection and removing the object from the scene
 ObjectList object_list
+
+# the id of the object to grasp
+int32 object_id
 
 ---
 
@@ -12,7 +15,7 @@ ObjectList object_list
 TrajectoryList trajectory
 
 # whether the service succeded or not
-int32 OTHER_ERROR = 0
-int32 SUCCESS = 1
+int32 SUCCESS = 0
+int32 OTHER_ERROR = 1
 int32 NO_FEASIBLE_TRAJECTORY_FOUND = 2
 int32 result

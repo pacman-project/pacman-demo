@@ -1,7 +1,10 @@
 ## THIS FILE DEFINES THE GRASP PLANNING SERVICE
 
-# we take always the first in the list
+# this is required for collision detection
 ObjectList ordered_objects
+
+# id of the object to grasp
+int32 object_id
 
 ---
 
@@ -9,7 +12,7 @@ ObjectList ordered_objects
 GraspList grasp_list
 
 # whether the service succeded or not
-int32 OTHER_ERROR = 0
-int32 SUCCESS = 1
+int32 SUCCESS = 0
+int32 OTHER_ERROR = 1
 int32 NO_FEASIBLE_GRASP_FOUND = 2
 int32 result

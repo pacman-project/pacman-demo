@@ -1,0 +1,17 @@
+<launch>
+  
+	<!--pose_estimation_response : value= 0: SUCCESS, 1: OTHER_ERROR, 2: NO_CLOUD_RECEIVED, 3:NO_OBJECTS_DETECTED /-->
+  	<param name="pose_estimation_response" type="int" value="0" />
+  	
+  	<!-- grasp_planning_response : value= 0: SUCCESS, 1:OTHER_ERROR, 2: NO_FEASIBLE_GRASP_FOUND /-->
+  	<param name="grasp_planning_response" type="int" value="0" />
+   	
+   	<!--trajectory_grasp_planning : value= 0: SUCCESS, 1:OTHER_ERROR, 2: NO_FEASIBLE_TRAJECTORY_FOUND/-->
+  	<param name="trajectory_planning_response" type="int" value="0" />
+   	
+   	<!-- trajectory_execution_response value= 0:SUCCESS, 1: OTHER_ERROR /-->
+  	<param name="trajectory_execution_response" type="int" value="0" />
+  	
+  	<node name="test_demo" pkg="demos" type="test_demo_5_1" />
+
+</launch>

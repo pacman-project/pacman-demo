@@ -5,6 +5,6 @@ TrajectoryList trajectory
 ---
 
 # whether the service succeded or not
-int32 OTHER_ERROR = 0
-int32 SUCCESS = 1
+int32 SUCCESS = 0
+int32 OTHER_ERROR = 1
 int32 result
