@@ -4,13 +4,11 @@ project(pose_estimation_uibk)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-#find_package(catkin REQUIRED pcl_ros pcl_conversions roscpp genmsg std_msgs geometry_msgs sensor_msgs)
-find_package(catkin REQUIRED roscpp genmsg std_msgs geometry_msgs sensor_msgs)
+find_package(catkin REQUIRED roscpp genmsg)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS filesystem system)
 find_package(Eigen REQUIRED)
-
 find_package(PCL 1.7 REQUIRED )
 
 
@@ -37,12 +35,12 @@ find_package(PCL 1.7 REQUIRED )
 #)
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-   DEPENDENCIES
-   std_msgs  # Or other packages containing msgs
-   sensor_msgs
-   geometry_msgs
-)
+# generate_messages(
+#   DEPENDENCIES
+#   std_msgs  # Or other packages containing msgs
+#   sensor_msgs
+#   geometry_msgs
+#)
 
 ###################################
 ## catkin specific configuration ##

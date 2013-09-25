@@ -1,0 +1,15 @@
+<launch>
+  
+  <!--POSE ESTIMATION-->
+  <include file="$(find pose_estimation_uibk/launch/pose_estimation.launch"></include>
+
+  <!--GRASP PLANNING-->
+  <!-- <include file="$(find grasp_planner_bham)/launch/xxxxx.launch"></include> -->
+
+  <!--PATH PLANNING-->
+  <!--  <include file="$(find path_planner_unipi/launch/xxxxxxx.launch"></include> -->
+  
+  <!-- PATH EXECUTION -->
+  <!-- <include file="$(find XXXXX/XXXX/launch/xxxxxxx.launch"></include> -->
+
+</launch>

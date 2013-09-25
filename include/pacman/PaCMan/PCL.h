@@ -94,7 +94,7 @@ namespace pacman {
 		dst.resize(0);
 		dst.reserve(src.size());
 		for (auto i: src) {
-			Point3D p;
+			_PCLPoint p;
 			convert(i, p);
 			dst.push_back(p);
 		}
