@@ -24,8 +24,8 @@ namespace pacman {
 
 			/** Trajectory */
 			ShunkDexHand::Pose::Seq trajectory;
-			/** Weight */
-			float_t weight;
+			/** Likelihood */
+			float_t likelihood;
 
 			/** Default constructor sets the default configuration. */
 			inline Trajectory() {
@@ -34,7 +34,7 @@ namespace pacman {
 			/** The default configuration. */
 			inline void setToDefault() {
 				trajectory.clear();
-				weight = float_t(1.);
+				likelihood = float_t(1.);
 			}
 		};
 
