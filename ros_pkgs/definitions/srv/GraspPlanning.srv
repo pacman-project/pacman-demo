@@ -1,7 +1,7 @@
 ## THIS FILE DEFINES THE GRASP PLANNING SERVICE
 
 # this is required for collision detection
-ObjectList ordered_objects
+Object[] ordered_objects
 
 # id of the object to grasp
 int32 object_id
@@ -9,7 +9,7 @@ int32 object_id
 ---
 
 # this grasp list are different grasps for the first object in the list
-GraspList grasp_list
+Grasp[] grasp_list
 
 # whether the service succeded or not
 int32 SUCCESS = 0
