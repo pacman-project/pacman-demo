@@ -17,11 +17,13 @@ namespace pacman {
 	class BhamGrasp {
 	public:
 		/** Weighted approach trajectory */
-		class Trajectory : public RobotUIBK::Pose {
+		class Trajectory {
 		public:
 			/** */
 			typedef std::vector<Trajectory> Seq;
 
+			/** Trajectory */
+			ShunkDexHand::Pose::Seq trajectory;
 			/** Weight */
 			float_t weight;
 
@@ -31,7 +33,7 @@ namespace pacman {
 			}
 			/** The default configuration. */
 			inline void setToDefault() {
-				RobotUIBK::Pose::setToDefault();
+				trajectory.clear();
 				weight = float_t(1.);
 			}
 		};
@@ -46,7 +48,7 @@ namespace pacman {
 		 *	@param[in]	points			point cloud particular to a grasp
 		 *	@param[in]	trajectory		the grasp approach tajectory consists of at least two waypoints with the last waypoint defining a grip
 		*/
-		virtual void add(const std::string& id, const Point3D::Seq& points, const RobotUIBK::Pose::Seq& trajectory) = 0;
+		virtual void add(const std::string& id, const Point3D::Seq& points, const RobotUIBK::Config::Seq& trajectory) = 0;
 
 		/** Removes a given grasp example
 		 *	@param[in]	id				grasp to remove
@@ -79,9 +81,9 @@ namespace pacman {
 	/** Point cloud load */
 	void load(const std::string& path, Point3D::Seq& points);
 	/** Trajectory save */
-	void save(const std::string& path, const ShunkDexHand::Pose::Seq& trajectory);
+	void save(const std::string& path, const RobotUIBK::Config::Seq& trajectory);
 	/** Trajectory load */
-	void load(const std::string& path, ShunkDexHand::Pose::Seq& trajectory);
+	void load(const std::string& path, RobotUIBK::Config::Seq& trajectory);
 };
 
 #endif // _PACMAN_BHAM_GRASP_GRASP_H_
