@@ -47,33 +47,57 @@ void BhamGraspImpl::spin() {
 void BhamGraspImpl::function(TrialData::Map::iterator& dataPtr, int key) {
 	switch (key) {
 	case 'A':
-		switch (waitKey("E", "Press a key to (E)xport data...")) {
-		case 'E':
+	{
+		switch (waitKey("IE", "Press a key to (I)mport/(E)xport data...")) {
+		case 'I':
 		{
+			const int key = waitKey("PT", "Press a key to import (P)oint cloud/(T)trajectory...");
 			// export data
-			std::string path;
+			std::string path = dataPtr->first;
 			readString("Enter file path: ", path);
 			// point cloud
-			if (!dataPtr->second.pointCloud.empty()) {
-				const std::string pathCloud = path + ".pcd";
-				context.write("Exporting point cloud to: %s\n", pathCloud.c_str());
-				Point3D::Seq dst;
-				convert(dataPtr->second.pointCloud, dst);
-				save(pathCloud, dst);
+			if (key == 'P') {
+				context.write("Importing point cloud from: %s\n", path.c_str());
+				Point3D::Seq seq;
+				load(path, seq);
+				convert(seq, dataPtr->second.pointCloud);
+				renderTrialData(dataPtr);
 			}
 			// appproach trajectory
-			if (!dataPtr->second.approachAction.empty()) {
-				const std::string pathTrj = path + ".trj";
-				context.write("Exporting approach trajectory to: %s\n", pathTrj.c_str());
-				RobotUIBK::Config::Seq dst;
-				convert(dataPtr->second.approachAction, dst);
-				save(pathTrj, dst);
+			if (key == 'T') {
+				context.write("Importing approach trajectory from: %s\n", path.c_str());
+				RobotUIBK::Config::Seq seq;
+				load(path, seq);
+				convert(seq, dataPtr->second.approachAction);
 			}
 			break;
 		}
-		};
+		case 'E':
+		{
+			const int key = waitKey("PT", "Press a key to export (P)oint cloud/(T)trajectory...");
+			// export data
+			std::string path = dataPtr->first;
+			readString("Enter file path: ", path);
+			// point cloud
+			if (key == 'P') {
+				context.write("Exporting point cloud to: %s\n", path.c_str());
+				Point3D::Seq seq;
+				convert(dataPtr->second.pointCloud, seq);
+				save(path, seq);
+			}
+			// appproach trajectory
+			if (key == 'T') {
+				context.write("Exporting approach trajectory to: %s\n", path.c_str());
+				RobotUIBK::Config::Seq seq;
+				convert(dataPtr->second.approachAction, seq);
+				save(path, seq);
+			}
+			break;
+		}
+		}
 		context.write("Done!\n");
 		break;
+	}
 	};
 
 	ShapePlanner::function(dataPtr, key);
