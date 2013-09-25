@@ -74,6 +74,16 @@ namespace pacman {
 		*/
 		virtual ~BhamGrasp() {}
 	};
+
+
+	/** Point cloud save */
+	void save(const std::string& path, const Point3D::Seq& points);
+	/** Point cloud load */
+	void load(const std::string& path, Point3D::Seq& points);
+	/** Trajectory save */
+	void save(const std::string& path, const ShunkDexHand::Pose::Seq& trajectory);
+	/** Trajectory load */
+	void load(const std::string& path, ShunkDexHand::Pose::Seq& trajectory);
 };
 
 #endif // _PACMAN_BHAM_GRASP_GRASP_H_
