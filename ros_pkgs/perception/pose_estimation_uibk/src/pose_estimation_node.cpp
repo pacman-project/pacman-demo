@@ -12,12 +12,9 @@
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_datatypes.h>
 
-// PCL from ROS headers
-// #include <pcl_ros/transforms.h>
-//#include <pcl/point_cloud.h>
-//#include <pcl/point_types.h>
-//#include <pcl_conversions/pcl_conversions.h>
-//#include <pcl/ros/conversions.h>
+// PCL 1.7 headers
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 
 // use "" for local headers
 #include "I_SegmentedObjects.h"
@@ -69,18 +66,22 @@ class PoseEstimator
 //bool PoseEstimator::estimatePoses(PoseEstimation::Request &request, PoseEstimation::Response &response)
 bool PoseEstimator::estimatePoses(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {   
+    ROS_INFO("Pose estimation service has been called...");
+    
+    ROS_INFO("Initializing...");
     string filename; 
     filename = "/home/pacman/poseEstimation/parametersFiles/config.txt";
     ParametersPoseEstimation params(filename);
     I_SegmentedObjects objects;
+
+    ROS_INFO("Recognizing poses...");
     params.recognizePose(objects);
-
+    
     std::vector<string> names = objects.getObjects();
-
     std::cout << names.size() << std::endl;
 
    
-
+    ROS_INFO("Pose estimation service finisihed, and ready for another service requests...");
     return true;
 }
 
@@ -92,7 +93,7 @@ int main(int argc, char **argv)
     ros::NodeHandle nh;
 
     pacman_pose_estimation::PoseEstimator node(nh);
-
+    ROS_INFO("Pose estimation node ready for service requests...");
     while(ros::ok())
     {
         //node.doSomething();
