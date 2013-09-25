@@ -43,10 +43,44 @@ void BhamGraspImpl::list(std::vector<std::string>& idSeq) const {
 }
 
 void BhamGraspImpl::estimate(const Point3D::Seq& points, Trajectory::Seq& trajectories) {
+	// transform data
 	convert(points, currentDataPtr->second.pointCloud);
 	targetDataPtr = getTrialData().end();
+	
+	// compute grip configurations
 	grasp.second->findGrip(currentDataPtr->second.pointCloud, currentDataPtr->second.pointCloud, graspPoses);
-	grasp.second->findGripClusters(graspPoses, graspClusters);
+	//grasp.second->findGripClusters(graspPoses, graspClusters);
+	
+	// prepare model trajectory
+	std::deque<Manipulator::Pose> model;
+	for (auto i: grasp.second->getDataMap().begin()->second.approach)
+		model.push_front(i);
+	golem::Mat34 trnInv;
+	trnInv.setInverse(model.back());
+	
+	// transform trajectories
+	trajectories.clear();
+	for (auto i: graspPoses) {
+		Trajectory trajectory;
+		golem::Mat34 trn;
+		trn.multiply(i.toMat34(), trnInv);
+		
+		for (auto j: model) {
+			ShunkDexHand::Pose pose;
+			convert(j, pose.config);
+			golem::Mat34 frame;
+			frame.multiply(trn, j);
+			frame.p.get(&pose.pose.p.x);
+			frame.R.setRow33(&pose.pose.R.m11);
+			trajectory.trajectory.push_back(pose);
+		}
+		convert(i, trajectory.trajectory.back().config); // overwrite grip configuration (the last waypoint)
+		trajectory.likelihood = (float_t)i.likelihood.product;
+
+		trajectories.push_back(trajectory);
+	}
+
+	// finish
 	graspMode = GRASP_MODE_GRIP;
 	graspClusterPtr = graspClusterSolutionPtr = 0;
 	targetDataPtr = currentDataPtr;
@@ -146,6 +180,29 @@ void BhamGraspImpl::convert(const Point3D::Seq& src, ::grasp::Point::Seq& dst) c
 	TrialData::process(context, this->importDesc, dst);
 }
 
+void BhamGraspImpl::convert(const ::grasp::Manipulator::Config& src, ShunkDexHand::Config& dst) const {
+	const std::uintptr_t offset = grasp.second->getManipulator().getArmJoints();
+	dst.middle[0] = (float_t)src.jc[offset + 0];
+	dst.middle[1] = (float_t)src.jc[offset + 1];
+	dst.left[0] = (float_t)src.jc[offset + 3];
+	dst.left[1] = (float_t)src.jc[offset + 4];
+	dst.right[0] = (float_t)src.jc[offset + 6];
+	dst.right[1] = (float_t)src.jc[offset + 7];
+	dst.rotation = (float_t)src.jc[offset + 2];
+}
+
+void BhamGraspImpl::convert(const ShunkDexHand::Config& src, ::grasp::Manipulator::Config& dst) const {
+	const std::uintptr_t offset = grasp.second->getManipulator().getArmJoints();
+	dst.jc[offset + 0] = (Real)src.middle[0];
+	dst.jc[offset + 1] = (Real)src.middle[1];
+	dst.jc[offset + 3] = (Real)src.left[0];
+	dst.jc[offset + 4] = (Real)src.left[1];
+	dst.jc[offset + 6] = (Real)src.right[0];
+	dst.jc[offset + 7] = (Real)src.right[1];
+	dst.jc[offset + 2] = (Real)src.rotation;
+	dst.jc[offset + 5] = -(Real)src.rotation;
+}
+
 void BhamGraspImpl::convert(const ::grasp::RobotState::List& src, RobotUIBK::Config::Seq& dst) const {
 	if (grasp.second->getManipulator().getJoints() < (U32)pacman::RobotUIBK::JOINTS)
 		throw Message(Message::LEVEL_ERROR, "BhamGraspImpl::convert(): invalid number of joints");
@@ -161,14 +218,7 @@ void BhamGraspImpl::convert(const ::grasp::RobotState::List& src, RobotUIBK::Con
 		for (std::uintptr_t j = 0; j < grasp.second->getManipulator().getArmJoints(); ++j)
 			configDst.arm.c[j] = (float_t)configSrc.jc[j];
 		// ShunkDexHand
-		const std::uintptr_t offset = grasp.second->getManipulator().getArmJoints();
-		configDst.hand.middle[0] = (float_t)configSrc.jc[offset + 0];
-		configDst.hand.middle[1] = (float_t)configSrc.jc[offset + 1];
-		configDst.hand.left[0] = (float_t)configSrc.jc[offset + 3];
-		configDst.hand.left[1] = (float_t)configSrc.jc[offset + 4];
-		configDst.hand.right[0] = (float_t)configSrc.jc[offset + 6];
-		configDst.hand.right[1] = (float_t)configSrc.jc[offset + 7];
-		configDst.hand.rotation = (float_t)configSrc.jc[offset + 2];
+		convert(configSrc, configDst.hand);
 
 		dst.push_back(configDst);
 	}
@@ -187,15 +237,7 @@ void BhamGraspImpl::convert(const RobotUIBK::Config::Seq& src, ::grasp::RobotSta
 		for (std::uintptr_t j = 0; j < grasp.second->getManipulator().getArmJoints(); ++j)
 			config.jc[j] = (Real)i.arm.c[j];
 		// ShunkDexHand
-		const std::uintptr_t offset = grasp.second->getManipulator().getArmJoints();
-		config.jc[offset + 0] = (Real)i.hand.middle[0];
-		config.jc[offset + 1] = (Real)i.hand.middle[1];
-		config.jc[offset + 3] = (Real)i.hand.left[0];
-		config.jc[offset + 4] = (Real)i.hand.left[1];
-		config.jc[offset + 6] = (Real)i.hand.right[0];
-		config.jc[offset + 7] = (Real)i.hand.right[1];
-		config.jc[offset + 2] = (Real)i.hand.rotation;
-		config.jc[offset + 5] = -(Real)i.hand.rotation;
+		convert(i.hand, config);
 
 		configDst.command = configDst.config = grasp.second->getManipulator().getState(config);
 		configDst.ftSensor.setToDefault();
@@ -255,7 +297,7 @@ void pacman::load(const std::string& path, RobotUIBK::Config::Seq& trajectory) {
 
 			char *token = std::strtok(const_cast<char*>(line.c_str()), DELIM);
 			for (size_t index = 0; token != NULL && index < RobotUIBK::JOINTS; token = std::strtok(NULL, DELIM), ++index)
-				double x = (index < KukaLWR::JOINTS ? config.arm.c[index] : config.hand.c[index - KukaLWR::JOINTS]) = float_t(atof(token));
+				(index < KukaLWR::JOINTS ? config.arm.c[index] : config.hand.c[index - KukaLWR::JOINTS]) = float_t(atof(token));
             
 			trajectory.push_back(config);
 		}
