@@ -1,0 +1,9 @@
+Download:
+
+
+
+test usage:
+
+rosrun sdh_utilities sdh_joint_angles_subscriber
+
+rosrun sdh_utilities sdh_joint_angles_publisher "0.1,0.1,0.0,0.0,0.0,0.0,0.0"

@@ -65,6 +65,14 @@ namespace pacman {
 		 *	@param[out]	trajectories	weighted approach trajectories, each tajectory consists of at least two waypoints with the last waypoint defining a grip
 		*/
 		virtual void estimate(const Point3D::Seq& points, Trajectory::Seq& trajectories) = 0;
+
+		/** Process messages
+		*/
+		virtual void spin() = 0;
+
+		/** Destruction
+		*/
+		virtual ~BhamGrasp() {}
 	};
 };
 

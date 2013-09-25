@@ -1,0 +1,18 @@
+#ifndef SDH_PUB_SUB_H
+#define SDH_PUB_SUB_H
+
+
+struct joint_angles_response
+{ 
+    
+};
+
+
+
+struct joint_angles_request
+{ 
+    
+};
+
+
+#endif

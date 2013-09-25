@@ -12,6 +12,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		BhamGrasp* grasp = BhamGrasp::create(argv[1]);
+		grasp->spin();
 
 		// TODO
 	}

@@ -12,12 +12,14 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <!--> PACKAGES </-->
-  
   <!--> PCL-based pose estimation </-->
   <run_depend>pose_estimation_UIBK</run_depend>
 
   <!--> OCTOMAP-based collision map </-->
   <run_depend>collision_map_octomap</run_depend>
+
+    <!--> CONVERSION between point cloud types </-->
+  <run_depend>point_cloud_conversion</run_depend>
 
   <export>
     <metapackage/>
