@@ -24,7 +24,7 @@ bool BhamGraspImpl::create(const grasp::ShapePlanner::Desc& desc) {
 	return true;
 }
 
-void BhamGraspImpl::add(const std::string& id, const Point3D::Seq& points, const ShunkDexHand::Pose::Seq& trajectory) {
+void BhamGraspImpl::add(const std::string& id, const Point3D::Seq& points, const RobotUIBK::Pose::Seq& trajectory) {
 }
 
 void BhamGraspImpl::remove(const std::string& id) {
@@ -47,21 +47,28 @@ void BhamGraspImpl::spin() {
 void BhamGraspImpl::function(TrialData::Map::iterator& dataPtr, int key) {
 	switch (key) {
 	case 'A':
-		switch (waitKey("IE", "Press a key to (I)mport, (E)xport data...")) {
-		case 'I':
-		{
-			// import data
-			std::string path;
-			readString("Enter file path: ", path);
-			context.write("Importing data from: %s\n", path.c_str());
-			break;
-		}
+		switch (waitKey("E", "Press a key to (E)xport data...")) {
 		case 'E':
 		{
 			// export data
 			std::string path;
 			readString("Enter file path: ", path);
-			context.write("Exporting data from: %s\n", path.c_str());
+			// point cloud
+			if (!dataPtr->second.pointCloud.empty()) {
+				const std::string pathCloud = path + ".pcd";
+				context.write("Exporting point cloud to: %s\n", pathCloud.c_str());
+				Point3D::Seq dst;
+				convert(dataPtr->second.pointCloud, dst);
+				save(pathCloud, dst);
+			}
+			// appproach trajectory
+			if (!dataPtr->second.approachAction.empty()) {
+				const std::string pathTrj = path + ".trj";
+				context.write("Exporting approach trajectory to: %s\n", pathTrj.c_str());
+				ShunkDexHand::Pose::Seq dst;
+				convert(dataPtr->second.approachAction, dst);
+				save(pathTrj, dst);
+			}
 			break;
 		}
 		};
@@ -70,18 +77,6 @@ void BhamGraspImpl::function(TrialData::Map::iterator& dataPtr, int key) {
 	};
 
 	ShapePlanner::function(dataPtr, key);
-}
-
-void BhamGraspImpl::convert(const Point3D::Seq& src, ::grasp::Point::Seq& dst) const {
-	dst.resize(0);
-	dst.reserve(src.size());
-	for (auto i: src) {
-		grasp::Point point;
-		point.frame.p.set(&i.position.x);
-		point.normal.set(&i.normal.x);
-		point.colour.set(&i.colour.r);
-		dst.push_back(point);
-	}
 }
 
 void BhamGraspImpl::convert(const ::grasp::Point::Seq& src, Point3D::Seq& dst) const {
@@ -93,6 +88,42 @@ void BhamGraspImpl::convert(const ::grasp::Point::Seq& src, Point3D::Seq& dst) c
 		i.normal.get(&point.normal.x);
 		i.colour.get(&point.colour.r);
 		dst.push_back(point);
+	}
+}
+
+void BhamGraspImpl::convert(const Point3D::Seq& src, ::grasp::Point::Seq& dst) const {
+	dst.resize(0);
+	dst.reserve(src.size());
+	for (auto i: src) {
+		Point point;
+		point.frame.p.set(&i.position.x);
+		point.normal.set(&i.normal.x);
+		point.colour.set(&i.colour.r);
+		dst.push_back(point);
+	}
+}
+
+void BhamGraspImpl::convert(const ::grasp::RobotState::List& src, ShunkDexHand::Pose::Seq& dst) const {
+	dst.resize(0);
+	dst.reserve(src.size());
+	for (auto i: src) {
+		ShunkDexHand::Pose pose;
+		const Manipulator::Pose poseTmp(grasp.second->getManipulator().getPose(i.config));
+		poseTmp.p.get(&pose.pose.p.x);
+		poseTmp.R.getRow33(&pose.pose.R.m11);
+		std::copy(poseTmp.jc + grasp.second->getManipulator().getArmJoints(), poseTmp.jc + grasp.second->getManipulator().getJoints(), pose.config.c);
+		dst.push_back(pose);
+	}
+}
+
+void BhamGraspImpl::convert(const RobotUIBK::Pose::Seq& src, ::grasp::RobotState::List& dst) const {
+	dst.clear();
+	for (auto i: src) {
+		::grasp::RobotState pose(*robot->getController());
+		robot->getController()->setToDefault(pose.config);
+		robot->getController()->setToDefault(pose.command);
+
+		dst.push_back(pose);
 	}
 }
 
