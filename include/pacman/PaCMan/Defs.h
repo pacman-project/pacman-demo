@@ -88,7 +88,7 @@ namespace pacman {
 		/** Colour elements. */
 		union {
 			struct {
-				std::uint8_t R, G, B, A;
+				std::uint8_t r, g, b, a;
 			};
 			std::uint32_t uint32;
 			std::uint8_t uint8[4];

@@ -1,21 +1,12 @@
 #include <pacman/Bham/Grasp/GraspImpl.h>
+#include <pacman/PaCMan/PCL.h>
 #include <Golem/Phys/Data.h>
 #include <Golem/Tools/Data.h>
-#include <memory>
+#include <pcl/io/pcd_io.h>
 
 using namespace pacman;
 using namespace golem;
 using namespace grasp;
-
-//-----------------------------------------------------------------------------
-
-void BhamGraspImpl::spin() {
-	try {
-		main();
-	}
-	catch (grasp::Interrupted&) {
-	}
-}
 
 //-----------------------------------------------------------------------------
 
@@ -24,6 +15,12 @@ BhamGraspImpl::BhamGraspImpl(golem::Scene &scene) : ShapePlanner(scene) {
 
 bool BhamGraspImpl::create(const grasp::ShapePlanner::Desc& desc) {
 	(void)ShapePlanner::create(desc);
+
+	scene.setHelp(
+		scene.getHelp() +
+		"  A                                       PaCMan operations\n"
+	);
+	
 	return true;
 }
 
@@ -37,6 +34,88 @@ void BhamGraspImpl::list(std::vector<std::string>& idSeq) const {
 }
 
 void BhamGraspImpl::estimate(const Point3D::Seq& points, Trajectory::Seq& trajectories) {
+}
+
+void BhamGraspImpl::spin() {
+	try {
+		main();
+	}
+	catch (grasp::Interrupted&) {
+	}
+}
+
+void BhamGraspImpl::function(TrialData::Map::iterator& dataPtr, int key) {
+	switch (key) {
+	case 'A':
+		switch (waitKey("IE", "Press a key to (I)mport, (E)xport data...")) {
+		case 'I':
+		{
+			// import data
+			std::string path;
+			readString("Enter file path: ", path);
+			context.write("Importing data from: %s\n", path.c_str());
+			break;
+		}
+		case 'E':
+		{
+			// export data
+			std::string path;
+			readString("Enter file path: ", path);
+			context.write("Exporting data from: %s\n", path.c_str());
+			break;
+		}
+		};
+		context.write("Done!\n");
+		break;
+	};
+
+	ShapePlanner::function(dataPtr, key);
+}
+
+void BhamGraspImpl::convert(const Point3D::Seq& src, ::grasp::Point::Seq& dst) const {
+	dst.resize(0);
+	dst.reserve(src.size());
+	for (auto i: src) {
+		grasp::Point point;
+		point.frame.p.set(&i.position.x);
+		point.normal.set(&i.normal.x);
+		point.colour.set(&i.colour.r);
+		dst.push_back(point);
+	}
+}
+
+void BhamGraspImpl::convert(const ::grasp::Point::Seq& src, Point3D::Seq& dst) const {
+	dst.resize(0);
+	dst.reserve(src.size());
+	for (auto i: src) {
+		Point3D point;
+		i.frame.p.get(&point.position.x);
+		i.normal.get(&point.normal.x);
+		i.colour.get(&point.colour.r);
+		dst.push_back(point);
+	}
+}
+
+//-----------------------------------------------------------------------------
+
+void pacman::save(const std::string& path, const Point3D::Seq& points) {
+	pcl::PointCloud<pcl::PointXYZRGBNormal> pclCloud;
+	pacman::convert(points, pclCloud);
+	if (pcl::PCDWriter().writeBinaryCompressed(path, pclCloud) < 0)
+		throw Message(Message::LEVEL_ERROR, "pacman::save(): pcl::PCDWriter error when writing %s", path.c_str());
+}
+
+void pacman::load(const std::string& path, Point3D::Seq& points) {
+	pcl::PointCloud<pcl::PointXYZRGBNormal> pclCloud;
+	if (pcl::PCDReader().read(path, pclCloud) < 0)
+		throw Message(Message::LEVEL_ERROR, "pacman::load(): pcl::PCDReader error when reading %s", path.c_str());
+	pacman::convert(pclCloud, points);
+}
+
+void pacman::save(const std::string& path, const ShunkDexHand::Pose::Seq& trajectory) {
+}
+
+void pacman::load(const std::string& path, ShunkDexHand::Pose::Seq& trajectory) {
 }
 
 //-----------------------------------------------------------------------------

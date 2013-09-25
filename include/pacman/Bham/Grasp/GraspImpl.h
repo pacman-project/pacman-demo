@@ -40,6 +40,13 @@ namespace pacman {
 	protected:
 		BhamGraspImpl(golem::Scene &scene);
 		bool create(const grasp::ShapePlanner::Desc& desc);
+
+		/** User interface: menu function */
+		virtual void function(grasp::TrialData::Map::iterator& dataPtr, int key);
+		/** Point cloud conversion */
+		void convert(const Point3D::Seq& src, ::grasp::Point::Seq& dst) const;
+		/** Point cloud conversion */
+		void convert(const ::grasp::Point::Seq& src, Point3D::Seq& dst) const;
 	};
 };
 
