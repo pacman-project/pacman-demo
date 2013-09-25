@@ -15,12 +15,12 @@
 /** PaCMan name space */
 namespace pacman {
 	/** pcl::PointXYZ point conversion */
-	template <typename _PCLPointXYX> void convertPCLPointXYX(const _PCLPointXYX& src, Point3D& dst) {
+	template <typename _PCLPointXYX> void convertPCLPointXYZ(const _PCLPointXYX& src, Point3D& dst) {
 		dst.position.x = (float_t)src.x;
 		dst.position.y = (float_t)src.y;
 		dst.position.z = (float_t)src.z;
 	}
-	template <typename _PCLPointXYX> void convertPCLPointXYX(const Point3D& src, _PCLPointXYX& dst) {
+	template <typename _PCLPointXYX> void convertPCLPointXYZ(const Point3D& src, _PCLPointXYX& dst) {
 		dst.x = (float)src.position.x;
 		dst.y = (float)src.position.y;
 		dst.z = (float)src.position.z;
@@ -52,30 +52,30 @@ namespace pacman {
 	
 	/** pcl::PointXYZ point conversion */
 	inline void convert(const pcl::PointXYZ& src, Point3D& dst) {
-		convertPCLPointXYX(src, dst);
+		convertPCLPointXYZ(src, dst);
 	}
 	inline void convert(const Point3D& src, pcl::PointXYZ& dst) {
-		convertPCLPointXYX(src, dst);
+		convertPCLPointXYZ(src, dst);
 	}
 	
 	/** pcl::PointNormal point conversion */
 	inline void convert(const pcl::PointNormal& src, Point3D& dst) {
-		convertPCLPointXYX(src, dst);
+		convertPCLPointXYZ(src, dst);
 		convertPCLPointNormal(src, dst);
 	}
 	inline void convert(const Point3D& src, pcl::PointNormal& dst) {
-		convertPCLPointXYX(src, dst);
+		convertPCLPointXYZ(src, dst);
 		convertPCLPointNormal(src, dst);
 	}
 	
 	/** pcl::PointXYZRGBNormal point conversion */
 	inline void convert(const pcl::PointXYZRGBNormal& src, Point3D& dst) {
-		convertPCLPointXYX(src, dst);
+		convertPCLPointXYZ(src, dst);
 		convertPCLPointNormal(src, dst);
 		convertPCLPointRGBA(src, dst);
 	}
 	inline void convert(const Point3D& src, pcl::PointXYZRGBNormal& dst) {
-		convertPCLPointXYX(src, dst);
+		convertPCLPointXYZ(src, dst);
 		convertPCLPointNormal(src, dst);
 		convertPCLPointRGBA(src, dst);
 	}
