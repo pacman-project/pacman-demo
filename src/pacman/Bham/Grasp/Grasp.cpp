@@ -24,6 +24,12 @@ BhamGraspImpl::BhamGraspImpl(golem::Scene &scene) : ShapePlanner(scene) {
 
 bool BhamGraspImpl::create(const grasp::ShapePlanner::Desc& desc) {
 	(void)ShapePlanner::create(desc);
+
+	scene.setHelp(
+		scene.getHelp() +
+		"  A                                       PaCMan operations\n"
+	);
+	
 	return true;
 }
 
@@ -37,6 +43,37 @@ void BhamGraspImpl::list(std::vector<std::string>& idSeq) const {
 }
 
 void BhamGraspImpl::estimate(const Point3D::Seq& points, Trajectory::Seq& trajectories) {
+}
+
+void BhamGraspImpl::function(TrialData::Map::iterator& dataPtr, int key) {
+	switch (key) {
+	case 'A':
+		switch (waitKey("IE", "Press a key to (I)mport, (E)xport data...")) {
+		case 'I':
+		{
+			// import data
+			std::string path;
+			readString("Enter file path: ", path);
+			context.write("Importing data from: %s\n", path.c_str());
+			break;
+		}
+		case 'E':
+		{
+			// export data
+			std::string path;
+			readString("Enter file path: ", path);
+			context.write("Exporting data from: %s\n", path.c_str());
+			break;
+		}
+		};
+		context.write("Done!\n");
+		break;
+	};
+
+	ShapePlanner::function(dataPtr, key);
+}
+
+void BhamGraspImpl::convert(const Point3D::Seq& src, ::grasp::Point::Seq& dst) const {
 }
 
 //-----------------------------------------------------------------------------

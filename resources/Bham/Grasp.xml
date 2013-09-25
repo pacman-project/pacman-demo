@@ -13,13 +13,21 @@
     <recorder frame_drop="1" file_name="screen" file_ext=".png" leading_zeros="1" encoder_str="image/png" buffer_len="100"></recorder>
   </universe>
 
-  <scene name="Birmingham grasp planner">
+  <scene name="Birmingham grasp estimator">
     <physx restitution="0.0" static_friction="0.2" dynamic_friction="0.1">
       <gravity v1="0.0" v2="0.0" v3="-9.81"></gravity>
     </physx>
     <opengl view_name="Default" view_inc="0.2">
       <view_point v1="16.0615" v2="-0.9946" v3="7.9321"/>
       <view_dir v1="-0.9811" v2="-0.0814" v3="-0.1757"/>
+      <view_up v1="0.0000" v2="0.0000" v3="1.0000"/>
+      <!--<clear_color R="55" G="55" B="60" A="255"/>-->
+      <clear_color R="255" G="255" B="255" A="255"/>
+      <draw solid="1" wire="0" shadow="0" physx="0" normals="0"/>
+    </opengl>
+    <opengl view_name="Hand" view_inc="0.2">
+      <view_point v1="2.4672" v2="-13.6771" v3="14.7206"/>
+      <view_dir v1="-0.4308" v2="0.5699" v3="-0.6997"/>
       <view_up v1="0.0000" v2="0.0000" v3="1.0000"/>
       <!--<clear_color R="55" G="55" B="60" A="255"/>-->
       <clear_color R="255" G="255" B="255" A="255"/>
@@ -55,6 +63,7 @@
       <configuration_model distance_scale="500.0" distance_stddev="2.0" distance_max="20.0" kernels="1000">
         <pose_stddev lin="0.002" ang="1000.0"/>
         <config_stddev c1="0.15708" c2="0.15708" c3="0.15708" c4="0.15708" c5="0.15708" c6="0.15708" c7="0.15708" c8="0.015708" c9="0.015708" c10="0.015708" c11="0.015708" c12="0.015708" c13="0.015708" c14="0.015708" c15="0.015708" c16="0.015708" c17="0.015708" c18="0.015708" c19="0.015708" c20="0.015708" c21="0.015708" c22="0.015708" c23="0.015708" c24="0.015708" c25="0.015708" c26="0.015708" c27="0.015708"/>
+        <config_map i1="0" i2="0" i3="0" i4="0" i5="0" i6="0" i7="0" i8="0" i9="0" i10="0" i11="0" i12="0" i13="-10" i14="0" i15="0" i16="0" i17="0" i18="0" i19="0" i20="0" i21="0" i22="0" i23="0" i24="0" i25="0" i26="0" i27="0"/>
       </configuration_model>
 
       <optimisation runs="500" steps="500" sa_temp="0.1" sa_delta="1.0" sa_energy="0.1"/>
@@ -231,12 +240,12 @@
         <sample_magnitude lin="0.1" ang="0.5"/>
       </optimisation>
     </camera>-->
-    <camera type="opencv" name="externOpenCV" index="0" width="0" height="0" fps="0" calibration_file="GraspCameraExternOpenCV.xml" buffer_len="90" thread_timeout="10000" capture_index="0" in_hand="0" recording="1" recording_app="1" video="1" codec="XVID">
+    <!--<camera type="opencv" name="externOpenCV" index="0" width="0" height="0" fps="0" calibration_file="GraspCameraExternOpenCV.xml" buffer_len="90" thread_timeout="10000" capture_index="0" in_hand="0" recording="1" recording_app="1" video="1" codec="XVID">
       <optimisation minimum="1" population_size="100" generations_num="10000000" de_diff_fac="0.5" de_cross_prob="0.2" test_generations="1000" test_pairs="100" test_variance="1e-6" num_of_threads="-1" thread_priority="lowest">
         <distance_weights lin="10.0" ang="1.0"/>
         <sample_magnitude lin="0.5" ang="1.0"/>
       </optimisation>
-    </camera>
+    </camera>-->
     <!-- FlyCapture2::PixelFormat: MONO8=0x80000000, 411YUV8=0x40000000, 422YUV8=0x20000000, RGB8=0x08000000, ... -->
     <!-- Fly2 Firewire: pixel=0x40000000 (536870912) -->
     <!-- Chameleon USB2.0: pixel=0x00400000 (4194304) -->
@@ -267,7 +276,7 @@
 
       <frame v1="0.653760" v2="-0.363143" v3="0.110231" roll="0.0" pitch="0.0" yaw="0"/>
       <!--<frame v1="0.653760" v2="-0.363143" v3="0.110231" q0="0.997094" q1="-0.013287" q2="0.004461" q3="0.074874"/>-->
-      <colour R="255" G="255" B="255" A="255"/>
+      <colour R="127" G="127" B="127" A="255"/>
       <process norm_neighbours_search="100" norm_radius_search="0.005" curv_radius_search="0.005" triangle_index_clock="1"/>
       <object_region>
         <bounds type="box" group="1">
@@ -292,7 +301,7 @@
   </player>
 
   <robot force_disp_scale="0.2" trajectory_idle="0.5" trajectory_duration="10.0">
-    <ft_sensor use_ft_sensor_client="1">
+    <ft_sensor use_ft_sensor_client="0">
       <daq calibration_file="FT10731.cal" sampling_rate="10000" avg_window_size="10"/>
       <client host="localhost" port="26873"/>
       <!-- y = 80(kuka end-effector mounting) + 7+2+2(Rustam's F/T sensor and Kinect mounting plates) + 33.3(Gamma FT sensor) -->
