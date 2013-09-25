@@ -87,7 +87,7 @@ int main(int argc, char **argv)
     ros::spinOnce();
      
     // Pings the pose_estimation service 
-    std::string pose_estimation_service_name("/pose_estimation_uibk");
+    std::string pose_estimation_service_name("/estimate_poses");
     while ( !ros::service::waitForService(pose_estimation_service_name, ros::Duration().fromSec(3.0)) && nh.ok() )
     {
         ROS_ERROR("Waiting for service %s...", pose_estimation_service_name.c_str());
