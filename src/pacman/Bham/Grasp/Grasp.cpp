@@ -25,15 +25,32 @@ bool BhamGraspImpl::create(const grasp::ShapePlanner::Desc& desc) {
 }
 
 void BhamGraspImpl::add(const std::string& id, const Point3D::Seq& points, const RobotUIBK::Config::Seq& trajectory) {
+	convert(points, currentDataPtr->second.pointCloud);
+	convert(trajectory, currentDataPtr->second.approachAction);
+	grasp.second->add(id, currentDataPtr->second.approachAction, currentDataPtr->second.manipAction, currentDataPtr->second.pointCloud);
+	renderTrialData(currentDataPtr);
 }
 
 void BhamGraspImpl::remove(const std::string& id) {
+	grasp.second->getDataMap().erase(id);
 }
 
 void BhamGraspImpl::list(std::vector<std::string>& idSeq) const {
+	idSeq.clear();
+	idSeq.reserve(grasp.second->getDataMap().size());
+	for (auto i: grasp.second->getDataMap())
+		idSeq.push_back(i.first);
 }
 
 void BhamGraspImpl::estimate(const Point3D::Seq& points, Trajectory::Seq& trajectories) {
+	convert(points, currentDataPtr->second.pointCloud);
+	targetDataPtr = getTrialData().end();
+	grasp.second->findGrip(currentDataPtr->second.pointCloud, currentDataPtr->second.pointCloud, graspPoses);
+	grasp.second->findGripClusters(graspPoses, graspClusters);
+	graspMode = GRASP_MODE_GRIP;
+	graspClusterPtr = graspClusterSolutionPtr = 0;
+	targetDataPtr = currentDataPtr;
+	printGripInfo();
 }
 
 void BhamGraspImpl::spin() {
