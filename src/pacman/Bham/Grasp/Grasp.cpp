@@ -20,7 +20,7 @@ bool BhamGraspImpl::create(const grasp::ShapePlanner::Desc& desc) {
 		scene.getHelp() +
 		"  A                                       PaCMan operations\n"
 	);
-	
+
 	return true;
 }
 
@@ -152,7 +152,7 @@ void BhamGraspImpl::convert(const ::grasp::RobotState::List& src, RobotUIBK::Con
 	dst.reserve(src.size());
 	for (auto i: src) {
 		RobotUIBK::Config configDst;
-		
+
 		// configuration
 		const Manipulator::Config configSrc(grasp.second->getManipulator().getConfig(i.config));
 		// KukaLWR
@@ -167,7 +167,7 @@ void BhamGraspImpl::convert(const ::grasp::RobotState::List& src, RobotUIBK::Con
 		configDst.hand.right[0] = (float_t)configSrc.jc[offset + 6];
 		configDst.hand.right[1] = (float_t)configSrc.jc[offset + 7];
 		configDst.hand.rotation = (float_t)configSrc.jc[offset + 2];
-		
+
 		dst.push_back(configDst);
 	}
 }
@@ -217,10 +217,50 @@ void pacman::load(const std::string& path, Point3D::Seq& points) {
 	pacman::convert(pclCloud, points);
 }
 
+//convert(const RobotUIBK::Config::Seq& src, ::grasp::RobotState::List& dst) const {
 void pacman::save(const std::string& path, const RobotUIBK::Config::Seq& trajectory) {
+
+    // open a file
+	std::ofstream file(path);
+	if (!file.good())
+		throw Message(Message::LEVEL_CRIT, "pacman::save(): could not open '%s' file!", path.c_str());
+
+    file << "#robot configuration: hand[0]\thand[1]\t...\thand[6]\tarm[0]\tarm[1]\t...\tarm[6]\n";
+    for (U32 i = 0; i < trajectory.size(); ++i) {
+        for (U32 i = 0; i<ShunkDexHand::JOINTS; i++)
+            file << trajectory[i].hand.c[i] << "\t";
+        for (U32 i = 0; i<KukaLWR::JOINTS; i++)
+            file << trajectory[i].arm.c[i] << "\t";
+        file << std::endl;
+    }
+    file.close();
 }
 
 void pacman::load(const std::string& path, RobotUIBK::Config::Seq& trajectory) {
+	// open a file
+	std::ifstream file(path);
+	if (!file.good())
+		throw Message(Message::LEVEL_CRIT, "pacman::load(): '%s' not found!", path.c_str());
+
+    RobotUIBK::Config robot_c;
+
+	const size_t dataSize = ShunkDexHand::JOINTS + KukaLWR::JOINTS;
+	std::vector<float_t> conf (dataSize, 0);
+
+	// parse text file
+	const char* DELIM = " \t,;:[]#";
+	for (std::string line; !file.eof() && std::getline(file, line); )
+		if (!line.empty()&&(line[0]!='#')) {
+			char *token = std::strtok(const_cast<char*>(line.c_str()), DELIM);
+
+			for (size_t index = 0; (token = std::strtok(NULL, DELIM)) != NULL && index < dataSize; ++index) {
+				conf[index] = float_t(atof(token));
+			}
+            memcpy(robot_c.hand.c, &conf[0], sizeof(float_t)*ShunkDexHand::JOINTS);
+            memcpy(robot_c.arm.c, &conf[ShunkDexHand::JOINTS], sizeof(float_t)*KukaLWR::JOINTS);
+            trajectory.push_back(robot_c);
+		}
+    file.close();
 }
 
 //-----------------------------------------------------------------------------
@@ -241,17 +281,17 @@ BhamGrasp* BhamGrasp::create(const std::string& path) {
 	golem::Context::Desc contextDesc;
 	XMLData(contextDesc, pXMLContext);
 	context = contextDesc.create(); // throws
-		
+
 	// Create Universe
 	Universe::Desc universeDesc;
 	XMLData(universeDesc, pXMLContext->getContextFirst("universe"));
 	universe = universeDesc.create(*context);
-		
+
 	// Create scene
 	Scene::Desc sceneDesc;
 	XMLData(sceneDesc, pXMLContext->getContextFirst("scene"));
 	Scene *pScene = universe->createScene(sceneDesc);
-		
+
 	// Launch universe
 	universe->launch();
 
@@ -265,7 +305,7 @@ BhamGrasp* BhamGrasp::create(const std::string& path) {
 
 	// Random number generator seed
 	context->info("Random number generator seed %d\n", context->getRandSeed()._U32[0]);
-	
+
 	return pBhamGrasp;
 }
 
