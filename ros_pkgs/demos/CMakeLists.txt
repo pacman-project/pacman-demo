@@ -74,7 +74,8 @@ add_executable(test_demo_5_1 src/test_demo_5_1.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(demos_node demos_generate_messages_cpp)
+add_dependencies(demo_5_1 definitions_gencpp)
+add_dependencies(test_demo_5_1 definitions_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(demo_5_1 ${catkin_LIBRARIES} )

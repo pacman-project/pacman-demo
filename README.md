@@ -114,6 +114,9 @@ Edit the link_directories and include_directories in the CMakeLists.txt of packa
 
 * `catkin_make`
 
+NOTE: I don't know why, but the `find_packge(PCL 1.7 REQUIRED)` does not set the variables `{PCL_INCLUDE_DIRS}` and so on, at the first run, so, type again:
+
+* `catkin_make`
 
 
 

@@ -1,0 +1,27 @@
+<package>
+  <name>sdh</name>
+  <version>0.0.0</version>
+  <description>
+    ROS meta-package containing sdh packages.
+  </description>
+  <maintainer email="Mirela.Popa@uibk.ac.at">Mirela Popa</maintainer>
+  <maintainer email="carlos.rosales@for.unipi.it">Carlos Rosales</maintainer>
+  <maintainer email="manuel.bonilla@centropiaggio.unipi.it">Manuel Bonilla</maintainer>
+  <license>GPLv2</license>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!--> PACKAGES </-->
+  
+  <!--> Schunk Dexrous Hand description</-->
+  <run_depend> schunk_description </run_depend>
+
+    <!--> Schunk Dexrous Hand utilities developed by UIBK </-->
+  <run_depend> schunk_description </run_depend>
+  
+
+
+  <export>
+    <metapackage/>
+  </export>
+</package>

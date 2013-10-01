@@ -9,7 +9,7 @@ find_package(catkin REQUIRED roscpp genmsg)
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS filesystem system)
 find_package(Eigen REQUIRED)
-find_package(PCL 1.7 REQUIRED )
+find_package(PCL 1.7 REQUIRED)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -29,18 +29,18 @@ find_package(PCL 1.7 REQUIRED )
 # )
 
 ## Generate services in the 'srv' folder
-#add_service_files(
+# add_service_files(
 #   FILES
 #   msg.srv
-#)
+# )
 
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
-#   DEPENDENCIES
+#  DEPENDENCIES
 #   std_msgs  # Or other packages containing msgs
 #   sensor_msgs
 #   geometry_msgs
-#)
+# )
 
 ###################################
 ## catkin specific configuration ##
@@ -67,7 +67,7 @@ catkin_package(
 include_directories(
   include
   ${PCL_INCLUDE_DIRS}
-  /home/pacman/poseEstimation/include
+  /home/crosales/Code/poseEstimation/include
 )
 
 add_definitions(
@@ -76,7 +76,7 @@ add_definitions(
 
 link_directories(
   ${PCL_LIBRARY_DIRS}
-  /home/pacman/poseEstimation/build
+  /home/crosales/Code/poseEstimation/build
 )
 
 ## Declare a cpp library
@@ -90,7 +90,7 @@ add_executable(pose_estimation_node src/pose_estimation_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(pose_estimation_node pose_estimation)
+add_dependencies(pose_estimation_node definitions_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(pose_estimation_node

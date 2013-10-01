@@ -14,19 +14,23 @@
   <!--> PACKAGES </-->
   
   <!--> Kuka LWR </-->
+  <run_depend> lwr </run_depend>
 
   <!--> Torso UIBK </-->
+  <run_depend> torso_uibk </run_depend>
 
   <!--> Torso UNIPI </-->
 
   <!--> Schunk Dexrous Hand </-->
+  <run_depend> sdh </run_depend>
 
   <!--> Pisa/IIT Soft Hand </-->
 
   <!--> RGBD Sensor </-->
   <run_depend> rgbd_sensor </run_depend>
   
-
+  <!--> UIBK robot assembly </-->
+  <run_depend> uibk_robot </run_depend>
 
   <export>
     <metapackage/>

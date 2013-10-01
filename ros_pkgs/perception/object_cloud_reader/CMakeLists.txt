@@ -35,9 +35,10 @@ find_package(catkin REQUIRED roscpp pcl pcl_ros)
 
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
-#   DEPENDENCIES
+#  DEPENDENCIES
 #   std_msgs  # Or other packages containing msgs
-# )
+#    definitions
+#)
 
 ###################################
 ## catkin specific configuration ##
@@ -75,7 +76,7 @@ add_executable(object_cloud_reader_node src/object_cloud_reader_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(object_cloud_reader_node object_cloud_reader_generate_messages_cpp)
+add_dependencies(object_cloud_reader_node definitions_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(object_cloud_reader_node
