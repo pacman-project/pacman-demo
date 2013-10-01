@@ -1,0 +1,8 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: uibk_robot
+    relative_path: urdf/uibk_robot.urdf.xacro
+  SRDF:
+    relative_path: config/uibk_robot.srdf
+  CONFIG:
+    generated_timestamp: 1380645894
