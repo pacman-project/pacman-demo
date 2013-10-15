@@ -10,45 +10,51 @@ namespace grasp_planner_bham{
     // the node handle
     ros::NodeHandle nh_;
     // Node handle in the private namespace
-    pacman::BhamGrasp* grasp_; 
-    
+    pacman::BhamGrasp* grasp_;
+
     // services
     ros::ServiceServer srv_set_parameters_;
 
     public:
-    bool doGraspPlanning(GraspPlanning::Request  &req, GraspPlanning::Response &res);
+    bool doGraspPlanning(definitions::GraspPlanning::Request  &req, definitions::GraspPlanning::Response &res);
     // constructor
-            GraspPlannerSrv(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
+            GraspPlannerSrv(ros::NodeHandle nh) : nh_(nh)
             {
-             
+
 	      // create objects of your classes
-	      grasp_ = pacman::create("something.cfg");
-    
-                    
+	      grasp_ = pacman::BhamGrasp::create("something.cfg");
+	      pacman::Point3D::Seq object_;
+	      RobotUIBK::Config::Seq trajectory_;
+          pacman::load("object_file.txt", object_);
+          pacman::load("trajectory_file.txt", trajectory_);
+          grasp_->add("opis_obiektu_id", object_, trajectory_);
+
                 // advertise service
-                srv_set_parameters_ = 
-                  nh_.advertiseService(nh_.resolveName("grasp_planner_bham"), 
-                                                                &GraspPlannerSrv::doGraspPlanning, this)
+                srv_set_parameters_ =
+                  nh_.advertiseService(nh_.resolveName("grasp_planner_bham"),
+                                                                &GraspPlannerSrv::doGraspPlanning, this);
             }
-    
+
             //! Empty stub
-            ~GraspPlannerSrv() {}    
+            ~GraspPlannerSrv() {}
   };
-  
-}
 
 
-bool GraspPlannerSrv::doGraspPlanning(GraspPlanning::Request  &req, GraspPlanning::Response &res)
-{
-  //TODO datatype conversion from ordered_objects to PointClouds
-  //Conversion   PointCloud = req.ordered_objects[0].cloud_from_mesh;
-  
-  grasp_->estimate(PointCloud,Trajectory);
-  
-  //Conversion res.grasp_list = convert(Trajectory)
-  //TODO datatype conversion from Trajectory to grasp_list
-  return true;
 }
+
+  bool grasp_planner_bham::GraspPlannerSrv::doGraspPlanning(definitions::GraspPlanning::Request  &req, definitions::GraspPlanning::Response &res)
+  {
+    //TODO datatype conversion from ordered_objects to PointClouds
+    //Conversion   PointCloud = req.ordered_objects[0].cloud_from_mesh;
+
+    //grasp_->estimate(PointCloud,Trajectory);
+
+    //Conversion res.grasp_list = convert(Trajectory)
+    //TODO datatype conversion from Trajectory to grasp_list
+    return true;
+  }
+
+
 
 int main(int argc, char **argv)
 {
@@ -56,7 +62,7 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
 
   grasp_planner_bham::GraspPlannerSrv node(nh);
-  
+
   ROS_INFO("Ready to plan grasp.");
   ros::spin();
 

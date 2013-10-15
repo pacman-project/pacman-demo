@@ -4,11 +4,11 @@ project(grasp_planner_bham)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED roscpp)
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
-
+find_package(REQUIRED COMPONENTS system)
+set(CMAKE_CXX_FLAGS "-std=c++0x")
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -61,7 +61,10 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-# include_directories(include)
+include_directories(
+/home/krzysztof/Dokumenty/Birmingham_research/pacman_code/include
+${catkin_INCLUDE_DIRS}
+)
 
 ## Declare a cpp library
 # add_library(BHAM_grasp_planner
@@ -69,16 +72,16 @@ catkin_package(
 # )
 
 ## Declare a cpp executable
-# add_executable(BHAM_grasp_planner_node src/BHAM_grasp_planner_node.cpp)
+add_executable(grasp_planner_bham_node src/grasp_planner_bham_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(BHAM_grasp_planner_node BHAM_grasp_planner_generate_messages_cpp)
+# add_dependencies(grasp_planner_bham_node BHAM_grasp_planner_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(BHAM_grasp_planner_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(grasp_planner_bham_node
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
@@ -95,7 +98,7 @@ catkin_package(
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS BHAM_grasp_planner BHAM_grasp_planner_node
+# install(TARGETS BHAM_grasp_planner grasp_planner_bham_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
