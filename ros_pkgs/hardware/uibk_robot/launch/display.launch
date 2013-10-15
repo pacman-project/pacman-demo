@@ -1,42 +1,16 @@
 <launch>
-	
-	
-	<!--param name="robot_description" command="$(find xacro)/xacro.py $(find lwr_description)/urdf/kuka_lwr_assembled.urdf.xacro" /-->
-
-
-    <!--node pkg="tf" type="static_transform_publisher" name="kinect_base_link5" args="0 0 0 0 1.57 0 /frame1 /frame2 100"/--> 
 
     <!--node pkg="tf" type="static_transform_publisher" name="world_2_lwr_arm_1_link" args="0 0 0 0 1.57 0 /world_link /lwr_arm_1_link 100"/--> 
 	
 	
     <arg name="gui" default="True" />
+    <param name="use_gui" value="$(arg gui)"/>
 
-	<group ns="left">
-
-        <param name="use_gui" value="$(arg gui)"/>
-
-        <param name="robot_description" textfile="$(find lwr_description)/urdf/kuka_lwr_assembled.urdf"  />
-
-		<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" ></node>
-
-        
-		<node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
-
-    </group>
-
-    <group ns="right">
-        <param name="use_gui" value="$(arg gui)"/>
-
-        <param name="robot_description"  textfile="$(find lwr_description)/urdf/kuka_lwr_arm.urdf" />        
-
-        <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" ></node>
-        
-
-        <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
-
-    </group>
-
-
-	<!--node name="rviz" pkg="rviz" type="rviz" args="-d $(find lwr_test)/urdf.rviz" /-->
+    <!-- This is required to test any posture of the robot by writing on the joint states /-->
+    <rosparam param="source_list">[joint_states]</rosparam>
+    
+    <param name="robot_description" command="$(find xacro)/xacro.py $(find uibk_robot)/urdf/uibk_robot.urdf.xacro"/> 
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" ></node>
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
 	
 </launch>

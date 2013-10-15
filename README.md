@@ -62,3 +62,67 @@ PaCMan demo.
 
 * Build and install PCL: `sudo make install`
 
+
+### Installing PaCMan ROS packages
+
+NOTE1: We agreed that the top level CMakeLists.txt file should configure this part, but for now, we need to do this manually.
+
+NOTE2: The partners libraries should be built before building the ROS pkgs, and please, write down the build path of them, because you will need them in step 4.
+
+
+#### Step 1. Configure your [ROS environment](http://wiki.ros.org/groovy/Installation/Ubuntu#groovy.2BAC8-Installation.2BAC8-DebEnvironment.Environment_setup)
+
+Only if you haven't done it from installing the prerequisites. For the current terminal session, type:
+
+* `source /opt/ros/groovy/setup.bash`
+
+To set permamently the ROS environment for future sessions type:
+
+* `echo "source /opt/ros/groovy/setup.bash" >> ~/.bashrc`
+
+#### Step 2. Configure a [catkin environment](http://wiki.ros.org/catkin/Tutorials/create_a_workspace) 
+
+* `mkdir -p ~/catkin_ws/src`
+
+* `cd ~/catkin_ws/src`
+ 
+* `catkin_init_workspace`
+
+* `cd ~/catkin_ws/`
+
+* `catkin_make`
+
+* `source ~/catkin_ws/devel/setup.bash`
+
+Again, to set permamently the catkin environment for future terminal sessions type:
+
+* `echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc`
+
+#### Step 3. Clone the main pacman repository
+
+* `cd ~`
+
+* `git clone https://github.com/pacman-project/pacman.git pacman`
+
+* `ln -s -d ~/pacman/ros_pkgs/ ~/catkin_ws/src/ros_pkgs`
+
+#### Step 4. Edit packages that use partners libraries
+
+Edit the link_directories and include_directories in the CMakeLists.txt of packages that use partners libraries to ensure proper linking and then build.
+
+* `cd ~/catkin_ws/`
+
+* `catkin_make`
+
+NOTE: I don't know why, but the `find_packge(PCL 1.7 REQUIRED)` does not set the variables `{PCL_INCLUDE_DIRS}` and so on, at the first run, so, type again:
+
+* `catkin_make`
+
+
+
+
+
+
+
+
+

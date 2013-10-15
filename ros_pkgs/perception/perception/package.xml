@@ -18,8 +18,11 @@
   <!--> OCTOMAP-based collision map </-->
   <run_depend>collision_map_octomap</run_depend>
 
-    <!--> CONVERSION between point cloud types </-->
+  <!--> CONVERSION between point cloud types </-->
   <run_depend>point_cloud_conversion</run_depend>
+
+  <!--> READER of pcd files associated with the objects </-->
+  <run_depend>object_cloud_reader</run_depend>
 
   <export>
     <metapackage/>

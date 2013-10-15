@@ -19,6 +19,9 @@
   <!--> MoveIt!-based path planner  </-->
   <run_depend>path_planner_UNIPI</run_depend>
 
+  <!--> UIBK robot configuration for MoveIt!  </-->
+  <run_depend>uibk_robot_moveit_config</run_depend>
+
   <export>
     <metapackage/>
   </export>

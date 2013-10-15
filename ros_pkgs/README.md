@@ -34,7 +34,7 @@ Other folders might be added as well, such as include, urdf, models, geometry, e
         // typically these ones are generated at compilation time, 
         // for instance, for a service called ClassParameterSetting.srv 
         // within package_name, we need to include this 
-        // #include "package_name/ClassParameterSetting.h" 
+        // #include "other_package_name/ClassParameterSetting.h" 
     
     
         namespace package_name {
@@ -94,7 +94,7 @@ Other folders might be added as well, such as include, urdf, models, geometry, e
                 // advertise service
                 srv_set_parameters_ = 
                   nh_.advertiseService(nh_.resolveName("service_name_you_want_to_advertise"), 
-                                                                &NamePerformer::setClassParameterss, this)
+                                                                &NamePerformer::setClassParameterss, this);
             }
     
             //! Empty stub
@@ -138,7 +138,7 @@ Other folders might be added as well, such as include, urdf, models, geometry, e
     
         int main(int argc, char **argv)
         {
-            ros::init(argc, argv, "stewart_wrist_node");
+            ros::init(argc, argv, "name_performer_node");
             ros::NodeHandle nh;
     
             package_name::NamePerformer node(nh);
@@ -153,12 +153,12 @@ Other folders might be added as well, such as include, urdf, models, geometry, e
         }
 
 
-4. Launch files fo into the `launch`. There should be a launch file for each node, which remaps, set parameters, and any configuration for this node to work well. Launch files can be nested in other launch files, and configuration can be done at higher levels, but this is not advised, only if it is strictly necessary. There might be a general launch file for the package which brings up the all nodes available for a proper functionality.
+4. Launch files go into the `launch` folder. There should be a launch file for each node, which remaps, set parameters, and any configuration for this node to work well. Launch files can be nested in other launch files, and configuration can be done at higher levels, but this is not advised, only if it is strictly necessary. There might be a general launch file for the package which brings up the all nodes available for a proper functionality.
 
-6. Message files go into `msg` define ROS data types. The naming should be `Object.msg` or `Grasp.msg`, in this way we define what an object or a grasp is for us.
+6. Message files go into the `msg` folder and define ROS data types. The naming should be `Object.msg` or `Grasp.msg`, in this way we define what an object or a grasp is for us.
 
-7. Service files go into the `srv` folders. The naming should `ClassParameterSetting.srv`, which must be related to the node name and the function is doing. Note that, the verb is written as a noun.
+7. Service files go into the `srv` folder. The naming should `ClassParameterSetting.srv`, which must be related to the node name and the function is doing. Note that, the verb is written as a noun.
 
-8. Configuration of the `CMakeLists.txt` to link against an external library. you should define `include_directories()` and `link_directories()` to point where your class library was compiled. And specify at the `target_link_library()` the name of the library you want to link against.
+8. Configuration of the `CMakeLists.txt` to link against an external library. You should define `include_directories()` and `link_directories()` to point where your class library was compiled. And specify at the `target_link_library()` the name of the library you want to link against.
 
 9. Configuration of the `package.xml` depends on which ROS components you are using.

@@ -1,7 +1,0 @@
-#include "ros/ros.h"
-#include "sdh_utilities/Grasp.h"
-
-
-bool grasp(sdh_utilities::Grasp::Request  &req, sdh_utilities::Grasp::::Response &res) {
-	return false;
-}

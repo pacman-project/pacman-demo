@@ -21,6 +21,11 @@ bool BhamGraspImpl::create(const grasp::ShapePlanner::Desc& desc) {
 		"  A                                       PaCMan operations\n"
 	);
 
+	// Initialise data collection
+	getTrialData().insert(TrialData::Map::value_type("pacman", TrialData(*robot->getController())));
+	currentDataPtr = getTrialData().begin();
+	scene.getOpenGL(currentDataPtr->second.openGL);
+
 	return true;
 }
 
@@ -89,7 +94,23 @@ void BhamGraspImpl::estimate(const Point3D::Seq& points, Trajectory::Seq& trajec
 
 void BhamGraspImpl::spin() {
 	try {
-		main();
+		// main loop
+		for (;;) {
+			try {
+				const int key = waitKey();
+				// run function
+				function(currentDataPtr, key);
+			}
+			catch (const Cancel& cancel) {
+				context.write("%s\n", cancel.what());
+			}
+			catch (const golem::Message& msg) {
+				context.write("%s\n", msg.str().c_str());
+			}
+			catch (const std::exception& ex) {
+				context.write("%s\n", ex.what());
+			}
+		}
 	}
 	catch (grasp::Interrupted&) {
 	}
@@ -177,7 +198,9 @@ void BhamGraspImpl::convert(const Point3D::Seq& src, ::grasp::Point::Seq& dst) c
 		dst.push_back(point);
 	}
 
-	TrialData::process(context, this->importDesc, dst);
+	grasp::TrialData::ImportDesc importDesc = this->importDesc;
+	importDesc.frames.clear();
+	TrialData::process(context, importDesc, dst);
 }
 
 void BhamGraspImpl::convert(const ::grasp::Manipulator::Config& src, ShunkDexHand::Config& dst) const {

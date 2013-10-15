@@ -59,7 +59,7 @@ class PoseEstimator
     PoseEstimator(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
     {   
         // advertise service
-        srv_estimate_poses_ = nh_.advertiseService(nh_.resolveName("/pose_estimation_uibk"), &PoseEstimator::estimatePoses, this);
+        srv_estimate_poses_ = nh_.advertiseService(nh_.resolveName("/estimate_poses"), &PoseEstimator::estimatePoses, this);
     }
 
     //! Empty stub
@@ -84,6 +84,7 @@ bool PoseEstimator::estimatePoses(definitions::PoseEstimation::Request& request,
     std::vector<string> names = objects.getObjects();
     std::vector<int> orderedList = objects.getIdsObjects(objects.getHeightList());
     boost::shared_ptr<vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > > transforms = objects.getTransforms ();
+    
     std::vector<definitions::Object> detected_objects(names.size());
 
     int j;
