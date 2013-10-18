@@ -10,34 +10,37 @@
   
   <link name="world_link" />
   
-
-  
-  <xacro:model_table name="table" parent="world">
-    <origin xyz="0.75 -0.0748 0"/>
+  <xacro:model_table name="table" 
+                    parent="world"
+                    length="2.22"
+                    width="0.8"
+                    height="0.734"
+                    plate_thickness="0.1">
+    <origin xyz="-0.029 -0.3 0" rpy="0 0 1.5708"/>
   </xacro:model_table>
 
   <xacro:model_torso name="torso" parent="world">
-    <origin xyz="0 0 0"/>
+    <origin xyz="-0.4723 0.6767 -0.734"/>
   </xacro:model_torso>
   
-  <xacro:kuka_lwr_arm parent="torso" name="leftArm" right="1">
-    <origin xyz="-0.0199 0.0661 1.34" 
-	    rpy="-1.9392 -0.3456 -0.2952"/>
+  <xacro:kuka_lwr_arm parent="world" name="left" right="-1">
+    <origin xyz="-0.4923 0.7541 0.6295" 
+      rpy="1.9485 -0.2114 2.6898"/>
   </xacro:kuka_lwr_arm>
   
-  <xacro:kuka_lwr_arm parent="torso" name="rightArm" right="1">
-    <origin xyz="-0.0202 -0.0663 1.3401" 
-	    rpy="1.9386 0.3471 0.6879"/>
+  <xacro:kuka_lwr_arm parent="world" name="right" right="1">
+    <origin xyz="-0.4962 0.5992 0.6335" 
+      rpy="-2.0628 0.7628 -3.1287"/>
   </xacro:kuka_lwr_arm>
   
-  <xacro:schunk_sdh parent="leftArm_arm_7_link" name="leftGripper">
+  <xacro:schunk_sdh parent="left_arm_7_link" name="leftGripper">
     <origin xyz="0 0 0"
-	    rpy="0 0 0"/>
+      rpy="0 0 ${-1/2 * M_PI}"/>
   </xacro:schunk_sdh>
   
-  <xacro:schunk_sdh parent="rightArm_arm_7_link" name="rightGripper">
+  <xacro:schunk_sdh parent="right_arm_7_link" name="rightGripper">
     <origin xyz="0 0 0"
-	    rpy="0 0 0"/>
+      rpy="0 0 ${1/2 * M_PI}"/>
   </xacro:schunk_sdh>
   
 </robot>
