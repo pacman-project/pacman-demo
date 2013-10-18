@@ -4,7 +4,7 @@ project(grasp_planner_bham)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED roscpp)
+find_package(catkin REQUIRED roscpp definitions)
 
 ## System dependencies are found with CMake's conventions
 find_package(REQUIRED COMPONENTS system)
@@ -62,8 +62,8 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
+include ${catkin_INCLUDE_DIRS}
 /home/krzysztof/Dokumenty/Birmingham_research/pacman_code/include
-${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library

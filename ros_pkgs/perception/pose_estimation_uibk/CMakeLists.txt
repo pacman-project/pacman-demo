@@ -67,7 +67,7 @@ catkin_package(
 include_directories(
   include
   ${PCL_INCLUDE_DIRS}
-  /home/crosales/Code/poseEstimation/include
+  /home/krzysztof/Dokumenty/Birmingham_research/pacman_poseEstimation/include
 )
 
 add_definitions(
