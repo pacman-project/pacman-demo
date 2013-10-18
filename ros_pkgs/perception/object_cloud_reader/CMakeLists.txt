@@ -4,7 +4,7 @@ project(object_cloud_reader)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED roscpp pcl pcl_ros)
+find_package(catkin REQUIRED roscpp pcl pcl_ros definitions)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)

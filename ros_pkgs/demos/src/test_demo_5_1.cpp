@@ -39,10 +39,10 @@
 #include <std_msgs/String.h>
 
 // for the messages used in the services
-#include <definitions/PoseEstimation.h>
-#include <definitions/GraspPlanning.h>
-#include <definitions/TrajectoryPlanning.h>
-#include <definitions/TrajectoryExecution.h>
+#include "definitions/PoseEstimation.h"
+#include "definitions/GraspPlanning.h"
+#include "definitions/TrajectoryPlanning.h"
+#include "definitions/TrajectoryExecution.h"
 
 
 

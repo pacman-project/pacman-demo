@@ -4,7 +4,7 @@ project(pose_estimation_uibk)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED roscpp genmsg)
+find_package(catkin REQUIRED roscpp genmsg definitions)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS filesystem system)
@@ -67,7 +67,12 @@ catkin_package(
 include_directories(
   include
   ${PCL_INCLUDE_DIRS}
+
   /home/krzysztof/Dokumenty/Birmingham_research/pacman_poseEstimation/include
+
+
+
+
 )
 
 add_definitions(

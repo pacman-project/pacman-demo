@@ -30,9 +30,7 @@ namespace grasp_planner_bham{
           grasp_->add("opis_obiektu_id", object_, trajectory_);
 
                 // advertise service
-                srv_set_parameters_ =
-                  nh_.advertiseService(nh_.resolveName("grasp_planner_bham"),
-                                                                &GraspPlannerSrv::doGraspPlanning, this);
+                srv_set_parameters_ = nh_.advertiseService(nh_.resolveName("grasp_planner_bham"),&GraspPlannerSrv::doGraspPlanning, this);
             }
 
             //! Empty stub
