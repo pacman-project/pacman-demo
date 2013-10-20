@@ -1,27 +1,30 @@
 <launch>
 
-  <include file="$(find rgbd_sensor)/launch/RGBDsensor.launch"/>
-
-  <node pkg="tf" type="static_transform_publisher" name="world_base" args="0 0 1.45 0 0 0 /world_link /camera_link 100"/> 
-
+  <!-- <include file="$(find rgbd_sensor)/launch/RGBDsensor.launch"/> /-->
+  
   <node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
 
-    <param name="resolution" value="0.05" />
+    <param name="resolution" value="0.1" />
 
     <!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
     <param name="frame_id" type="string" value="/camera_link" />
 
     <!-- maximum range to integrate (speedup!) -->
-    <param name="/sensor_model/max_range" value="5.0" />
+    <param name="/sensor_model/max_range" value="3.5" />
 
     <!-- maximum range to integrate (speedup, accuracy) -->
-    <param name="max_sensor_range" value="6.0" />
+    <param name="max_sensor_range" value="3.5" />
     
     <!-- Save octomap here on destruction of the server -->
     <param name="save_directory" value="$(optenv OCTOMAP_SAVE_DIR ./)" />
 
-    <!-- data source to integrate (PointCloud2) -->
+    <!-- CHECK WETHER YOU ARE USING OPENNI OR OPENNI2 IN THE RGBDsensor.launch FILE /-->
+    <!-- data source to integrate (PointCloud2) using openni for kinect /-->
     <remap from="/cloud_in" to="/camera/depth_registered/points" />
+
+    <!-- data source to integrate (PointCloud2) using openni2 for new primsense/asus -->
+    <!--remap from="/cloud_in" to="/camera/depth/points_xyzrgb" /-->
+    <!-- CHECK WETHER YOU ARE USING OPENNI OR OPENNI2 IN THE RGBDsensor.launch FILE /-->
 
   </node>
 
