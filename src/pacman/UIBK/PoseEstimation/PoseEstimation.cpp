@@ -9,7 +9,7 @@ std::shared_ptr<I_SegmentedObjects> objects;
 
 UIBKObjectImpl::UIBKObjectImpl(const std::string& path) 
 {
-   objects.reset(new I_SegmentedObjects());
+   objects.reset(new I_SegmentedObjects(path));
 }
 
 void UIBKObjectImpl::add(const std::string& id, const Point3D::Seq& points) 

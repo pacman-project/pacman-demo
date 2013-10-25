@@ -10,8 +10,8 @@
 
 #include <pacman/UIBK/PoseEstimation/PoseEstimation.h>
 #include <pacman/PaCMan/PCL.h>
-#include "/home/c7031079/PaCMan/poseEstimation/poseEstimation/include/I_SegmentedObjects.h"
-#include "/home/c7031079/PaCMan/poseEstimation/poseEstimation/include/ParametersPoseEstimation.h"
+#include "../../poseEstimation/include/I_SegmentedObjects.h"
+#include "../../poseEstimation/include/ParametersPoseEstimation.h"
 
 /** PaCMan name space */
 namespace pacman {
