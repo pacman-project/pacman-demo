@@ -78,7 +78,7 @@ Other folders might be added as well, such as include, urdf, models, geometry, e
             void doSomething();
     
             // constructor
-            PlatformPublisher(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
+            NamePerformer(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
             {
                 // create objects of your classes
                 class1_object_ = new MY_CLASS1();

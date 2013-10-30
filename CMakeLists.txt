@@ -168,7 +168,7 @@ if (WIN32)
 	OPTION(BUILD_BHAM_GRASP_FTSENSOR_DAQ "Build NI DAQ F/T sensor device" YES)
 	MARK_AS_ADVANCED(BUILD_BHAM_GRASP_FTSENSOR_DAQ)
 	if(BUILD_BHAM_GRASP_FTSENSOR_DAQ)
-		SET(NIDAQMX_INCLUDE "${PROGRAM_FILES}/National Instruments/Shared/ExternalCompilerSupport/C/include" CACHE PATH "Path prefix for National Instruments DAQmx include")
+	SET(NIDAQMX_INCLUDE "${PROGRAM_FILES}/National Instruments/Shared/ExternalCompilerSupport/C/include" CACHE PATH "Path prefix for National Instruments DAQmx include")
 		MARK_AS_ADVANCED(NIDAQMX_INCLUDE)
 		SET(NIDAQMX_LIBRARY "${PROGRAM_FILES}/National Instruments/Shared/ExternalCompilerSupport/C/lib${X86_X64}/msvc" CACHE PATH "Path prefix for National Instruments DAQmx library")
 		MARK_AS_ADVANCED(NIDAQMX_LIBRARY)
@@ -346,7 +346,6 @@ SOURCE_GROUP("Resource Files" FILES ${BHAM_GRASP_FILES})
 INSTALL(TARGETS PaCManBhamGrasp RUNTIME DESTINATION bin LIBRARY DESTINATION bin ARCHIVE DESTINATION lib)
 INSTALL(FILES ${BHAM_GRASP_HEADERS} DESTINATION include/pacman/Bham/Grasp/)
 INSTALL(FILES ${BHAM_GRASP_FILES} DESTINATION bin)
-
 # Bham grasp test
 SET(BHAM_GRASP_TEST_SOURCES
 	${PROJECT_ROOT}/src/pacman/Bham/GraspTest/GraspTest.cpp
@@ -366,7 +365,11 @@ INSTALL(TARGETS PaCManBhamGraspTest RUNTIME DESTINATION bin)
 #
 ###############################################################################
 
+
 # Innsbruck pose estimation library
+SET(UIBK_POSE_ESTIMATION_EXTERNALLIB
+    ${PROJECT_PARENT}/poseEstimation
+)
 SET(UIBK_POSE_ESTIMATION_HEADERS
 	${PROJECT_ROOT}/include/pacman/UIBK/PoseEstimation/PoseEstimation.h
 	${PROJECT_ROOT}/include/pacman/UIBK/PoseEstimation/PoseEstimationImpl.h
@@ -377,11 +380,20 @@ SET(UIBK_POSE_ESTIMATION_SOURCES
 SET(UIBK_POSE_ESTIMATION_FILES
 	${PROJECT_ROOT}/resources/UIBK/PoseEstimation.txt
 )
-ADD_LIBRARY(PaCManUIBKPoseEstimation STATIC ${UIBK_POSE_ESTIMATION_HEADERS} ${UIBK_POSE_ESTIMATION_SOURCES} ${UIBK_POSE_ESTIMATION_FILES})
+SET(UIBK_POSE_ESTIMATION_UTILS
+	${UIBK_POSE_ESTIMATION_EXTERNALLIB}/src/ParametersPoseEstimation.cpp
+        ${UIBK_POSE_ESTIMATION_EXTERNALLIB}/src/I_SegmentedObjects.cpp	
+)
+INCLUDE_DIRECTORIES(
+        ${UIBK_POSE_ESTIMATION_EXTERNALLIB}/include
+        /home/c7031079/pcl-master/apps/3d_rec_framework/include
+)
+ADD_LIBRARY(PaCManUIBKPoseEstimation STATIC ${UIBK_POSE_ESTIMATION_HEADERS} ${UIBK_POSE_ESTIMATION_SOURCES} ${UIBK_POSE_ESTIMATION_FILES} ${UIBK_POSE_ESTIMATION_UTILS})
 TARGET_LINK_LIBRARIES(
 	PaCManUIBKPoseEstimation
 	${Boost_LIBRARIES}
 	${PCL_LIBRARIES}
+	pcl_3d_rec_framework
 )
 SET_PROPERTY(TARGET PaCManUIBKPoseEstimation PROPERTY PROJECT_LABEL "PoseEstimation")
 SET_PROPERTY(TARGET PaCManUIBKPoseEstimation PROPERTY FOLDER "UIBK")
