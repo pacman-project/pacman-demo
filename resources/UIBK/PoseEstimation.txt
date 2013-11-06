@@ -1,6 +1,6 @@
 descriptor_name:shot_omp
-models_dir:../poseEstimation/data/PLY-MODELS
-training_dir:../poseEstimation/data/TRAINED-LOCAL-MODELS/
+models_dir:../dataFiles/PLY-MODELS
+training_dir:../dataFiles/TRAINED-LOCAL-MODELS
 force_retrain:0
 icp_iterations:5
 use_cache:1
@@ -14,5 +14,5 @@ desc_radius:0.04
 gc_threshold:1
 gc_size:0.005
 SAMPLING_DENSITY:0.005
-useKinect:1
-test_file:../poseEstimation/data/scene.pcd
+useKinect:0
+test_file:../dataFiles/test_files/scene.pcd
