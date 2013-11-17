@@ -227,19 +227,23 @@
     </kinect>
 
     <!-- codec="I420" codec="DIVX" codec="XVID" codec="X264" -->
-    <camera type="kinect" name="robotKinect" device_id="#1" width="0" height="0" fps="0" calibration_file="GraspCameraRobot.xml" buffer_len="60" thread_timeout="20000" mode="rgb" idle_images="1" in_hand="1" recording="0" recording_app="0" video="1" codec="XVID">
+    <!--<camera type="kinect" name="robotKinect" index="1" width="640" height="480" fps="30" calibration_file="GraspCameraRobot.xml" mode_image="rgb" mode_depth="rgbd" buffer_len="60" buffer_off="0" thread_timeout="20000" in_hand="1" recording="0" recording_app="0" video="1" codec="XVID">
+      <colour R="127" G="127" B="127" A="255"/>
       <optimisation minimum="1" population_size="100" generations_num="1000000000" de_diff_fac="0.5" de_cross_prob="0.2" test_generations="1000" test_pairs="100" test_variance="1e-7" num_of_threads="-1" thread_priority="lowest">
         <distance_weights lin="10.0" ang="1.0"/>
         <sample_magnitude lin="0.1" ang="0.5"/>
-        <!--<kuka offset_ang_range="0.0" offset_dist_weights="0.1" link_len_range="0.0" link_dist_weights="0.1"/>-->
-      </optimisation>
-    </camera>
-    <!--<camera type="kinect" name="externKinect" device_id="#2" width="0" height="0" fps="0" calibration_file="GraspCameraExternKinect.xml" buffer_len="60" thread_timeout="20000" mode="rgb" idle_images="1" in_hand="0" recording="0" recording_app="0" video="1" codec="XVID">
-      <optimisation minimum="1" population_size="100" generations_num="1000000000" de_diff_fac="0.5" de_cross_prob="0.2" test_generations="1000" test_pairs="100" test_variance="1e-7" num_of_threads="-1" thread_priority="lowest">
-        <distance_weights lin="10.0" ang="1.0"/>
-        <sample_magnitude lin="0.1" ang="0.5"/>
+        -->
+    <!--<kuka offset_ang_range="0.0" offset_dist_weights="0.1" link_len_range="0.0" link_dist_weights="0.1"/>-->
+    <!--
       </optimisation>
     </camera>-->
+    <camera type="kinect" name="externKinect" index="2" width="640" height="480" fps="30" calibration_file="GraspCameraExternKinect.xml" mode_image="rgb" mode_depth="rgbd" buffer_len="60" buffer_off="0" thread_timeout="20000" in_hand="0" recording="0" recording_app="0" video="1" codec="XVID">
+      <colour R="127" G="127" B="127" A="255"/>
+      <optimisation minimum="1" population_size="100" generations_num="1000000000" de_diff_fac="0.5" de_cross_prob="0.2" test_generations="1000" test_pairs="100" test_variance="1e-7" num_of_threads="-1" thread_priority="lowest">
+        <distance_weights lin="10.0" ang="1.0"/>
+        <sample_magnitude lin="0.1" ang="0.5"/>
+      </optimisation>
+    </camera>
     <!--<camera type="opencv" name="externOpenCV" index="0" width="0" height="0" fps="0" calibration_file="GraspCameraExternOpenCV.xml" buffer_len="90" thread_timeout="10000" capture_index="0" in_hand="0" recording="1" recording_app="1" video="1" codec="XVID">
       <optimisation minimum="1" population_size="100" generations_num="10000000" de_diff_fac="0.5" de_cross_prob="0.2" test_generations="1000" test_pairs="100" test_variance="1e-6" num_of_threads="-1" thread_priority="lowest">
         <distance_weights lin="10.0" ang="1.0"/>
