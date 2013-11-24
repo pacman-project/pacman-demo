@@ -1,6 +1,7 @@
 #include <ros/ros.h>
+#include <exception>
 #include "definitions/GraspPlanning.h"
-#include <pacman/Bham/Grasp/Grasp.h>
+#include "pacman/Bham/Grasp/Grasp.h"
 
 
 namespace grasp_planner_bham{
@@ -21,16 +22,16 @@ namespace grasp_planner_bham{
             GraspPlannerSrv(ros::NodeHandle nh) : nh_(nh)
             {
 
-	      // create objects of your classes
-	      grasp_ = pacman::BhamGrasp::create("something.cfg");
-	      pacman::Point3D::Seq object_;
-	      RobotUIBK::Config::Seq trajectory_;
-          pacman::load("object_file.txt", object_);
-          pacman::load("trajectory_file.txt", trajectory_);
-          grasp_->add("opis_obiektu_id", object_, trajectory_);
+      	      // create objects of your classes
+      	      grasp_ = pacman::BhamGrasp::create("something.cfg");
+      	      pacman::Point3D::Seq object_;
+              //pacman::RobotUIBK::Config::Set trajectory_;
+              pacman::load("object_file.txt", object_);
+              //pacman::load("trajectory_file.txt", trajectory_);
+              grasp_->add("opis_obiektu_id", object_, trajectory_);
 
-                // advertise service
-                srv_set_parameters_ = nh_.advertiseService(nh_.resolveName("grasp_planner_bham"),&GraspPlannerSrv::doGraspPlanning, this);
+              // advertise service
+              srv_set_parameters_ = nh_.advertiseService(nh_.resolveName("grasp_planner_bham"),&GraspPlannerSrv::doGraspPlanning, this);
             }
 
             //! Empty stub

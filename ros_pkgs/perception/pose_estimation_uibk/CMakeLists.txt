@@ -11,6 +11,7 @@ find_package(Boost REQUIRED COMPONENTS filesystem system)
 find_package(Eigen REQUIRED)
 find_package(PCL 1.7 REQUIRED)
 
+set(PACMAN ../../../../)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -67,12 +68,7 @@ catkin_package(
 include_directories(
   include
   ${PCL_INCLUDE_DIRS}
-
-  /home/krzysztof/Dokumenty/Birmingham_research/pacman_poseEstimation/include
-
-
-
-
+  ${PACMAN}/poseEstimation/include
 )
 
 add_definitions(
@@ -81,7 +77,7 @@ add_definitions(
 
 link_directories(
   ${PCL_LIBRARY_DIRS}
-  /home/crosales/Code/poseEstimation/build
+  ${PACMAN}/poseEstimation/build
 )
 
 ## Declare a cpp library

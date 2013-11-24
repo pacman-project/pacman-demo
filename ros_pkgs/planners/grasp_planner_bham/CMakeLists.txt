@@ -7,8 +7,10 @@ project(grasp_planner_bham)
 find_package(catkin REQUIRED roscpp definitions)
 
 ## System dependencies are found with CMake's conventions
-find_package(REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system)
 set(CMAKE_CXX_FLAGS "-std=c++0x")
+set(PACMAN ../../../../)
+
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -50,7 +52,7 @@ set(CMAKE_CXX_FLAGS "-std=c++0x")
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES BHAM_grasp_planner
+#   LIBRARIES ${PROJECT_NAME}
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
 )
@@ -62,8 +64,14 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-include ${catkin_INCLUDE_DIRS}
-/home/krzysztof/Dokumenty/Birmingham_research/pacman_code/include
+	include 
+	${catkin_INCLUDE_DIRS}
+	${PACMAN}/pacman/include
+	${Boost_INCLUDE_DIR}
+)
+
+link_directories(
+	${PACMAN}/lib
 )
 
 ## Declare a cpp library
@@ -76,12 +84,21 @@ add_executable(grasp_planner_bham_node src/grasp_planner_bham_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(grasp_planner_bham_node BHAM_grasp_planner_generate_messages_cpp)
+add_dependencies(grasp_planner_bham_node definitions_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(grasp_planner_bham_node
+  PaCMan
+  PaCManBhamGrasp
+  ${Boost_LIBRARIES}
   ${catkin_LIBRARIES}
 )
+
+## DIRTY SOLUTION
+## Copy robot config files to node execution path, I didn't find any other way to do it
+file(COPY config/GolemDeviceKukaLWRSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
+file(COPY config/GolemDeviceRobotUIBK.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
+file(COPY config/GolemDeviceSchunkDexHandSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
 
 #############
 ## Install ##
