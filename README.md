@@ -115,6 +115,11 @@ Edit the link_directories and include_directories in the CMakeLists.txt of packa
 * `catkin_make`
 
 NOTE: I don't know why, but the `find_packge(PCL 1.7 REQUIRED)` does not set the variables `{PCL_INCLUDE_DIRS}` and so on, at the first run, so, type again:
+This problem might be caused by the inconsistency between the PCL libraries 1.7 compiled by us and the PCL included in ROS. For example the libopenNI available in PCL is 1.5.2.23 and the package is called openni-dev. Whereas when installing ROS the libopenNI library is 1.5.4.0 (which also works with PrimeSense Carmine), the package name is libopenni-dev. To get rid of the problems when configuring the installation of the pcl 1.7 it is possible to make the symbolic link
+
+sudo ln -s /usr/lib/pkgconfig/libopenni.pc /usr/local/lib/pkgconfig/openni-dev.pc
+
+This enables to have consistent naming while using pkg-config.
 
 * `catkin_make`
 
