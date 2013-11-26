@@ -1,0 +1,18 @@
+descriptor_name:shot_omp
+models_dir:/home/pacman/poseEstimation/data/PLY-MODELS
+training_dir:/home/pacman/poseEstimation/data/TRAINED-LOCAL-MODELS/
+force_retrain: 0
+icp_iterations: 5
+use_cache: 1
+splits: 512
+scene: -1
+detect_clutter: 1
+hv_method: 2
+use_hv: 1
+thres_hyp: 0.2
+desc_radius: 0.04
+gc_threshold: 1
+gc_size: 0.005
+SAMPLING_DENSITY: 0.005
+useKinect: 1
+testFile:/home/pacman/poseEstimation/data/test/scene.pcd

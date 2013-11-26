@@ -67,7 +67,7 @@ catkin_package(
 include_directories(
   include
   ${PCL_INCLUDE_DIRS}
-  /home/crosales/Code/poseEstimation/include
+  /home/pacman/CODE/poseEstimation/include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -77,7 +77,7 @@ add_definitions(
 
 link_directories(
   ${PCL_LIBRARY_DIRS}
-  /home/crosales/Code/poseEstimation/build
+  /home/pacman/CODE/poseEstimation/build
 )
 
 ## Declare a cpp library

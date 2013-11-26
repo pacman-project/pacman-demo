@@ -1,0 +1,5 @@
+/home/pacman/CODE/pacman/build/CMakeFiles/PaCMan.dir
+/home/pacman/CODE/pacman/build/CMakeFiles/PaCManBhamGrasp.dir
+/home/pacman/CODE/pacman/build/CMakeFiles/PaCManBhamGraspTest.dir
+/home/pacman/CODE/pacman/build/CMakeFiles/PaCManUIBKPoseEstimation.dir
+/home/pacman/CODE/pacman/build/CMakeFiles/PaCManUIBKPoseEstimationTest.dir

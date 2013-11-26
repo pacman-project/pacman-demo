@@ -15,4 +15,4 @@ gc_threshold:1
 gc_size:0.005
 SAMPLING_DENSITY:0.005
 useKinect:1
-test_file:../poseEstimation/data/scene.pcd
+test_file:../poseEstimation/data/test_files/scene.pcd

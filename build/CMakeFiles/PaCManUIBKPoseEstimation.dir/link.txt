@@ -1,0 +1,2 @@
+/usr/bin/ar cr /home/pacman/CODE/lib/libPaCManUIBKPoseEstimation.a  CMakeFiles/PaCManUIBKPoseEstimation.dir/src/pacman/UIBK/PoseEstimation/PoseEstimation.cpp.o CMakeFiles/PaCManUIBKPoseEstimation.dir/home/pacman/CODE/poseEstimation/src/ParametersPoseEstimation.cpp.o CMakeFiles/PaCManUIBKPoseEstimation.dir/home/pacman/CODE/poseEstimation/src/I_SegmentedObjects.cpp.o
+/usr/bin/ranlib /home/pacman/CODE/lib/libPaCManUIBKPoseEstimation.a

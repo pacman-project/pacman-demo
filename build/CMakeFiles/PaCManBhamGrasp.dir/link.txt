@@ -1,0 +1,2 @@
+/usr/bin/ar cr /home/pacman/CODE/lib/libPaCManBhamGrasp.a  CMakeFiles/PaCManBhamGrasp.dir/src/pacman/Bham/Grasp/Grasp.cpp.o
+/usr/bin/ranlib /home/pacman/CODE/lib/libPaCManBhamGrasp.a

@@ -1,0 +1,2 @@
+/usr/bin/ar cr /home/pacman/CODE/lib/libPaCMan.a  
+/usr/bin/ranlib /home/pacman/CODE/lib/libPaCMan.a

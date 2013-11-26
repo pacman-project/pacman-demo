@@ -72,10 +72,12 @@ bool PoseEstimator::estimatePoses(definitions::PoseEstimation::Request& request,
     ROS_INFO("Pose estimation service has been called...");
     
     ROS_INFO("Initializing...");
-    string filename; 
-    filename = "/home/pacman/poseEstimation/parametersFiles/config.txt";
+    string filename, dirRecognizedObjects; 
+    filename = "/home/pacman/CODE/poseEstimation/parametersFiles/config_ROS.txt";
+    dirRecognizedObjects = "/home/pacman/CODE/poseEstimation/data/recognizedObjects";
+    
     ParametersPoseEstimation params(filename);
-    I_SegmentedObjects objects;
+    I_SegmentedObjects objects(dirRecognizedObjects);
 
     ROS_INFO("Recognizing poses...");
     params.recognizePose(objects);

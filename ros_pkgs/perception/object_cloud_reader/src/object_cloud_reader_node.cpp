@@ -118,7 +118,7 @@ bool ObjectReader::processObjects(definitions::PoseEstimation::Request& request,
     std::vector<definitions::Object> objects = pose_estimation_result.response.detected_objects;
     
     // 2. read the pcd files
-    std::string path_to_database("/home/pacman/poseEstimation/data/PCD-MODELS-DOWNSAMPLED/");
+    std::string path_to_database("/home/pacman/CODE/poseEstimation/data/PCD-MODELS-DOWNSAMPLED/");
 
     for (int i=0;i<objects.size();i++)
     {

@@ -73,15 +73,21 @@ include_directories(include
 ## Declare a cpp executable
 add_executable(demo_5_1 src/demo_5_1.cpp)
 add_executable(test_demo_5_1 src/test_demo_5_1.cpp)
+add_executable(demo_v1_test src/demo_v1_test.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
+
 add_dependencies(demo_5_1 definitions_generate_messages_cpp)
 add_dependencies(test_demo_5_1 definitions_generate_messages_cpp)
+add_dependencies(demo_v1_test definitions_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
+
 target_link_libraries(demo_5_1 ${catkin_LIBRARIES} )
+target_link_libraries(demo_v1_test ${catkin_LIBRARIES} )
 target_link_libraries(test_demo_5_1 ${catkin_LIBRARIES} )
+
 #############
 ## Install ##
 #############

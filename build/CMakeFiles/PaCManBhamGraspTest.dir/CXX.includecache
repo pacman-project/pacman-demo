@@ -1,0 +1,26 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../include/pacman/Bham/Grasp/Grasp.h
+pacman/PaCMan/Defs.h
+-
+string
+-
+
+../include/pacman/PaCMan/Defs.h
+cstdint
+-
+vector
+-
+
+/home/pacman/CODE/pacman/src/pacman/Bham/GraspTest/GraspTest.cpp
+pacman/Bham/Grasp/Grasp.h
+-
+exception
+-
+
