@@ -198,9 +198,9 @@ void BhamGraspImpl::convert(const Point3D::Seq& src, ::grasp::Point::Seq& dst) c
 		dst.push_back(point);
 	}
 
-	grasp::TrialData::ImportDesc importDesc = this->importDesc;
-	importDesc.frames.clear();
-	TrialData::process(context, importDesc, dst);
+	grasp::Import import = this->import;
+	import.frames.clear();
+	import.estimateCurvature(context, dst);
 }
 
 void BhamGraspImpl::convert(const ::grasp::Manipulator::Config& src, ShunkDexHand::Config& dst) const {

@@ -237,13 +237,13 @@
     <!--
       </optimisation>
     </camera>-->
-    <camera type="kinect" name="externKinect" index="2" width="640" height="480" fps="30" calibration_file="GraspCameraExternKinect.xml" mode_image="rgb" mode_depth="rgbd" buffer_len="60" buffer_off="0" thread_timeout="20000" in_hand="0" recording="0" recording_app="0" video="1" codec="XVID">
+    <!--<camera type="kinect" name="externKinect" index="2" width="640" height="480" fps="30" calibration_file="GraspCameraExternKinect.xml" mode_image="rgb" mode_depth="rgbd" buffer_len="60" buffer_off="0" thread_timeout="20000" in_hand="0" recording="0" recording_app="0" video="1" codec="XVID">
       <colour R="127" G="127" B="127" A="255"/>
       <optimisation minimum="1" population_size="100" generations_num="1000000000" de_diff_fac="0.5" de_cross_prob="0.2" test_generations="1000" test_pairs="100" test_variance="1e-7" num_of_threads="-1" thread_priority="lowest">
         <distance_weights lin="10.0" ang="1.0"/>
         <sample_magnitude lin="0.1" ang="0.5"/>
       </optimisation>
-    </camera>
+    </camera>-->
     <!--<camera type="opencv" name="externOpenCV" index="0" width="0" height="0" fps="0" calibration_file="GraspCameraExternOpenCV.xml" buffer_len="90" thread_timeout="10000" capture_index="0" in_hand="0" recording="1" recording_app="1" video="1" codec="XVID">
       <optimisation minimum="1" population_size="100" generations_num="10000000" de_diff_fac="0.5" de_cross_prob="0.2" test_generations="1000" test_pairs="100" test_variance="1e-6" num_of_threads="-1" thread_priority="lowest">
         <distance_weights lin="10.0" ang="1.0"/>
@@ -271,21 +271,14 @@
       <colour override="0" R="255" G="255" B="255" A="255"/>
     </point_appearance>
 
-    <import label="1" num_points="10000" record_index="0">
-      <!--<frame v1="0.0" v2="0.0" v3="0.0" roll="0.0" pitch="0.0" yaw="2.5"/>-->
-      <!--<frame v1="0.0" v2="0.0" v3="0.0" roll="0.0" pitch="0.0" yaw="0"/>-->
-
-      <!--<frame v1="0.0" v2="0.0" v3="0.15" roll="-1.5707963" pitch="0.0" yaw="0.0"/>-->
-      <!--<frame v1="0.0" v2="0.0" v3="0.15" roll="+1.5707963" pitch="0.0" yaw="0.0"/>-->
-
-      <frame v1="0.653760" v2="-0.363143" v3="0.110231" roll="0.0" pitch="0.0" yaw="0"/>
-      <!--<frame v1="0.653760" v2="-0.363143" v3="0.110231" q0="0.997094" q1="-0.013287" q2="0.004461" q3="0.074874"/>-->
+    <import label="1" num_points="100000" scale="1.0" delim=" &#10;&#13;,;">
+      <frame v1="0.0" v2="0.0" v3="0.0" q0="1.0" q1="0.0" q2="0.0" q3="0.0"/>
       <colour R="127" G="127" B="127" A="255"/>
-      <process norm_neighbours_search="100" norm_radius_search="0.005" curv_radius_search="0.005" triangle_index_clock="1"/>
+      <process norm_neighbours_search="100" norm_radius_search="0.01" curv_radius_search="0.01" triangle_index_clock="1"/>
       <object_region>
         <bounds type="box" group="1">
-          <dimensions v1="0.5" v2="0.6" v3="0.15"/>
-          <pose v1="0.5" v2="-0.5" v3="0.211" roll="0.0" pitch="0.0" yaw="0.0"/>
+          <dimensions v1="1.0" v2="1.0" v3="0.09"/>
+          <pose v1="0.72" v2="-0.29" v3="0.23" roll="0.0" pitch="0.0" yaw="0.0"/>
         </bounds>
       </object_region>
     </import>
