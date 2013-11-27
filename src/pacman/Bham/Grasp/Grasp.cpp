@@ -54,7 +54,7 @@ void BhamGraspImpl::estimate(const Point3D::Seq& points, Trajectory::Seq& trajec
 	
 	// compute grip configurations
 	grasp.second->findGrip(currentDataPtr->second.pointCloud, currentDataPtr->second.pointCloud, graspPoses);
-	//grasp.second->findGripClusters(graspPoses, graspClusters);
+	grasp.second->findGripClusters(graspPoses, graspClusters);
 	
 	// prepare model trajectory
 	std::deque<Manipulator::Pose> model;
@@ -90,6 +90,7 @@ void BhamGraspImpl::estimate(const Point3D::Seq& points, Trajectory::Seq& trajec
 	graspClusterPtr = graspClusterSolutionPtr = 0;
 	targetDataPtr = currentDataPtr;
 	printGripInfo();
+	renderTrialData(currentDataPtr);
 }
 
 void BhamGraspImpl::spin() {

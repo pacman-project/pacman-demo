@@ -20,7 +20,13 @@ int main(int argc, char *argv[]) {
 		load("pacman_mug1.trj", trajectory);
 		grasp->add("pacman_mug1", points, trajectory);
 		
-		// run service here (and comment out the line below)
+		// run service here and comment out the 3 lines of code below
+
+		// find grasp on an object
+		BhamGrasp::Trajectory::Seq trajectories;
+		grasp->estimate(points, trajectories);
+
+		// pass control to the application
 		grasp->spin();
 	}
 	catch (const std::exception& ex) {
