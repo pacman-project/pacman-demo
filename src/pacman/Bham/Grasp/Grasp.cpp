@@ -76,7 +76,7 @@ void BhamGraspImpl::estimate(const Point3D::Seq& points, Trajectory::Seq& trajec
 			golem::Mat34 frame;
 			frame.multiply(trn, j);
 			frame.p.get(&pose.pose.p.x);
-			frame.R.setRow33(&pose.pose.R.m11);
+			frame.R.getRow33(&pose.pose.R.m11);
 			trajectory.trajectory.push_back(pose);
 		}
 		convert(i, trajectory.trajectory.back().config); // overwrite grip configuration (the last waypoint)
