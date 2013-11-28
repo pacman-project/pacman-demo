@@ -4,7 +4,9 @@ project(grasp_planner_bham)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED roscpp definitions)
+find_package(catkin REQUIRED roscpp tf eigen_conversions definitions)
+
+find_package(PCL 1.7 REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system)
@@ -64,14 +66,20 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-	include 
-	${catkin_INCLUDE_DIRS}
-	${PACMAN}/pacman/include
+	include
+  ${PCL_INCLUDE_DIRS}
+  ${PACMAN}/pacman/include
 	${Boost_INCLUDE_DIR}
 )
 
+add_definitions(
+  ${PCL_DEFINITIONS}
+)
+
 link_directories(
-	${PACMAN}/lib
+  /usr/local/lib
+	${PCL_LIBRARY_DIRS}
+	${PACMAN}/bin
 )
 
 ## Declare a cpp library
@@ -81,13 +89,23 @@ link_directories(
 
 ## Declare a cpp executable
 add_executable(grasp_planner_bham_node src/grasp_planner_bham_node.cpp)
+add_executable(ping_grasp_planner_bham_node src/ping_grasp_planner_bham_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 add_dependencies(grasp_planner_bham_node definitions_generate_messages_cpp)
+add_dependencies(ping_grasp_planner_bham_node definitions_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(grasp_planner_bham_node
+  PaCMan
+  PaCManBhamGrasp
+  ${PCL_LIBRARIES}
+  ${Boost_LIBRARIES}
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(ping_grasp_planner_bham_node
   PaCMan
   PaCManBhamGrasp
   ${Boost_LIBRARIES}
@@ -99,6 +117,7 @@ target_link_libraries(grasp_planner_bham_node
 file(COPY config/GolemDeviceKukaLWRSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
 file(COPY config/GolemDeviceRobotUIBK.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
 file(COPY config/GolemDeviceSchunkDexHandSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
+file(COPY resources/pacman_mug1.pcd DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
 
 #############
 ## Install ##
