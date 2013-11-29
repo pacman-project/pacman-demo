@@ -199,8 +199,6 @@ void BhamGraspImpl::convert(const Point3D::Seq& src, ::grasp::Point::Seq& dst) c
 		dst.push_back(point);
 	}
 
-	grasp::Import import = this->import;
-	import.frames.clear();
 	import.estimateCurvature(context, dst);
 }
 

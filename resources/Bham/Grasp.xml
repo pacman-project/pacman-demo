@@ -271,10 +271,10 @@
       <colour override="0" R="255" G="255" B="255" A="255"/>
     </point_appearance>
 
-    <import label="1" num_points="100000" scale="1.0" delim=" &#10;&#13;,;">
+    <import label="1" points="100000" scale="1.0" clockwise="1" delim=" &#10;&#13;,;">
       <frame v1="0.0" v2="0.0" v3="0.0" q0="1.0" q1="0.0" q2="0.0" q3="0.0"/>
       <colour R="127" G="127" B="127" A="255"/>
-      <process norm_neighbours_search="100" norm_radius_search="0.01" curv_radius_search="0.01" triangle_index_clock="1"/>
+      <process norm_neighbours_search="100" norm_radius_search="0.01" curv_radius_search="0.01"/>
       <object_region>
         <bounds type="box" group="1">
           <dimensions v1="1.0" v2="1.0" v3="0.09"/>
