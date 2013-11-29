@@ -271,7 +271,7 @@
       <colour override="0" R="255" G="255" B="255" A="255"/>
     </point_appearance>
 
-    <import label="1" points="100000" scale="1.0" clockwise="1" delim=" &#10;&#13;,;">
+    <import size="100000" scale="1.0" clockwise="1" delim=" &#10;&#13;,;" label="1">
       <frame v1="0.0" v2="0.0" v3="0.0" q0="1.0" q1="0.0" q2="0.0" q3="0.0"/>
       <colour R="127" G="127" B="127" A="255"/>
       <process norm_neighbours_search="100" norm_radius_search="0.01" curv_radius_search="0.01"/>
