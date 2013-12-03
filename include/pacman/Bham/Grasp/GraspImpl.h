@@ -38,9 +38,9 @@ namespace pacman {
 		virtual void spin();
 
 		/** Point cloud conversion */
-		void convert(const ::grasp::Point::Seq& src, Point3D::Seq& dst) const;
+		void convert(const ::grasp::Cloud::PointSeq& src, Point3D::Seq& dst) const;
 		/** Point cloud conversion */
-		void convert(const Point3D::Seq& src, ::grasp::Point::Seq& dst) const;
+		void convert(const Point3D::Seq& src, ::grasp::Cloud::PointSeq& dst) const;
 		/** Waypoint conversion */
 		void convert(const ::grasp::Manipulator::Config& src, ShunkDexHand::Config& dst) const;
 		/** Waypoint conversion */
@@ -55,7 +55,7 @@ namespace pacman {
 		bool create(const grasp::ShapePlanner::Desc& desc);
 
 		/** User interface: menu function */
-		virtual void function(grasp::TrialData::Map::iterator& dataPtr, int key);
+		virtual void function(grasp::Data::Map::iterator& dataPtr, int key);
 	};
 };
 

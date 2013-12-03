@@ -2,6 +2,7 @@
 #include <pacman/PaCMan/PCL.h>
 #include <Golem/Phys/Data.h>
 #include <Golem/Tools/Data.h>
+#include <Golem/Device/MultiCtrl/MultiCtrl.h>
 #include <pcl/io/pcd_io.h>
 
 using namespace pacman;
@@ -16,24 +17,30 @@ BhamGraspImpl::BhamGraspImpl(golem::Scene &scene) : ShapePlanner(scene) {
 bool BhamGraspImpl::create(const grasp::ShapePlanner::Desc& desc) {
 	(void)ShapePlanner::create(desc);
 
+	// Initialise data collection
+	getData().insert(Data::Map::value_type(dataDesc->name, dataDesc->create(*robot->getController())));
+	currentDataPtr = getData().begin();
+	scene.getOpenGL(get<Data>(currentDataPtr)->openGL);
+
 	scene.setHelp(
 		scene.getHelp() +
 		"  A                                       PaCMan operations\n"
 	);
 
-	// Initialise data collection
-	getTrialData().insert(TrialData::Map::value_type("pacman", TrialData(*robot->getController())));
-	currentDataPtr = getTrialData().begin();
-	scene.getOpenGL(currentDataPtr->second.openGL);
-
 	return true;
 }
 
 void BhamGraspImpl::add(const std::string& id, const Point3D::Seq& points, const RobotUIBK::Config::Seq& trajectory) {
-	convert(points, currentDataPtr->second.pointCloud);
-	convert(trajectory, currentDataPtr->second.approachAction);
-	grasp.second->add(id, currentDataPtr->second.approachAction, currentDataPtr->second.manipAction, currentDataPtr->second.pointCloud);
-	renderTrialData(currentDataPtr);
+	auto ptr = getPtr<Data>(currentDataPtr);
+	if (ptr == nullptr)
+		throw Message(Message::LEVEL_ERROR, "BhamGraspImpl::add(): invalid current data pointer");
+
+	Cloud::PointSeq& cloud = ptr->points[Cloud::LABEL_OBJECT];
+	convert(points, cloud);
+	convert(trajectory, ptr->actionApproach);
+	grasp.second->add(id, ptr->actionApproach, ptr->actionManip, cloud);
+	
+	renderData(currentDataPtr);
 }
 
 void BhamGraspImpl::remove(const std::string& id) {
@@ -48,13 +55,18 @@ void BhamGraspImpl::list(std::vector<std::string>& idSeq) const {
 }
 
 void BhamGraspImpl::estimate(const Point3D::Seq& points, Trajectory::Seq& trajectories) {
+	auto ptr = getPtr<Data>(currentDataPtr);
+	if (ptr == nullptr)
+		throw Message(Message::LEVEL_ERROR, "BhamGraspImpl::estimate(): invalid current data pointer");
+
 	// transform data
-	convert(points, currentDataPtr->second.pointCloud);
-	targetDataPtr = getTrialData().end();
+	Cloud::PointSeq& cloud = ptr->points[Cloud::LABEL_OBJECT];
+	convert(points, cloud);
+	targetDataPtr = getData().end();
 	
 	// compute grip configurations
-	grasp.second->findGrip(currentDataPtr->second.pointCloud, currentDataPtr->second.pointCloud, graspPoses);
-	grasp.second->findGripClusters(graspPoses, graspClusters);
+	grasp.second->findGrip(cloud, cloud, ptr->graspPoses);
+	grasp.second->findGripClusters(ptr->graspPoses, ptr->graspClusters);
 	
 	// prepare model trajectory
 	std::deque<Manipulator::Pose> model;
@@ -62,10 +74,17 @@ void BhamGraspImpl::estimate(const Point3D::Seq& points, Trajectory::Seq& trajec
 		model.push_front(i);
 	golem::Mat34 trnInv;
 	trnInv.setInverse(model.back());
-	
+
+	// move trajectory frame from the arm TCP to the hand frame
+	const golem::MultiCtrl* pMultiCtrl = dynamic_cast<const golem::MultiCtrl*>(robot->getController());
+	if (pMultiCtrl && pMultiCtrl->getControllers().size() >= 2) {
+		const golem::Controller* pHand = pMultiCtrl->getControllers()[1]; // assuming that the second controller is the hand
+		trnInv.multiply(pHand->getGlobalPose(), trnInv);
+	}
+
 	// transform trajectories
 	trajectories.clear();
-	for (auto i: graspPoses) {
+	for (auto i: ptr->graspPoses) {
 		Trajectory trajectory;
 		golem::Mat34 trn;
 		trn.multiply(i.toMat34(), trnInv);
@@ -86,11 +105,11 @@ void BhamGraspImpl::estimate(const Point3D::Seq& points, Trajectory::Seq& trajec
 	}
 
 	// finish
+	ptr->resetDataPointers();
 	graspMode = GRASP_MODE_GRIP;
-	graspClusterPtr = graspClusterSolutionPtr = 0;
 	targetDataPtr = currentDataPtr;
 	printGripInfo();
-	renderTrialData(currentDataPtr);
+	renderData(currentDataPtr);
 }
 
 void BhamGraspImpl::spin() {
@@ -117,7 +136,7 @@ void BhamGraspImpl::spin() {
 	}
 }
 
-void BhamGraspImpl::function(TrialData::Map::iterator& dataPtr, int key) {
+void BhamGraspImpl::function(Data::Map::iterator& dataPtr, int key) {
 	switch (key) {
 	case 'A':
 	{
@@ -126,22 +145,22 @@ void BhamGraspImpl::function(TrialData::Map::iterator& dataPtr, int key) {
 		{
 			const int key = waitKey("PT", "Press a key to import (P)oint cloud/(T)trajectory...");
 			// export data
-			std::string path = dataPtr->first;
+			std::string path = dataDesc->dir;
 			readString("Enter file path: ", path);
 			// point cloud
 			if (key == 'P') {
 				context.write("Importing point cloud from: %s\n", path.c_str());
 				Point3D::Seq seq;
 				load(path, seq);
-				convert(seq, dataPtr->second.pointCloud);
-				renderTrialData(dataPtr);
+				convert(seq, get<Data>(dataPtr)->points[Cloud::LABEL_OBJECT]);
+				renderData(dataPtr);
 			}
 			// appproach trajectory
 			if (key == 'T') {
 				context.write("Importing approach trajectory from: %s\n", path.c_str());
 				RobotUIBK::Config::Seq seq;
 				load(path, seq);
-				convert(seq, dataPtr->second.approachAction);
+				convert(seq, get<Data>(dataPtr)->actionApproach);
 			}
 			break;
 		}
@@ -149,20 +168,20 @@ void BhamGraspImpl::function(TrialData::Map::iterator& dataPtr, int key) {
 		{
 			const int key = waitKey("PT", "Press a key to export (P)oint cloud/(T)trajectory...");
 			// export data
-			std::string path = dataPtr->first;
+			std::string path = dataDesc->dir;
 			readString("Enter file path: ", path);
 			// point cloud
 			if (key == 'P') {
 				context.write("Exporting point cloud to: %s\n", path.c_str());
 				Point3D::Seq seq;
-				convert(dataPtr->second.pointCloud, seq);
+				convert(get<Data>(dataPtr)->points[Cloud::LABEL_OBJECT], seq);
 				save(path, seq);
 			}
 			// appproach trajectory
 			if (key == 'T') {
 				context.write("Exporting approach trajectory to: %s\n", path.c_str());
 				RobotUIBK::Config::Seq seq;
-				convert(dataPtr->second.approachAction, seq);
+				convert(get<Data>(dataPtr)->actionApproach, seq);
 				save(path, seq);
 			}
 			break;
@@ -176,30 +195,45 @@ void BhamGraspImpl::function(TrialData::Map::iterator& dataPtr, int key) {
 	ShapePlanner::function(dataPtr, key);
 }
 
-void BhamGraspImpl::convert(const ::grasp::Point::Seq& src, Point3D::Seq& dst) const {
+void BhamGraspImpl::convert(const ::grasp::Cloud::PointSeq& src, Point3D::Seq& dst) const {
 	dst.resize(0);
 	dst.reserve(src.size());
 	for (auto i: src) {
 		Point3D point;
-		i.frame.p.get(&point.position.x);
-		i.normal.get(&point.normal.x);
-		i.colour.get(&point.colour.r);
+		point.position.x = (float_t)i.x;
+		point.position.y = (float_t)i.y;
+		point.position.z = (float_t)i.z;
+		point.normal.x =  (float_t)i.normal_x;
+		point.normal.y =  (float_t)i.normal_y;
+		point.normal.z =  (float_t)i.normal_z;
+		point.colour.r = (uint8_t)i.r;
+		point.colour.g = (uint8_t)i.g;
+		point.colour.b = (uint8_t)i.b;
+		point.colour.a = (uint8_t)i.a;
 		dst.push_back(point);
 	}
 }
 
-void BhamGraspImpl::convert(const Point3D::Seq& src, ::grasp::Point::Seq& dst) const {
+void BhamGraspImpl::convert(const Point3D::Seq& src, ::grasp::Cloud::PointSeq& dst) const {
 	dst.resize(0);
 	dst.reserve(src.size());
 	for (auto i: src) {
-		Point point;
-		point.frame.p.set(&i.position.x);
-		point.normal.set(&i.normal.x);
-		point.colour.set(&i.colour.r);
+		Cloud::Point point;
+		point.x = (float)i.position.x;
+		point.y = (float)i.position.y;
+		point.z = (float)i.position.z;
+		point.normal_x = (float)i.normal.x;
+		point.normal_y = (float)i.normal.y;
+		point.normal_z = (float)i.normal.z;
+		point.r = (uint8_t)i.colour.r;
+		point.g = (uint8_t)i.colour.g;
+		point.b = (uint8_t)i.colour.b;
+		point.a = (uint8_t)i.colour.a;
 		dst.push_back(point);
 	}
 
-	import.estimateCurvature(context, dst);
+	Cloud::curvature(context, cloudDesc.curvature, dst);
+	Cloud::nanRem(context, dst, Cloud::isNanXYZNormalCurvature<Cloud::Point>);
 }
 
 void BhamGraspImpl::convert(const ::grasp::Manipulator::Config& src, ShunkDexHand::Config& dst) const {
