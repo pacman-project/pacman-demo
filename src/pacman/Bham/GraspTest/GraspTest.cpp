@@ -1,4 +1,5 @@
 #include <pacman/Bham/Grasp/Grasp.h>
+#include <pacman/Bham/Grasp/GraspImpl.h>
 #include <exception>
 
 using namespace pacman;
@@ -25,6 +26,23 @@ int main(int argc, char *argv[]) {
 		// find grasp on an object
 		BhamGrasp::Trajectory::Seq trajectories;
 		grasp->estimate(points, trajectories);
+
+		// Debug
+		BhamGraspImpl* graspImpl = (BhamGraspImpl*)grasp;
+		// Coordinate system origin (0, 0, 0)
+		graspImpl->addFrame(Mat34());
+		// Object cloud centroid
+		Mat34 centroid;
+		for (auto i: points) {
+			centroid.p.x += i.position.x; centroid.p.y += i.position.y; centroid.p.z += i.position.z;
+		}
+		centroid.p.x /= points.size(); centroid.p.y /= points.size(); centroid.p.z /= points.size();
+		graspImpl->addFrame(centroid);
+		// Hand frame
+		Mat34 frame = trajectories.front().trajectory.back().pose;
+		graspImpl->addFrame(frame);
+		// Centroid - hand frame line
+		graspImpl->addLine(centroid.p, frame.p);
 
 		// pass control to the application
 		grasp->spin();
