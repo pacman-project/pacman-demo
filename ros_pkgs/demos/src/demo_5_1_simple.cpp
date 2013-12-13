@@ -61,79 +61,141 @@
 #include "definitions/TrajectoryPlanning.h"
 #include "definitions/TrajectoryExecution.h"
 
-// the variable for the message
-bool status_robot, status_ros;
-std::vector<definitions::Object> my_detected_objects;
-std::vector<definitions::Grasp> my_calculated_grasp;
-std::vector<definitions::Trajectory> my_calculated_trajectory;
 
-int main(int argc, char **argv)
+
+
+class DemoSimple
 {
-  ros::init(argc, argv, "demo");
-  ros::NodeHandle nh;
-  
-  // Set the freq of the main loop, because now we have a socket client
-  ros::Rate loop_rate(15);
-  ros::Timer delay();
+  private:
 
-  // Set the initial value for robot_moving
-  status_robot = false;
-  status_ros = true;
-     
-  ROS_INFO("OK, let's go... entering the loop");
-
-  while(nh.ok())
-  {
-    ros::spinOnce();
-     
-    // Pings the pose_estimation service 
-    std::string pose_estimation_service_name("/estimate_poses");
-    while ( !ros::service::waitForService(pose_estimation_service_name, ros::Duration().fromSec(3.0)) && nh.ok() )
-    {
-        ROS_ERROR("Waiting for service %s...", pose_estimation_service_name.c_str());
-        ros::Duration(2).sleep();  
-
-    }
+    // the node handle
+    ros::NodeHandle nh_;
+    ros::NodeHandle priv_nh_;
+    ros::ServiceClient pose_client;
+    ros::ServiceClient grasp_client;
+    ros::ServiceClient trajectory_planner_client;
     
-    // CALLING pose estimation
+    //Stuff
+    std::string pose_estimation_service_name;
+    std::string grasp_service_name;
+    std::string trajectory_planning_service_name;
+    
+    //Variables messages
+    bool status_robot, status_ros;
+    std::vector<definitions::Object> my_detected_objects;
+    std::vector<definitions::Grasp> my_calculated_grasp;
+    std::vector<definitions::Trajectory> my_calculated_trajectory;
+    
+    //Service variables
     definitions::PoseEstimation estimation_srv;
     definitions::GraspPlanning grasp_planning_srv;
     definitions::TrajectoryPlanning trajectory_planning_srv;
     definitions::TrajectoryExecution trajectory_execution_srv;
 
-    if (!ros::service::call(pose_estimation_service_name, estimation_srv))
+  public:
+
+    void initRobot(); //e.g checking joint states cmd mode and hand initialization
+    
+    void goToStartPos();
+    
+    void doPoseEstimation();
+    
+    void planGrasps();
+    
+    void userCheck();
+    
+    void executeMovement();
+    
+    void goToPlacingPos();
+    
+    // constructor
+    DemoSimple(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
     {
-      ROS_ERROR("Call to pose estimatione service failed. Continue...");
-      ros::Duration(2).sleep();  
-      continue;  //exit(0);
+        pose_estimation_service_name = "/pose_estimation_uibk/estimate_poses";
+	grasp_service_name = "/grasp_planner_srv";
+	trajectory_planning_service_name = "/trajectory_planner_srv",
+	
+	pose_client = nh_.serviceClient<definitions::PoseEstimation>(pose_estimation_service_name);
+	grasp_client = nh_.serviceClient<definitions::GraspPlanning>(grasp_service_name);
+	trajectory_planner_client = nh_.serviceClient<definitions::TrajectoryPlanning>(trajectory_planning_service_name);
     }
 
-    // pose estimation response validation
-    switch (estimation_srv.response.result)
-    { case 0:
-            ROS_INFO("Pose Estimation OK"); //estimation_srv.response.SUCCESS: 
-            break;
-      case 1: //estimation_srv.response.OTHER_ERROR:  
-            ROS_ERROR("Pose estimation service returned error %d. Continue...", estimation_srv.response.result);
-            ros::Duration(2).sleep();  
-              continue; 
-      case 2: //estimation_srv.response.NO_CLOUD_RECEIVED: 
-            ROS_ERROR("No point cloud received check the Kinect....I'll wait 5s ");
-            ros::Duration(2).sleep();  
-            continue;
-      case 3: //estimation_srv.response.NO_OBJECTS_DETECTED: 
-            ROS_INFO("No object detected...MY table is clean !!! I feel fiiine...");
-            ros::Duration(2).sleep();  
-            continue;
-      default: ROS_ERROR("Pose estimation service returned error %d. Continue...", estimation_srv.response.result);
-              continue;
-    }
+    //! Empty stub
+    ~DemoSimple() {}
+
+};
 
 
-    // list of detected objects on the scene 
-    my_detected_objects = estimation_srv.response.detected_objects;
-    int object_to_grasp_id=0;
+void DemoSimple::goToStartPos(){}
 
+void DemoSimple::doPoseEstimation()
+{
+   if( !pose_client.call(estimation_srv))
+   {   
+     ROS_INFO("pose estimation service failed. wait...");
+     ros::Duration(0.5).sleep();
+   }   
+   my_detected_objects = estimation_srv.response.detected_objects; 
+}
+
+void DemoSimple::planGrasps()
+{
+  grasp_planning_srv.request.ordered_objects = my_detected_objects;
+  grasp_planning_srv.request.object_id = 0;
+  if( !grasp_client.call(grasp_planning_srv) )
+  {
+    ROS_INFO("grasp_planner service call failed. wait...");
+    ros::Duration(0.5).sleep();
+  }
+  if ( grasp_planning_srv.response.result == grasp_planning_srv.response.SUCCESS)
+  { 
+    ROS_INFO("Grasp Planning OK");
+    my_calculated_grasp = grasp_planning_srv.response.grasp_list;
+   }
+   else
+   {
+     ROS_INFO("grasp_planner did not succeed.");
+   }
+   for (int i =0; i < grasp_planning_srv.response.grasp_list.size(); i++) 
+   {
+     std::cout << "Grasp Nr." << i <<  std::endl;
+     std::cout << grasp_planning_srv.response.grasp_list[i].grasp_trajectory[2].wrist_pose <<  std::endl;   
+  }
+
+}
+
+void DemoSimple::executeMovement()
+{
+  trajectory_planning_srv.request.ordered_grasp = grasp_planning_srv.response.grasp_list;
+  trajectory_planning_srv.request.object_list = estimation_srv.response.detected_objects;
+  trajectory_planning_srv.request.object_id = 0;
+  if( !trajectory_planner_client.call(trajectory_planning_srv) )
+  {
+    ROS_INFO("trajectory planner service call failed.");
+  }
+  else
+  {
+    ROS_INFO("trajectory planner call succeeded");
+    my_calculated_trajectory = trajectory_planning_srv.response.trajectory;
+    ROS_INFO("number of found trajectories are: %d",(int)my_calculated_trajectory.size());
+  }
+}
+
+int main(int argc, char **argv)
+{
+  ros::init(argc, argv, "demoSimple");
+  ros::NodeHandle nh;
+  
+  // Set the freq of the main loop, because now we have a socket client
+  ros::Rate loop_rate(15);
+  ros::Timer delay();
+  
+  DemoSimple demo(nh);
+  demo.doPoseEstimation();
+  demo.planGrasps();
+  demo.executeMovement();
+/*
+ 
     // GRASP PLANNING
     std::string grasp_service_name("/grasp_planner_srv");
     if ( !ros::service::waitForService(grasp_service_name, ros::Duration().fromSec(1.0)) && nh.ok() )
@@ -260,6 +322,6 @@ int main(int argc, char **argv)
     }
     ros::spinOnce();
     loop_rate.sleep();
-  }
+  }*/
   return 0;
 }   

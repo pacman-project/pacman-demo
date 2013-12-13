@@ -7,11 +7,11 @@
   
   <include file="$(find schunk_bringup)/components/sdh_solo.launch"/>
   
-  <include file="$(find uibk_moveit_adapter)/launch/uibk_plan_execution.launch"/>
+  <include file="$(find uibk_moveit_adapter)/launch/uibk_plan_execution.launch"/> 
   
-  <node name="grasp_planner_bham_node" pkg="grasp_planner_bham" type="grasp_planner_bham_node" output="screen" />
-
-  <!--PATH PLANNING-->
+  <include file="$(find grasp_planner_bham)/launch/GraspPlannerBHAM.launch"/>
+  
+  <!-- PATH PLANNING -->
   <!--  <include file="$(find path_planner_unipi/launch/xxxxxxx.launch"></include> -->
   
   <!-- PATH EXECUTION -->
