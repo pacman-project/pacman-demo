@@ -1,0 +1,6 @@
+## THIS FILE DEFINES THE GRAB NODE
+string wake_up
+
+---
+
+string path_to_pclfile

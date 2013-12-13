@@ -31,6 +31,7 @@ add_message_files(
   Trajectory.msg
   TrajectoryList.msg
   UIBKRobot.msg
+  KinectGrabber.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -40,6 +41,7 @@ add_service_files(
   PoseEstimation.srv
   TrajectoryPlanning.srv
   TrajectoryExecution.srv
+  KinectGrabberService.srv
 )
 
 ## Generate added messages and services with any dependencies listed here

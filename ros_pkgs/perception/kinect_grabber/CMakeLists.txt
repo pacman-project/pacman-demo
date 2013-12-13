@@ -1,15 +1,20 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(pose_estimation_uibk)
+project(kinect_grabber)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED roscpp genmsg definitions)
+find_package(catkin REQUIRED COMPONENTS
+  pcl
+  pcl_ros
+  roscpp
+  sensor_msgs
+  std_msgs
+  message_generation
+)
 
 ## System dependencies are found with CMake's conventions
-find_package(Boost REQUIRED COMPONENTS filesystem system)
-find_package(Eigen REQUIRED)
-find_package(PCL 1.7 REQUIRED)
+# find_package(Boost REQUIRED COMPONENTS system)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -22,25 +27,11 @@ find_package(PCL 1.7 REQUIRED)
 #######################################
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   msg.srv
-# )
+
+
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#  DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-#   sensor_msgs
-#   geometry_msgs
-# )
 
 ###################################
 ## catkin specific configuration ##
@@ -52,9 +43,9 @@ find_package(PCL 1.7 REQUIRED)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#   INCLUDE_DIRS include
-#  LIBRARIES lwr_test
-#  CATKIN_DEPENDS other_catkin_pkg
+ # INCLUDE_DIRS include
+#  LIBRARIES grab_node
+ CATKIN_DEPENDS pcl pcl_ros roscpp sensor_msgs std_msgs message_generation
 #  DEPENDS system_lib
 )
 
@@ -64,46 +55,27 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
+# include_directories(include)
 include_directories(
-  include
-  ${PCL_INCLUDE_DIRS}
-
-  #/home/krzysztof/Dokumenty/Birmingham_research/pacman_poseEstimation/include
-   /home/pacman/CODE/poseEstimation/include
-
-
-
-
-)
-
-add_definitions(
-  ${PCL_DEFINITIONS}
-)
-
-link_directories(
-  ${PCL_LIBRARY_DIRS}
- # /home/crosales/Code/poseEstimation/build
-  /home/pacman/CODE/poseEstimation/build
+  ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
-#add_library(pose_estimation
-#   src/ParametersPoseEstimation.cpp 
-#   src/I_SegmentedObjects.cpp
-#)
+# add_library(grab_node
+#   src/${PROJECT_NAME}/grab_node.cpp
+# )
 
 ## Declare a cpp executable
-add_executable(pose_estimation_node src/pose_estimation_node.cpp)
+ add_executable(kinect_grabber_node src/kinect_grabber_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(pose_estimation_node definitions_generate_messages_cpp)
+# add_dependencies(grab_node_node grab_node_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(pose_estimation_node
-   ${catkin_LIBRARIES} ${boost_LIBRARIES} ${PCL_LIBRARIES} pose_estimation  pcl_3d_rec_framework
-)
-
+ target_link_libraries(kinect_grabber_node
+   ${catkin_LIBRARIES}
+ )
 
 #############
 ## Install ##
@@ -120,7 +92,7 @@ target_link_libraries(pose_estimation_node
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS lwr_test lwr_test_node
+# install(TARGETS grab_node grab_node_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -145,7 +117,7 @@ target_link_libraries(pose_estimation_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_lwr_test.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_grab_node.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
