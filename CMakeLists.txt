@@ -383,7 +383,7 @@ INSTALL(TARGETS PaCManBhamGraspTest RUNTIME DESTINATION bin)
 
 # Innsbruck pose estimation library
 SET(UIBK_POSE_ESTIMATION_EXTERNALLIB
-    ${PROJECT_PARENT}/poseEstimation
+    ${PROJECT_PARENT}/../poseEstimation
 )
 SET(UIBK_POSE_ESTIMATION_HEADERS
 	${PROJECT_ROOT}/include/pacman/UIBK/PoseEstimation/PoseEstimation.h
