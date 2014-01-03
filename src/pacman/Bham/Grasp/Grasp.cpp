@@ -18,9 +18,9 @@ bool BhamGraspImpl::create(const grasp::ShapePlanner::Desc& desc) {
 	(void)ShapePlanner::create(desc);
 
 	// Initialise data collection
-	getData().insert(Data::Map::value_type(dataDesc->name, dataDesc->create(*robot->getController())));
+	getData().insert(Data::Map::value_type(data->name, data->clone()));
 	currentDataPtr = getData().begin();
-	scene.getOpenGL(get<Data>(currentDataPtr)->openGL);
+	scene.getOpenGL(to<Data>(currentDataPtr)->openGL);
 
 	scene.setHelp(
 		scene.getHelp() +
@@ -145,14 +145,14 @@ void BhamGraspImpl::function(Data::Map::iterator& dataPtr, int key) {
 		{
 			const int key = waitKey("PT", "Press a key to import (P)oint cloud/(T)trajectory...");
 			// export data
-			std::string path = dataDesc->dir;
+			std::string path = data->dir;
 			readString("Enter file path: ", path);
 			// point cloud
 			if (key == 'P') {
 				context.write("Importing point cloud from: %s\n", path.c_str());
 				Point3D::Seq seq;
 				load(path, seq);
-				convert(seq, get<Data>(dataPtr)->points[Cloud::LABEL_OBJECT]);
+				convert(seq, to<Data>(dataPtr)->points[Cloud::LABEL_OBJECT]);
 				renderData(dataPtr);
 			}
 			// appproach trajectory
@@ -160,7 +160,7 @@ void BhamGraspImpl::function(Data::Map::iterator& dataPtr, int key) {
 				context.write("Importing approach trajectory from: %s\n", path.c_str());
 				RobotUIBK::Config::Seq seq;
 				load(path, seq);
-				convert(seq, get<Data>(dataPtr)->actionApproach);
+				convert(seq, to<Data>(dataPtr)->actionApproach);
 			}
 			break;
 		}
@@ -168,20 +168,20 @@ void BhamGraspImpl::function(Data::Map::iterator& dataPtr, int key) {
 		{
 			const int key = waitKey("PT", "Press a key to export (P)oint cloud/(T)trajectory...");
 			// export data
-			std::string path = dataDesc->dir;
+			std::string path = data->dir;
 			readString("Enter file path: ", path);
 			// point cloud
 			if (key == 'P') {
 				context.write("Exporting point cloud to: %s\n", path.c_str());
 				Point3D::Seq seq;
-				convert(get<Data>(dataPtr)->points[Cloud::LABEL_OBJECT], seq);
+				convert(to<Data>(dataPtr)->points[Cloud::LABEL_OBJECT], seq);
 				save(path, seq);
 			}
 			// appproach trajectory
 			if (key == 'T') {
 				context.write("Exporting approach trajectory to: %s\n", path.c_str());
 				RobotUIBK::Config::Seq seq;
-				convert(get<Data>(dataPtr)->actionApproach, seq);
+				convert(to<Data>(dataPtr)->actionApproach, seq);
 				save(path, seq);
 			}
 			break;

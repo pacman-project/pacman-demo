@@ -55,7 +55,7 @@ namespace pacman {
 		bool create(const grasp::ShapePlanner::Desc& desc);
 
 		/** User interface: menu function */
-		virtual void function(grasp::Data::Map::iterator& dataPtr, int key);
+		virtual void function(Data::Map::iterator& dataPtr, int key);
 	};
 };
 
