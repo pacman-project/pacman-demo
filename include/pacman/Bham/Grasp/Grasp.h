@@ -9,6 +9,7 @@
 #define _PACMAN_BHAM_GRASP_GRASP_H_
 
 #include <pacman/PaCMan/Defs.h>
+#include <boost/shared_ptr.hpp>
 #include <string>
 
 /** PaCMan name space */
@@ -16,6 +17,9 @@ namespace pacman {
 	/** Birmingham grasp interface */
 	class BhamGrasp {
 	public:
+		/** Pointer */
+		typedef boost::shared_ptr<BhamGrasp> Ptr;
+
 		/** Weighted approach trajectory */
 		class Trajectory {
 		public:
@@ -41,7 +45,7 @@ namespace pacman {
 		/** Creates Birmingham grasp
 		 *	@param[in]	path			configuration file
 		*/
-		static BhamGrasp* create(const std::string& path);
+		static Ptr create(const std::string& path);
 		
 		/**	Adds a single grasp example
 		 *	@param[in]	id				unique grasp identifier

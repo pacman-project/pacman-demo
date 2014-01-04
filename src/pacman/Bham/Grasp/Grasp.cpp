@@ -361,7 +361,7 @@ void pacman::load(const std::string& path, RobotUIBK::Config::Seq& trajectory) {
 Context::Ptr context;
 Universe::Ptr universe;
 
-BhamGrasp* BhamGrasp::create(const std::string& path) {
+BhamGrasp::Ptr BhamGrasp::create(const std::string& path) {
 	// Create XML parser and load configuration file
 	XMLParser::Ptr pParser = XMLParser::load(path);
 
@@ -399,7 +399,10 @@ BhamGrasp* BhamGrasp::create(const std::string& path) {
 	// Random number generator seed
 	context->info("Random number generator seed %d\n", context->getRandSeed()._U32[0]);
 
-	return pBhamGrasp;
+	return BhamGrasp::Ptr(pBhamGrasp, [&] (BhamGrasp*) {
+		universe.release();
+		context.release();
+	});
 }
 
 //-----------------------------------------------------------------------------

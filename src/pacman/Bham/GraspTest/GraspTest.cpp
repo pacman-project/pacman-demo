@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		// create grasp
-		BhamGrasp* grasp = BhamGrasp::create(argv[1]);
+		BhamGrasp::Ptr grasp = BhamGrasp::create(argv[1]);
 		
 		// load and add initial training data
 		Point3D::Seq points;
