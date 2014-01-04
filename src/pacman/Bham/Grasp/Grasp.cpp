@@ -22,10 +22,7 @@ bool BhamGraspImpl::create(const grasp::ShapePlanner::Desc& desc) {
 	currentDataPtr = getData().begin();
 	scene.getOpenGL(to<Data>(currentDataPtr)->openGL);
 
-	scene.setHelp(
-		scene.getHelp() +
-		"  A                                       PaCMan operations\n"
-	);
+	scene.getHelp().insert(Scene::StrMapVal("100", "  A                                       PaCMan operations\n"));
 
 	return true;
 }
