@@ -14,17 +14,19 @@ int main(int argc, char *argv[]) {
 		BhamGrasp::Ptr grasp = BhamGrasp::create(argv[1]);
 		
 		// load and add initial training data
-		Point3D::Seq points;
-		load("pacman_mug1.pcd", points);
-		RobotUIBK::Config::Seq trajectory;
-		load("pacman_mug1.trj", trajectory);
-		grasp->add("pacman_mug1", points, trajectory);
+		Point3D::Seq trainingPoints;
+		load("pacman_container_2.pcd", trainingPoints);
+		RobotUIBK::Config::Seq trainingTrajectory;
+		load("pacman_container_2.trj", trainingTrajectory);
+		grasp->add("pacman_container_2", trainingPoints, trainingTrajectory);
 		
 		// run service here and comment out the 3 lines of code below
 
 		// find grasp on an object
-		BhamGrasp::Trajectory::Seq trajectories;
-		grasp->estimate(points, trajectories);
+		Point3D::Seq graspPoints;
+		load("pacman_container_1.pcd", graspPoints);
+		BhamGrasp::Trajectory::Seq graspTrajectories;
+		grasp->estimate(graspPoints, graspTrajectories);
 
 		// pass control to the application
 		grasp->spin();
