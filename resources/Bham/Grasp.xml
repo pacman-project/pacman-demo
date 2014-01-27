@@ -363,33 +363,36 @@
     </cloud>
 
     <!-- codec="I420" codec="DIVX" codec="XVID" codec="X264" -->
-    <!--<camera type="kinect" name="robotKinect" index="1" width="640" height="480" fps="30" calibration_file="GraspCameraRobot.xml" mode_image="rgb" mode_depth="rgbd" buffer_len="60" buffer_off="0" thread_timeout="20000" in_hand="1" recording="0" recording_app="0" video="1" codec="XVID">
-      <colour R="127" G="127" B="127" A="255"/>
-      <optimisation minimum="1" population_size="100" generations_num="1000000000" de_diff_fac="0.5" de_cross_prob="0.2" test_generations="1000" test_pairs="100" test_variance="1e-7" num_of_threads="-1" thread_priority="lowest">
-        <distance_weights lin="10.0" ang="1.0"/>
-        <sample_magnitude lin="0.1" ang="0.5"/>
-        -->
-    <!--<kuka offset_ang_range="0.0" offset_dist_weights="0.1" link_len_range="0.0" link_dist_weights="0.1"/>-->
-    <!--
-      </optimisation>
-    </camera>-->
-    <!--<camera type="kinect" name="externKinect" index="2" width="640" height="480" fps="30" calibration_file="GraspCameraExternKinect.xml" mode_image="rgb" mode_depth="rgbd" buffer_len="60" buffer_off="0" thread_timeout="20000" in_hand="0" recording="0" recording_app="0" video="1" codec="XVID">
-      <colour R="127" G="127" B="127" A="255"/>
+    <!--<camera type="depth" name="robotDepth" index="0" calibration_file="GraspCameraRobotDepth.xml" buffer_len="60" buffer_off="1" thread_timeout="20000" stream_timeout="1000" in_hand="1" recording="0" recording_app="0" video="1" codec="XVID">
+      <property width="640" height="480" fps="30" mode="colour" format="200"/>
+      <property width="320" height="240" fps="30" mode="depth colour" format="101 200"/>
+      <colour R="127" G="127" B="0" A="255"/>
       <optimisation minimum="1" population_size="100" generations_num="1000000000" de_diff_fac="0.5" de_cross_prob="0.2" test_generations="1000" test_pairs="100" test_variance="1e-7" num_of_threads="-1" thread_priority="lowest">
         <distance_weights lin="10.0" ang="1.0"/>
         <sample_magnitude lin="0.1" ang="0.5"/>
       </optimisation>
     </camera>-->
-    <!--<camera type="opencv" name="externOpenCV" index="0" width="0" height="0" fps="0" calibration_file="GraspCameraExternOpenCV.xml" buffer_len="90" thread_timeout="10000" capture_index="0" in_hand="0" recording="1" recording_app="1" video="1" codec="XVID">
+    <!--<camera type="depth" name="externDepth" index="1" calibration_file="GraspCameraExternDepth.xml" buffer_len="60" buffer_off="1" thread_timeout="20000" stream_timeout="1000" in_hand="0" recording="1" recording_app="0" video="1" codec="XVID">
+      <property width="640" height="480" fps="30" mode="colour" format="200"/>
+      <property width="640" height="480" fps="30" mode="depth" format="101"/>
+      <colour R="127" G="127" B="0" A="255"/>
+      <optimisation minimum="1" population_size="100" generations_num="1000000000" de_diff_fac="0.5" de_cross_prob="0.2" test_generations="1000" test_pairs="100" test_variance="1e-7" num_of_threads="-1" thread_priority="lowest">
+        <distance_weights lin="10.0" ang="1.0"/>
+        <sample_magnitude lin="0.1" ang="0.5"/>
+      </optimisation>
+    </camera>-->
+    <!--<camera type="opencv" name="externOpenCV" index="0" calibration_file="GraspCameraExternOpenCV.xml" buffer_len="90" thread_timeout="10000" capture_index="0" in_hand="0" recording="1" recording_app="1" video="1" codec="XVID">
+      <property width="0" height="0" fps="0" mode="0" format=""/>
       <optimisation minimum="1" population_size="100" generations_num="10000000" de_diff_fac="0.5" de_cross_prob="0.2" test_generations="1000" test_pairs="100" test_variance="1e-6" num_of_threads="-1" thread_priority="lowest">
         <distance_weights lin="10.0" ang="1.0"/>
         <sample_magnitude lin="0.5" ang="1.0"/>
       </optimisation>
     </camera>-->
     <!-- FlyCapture2::PixelFormat: MONO8=0x80000000, 411YUV8=0x40000000, 422YUV8=0x20000000, RGB8=0x08000000, ... -->
-    <!-- Fly2 Firewire: pixel=0x40000000 (536870912) -->
-    <!-- Chameleon USB2.0: pixel=0x00400000 (4194304) -->
-    <!--<camera type="pointgrey" name="externPointGrey" index="0" width="0" height="0" fps="0" mode="0" pixel="536870912" calibration_file="GraspCameraExternPointGrey.xml" buffer_len="90" thread_timeout="10000" in_hand="0" recording="1" recording_app="1" video="1" codec="XVID">
+    <!-- Fly2 Firewire: format=0x40000000 (536870912) -->
+    <!-- Chameleon USB2.0: format=0x00400000 (4194304) -->
+    <!--<camera type="pointgrey" name="externPointGrey" index="0" calibration_file="GraspCameraExternPointGrey.xml" buffer_len="90" thread_timeout="10000" in_hand="0" recording="1" recording_app="1" video="1" codec="XVID">
+      <property width="0" height="0" fps="0" mode="0" format="536870912"/>
       <optimisation minimum="1" population_size="100" generations_num="10000000" de_diff_fac="0.5" de_cross_prob="0.2" test_generations="1000" test_pairs="100" test_variance="1e-6" num_of_threads="-1" thread_priority="lowest">
         <distance_weights lin="10.0" ang="1.0"/>
         <sample_magnitude lin="0.5" ang="1.0"/>
