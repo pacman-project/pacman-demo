@@ -7,7 +7,7 @@
   
   <!-- include file="$(find schunk_bringup)/components/sdh_solo.launch"/ -->
   
-  <include file="$(find uibk_moveit_adapter)/launch/uibk_plan_execution.launch"/> 
+  <!-- include file="$(find uibk_moveit_adapter)/launch/uibk_plan_execution.launch"/ --> 
   
   <include file="$(find grasp_planner_bham)/launch/GraspPlannerBHAM.launch"/>
   
