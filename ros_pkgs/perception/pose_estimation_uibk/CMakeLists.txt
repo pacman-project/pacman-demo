@@ -11,7 +11,7 @@ find_package(Boost REQUIRED COMPONENTS filesystem system)
 find_package(Eigen REQUIRED)
 find_package(PCL 1.7 REQUIRED)
 
-
+set(POSE_ESTIMATION_EXT /home/pacman/CODE/poseEstimation)
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
@@ -68,7 +68,8 @@ include_directories(
   include
   ${PCL_INCLUDE_DIRS}
 
-  /home/krzysztof/Dokumenty/Birmingham_research/pacman_poseEstimation/include
+  #/home/krzysztof/Dokumenty/Birmingham_research/pacman_poseEstimation/include
+   ${POSE_ESTIMATION_EXT}/include
 
 
 
@@ -81,7 +82,8 @@ add_definitions(
 
 link_directories(
   ${PCL_LIBRARY_DIRS}
-  /home/crosales/Code/poseEstimation/build
+ # /home/crosales/Code/poseEstimation/build
+  ${POSE_ESTIMATION_EXT}/build
 )
 
 ## Declare a cpp library

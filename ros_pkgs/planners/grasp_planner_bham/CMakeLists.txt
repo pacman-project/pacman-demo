@@ -4,11 +4,14 @@ project(grasp_planner_bham)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED roscpp definitions)
+find_package(catkin REQUIRED roscpp tf eigen_conversions definitions)
+
+find_package(PCL 1.7 REQUIRED)
 
 ## System dependencies are found with CMake's conventions
-find_package(REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system)
 set(CMAKE_CXX_FLAGS "-std=c++0x")
+set(PACMAN /home/pacman/CODE/pacman_master)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -50,7 +53,7 @@ set(CMAKE_CXX_FLAGS "-std=c++0x")
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES BHAM_grasp_planner
+#   LIBRARIES ${PROJECT_NAME}
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
 )
@@ -58,12 +61,29 @@ catkin_package(
 ###########
 ## Build ##
 ###########
+FIND_PACKAGE(VTK 5.10 REQUIRED)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-include ${catkin_INCLUDE_DIRS}
-/home/krzysztof/Dokumenty/Birmingham_research/pacman_code/include
+	/usr/local/include
+        ${PACMAN}/pacman/include
+	${Boost_INCLUDE_DIR}
+	${PCL_INCLUDE_DIRS}
+	${VTK_INCLUDE_DIR}
+	${catkin_INCLUDE_DIRS}
+)
+
+add_definitions(
+  ${PCL_DEFINITIONS}
+)
+
+link_directories(
+
+        /usr/local/bin  #if you do sudo make install .so files are there, although they should be installed in lib/
+	${PCL_LIBRARY_DIRS}
+	${PACMAN}/bin
+	${VTK_LIBRARY_DIRS}
 )
 
 ## Declare a cpp library
@@ -73,15 +93,39 @@ include ${catkin_INCLUDE_DIRS}
 
 ## Declare a cpp executable
 add_executable(grasp_planner_bham_node src/grasp_planner_bham_node.cpp)
+add_executable(ping_grasp_planner_bham_node src/ping_grasp_planner_bham_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(grasp_planner_bham_node BHAM_grasp_planner_generate_messages_cpp)
+add_dependencies(grasp_planner_bham_node definitions_generate_messages_cpp)
+add_dependencies(ping_grasp_planner_bham_node definitions_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(grasp_planner_bham_node
+  PaCMan
+  PaCManBhamGrasp
+  ${PCL_LIBRARIES}
+  ${Boost_LIBRARIES}
   ${catkin_LIBRARIES}
+   CamcalbCalb
+   GolemDeviceRobotJustin
 )
+
+target_link_libraries(ping_grasp_planner_bham_node
+  PaCMan
+  PaCManBhamGrasp
+  ${Boost_LIBRARIES}
+  ${catkin_LIBRARIES}
+   CamcalbCalb
+   GolemDeviceRobotJustin
+)
+
+## DIRTY SOLUTION
+## Copy robot config files to node execution path, I didn't find any other way to do it
+file(COPY config/GolemDeviceKukaLWRSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
+file(COPY config/GolemDeviceRobotUIBK.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
+file(COPY config/GolemDeviceSchunkDexHandSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
+file(COPY resources/pacman_mug1.pcd DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
 
 #############
 ## Install ##
