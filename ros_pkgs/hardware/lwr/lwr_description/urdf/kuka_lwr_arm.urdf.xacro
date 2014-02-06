@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
-<robot name="lwr">
+<robot name="lwr" xmlns:xacro="http://www.ros.org/wiki/xacro" >
 
-  <include filename="kuka_lwr_arm_defs.xacro"/>
-  <include filename="materials.urdf"/>
+  <xacro:include filename="kuka_lwr_arm_defs.xacro"/>
+  <xacro:include filename="materials.urdf"/>
 
   <link name="world_link">
     <inertial>
@@ -28,8 +28,8 @@
     </collision>
   </link>
   
-  <kuka_lwr_arm parent="world" name="lwr" right="1">
+  <xacro:kuka_lwr_arm parent="world" name="lwr" right="1">
     <origin xyz="0 0 1.0" rpy="0 0 0"/>
-  </kuka_lwr_arm>
+  </xacro:kuka_lwr_arm>
   
 </robot>

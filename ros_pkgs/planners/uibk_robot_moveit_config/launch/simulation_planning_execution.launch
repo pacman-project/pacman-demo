@@ -1,0 +1,14 @@
+<launch>
+ # The planning and execution components of MoveIt! configured to 
+ # publish the current configuration of the simulated robot
+ # and the current state of the world as seen by the planner
+ 
+    <!-- launch the move_group node for simulator -->
+    <include file="$(find uibk_robot_moveit_config)/launch/simulation_move_group.launch" />
+      
+    # The visualization component of MoveIt!
+    <!-- include file="$(find uibk_robot_moveit_config)/launch/moveit_rviz.launch"-->
+      <!--arg name="config" value="true"/-->
+    <!--/include -->
+ 
+</launch>

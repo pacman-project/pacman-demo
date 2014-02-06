@@ -15,6 +15,7 @@
 #include <pcl/ros/conversions.h>
 #include <pcl/common/transforms.h>
 #include <pcl_ros/point_cloud.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>

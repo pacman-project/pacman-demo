@@ -25,6 +25,7 @@
 #include "definitions/GraspPlanning.h"
 #include "definitions/TrajectoryPlanning.h"
 #include "definitions/TrajectoryExecution.h"
+#include "definitions/ObjectCloudReader.h"
 
 //hand trajectory sdh messages
 
@@ -135,12 +136,14 @@ class DemoSimple
     ros::ServiceClient trajectory_planner_client;
     ros::ServiceClient trajectory_execution_client;
     ros::Publisher sdh_joint_angles_pub;
+    ros::ServiceClient reader_client;
     
     //Stuff
     std::string pose_estimation_service_name;
     std::string grasp_service_name;
     std::string trajectory_planning_service_name;
     std::string trajectory_execution_service_name;
+    std::string object_reader_service_name;
     
     //Variables messages
     bool status_robot, status_ros;
@@ -159,13 +162,14 @@ class DemoSimple
     definitions::GraspPlanning grasp_planning_srv;
     definitions::TrajectoryPlanning trajectory_planning_srv;
     definitions::TrajectoryExecution trajectory_execution_srv;
-    
+    definitions::ObjectCloudReader reader_srv;
 
   public:
 
     void initRobot(); //e.g checking joint states cmd mode and hand initialization
     
     void goToStartPos();
+    void reconstruct_scene();
     
     int doPoseEstimation();
     
@@ -187,15 +191,18 @@ class DemoSimple
         grasp_service_name = "/grasp_planner_srv";
         trajectory_planning_service_name = "/trajectory_planner_srv";
         trajectory_execution_service_name = "/trajectory_execution_srv";
-        
+        object_reader_service_name = "/object_reader";
+
         pose_client = nh_.serviceClient<definitions::PoseEstimation>(pose_estimation_service_name);
         grasp_client = nh_.serviceClient<definitions::GraspPlanning>(grasp_service_name);
         trajectory_planner_client = nh_.serviceClient<definitions::TrajectoryPlanning>(trajectory_planning_service_name);
         
         trajectory_execution_client = nh_.serviceClient<definitions::TrajectoryExecution>(trajectory_execution_service_name);
         //Grasp execution
-        sdh_joint_angles_pub = nh_.advertise<control_msgs::FollowJointTrajectoryActionGoal>("/real/right_sdh/follow_joint_trajectory/goal", 1);
-	//sdh_joint_angles_pub = nh_.advertise<control_msgs::FollowJointTrajectoryActionGoal>("/simulation/right_sdh/follow_joint_trajectory/goal", 1);
+        //sdh_joint_angles_pub = nh_.advertise<control_msgs::FollowJointTrajectoryActionGoal>("/real/right_sdh/follow_joint_trajectory/goal", 1);
+	sdh_joint_angles_pub = nh_.advertise<control_msgs::FollowJointTrajectoryActionGoal>("/simulation/right_sdh/follow_joint_trajectory/goal", 1);
+        reader_client = nh_.serviceClient<definitions::ObjectCloudReader>(object_reader_service_name);
+
         my_current_sdh_joints.resize(7);
         my_current_sdh_joints_pregrasp.resize(7);
 	
@@ -361,10 +368,21 @@ int DemoSimple::doPoseEstimation()
    my_detected_objects = estimation_srv.response.detected_objects;
    
    std::cout<< "nr of objects: "<<my_detected_objects.size()<<std::endl;
-   
+  /* reader_srv.request.detected_objects = my_detected_objects;
+   reader_srv.request.object_id = 0;*/
+
    return my_detected_objects.size();
 }
 
+void DemoSimple::reconstruct_scene()
+{ 
+   if( !reader_client.call(reader_srv) ) 
+   {
+     ROS_INFO("object reader service failed. wait...");
+     ros::Duration(0.5).sleep();     
+   }
+   ROS_INFO("object reader done");
+}
 void DemoSimple::planGrasps()
 {
   grasp_planning_srv.request.ordered_objects = my_detected_objects;
@@ -424,9 +442,19 @@ bool DemoSimple::executeMovement(bool pre_grasp)
   std::cout << "second point: "<< my_calculated_grasp[0].grasp_trajectory[1].wrist_pose << std::endl;
   std::cout << "third point: "<< my_calculated_grasp[0].grasp_trajectory[2].wrist_pose << std::endl;
   if( !pre_grasp ) {
+   /* reader_srv.request.detected_objects = my_detected_objects;
+    reader_srv.request.object_id = 0;
+    reconstruct_scene();*/
+
     my_calculated_grasp[0].grasp_trajectory[0] = my_calculated_grasp[0].grasp_trajectory[2];
     my_calculated_grasp[0].grasp_trajectory.erase(my_calculated_grasp[0].grasp_trajectory.begin()+1,my_calculated_grasp[0].grasp_trajectory.begin()+2);
   }
+  /*else
+  {
+    reader_srv.request.detected_objects = my_detected_objects;
+    reader_srv.request.object_id = -1;
+    reconstruct_scene();
+  }*/
   //Only doing stuff for 0th object e.g = grasp_planning_srv.request.object_id = 0;
   //querying trajectory plan
 // trajectory_planning_srv.request.ordered_grasp = grasp_planning_srv.response.grasp_list;

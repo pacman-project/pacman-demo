@@ -4,7 +4,9 @@ project(object_cloud_reader)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED roscpp pcl pcl_ros definitions)
+find_package(catkin REQUIRED roscpp pcl_ros definitions)
+
+find_package(PCL 1.7 REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -64,6 +66,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
 	${catkin_INCLUDE_DIRS}
+	${PCL_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
@@ -81,6 +84,7 @@ add_dependencies(object_cloud_reader_node definitions_generate_messages_cpp)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(object_cloud_reader_node
   ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES}
 )
 
 #############

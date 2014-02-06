@@ -33,7 +33,7 @@ namespace grasp_planner_bham{
     ros::NodeHandle priv_nh_;
     
     // the grasp object
-    pacman::BhamGrasp* grasp_;
+    pacman::BhamGrasp::Ptr grasp_;
 
     // variables required to plan the grasp
     pacman::Point3D::Seq object_;

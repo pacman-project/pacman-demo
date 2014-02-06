@@ -24,6 +24,9 @@
   <!--> READER of pcd files associated with the objects </-->
   <run_depend>object_cloud_reader</run_depend>
 
+  <!--> GRABBER of point clouds </-->
+  <run_depend>kinect_grabber</run_depend>
+
   <export>
     <metapackage/>
   </export>

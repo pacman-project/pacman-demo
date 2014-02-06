@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
   
-<property name="leg_width" value="0.03" />
-<property name="border_offset" value="0.055" />
+<xacro:property name="leg_width" value="0.03" />
+<xacro:property name="border_offset" value="0.055" />
   
-<macro name="table_leg" params="parent name *origin">
+<xacro:macro name="table_leg" params="parent name *origin">
     <joint name="${name}_joint" type="fixed">
         <insert_block name="origin"/>
         <parent link="${parent}" />
@@ -23,8 +23,8 @@
 			</geometry>
 		</collision>
     </link>
-</macro>
-<macro name="model_table" params="parent name *origin length width height plate_thickness">
+</xacro:macro>
+<xacro:macro name="model_table" params="parent name *origin length width height plate_thickness">
     <joint name="${parent}_${name}_base_joint" type="fixed">
         <insert_block name="origin"/>
         <parent link="${parent}_link"/>
@@ -57,5 +57,5 @@
     <xacro:table_leg parent="${name}_plate_link" name="leg_3">
         <origin xyz="${length - border_offset} -${width - border_offset} -${1/2 * (plate_thickness + height)}"/>
     </xacro:table_leg>
-</macro>
+</xacro:macro>
 </robot>

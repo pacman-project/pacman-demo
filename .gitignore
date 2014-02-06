@@ -1,0 +1,7 @@
+# version 0.1 (safoura)
+
+#generic files to ignore
+*~
+*.log
+build
+BUILD

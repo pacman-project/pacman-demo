@@ -1,0 +1,17 @@
+## THIS FILE DEFINES THE OBJECT READER SERVICE
+
+Object[] detected_objects
+
+# id of the object to grasp
+int32 object_id
+
+---
+
+sensor_msgs/PointCloud2 rec_scene
+
+# whether the service succeded or not
+int32 SUCCESS = 0
+int32 OTHER_ERROR = 1
+int32 NO_CLOUD_RECEIVED = 2
+int32 NO_OBJECTS_DETECTED = 3
+int32 result

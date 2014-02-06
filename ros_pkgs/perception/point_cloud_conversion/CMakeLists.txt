@@ -4,8 +4,10 @@ project(point_cloud_conversion)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED roscpp genmsg std_msgs sensor_msgs pcl pcl_ros pcl_conversions)
+find_package(catkin REQUIRED roscpp genmsg std_msgs sensor_msgs pcl_ros pcl_conversions)
 set(CMAKE_CXX_FLAGS "-std=c++0x")
+
+find_package(PCL 1.7 REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -63,6 +65,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(include
 	${catkin_INCLUDE_DIRS}
+	${PCL_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
@@ -82,6 +85,7 @@ add_dependencies(point_cloud_conversion_node definitions_generate_messages_cpp)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(point_cloud_conversion_node
   ${catkin_LIBRARIES}
+  ${PCL_LIBRARIES}
 )
 
 #############

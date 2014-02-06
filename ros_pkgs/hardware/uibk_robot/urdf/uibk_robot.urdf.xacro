@@ -11,12 +11,13 @@
   <link name="world_link" />
   
   <xacro:model_table name="table" 
-                    parent="world"
-                    length="2.22"
-                    width="0.8"
-                    height="0.734"
-                    plate_thickness="0.1">
-    <origin xyz="-0.029 -0.3 0" rpy="0 0 1.5708"/>
+         parent="world"
+         length="2.22"
+         width="1.2"
+         height="0.8"
+         plate_thickness="0.11">
+         
+    <origin xyz="-0.42 -0.3 0.08" rpy="0 0 1.5708"/> 
   </xacro:model_table>
 
   <xacro:model_torso name="torso" parent="world">
@@ -33,14 +34,104 @@
       rpy="-2.0628 0.7628 -3.1287"/>
   </xacro:kuka_lwr_arm>
   
-  <xacro:schunk_sdh parent="left_arm_7_link" name="leftGripper">
-    <origin xyz="0 0 0"
-      rpy="0 0 ${-1/2 * M_PI}"/>
-  </xacro:schunk_sdh>
+  <!-- joint between arm_7_link and the connector ring -->
+  <joint name="left_sdh_connector_joint" type="fixed" >
+    <origin xyz="0 0 0" />
+    <parent link="left_arm_7_link" />
+    <child link="left_sdh_connector_link" />
+  </joint>
   
-  <xacro:schunk_sdh parent="right_arm_7_link" name="rightGripper">
-    <origin xyz="0 0 0"
-      rpy="0 0 ${1/2 * M_PI}"/>
-  </xacro:schunk_sdh>
+  <!-- connector ring added to adjust distance to arm connector -->
+  <link name="left_sdh_connector_link">
+    <visual>
+      <origin xyz="0 0 0.0084" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.02735" length="0.0168" />
+      </geometry>
+      <material name="DarkGrey" />
+    </visual>
+    
+    <collision>
+      <origin xyz="0 0 0.0084" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.02735" length="0.0168" />
+      </geometry>
+    </collision>
+  </link>
   
+  <xacro:schunk_sdh parent="left_sdh_connector_link" name="left_sdh">
+    <origin xyz="0 0 0.0168" rpy="0 0 ${-1/2 * M_PI}"/>
+  </xacro:schunk_sdh>
+
+  <!-- This connector can be a macro inside the hand package descrption -->
+  <!-- joint between arm_7_link and the connector ring -->
+  <joint name="right_sdh_connector_joint" type="fixed" >
+    <origin xyz="0 0 0" />
+      <parent link="right_arm_7_link" />
+    <child link="right_sdh_connector_link" />
+  </joint>
+
+<!-- connector ring added to adjust distance to arm connector -->
+  <link name="right_sdh_connector_link">
+    <visual>
+      <origin xyz="0 0 0.0084" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.02735" length="0.0168" />
+      </geometry>
+      <material name="DarkGrey" />
+    </visual>
+    
+    <collision>
+      <origin xyz="0 0 0.0084" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.02735" length="0.0168" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <xacro:schunk_sdh parent="right_sdh_connector_link" name="right_sdh">
+    <origin xyz="0 0 0.0168" rpy="0 0 ${1/2 * M_PI}"/>
+  </xacro:schunk_sdh>
+
+
+  <!-- HEAD -->
+    <!-- joint between arm_7_link and the connector ring -->
+  <joint name="world_to_kit_head" type="fixed" >
+    <origin xyz="-0.35 0.675 0.85" rpy="0 0 0" />
+    <parent link="world_link" />
+    <child link="kit_head_link" />
+  </joint>
+  <link name="kit_head_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.15" length="0.4"/>
+      </geometry>
+      <material name="Silver" />
+    </visual>
+    
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.15" length="0.4" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- Kinect vision sensor -->
+  <!-- <link name="camera_link"/>
+  <joint name="kinect_visionSensor_joint" type="fixed" >
+    <origin xyz="-0.40271 0.66297 0.796599"
+      rpy="-1.69854 -0.0579848 -2.43762"/>
+    <parent link="world_link" />
+    <child link="camera_link" /> 
+  </joint> -->
+  <!-- simulator-->
+  <!-- <joint name="kinect_visionSensor_joint" type="fixed" >
+    <origin xyz="-0.4568 0.6891 0.7516"
+      rpy="2.2689 0.0 1.5708"/>
+    <parent link="world_link" />
+    <child link="kinect_visionSensor" />
+  </joint> -->
+
 </robot>

@@ -1,0 +1,23 @@
+sensors: 
+ - sensor_plugin: occupancy_map_monitor/PointCloudOctomapUpdater
+#   point_cloud_topic: /simulation/kinect1/sensoring/depth_image
+#   point_cloud_topic: /reconstructed_scene
+#   point_cloud_topic: /pose_estimation_uibk/reconstructed_scene
+   point_cloud_topic: /camera/depth/points
+   max_range: 1.0
+#   frame_subsample: 1
+   point_subsample: 1
+   padding_offset: 0.01
+   padding_scale: 1.0
+   filtered_cloud_topic: filtered_cloud
+   shape_padding: 0.01
+   shape_scale: 1.0
+#   self_mask:
+#       min_sensor_dist: .1
+#        self_see_default_padding: .04
+#        self_see_default_scale: 1.0
+#        self_see_links:
+#          - name: right_arm_3_link
+#            padding: 0.1
+#          - name: right_arm_4_link
+#            padding: 0.1
