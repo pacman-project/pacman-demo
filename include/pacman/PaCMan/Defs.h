@@ -29,11 +29,11 @@ namespace pacman {
 			};
 			float_t v[3];
 		};
-		/** Default constructor sets the default configuration. */
+		/** Default constructor sets the default values. */
 		inline Vec3() {
 			setToDefault();
 		}
-		/** The default configuration. */
+		/** The default values. */
 		inline void setToDefault() {
 			v1 = float_t(0.); v2 = float_t(0.); v3 = float_t(0.);
 		}
@@ -51,11 +51,11 @@ namespace pacman {
 			};
 			float_t m[3][3];
 		};
-		/** Default constructor sets the default configuration. */
+		/** Default constructor sets the default values. */
 		inline Mat33() {
 			setToDefault();
 		}
-		/** The default configuration. */
+		/** The default values. */
 		inline void setToDefault() {
 			m11 = float_t(1.); m12 = float_t(0.); m13 = float_t(0.);
 			m21 = float_t(0.); m22 = float_t(1.); m23 = float_t(0.);
@@ -71,11 +71,11 @@ namespace pacman {
 		/** translation	*/
 		Vec3 p;
 
-		/** Default constructor sets the default configuration. */
+		/** Default constructor sets the default values. */
 		inline Mat34() {
 			//setToDefault();
 		}
-		/** The default configuration. */
+		/** The default values. */
 		inline void setToDefault() {
 			R.setToDefault();
 			p.setToDefault();
@@ -93,11 +93,11 @@ namespace pacman {
 			std::uint32_t uint32;
 			std::uint8_t uint8[4];
 		};
-		/** Default constructor sets the default configuration. */
+		/** Default constructor sets the default values. */
 		inline RGBA() {
 			setToDefault();
 		}
-		/** The default configuration. */
+		/** The default values. */
 		inline void setToDefault() {
 			uint32 = UINT32_MAX; // white colour
 		}
@@ -116,11 +116,11 @@ namespace pacman {
 		/** Colour */
 		RGBA colour;
 
-		/** Default constructor sets the default configuration. */
+		/** Default constructor sets the default values. */
 		inline Point3D() {
 			setToDefault();
 		}
-		/** The default configuration. */
+		/** The default values. */
 		inline void setToDefault() {
 			position.setToDefault();
 			normal.x = float_t(0.); normal.y = float_t(0.); normal.z = float_t(1.); // Z direction
@@ -128,64 +128,132 @@ namespace pacman {
 		}
 	};
 
+	/** Innsbruck robot state */
+	class TimeStamp {
+	public:
+		/** Time stamp */
+		float_t t;
+
+		/** Default constructor sets the default values. */
+		inline TimeStamp() {
+			setToDefault();
+		}
+		/** The default values. */
+		inline void setToDefault() {
+			t = float_t(0.);
+		}
+	};
+
+	/** State template (position control) */
+	template <typename _Config> class State {
+	public:
+		/** Sequence */
+		typedef std::vector<State> Seq;
+
+		/** Position */
+		_Config pos;
+
+		/** Default constructor sets the default values. */
+		inline State() {
+			setToDefault();
+		}
+		/** The default values. */
+		inline void setToDefault() {
+			pos.setToDefault();
+		}
+	};
+
+	/** Command template (position control) */
+	template <typename _Config> class Command {
+	public:
+		/** Sequence */
+		typedef std::vector<Command> Seq;
+
+		/** Position */
+		_Config pos;
+		/** Velocity */
+		_Config vel;
+		/** Acceleration */
+		_Config acc;
+
+		/** Default constructor sets the default values. */
+		inline Command() {
+			setToDefault();
+		}
+		/** The default values. */
+		inline void setToDefault() {
+			pos.setToDefault();
+			vel.setToDefault();
+			acc.setToDefault();
+		}
+	};
+
 	/** Kuka LWR */
 	class KukaLWR {
 	public:
-		/** Number of joints= */
-		static const std::uintptr_t JOINTS = 7;
-
 		/** Kuka LWR configuration */
 		class Config {
 		public:
 			/** Sequence */
 			typedef std::vector<Config> Seq;
 
+			/** Number of kinematic chains */
+			static const std::uintptr_t CHAINS = 1;
+			/** Number of joints */
+			static const std::uintptr_t JOINTS = 7;
+
 			/** Config elements. */
 			union {
 				float_t c[JOINTS];
 			};
-			/** Default constructor sets the default configuration. */
+			/** Default constructor sets the default values. */
 			inline Config() {
 				setToDefault();
 			}
-			/** The default configuration. */
+			/** The default values. */
 			inline void setToDefault() {
 				std::fill(c, c + JOINTS, float_t(0.));
 			}
 		};
+
+		/** Kuka LWR state */
+		typedef pacman::State<Config> State;
+
+		/** Kuka LWR command */
+		typedef pacman::Command<Config> Command;
 	};
 
 	/** Shunk Dexterous Hand */
 	class ShunkDexHand {
 	public:
-		/** Number of fingers */
-		static const std::uintptr_t FINGERS = 3;
-		/** Number of joints per finger */
-		static const std::uintptr_t FINGER_JOINTS = 2;
-		/** Number of joints: middle, left, right, left+right rotation */
-		static const std::uintptr_t JOINTS = FINGERS*FINGER_JOINTS + 1;
-
 		/** Shunk Dexterous Hand configuration */
 		class Config {
 		public:
 			/** Sequence */
 			typedef std::vector<Config> Seq;
 
+			/** Number of kinematic chains */
+			static const std::uintptr_t CHAINS = 3;
+			/** Number of joints per finger */
+			static const std::uintptr_t CHAIN_JOINTS = 2;
+			/** Number of joints: middle, left, right, left+right rotation */
+			static const std::uintptr_t JOINTS = CHAINS*CHAIN_JOINTS + 1;
+
 			/** Config elements. */
 			union {
 				struct {
-					float_t middle[FINGER_JOINTS];
-					float_t left[FINGER_JOINTS];
-					float_t right[FINGER_JOINTS];
+					float_t middle[CHAIN_JOINTS];
+					float_t left[CHAIN_JOINTS];
+					float_t right[CHAIN_JOINTS];
 					float_t rotation;
 				};
 				float_t c[JOINTS];
 			};
-			/** Default constructor sets the default configuration. */
+			/** Default constructor sets the default values. */
 			inline Config() {
 				setToDefault();
 			}
-			/** The default configuration. */
+			/** The default values. */
 			inline void setToDefault() {
 				std::fill(c, c + JOINTS, float_t(0.));
 			}
@@ -202,40 +270,48 @@ namespace pacman {
 			/** 3D pose */
 			Mat34 pose;
 
-			/** Default constructor sets the default configuration. */
+			/** Default constructor sets the default values. */
 			inline Pose() {
 				setToDefault();
 			}
-			/** The default configuration. */
+			/** The default values. */
 			inline void setToDefault() {
 				config.setToDefault();
 				pose.setToDefault();
 			}
 		};
+
+		/** Shunk Dexterous Hand state */
+		typedef pacman::State<Config> State;
+
+		/** Shunk Dexterous Hand command */
+		typedef pacman::Command<Config> Command;
 	};
 
 	/** Innsbruck robot */
 	class RobotUIBK {
 	public:
-		/** Number of joints= */
-		static const std::uintptr_t JOINTS = KukaLWR::JOINTS + ShunkDexHand::JOINTS;
-
 		/** Innsbruck robot configuration */
 		class Config {
 		public:
 			/** Sequence */
 			typedef std::vector<Config> Seq;
 
+			/** Number of kinematic chains */
+			static const std::uintptr_t CHAINS = KukaLWR::Config::CHAINS + ShunkDexHand::Config::CHAINS;
+			/** Number of joints */
+			static const std::uintptr_t JOINTS = KukaLWR::Config::JOINTS + ShunkDexHand::Config::JOINTS;
+
 			/** Arm configuration. */
 			KukaLWR::Config arm;
 			/** Hand configuration. */
 			ShunkDexHand::Config hand;
 
-			/** Default constructor sets the default configuration. */
+			/** Default constructor sets the default values. */
 			inline Config() {
 				setToDefault();
 			}
-			/** The default configuration. */
+			/** The default values. */
 			inline void setToDefault() {
 				arm.setToDefault();
 				hand.setToDefault();
@@ -251,17 +327,69 @@ namespace pacman {
 			/** 3D pose */
 			Mat34 pose;
 
-			/** Default constructor sets the default configuration. */
+			/** Default constructor sets the default values. */
 			inline Pose() {
 				setToDefault();
 			}
-			/** The default configuration. */
+			/** The default values. */
 			inline void setToDefault() {
 				arm.setToDefault();
 				hand.setToDefault();
 				pose.setToDefault();
 			}
 		};
+
+		/** Innsbruck robot state */
+		class State : public TimeStamp {
+		public:
+			/** Sequence */
+			typedef std::vector<State> Seq;
+
+			/** Arm state. */
+			KukaLWR::State arm;
+			/** Hand state. */
+			ShunkDexHand::State hand;
+
+			/** Default constructor sets the default values. */
+			inline State() {
+				setToDefault();
+			}
+			/** The default values. */
+			inline void setToDefault() {
+				TimeStamp::setToDefault();
+				arm.setToDefault();
+				hand.setToDefault();
+			}
+		};
+
+		/** Innsbruck robot command */
+		class Command : public TimeStamp {
+		public:
+			/** Sequence */
+			typedef std::vector<State> Seq;
+
+			/** Arm state. */
+			KukaLWR::Command arm;
+			/** Hand state. */
+			ShunkDexHand::Command hand;
+
+			/** Default constructor sets the default values. */
+			inline Command() {
+				setToDefault();
+			}
+			/** The default values. */
+			inline void setToDefault() {
+				TimeStamp::setToDefault();
+				arm.setToDefault();
+				hand.setToDefault();
+			}
+		};
+	};
+
+	/** Robot type */
+	enum RobotType {
+		/** Innsbruck robot */
+		ROBOT_UIBK,
 	};
 };
 

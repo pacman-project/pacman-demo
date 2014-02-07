@@ -284,7 +284,9 @@ INCLUDE_DIRECTORIES(
 	${POINTGRAY_INCLUDE}
 )
 
+###############################################################################
 # Bham grasp library
+
 SET(BHAM_GRASP_HEADERS
 	${PROJECT_ROOT}/include/pacman/Bham/Grasp/Grasp.h
 	${PROJECT_ROOT}/include/pacman/Bham/Grasp/GraspImpl.h
@@ -399,6 +401,66 @@ SET_PROPERTY(TARGET PaCManBhamGraspTest PROPERTY PROJECT_LABEL "GraspTest")
 SET_PROPERTY(TARGET PaCManBhamGraspTest PROPERTY FOLDER "Bham")
 COPY_FILES(PaCManBhamGraspTest ${RUNTIME_OUTPUT_DIRECTORY} ${BHAM_GRASP_FILES})
 INSTALL(TARGETS PaCManBhamGraspTest RUNTIME DESTINATION bin)
+
+###############################################################################
+# Bham control library
+
+SET(BHAM_CONTROL_HEADERS
+	${PROJECT_ROOT}/include/pacman/Bham/Control/Control.h
+	${PROJECT_ROOT}/include/pacman/Bham/Control/ControlImpl.h
+)
+SET(BHAM_CONTROL_SOURCES
+	${PROJECT_ROOT}/src/pacman/Bham/Control/Control.cpp
+)
+SET(BHAM_CONTROL_FILES
+	${PROJECT_ROOT}/resources/Bham/ControlRobotUIBK.xml
+)
+if(BUILD_DYNAMIC_LIBS)
+	ADD_LIBRARY(PaCManBhamControl SHARED ${BHAM_CONTROL_HEADERS} ${BHAM_CONTROL_SOURCES} ${BHAM_CONTROL_FILES})
+	#SET_TARGET_PROPERTIES(PaCManBhamControl PROPERTIES COMPILE_FLAGS ${CMAKE_DLL_EXPORT_FLAGS})
+else(BUILD_DYNAMIC_LIBS)
+	ADD_LIBRARY(PaCManBhamControl STATIC ${BHAM_CONTROL_HEADERS} ${BHAM_CONTROL_SOURCES} ${BHAM_CONTROL_FILES})
+endif(BUILD_DYNAMIC_LIBS)
+if (WIN32)
+	TARGET_LINK_LIBRARIES(
+		PaCManBhamControl
+		expat WinMM
+		optimized GolemDefs${CMAKE_RELEASE_POSTFIX} debug GolemDefs${CMAKE_DEBUG_POSTFIX}
+		optimized GolemMath${CMAKE_RELEASE_POSTFIX} debug GolemMath${CMAKE_DEBUG_POSTFIX}
+		optimized GolemSys${CMAKE_RELEASE_POSTFIX} debug GolemSys${CMAKE_DEBUG_POSTFIX}
+		optimized GolemTools${CMAKE_RELEASE_POSTFIX} debug GolemTools${CMAKE_DEBUG_POSTFIX}
+		optimized GolemCtrl${CMAKE_RELEASE_POSTFIX} debug GolemCtrl${CMAKE_DEBUG_POSTFIX}
+	)
+elseif (UNIX)
+	TARGET_LINK_LIBRARIES(
+		PaCManBhamControl
+		optimized GolemDefs${CMAKE_RELEASE_POSTFIX} debug GolemDefs${CMAKE_DEBUG_POSTFIX}
+		optimized GolemMath${CMAKE_RELEASE_POSTFIX} debug GolemMath${CMAKE_DEBUG_POSTFIX}
+		optimized GolemSys${CMAKE_RELEASE_POSTFIX} debug GolemSys${CMAKE_DEBUG_POSTFIX}
+		optimized GolemTools${CMAKE_RELEASE_POSTFIX} debug GolemTools${CMAKE_DEBUG_POSTFIX}
+		optimized GolemCtrl${CMAKE_RELEASE_POSTFIX} debug GolemCtrl${CMAKE_DEBUG_POSTFIX}
+	)
+endif()	
+SET_PROPERTY(TARGET PaCManBhamControl PROPERTY RELEASE_POSTFIX ${CMAKE_RELEASE_POSTFIX})
+SET_PROPERTY(TARGET PaCManBhamControl PROPERTY DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
+SET_PROPERTY(TARGET PaCManBhamControl PROPERTY PROJECT_LABEL "Control")
+SET_PROPERTY(TARGET PaCManBhamControl PROPERTY FOLDER "Bham")
+SOURCE_GROUP("Resource Files" FILES ${BHAM_CONTROL_FILES})
+INSTALL(TARGETS PaCManBhamControl RUNTIME DESTINATION bin LIBRARY DESTINATION bin ARCHIVE DESTINATION lib)
+INSTALL(FILES ${BHAM_CONTROL_HEADERS} DESTINATION include/pacman/Bham/Control/)
+INSTALL(FILES ${BHAM_CONTROL_FILES} DESTINATION bin)
+# Bham control test
+SET(BHAM_CONTROL_TEST_SOURCES
+	${PROJECT_ROOT}/src/pacman/Bham/ControlTest/ControlTest.cpp
+)
+ADD_EXECUTABLE(PaCManBhamControlTest ${BHAM_CONTROL_TEST_SOURCES})
+TARGET_LINK_LIBRARIES(PaCManBhamControlTest PaCManBhamControl)
+SET_PROPERTY(TARGET PaCManBhamControlTest PROPERTY RELEASE_POSTFIX ${CMAKE_RELEASE_POSTFIX})
+SET_PROPERTY(TARGET PaCManBhamControlTest PROPERTY DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
+SET_PROPERTY(TARGET PaCManBhamControlTest PROPERTY PROJECT_LABEL "ControlTest")
+SET_PROPERTY(TARGET PaCManBhamControlTest PROPERTY FOLDER "Bham")
+COPY_FILES(PaCManBhamControlTest ${RUNTIME_OUTPUT_DIRECTORY} ${BHAM_CONTROL_FILES})
+INSTALL(TARGETS PaCManBhamControlTest RUNTIME DESTINATION bin)
 
 ###############################################################################
 #

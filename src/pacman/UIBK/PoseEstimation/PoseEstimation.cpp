@@ -91,8 +91,8 @@ void UIBKPoseEstimationImpl::capture(Point3D::Seq& points)
 void UIBKPoseEstimationImpl::estimate(const Point3D::Seq& points, Pose::Seq& poses) 
 {
 
-  params_->recognizePose(*objects,xyz_points_);
-  //params_->recognizePose(*objects);
+  //params_->recognizePose(*objects,xyz_points_);
+  params_->recognizePose(*objects);
 
   boost::shared_ptr < vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > > transforms_ = objects->getTransforms();
 

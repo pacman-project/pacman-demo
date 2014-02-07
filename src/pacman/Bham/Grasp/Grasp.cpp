@@ -256,7 +256,7 @@ void BhamGraspImpl::convert(const ShunkDexHand::Config& src, ::grasp::Manipulato
 }
 
 void BhamGraspImpl::convert(const ::grasp::RobotState::List& src, RobotUIBK::Config::Seq& dst) const {
-	if (grasp.second->getManipulator().getJoints() < (U32)pacman::RobotUIBK::JOINTS)
+	if (grasp.second->getManipulator().getJoints() < (U32)pacman::RobotUIBK::Config::JOINTS)
 		throw Message(Message::LEVEL_ERROR, "BhamGraspImpl::convert(): invalid number of joints");
 
 	dst.resize(0);
@@ -277,7 +277,7 @@ void BhamGraspImpl::convert(const ::grasp::RobotState::List& src, RobotUIBK::Con
 }
 
 void BhamGraspImpl::convert(const RobotUIBK::Config::Seq& src, ::grasp::RobotState::List& dst) const {
-	if (grasp.second->getManipulator().getJoints() < (U32)pacman::RobotUIBK::JOINTS)
+	if (grasp.second->getManipulator().getJoints() < (U32)pacman::RobotUIBK::Config::JOINTS)
 		throw Message(Message::LEVEL_ERROR, "BhamGraspImpl::convert(): invalid number of joints");
 
 	dst.clear();
@@ -321,15 +321,15 @@ void pacman::save(const std::string& path, const RobotUIBK::Config::Seq& traject
 
 	std::stringstream str;
 	str << "#";
-	for (std::uintptr_t i = 0; i < KukaLWR::JOINTS; ++i)
+	for (std::uintptr_t i = 0; i < KukaLWR::Config::JOINTS; ++i)
 		str << '\t' << "arm_" << i;
-	for (std::uintptr_t i = 0; i < ShunkDexHand::JOINTS; ++i)
+	for (std::uintptr_t i = 0; i < ShunkDexHand::Config::JOINTS; ++i)
 		str << '\t' << "hand_" << i;
 	file << str.str() << std::endl;
 
 	for (auto i: trajectory) {
-		for (size_t j = 0; j < RobotUIBK::JOINTS; ++j)
-			file << (j < KukaLWR::JOINTS ? i.arm.c[j] : i.hand.c[j - KukaLWR::JOINTS]) << '\t';
+		for (size_t j = 0; j < RobotUIBK::Config::JOINTS; ++j)
+			file << (j < KukaLWR::Config::JOINTS ? i.arm.c[j] : i.hand.c[j - KukaLWR::Config::JOINTS]) << '\t';
 		file << std::endl;
 	}
 }
@@ -348,8 +348,8 @@ void pacman::load(const std::string& path, RobotUIBK::Config::Seq& trajectory) {
 			RobotUIBK::Config config;
 
 			char *token = std::strtok(const_cast<char*>(line.c_str()), DELIM);
-			for (size_t index = 0; token != NULL && index < RobotUIBK::JOINTS; token = std::strtok(NULL, DELIM), ++index)
-				(index < KukaLWR::JOINTS ? config.arm.c[index] : config.hand.c[index - KukaLWR::JOINTS]) = float_t(atof(token));
+			for (size_t index = 0; token != NULL && index < RobotUIBK::Config::JOINTS; token = std::strtok(NULL, DELIM), ++index)
+				(index < KukaLWR::Config::JOINTS ? config.arm.c[index] : config.hand.c[index - KukaLWR::Config::JOINTS]) = float_t(atof(token));
             
 			trajectory.push_back(config);
 		}
