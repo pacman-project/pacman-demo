@@ -34,7 +34,7 @@ namespace pacman {
 
 		/**	Robot control
 		*/
-		virtual void send(const void* command, size_t size = 1);
+		virtual void send(const void* command, std::uintptr_t size = 1);
 
 		/**	Wait for begin of the robot control cycle
 		*/
@@ -46,7 +46,7 @@ namespace pacman {
 
 
 		/** Get command */
-		const void* getCommand(const void* ptr, size_t n) const;
+		const void* getCommand(const void* ptr, std::uintptr_t n) const;
 
 		/** State conversion */
 		void convertState(const ::golem::Controller::State& src, void* dst) const;

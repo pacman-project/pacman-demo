@@ -1,3 +1,4 @@
+#include <pacman/Bham/Control/Control.h>
 #include <pacman/Bham/Grasp/GraspImpl.h>
 #include <pacman/PaCMan/PCL.h>
 #include <Golem/Phys/Data.h>
@@ -234,25 +235,12 @@ void BhamGraspImpl::convert(const Point3D::Seq& src, ::grasp::Cloud::PointSeq& d
 
 void BhamGraspImpl::convert(const ::grasp::Manipulator::Config& src, ShunkDexHand::Config& dst) const {
 	const std::uintptr_t offset = grasp.second->getManipulator().getArmJoints();
-	dst.middle[0] = (float_t)src.jc[offset + 0];
-	dst.middle[1] = (float_t)src.jc[offset + 1];
-	dst.left[0] = (float_t)src.jc[offset + 3];
-	dst.left[1] = (float_t)src.jc[offset + 4];
-	dst.right[0] = (float_t)src.jc[offset + 6];
-	dst.right[1] = (float_t)src.jc[offset + 7];
-	dst.rotation = (float_t)src.jc[offset + 2];
+	BhamControl::configToPacman(src.jc + grasp.second->getManipulator().getArmJoints(), dst);
 }
 
 void BhamGraspImpl::convert(const ShunkDexHand::Config& src, ::grasp::Manipulator::Config& dst) const {
 	const std::uintptr_t offset = grasp.second->getManipulator().getArmJoints();
-	dst.jc[offset + 0] = (Real)src.middle[0];
-	dst.jc[offset + 1] = (Real)src.middle[1];
-	dst.jc[offset + 3] = (Real)src.left[0];
-	dst.jc[offset + 4] = (Real)src.left[1];
-	dst.jc[offset + 6] = (Real)src.right[0];
-	dst.jc[offset + 7] = (Real)src.right[1];
-	dst.jc[offset + 2] = (Real)src.rotation;
-	dst.jc[offset + 5] = -(Real)src.rotation;
+	BhamControl::configToGolem(src, dst.jc + grasp.second->getManipulator().getArmJoints());
 }
 
 void BhamGraspImpl::convert(const ::grasp::RobotState::List& src, RobotUIBK::Config::Seq& dst) const {

@@ -145,7 +145,7 @@ namespace pacman {
 	};
 
 	/** State template (position control) */
-	template <typename _Config> class State {
+	template <typename _Config> class State : public TimeStamp {
 	public:
 		/** Sequence */
 		typedef std::vector<State> Seq;
@@ -159,12 +159,13 @@ namespace pacman {
 		}
 		/** The default values. */
 		inline void setToDefault() {
+			TimeStamp::setToDefault();
 			pos.setToDefault();
 		}
 	};
 
 	/** Command template (position control) */
-	template <typename _Config> class Command {
+	template <typename _Config> class Command : public TimeStamp {
 	public:
 		/** Sequence */
 		typedef std::vector<Command> Seq;
@@ -178,6 +179,7 @@ namespace pacman {
 
 		/** Default constructor sets the default values. */
 		inline Command() {
+			TimeStamp::setToDefault();
 			setToDefault();
 		}
 		/** The default values. */
@@ -339,51 +341,11 @@ namespace pacman {
 			}
 		};
 
-		/** Innsbruck robot state */
-		class State : public TimeStamp {
-		public:
-			/** Sequence */
-			typedef std::vector<State> Seq;
+		/**  Innsbruck robot state */
+		typedef pacman::State<Config> State;
 
-			/** Arm state. */
-			KukaLWR::State arm;
-			/** Hand state. */
-			ShunkDexHand::State hand;
-
-			/** Default constructor sets the default values. */
-			inline State() {
-				setToDefault();
-			}
-			/** The default values. */
-			inline void setToDefault() {
-				TimeStamp::setToDefault();
-				arm.setToDefault();
-				hand.setToDefault();
-			}
-		};
-
-		/** Innsbruck robot command */
-		class Command : public TimeStamp {
-		public:
-			/** Sequence */
-			typedef std::vector<State> Seq;
-
-			/** Arm state. */
-			KukaLWR::Command arm;
-			/** Hand state. */
-			ShunkDexHand::Command hand;
-
-			/** Default constructor sets the default values. */
-			inline Command() {
-				setToDefault();
-			}
-			/** The default values. */
-			inline void setToDefault() {
-				TimeStamp::setToDefault();
-				arm.setToDefault();
-				hand.setToDefault();
-			}
-		};
+		/**  Innsbruck robot command */
+		typedef pacman::Command<Config> Command;
 	};
 
 	/** Robot type */
