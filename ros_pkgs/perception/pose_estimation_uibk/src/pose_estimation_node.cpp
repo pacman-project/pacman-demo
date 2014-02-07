@@ -191,8 +191,17 @@ bool PoseEstimator::estimatePoses(definitions::PoseEstimation::Request& request,
     }
     
     response.detected_objects = detected_objects;
-     pcl::PointCloud<pcl::PointXYZ>::Ptr xyz_objs_ (new pcl::PointCloud<pcl::PointXYZ>());
+
+   /*  pcl::PointCloud<pcl::PointXYZ>::Ptr xyz_objs_ (new pcl::PointCloud<pcl::PointXYZ>());
+     xyz_objs_->width = 640; xyz_objs_->height = 480;
      xyz_objs_->points.resize(xyz_points_->width*xyz_points_->height);
+     for( size_t i = 0; i < xyz_objs_->points.size(); i++ )
+     {
+        pcl::PointXYZ point; point.x = std::numeric_limits<double>::quiet_NaN(); 
+        point.y = std::numeric_limits<double>::quiet_NaN(); 
+        point.z = std::numeric_limits<double>::quiet_NaN();
+        xyz_objs_->points[i] = point;
+     }
      for( int i = 0; i < names.size(); i++ )
      {
         vector<int> id_cur = give_object_ids(xyz_points_,objects.getPointCloudAt(i));
@@ -200,12 +209,6 @@ bool PoseEstimator::estimatePoses(definitions::PoseEstimation::Request& request,
             xyz_objs_->points[id_cur[j]] = xyz_points_->points[id_cur[j]];
      }
       
-     /*for( int i = 0; i < names.size(); i++)
-     {
-        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cur = objects.getPointCloudAt(i);
-        for( size_t j = 0; j < cloud_cur->points.size(); j++ )
-            xyz_objs_->points.push_back(cloud_cur->points[j]);
-     }  */
 
      Eigen::Matrix4d md_(kinectToRobot.inverse().cast<double>());
      Eigen::Quaternion<double> quat(md_.block<3,3>(0,0));
@@ -215,11 +218,14 @@ bool PoseEstimator::estimatePoses(definitions::PoseEstimation::Request& request,
      Eigen::Affine3d e_ = Eigen::Affine3d(md_);  
      pcl::transformPointCloud(*xyz_objs_,*xyz_objs_,e_);
 
+     rec_scene_cloud.width = xyz_objs_->width;  rec_scene_cloud.height = xyz_objs_->height;
+     rec_scene_cloud.data.resize(rec_scene_cloud.width*rec_scene_cloud.height);
+     rec_scene_cloud.is_dense = false;
      pcl::toROSMsg(*xyz_objs_,rec_scene_cloud);
+     rec_scene_cloud.header.frame_id = "/world_link";
      rec_scene_cloud.header.stamp = ros::Time::now();
     // rec_scene_cloud.header.seq ++;
-         // pcl::toROSMsg(*xyz_points_,rec_scene_cloud);
-     pub_rec_scene_.publish(rec_scene_cloud);
+    pub_rec_scene_.publish(rec_scene_cloud);*/
     ROS_INFO("Pose estimation service finisihed, and ready for another service requests...");
     return true;
 }
@@ -249,6 +255,7 @@ vector<int> PoseEstimator::give_object_ids(pcl::PointCloud<pcl::PointXYZ>::Ptr c
 void PoseEstimator::publish_scene()
 {
     rec_scene_cloud.header.frame_id = "/world_link";
+    rec_scene_cloud.header.stamp = ros::Time::now();
     //rec_scene_cloud.header.seq ++;
     pub_rec_scene_.publish(rec_scene_cloud);
 }
@@ -280,10 +287,12 @@ int main(int argc, char **argv)
 
     pose_estimation_uibk::PoseEstimator node(nh);
     ROS_INFO("Pose estimation node ready for service requests...");
+   // ros::Rate loop_rate(30);
     while(ros::ok())
     {
         ros::spinOnce();
-        node.publish_scene();
+        /*node.publish_scene();
+        loop_rate.sleep();*/
     }
 
     return 0;

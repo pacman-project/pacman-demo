@@ -76,7 +76,8 @@ class grabkinect
     	xyz_points_->width = input->width;
     	xyz_points_->points.resize(xyz_points_->width*xyz_points_->height); 
     	pcl::fromROSMsg( *input, *xyz_points_);
-         
+        cout << "in kinect graber: " << " height: " << input->height << " width: " << input->width << endl;
+        cout << "header: " << input->header.seq << " : " << input->is_dense << endl;
         pub_object_point_clouds_.publish(*xyz_points_);
         
         id++;

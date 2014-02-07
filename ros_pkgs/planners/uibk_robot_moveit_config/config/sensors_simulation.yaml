@@ -2,10 +2,11 @@ sensors:
  - sensor_plugin: occupancy_map_monitor/PointCloudOctomapUpdater
 #   point_cloud_topic: /simulation/kinect1/sensoring/depth_image
 #   point_cloud_topic: /reconstructed_scene
-#   point_cloud_topic: /pose_estimation_uibk/reconstructed_scene
-   point_cloud_topic: /camera/depth/points
+   point_cloud_topic: /pose_estimation_uibk/reconstructed_scene
+  # point_cloud_topic: /camera/depth/points
    max_range: 1.0
 #   frame_subsample: 1
+   queue_size: 1
    point_subsample: 1
    padding_offset: 0.01
    padding_scale: 1.0

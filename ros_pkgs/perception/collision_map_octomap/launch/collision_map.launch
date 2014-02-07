@@ -21,6 +21,7 @@
     <!-- CHECK WETHER YOU ARE USING OPENNI OR OPENNI2 IN THE RGBDsensor.launch FILE /-->
     <!-- data source to integrate (PointCloud2) using openni for kinect /-->
     <remap from="/cloud_in" to="/camera/depth_registered/points" />
+    <!-- remap from="/cloud_in" to="/pose_estimation_uibk/reconstructed_scene" /-->
 
     <!-- data source to integrate (PointCloud2) using openni2 for new primsense/asus -->
     <!--remap from="/cloud_in" to="/camera/depth/points_xyzrgb" /-->
