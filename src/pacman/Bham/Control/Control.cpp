@@ -29,7 +29,7 @@ void BhamControlImpl::lookupCommand(pacman::float_t t, void* command) const {
 	convertCommand(inp, command);
 }
 
-void BhamControlImpl::send(const void* command, size_t size) {
+void BhamControlImpl::send(const void* command, std::uintptr_t size) {
 	if (size <= 0)
 		throw Message(Message::LEVEL_ERROR, "BhamControlImpl::send(): invalid number of commands %u", size);
 	
@@ -52,7 +52,7 @@ bool BhamControlImpl::waitForTrajectoryEnd(double timewait) {
 
 //-----------------------------------------------------------------------------
 
-const void* BhamControlImpl::getCommand(const void* ptr, size_t n) const {
+const void* BhamControlImpl::getCommand(const void* ptr, std::uintptr_t n) const {
 	switch (type) {
 	case ROBOT_UIBK:
 		return (const RobotUIBK::Command*)ptr + n;
@@ -89,15 +89,38 @@ void BhamControlImpl::convertCommand(const void* src, ::golem::Controller::State
 //-----------------------------------------------------------------------------
 
 void BhamControlImpl::convert(const ::golem::Controller::State& src, RobotUIBK::State& dst) const {
+	// time
+	dst.t = (pacman::float_t)src.t;
 	// arm
-
+	configToPacman(&src.cpos[info.getJoints(info.getChains().begin() + 0).begin()], dst.pos.arm);
 	// hand
+	configToPacman(&src.cpos[info.getJoints(info.getChains().begin() + 1).begin()], dst.pos.hand);
 }
 
 void BhamControlImpl::convert(const ::golem::Controller::State& src, RobotUIBK::Command& dst) const {
+	// time
+	dst.t = (pacman::float_t)src.t;
+	// arm
+	configToPacman(&src.cpos[info.getJoints(info.getChains().begin() + 0).begin()], dst.pos.arm);
+	configToPacman(&src.cvel[info.getJoints(info.getChains().begin() + 0).begin()], dst.vel.arm);
+	configToPacman(&src.cacc[info.getJoints(info.getChains().begin() + 0).begin()], dst.acc.arm);
+	// hand
+	configToPacman(&src.cpos[info.getJoints(info.getChains().begin() + 1).begin()], dst.pos.hand);
+	configToPacman(&src.cvel[info.getJoints(info.getChains().begin() + 1).begin()], dst.vel.hand);
+	configToPacman(&src.cacc[info.getJoints(info.getChains().begin() + 1).begin()], dst.acc.hand);
 }
 
 void BhamControlImpl::convert(const RobotUIBK::Command& src, ::golem::Controller::State& dst) const {
+	// time
+	dst.t = (SecTmReal)src.t;
+	// arm
+	configToGolem(src.pos.arm, &dst.cpos[info.getJoints(info.getChains().begin() + 0).begin()]);
+	configToGolem(src.vel.arm, &dst.cvel[info.getJoints(info.getChains().begin() + 0).begin()]);
+	configToGolem(src.acc.arm, &dst.cacc[info.getJoints(info.getChains().begin() + 0).begin()]);
+	// hand
+	configToGolem(src.pos.hand, &dst.cpos[info.getJoints(info.getChains().begin() + 1).begin()]);
+	configToGolem(src.vel.hand, &dst.cvel[info.getJoints(info.getChains().begin() + 1).begin()]);
+	configToGolem(src.acc.hand, &dst.cacc[info.getJoints(info.getChains().begin() + 1).begin()]);
 }
 
 //-----------------------------------------------------------------------------
@@ -109,7 +132,7 @@ void BhamControlImpl::assertRobotUIBK(const golem::Controller& controller) {
 //-----------------------------------------------------------------------------
 
 Context::Ptr context;
-Controller::Desc::Ptr pControllerDesc;
+Controller::Desc::Ptr controllerDesc;
 Controller::Ptr controller;
 BhamControlImpl* pBhamControl = nullptr;
 
@@ -126,31 +149,30 @@ BhamControl::Ptr BhamControl::create(RobotType type, const std::string& path) {
 	// Create program context
 	golem::Context::Desc contextDesc;
 	XMLData(contextDesc, pXMLContext);
-	golem::Context::Ptr pContext = contextDesc.create(); // throws
+	context = contextDesc.create(); // throws
 
 	// Load driver
-	Controller::Desc::Ptr pControllerDesc = Controller::Desc::load(pContext.get(), pXMLContext->getContextFirst("controller"));
+	controllerDesc = Controller::Desc::load(context.get(), pXMLContext->getContextFirst("controller"));
 
 	// Create controller
-	pContext->info("Initialising controller...\n");
-	Controller::Ptr pController = pControllerDesc->create(*pContext);
+	context->info("Initialising controller...\n");
+	controller = controllerDesc->create(*context);
 
 	// Assert correct robot type
 	switch (type) {
 	case ROBOT_UIBK:
-		BhamControlImpl::assertRobotUIBK(*pController); // throws
+		BhamControlImpl::assertRobotUIBK(*controller); // throws
 		break;
 	default:
 		throw Message(Message::LEVEL_ERROR, "BhamControl::create(): unknown robot type %u", type);
 	}
 
-	pBhamControl = new BhamControlImpl(type, *pController); //do not throw!
+	pBhamControl = new BhamControlImpl(type, *controller); //do not throw!
 
 	return BhamControl::Ptr(pBhamControl, [&] (BhamControl*) {
 		delete pBhamControl;
 		controller.release();
-		pControllerDesc.release();
-		context.release();
+		controllerDesc.release();
 	});
 }
 
