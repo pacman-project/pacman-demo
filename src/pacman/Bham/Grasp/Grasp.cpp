@@ -2,7 +2,6 @@
 #include <pacman/PaCMan/PCL.h>
 #include <Golem/Phys/Data.h>
 #include <Golem/Tools/Data.h>
-#include <Golem/Device/MultiCtrl/MultiCtrl.h>
 #include <pcl/io/pcd_io.h>
 
 using namespace pacman;
@@ -73,9 +72,9 @@ void BhamGraspImpl::estimate(const Point3D::Seq& points, Trajectory::Seq& trajec
 	trnInv.setInverse(model.back());
 
 	// move trajectory frame from the arm TCP to the hand frame
-	const golem::MultiCtrl* pMultiCtrl = dynamic_cast<const golem::MultiCtrl*>(robot->getController());
-	if (pMultiCtrl && pMultiCtrl->getControllers().size() >= 2) {
-		const golem::Controller* pHand = pMultiCtrl->getControllers()[1]; // assuming that the second controller is the hand
+	const golem::Controller* pController = robot->getController();
+	if (pController->getControllers().size() >= 2) {
+		const golem::Controller* pHand = pController->getControllers()[1]; // assuming that the second controller is the hand
 		trnInv.multiply(pHand->getGlobalPose(), trnInv);
 	}
 

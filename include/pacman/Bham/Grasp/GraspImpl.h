@@ -8,8 +8,8 @@
 #ifndef _PACMAN_BHAM_GRASP_GRASP_IMPL_H_ // if #pragma once is not supported
 #define _PACMAN_BHAM_GRASP_GRASP_IMPL_H_
 
-#include <pacman/Bham/Grasp/Grasp.h>
 #include <Grasp/ShapePlanner/ShapePlanner.h>
+#include <pacman/Bham/Grasp/Grasp.h>
 
 /** PaCMan name space */
 namespace pacman {
