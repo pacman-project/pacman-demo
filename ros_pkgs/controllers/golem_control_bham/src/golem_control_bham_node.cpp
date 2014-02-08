@@ -62,10 +62,10 @@ namespace golem_control_bham{
       // publishers of this node
       ros::Publisher pub_robot_state_;
 
-      // conversion functions
-      // void convertTrajFromJointTrajectoryMsg(moveit_msgs::RobotTrajectory &trajectory);
-      // void convertTrajFromDefinitionsMsg(const definitions::Trajectory &trajectory)
-      void convertStateToJointStateMsg(const RobotUIBK::State &state);
+      // // conversion functions, they are hard-code because golem and ros need to agree here
+      void convertTrajFromMoveItMsg(const moveit_msgs::RobotTrajectory &trajectory, RobotUIBK::Command::Seq &commands);
+      void convertTrajFromDefinitionsMsg(const definitions::Trajectory &trajectory, RobotUIBK::Command::Seq &command);
+      void convertStateToJointStateMsg(const RobotUIBK::State &state, sensor_msgs::JointState &joint_states);
 
     public:
     
@@ -73,9 +73,9 @@ namespace golem_control_bham{
       void publishRobotState();
 
       // service function to request trajectory execution
-      //bool executeTrajectoryFromMoveItGUI(moveit_msgs::ExecuteKnownTrajectory::Request &req, moveit_msgs::ExecuteKnownTrajectory::Response &res);
-      //bool executeTrajectoryFromDemoNode(definitions::TrajectoryExecution::Request &req, definitions::TrajectoryExecution::Response &res);
-      bool executeTrajectory();
+      //bool executeTrajectoryFromMoveItGUI(moveit_msgs::RobotTrajectory::Request &req, moveit_msgs::RobotTrajectory::Response &res);
+      bool executeTrajectoryFromCode(definitions::TrajectoryExecution::Request &req, definitions::TrajectoryExecution::Response &res);
+      bool executeTrajectory(const RobotUIBK::Command::Seq &command);
 
 
       // helper function to get the time stamp of the controllers
@@ -105,7 +105,7 @@ namespace golem_control_bham{
         // load(test_trajectory_file_, test_trajectory_);
 
         // advertise the node services
-        //srv_trajectory_execution_ = nh_.advertiseService(nh_.resolveName("/trajectory_execution_srv"),&GolemController::executeTrajectory, this);
+        srv_trajectory_execution_ = nh_.advertiseService(nh_.resolveName("/trajectory_execution_srv"),&GolemController::executeTrajectoryFromCode, this);
         srv_test_controller_ = nh_.advertiseService(nh_.resolveName("/test_controller_srv"),&GolemController::testController, this);
 
         // advertise the node topics
@@ -116,6 +116,20 @@ namespace golem_control_bham{
         joint_states_.position.resize(RobotUIBK::Config::JOINTS);
         joint_states_.velocity.resize(RobotUIBK::Config::JOINTS);
         joint_states_.effort.resize(RobotUIBK::Config::JOINTS);
+        joint_states_.name[0] = arm_name_ + "_arm_0_joint";
+        joint_states_.name[1] = arm_name_ + "_arm_1_joint";
+        joint_states_.name[2] = arm_name_ + "_arm_2_joint";
+        joint_states_.name[3] = arm_name_ + "_arm_3_joint";
+        joint_states_.name[4] = arm_name_ + "_arm_4_joint";
+        joint_states_.name[5] = arm_name_ + "_arm_5_joint";
+        joint_states_.name[6] = arm_name_ + "_arm_6_joint";
+        joint_states_.name[7] = hand_name_ + "_knuckle_joint";
+        joint_states_.name[8] = hand_name_ + "_finger_12_joint";
+        joint_states_.name[9] = hand_name_ + "_finger_13_joint";
+        joint_states_.name[10] = hand_name_ + "_finger_22_joint";
+        joint_states_.name[11] = hand_name_ + "_finger_23_joint";
+        joint_states_.name[12] = hand_name_ + "_thumb_2_joint";
+        joint_states_.name[13] = hand_name_ + "_thumb_3_joint";
 
         // initialze the command 
         uibk_robot_command_.resize(1);
@@ -127,65 +141,65 @@ namespace golem_control_bham{
       ~GolemController() {}
   };
   
-// void GolemController::convertTrajFromMoveIt()
-// {
-//   return;
-// }
-
-// void GolemController::convertTrajFromDefinitions()
-// {
-//   return;
-// }
-
-void GolemController::convertStateToJointStateMsg(const RobotUIBK::State &state) 
+void GolemController::convertTrajFromMoveItMsg(const moveit_msgs::RobotTrajectory &trajectory, RobotUIBK::Command::Seq &commands)
 {
 
-  joint_states_.header.stamp = ros::Time::now();
+  return;
+}
+
+void GolemController::convertTrajFromDefinitionsMsg(const definitions::Trajectory &trajectory, RobotUIBK::Command::Seq &commands)
+{
+  int NWayPoints = trajectory.robot_path.size();
+  commands.resize(NWayPoints);
+
+  for (int i = 0; i < NWayPoints; i++)
+  {
+    // first the arm
+    for (int j = 0; j < KukaLWR::Config::JOINTS; j++)
+    {
+      commands[i].pos.arm.c[j] = trajectory.robot_path[i].arm.joints[j];
+    }
+
+    // then the hand
+    commands[i].pos.hand.left[0] = trajectory.robot_path[i].hand.joints[0];
+    commands[i].pos.hand.left[1] = trajectory.robot_path[i].hand.joints[1];
+    commands[i].pos.hand.middle[0] = trajectory.robot_path[i].hand.joints[2];
+    commands[i].pos.hand.middle[1] = trajectory.robot_path[i].hand.joints[3];
+    commands[i].pos.hand.right[0] = trajectory.robot_path[i].hand.joints[4];
+    commands[i].pos.hand.right[1] = trajectory.robot_path[i].hand.joints[5];
+    commands[i].pos.hand.rotation = trajectory.robot_path[i].hand.joints[6];
+
+    // and finally the time
+    if(i==0)
+      commands[i].t = controller_->time();
+    else
+      commands[i].t = commands[i-1].t + pacman::float_t(trajectory.time_from_previous[i].toSec());
+  }
+
+  return;
+}
+
+void GolemController::convertStateToJointStateMsg(const RobotUIBK::State &state, sensor_msgs::JointState &joint_states) 
+{
+
+  joint_states.header.stamp = ros::Time::now();
 
   // the joint mapping needs to be hardcoded to match Golem.xml and Ros.urdf structures
+  // note that, the names are set in the class constructor for the order convention
   // and let the party begin... first the arm:
-  joint_states_.name[0] = arm_name_ + "_arm_0_joint";
-  joint_states_.position[0] = state.pos.arm.c[0];
-
-  joint_states_.name[1] = arm_name_ + "_arm_1_joint";
-  joint_states_.position[1] = state.pos.arm.c[1];
-
-  joint_states_.name[2] = arm_name_ + "_arm_2_joint"; 
-  joint_states_.position[2] = state.pos.arm.c[2]; 
-
-  joint_states_.name[3] = arm_name_ + "_arm_3_joint";
-  joint_states_.position[3] = state.pos.arm.c[3];
-
-  joint_states_.name[4] = arm_name_ + "_arm_4_joint";
-  joint_states_.position[4] = state.pos.arm.c[4];
-
-  joint_states_.name[5] = arm_name_ + "_arm_5_joint";
-  joint_states_.position[5] = state.pos.arm.c[5];
-
-  joint_states_.name[6] = arm_name_ + "_arm_6_joint";
-  joint_states_.position[6] = state.pos.arm.c[6];
+  for (int j = 0; j < KukaLWR::Config::JOINTS; j++)
+  {
+    joint_states.position[j] = state.pos.arm.c[j];
+  }
 
   // and continue with the hand:
-  joint_states_.name[7] = hand_name_ + "_knuckle_joint";
-  joint_states_.position[7] = state.pos.hand.rotation;
-
-  joint_states_.name[8] = hand_name_ + "_finger_12_joint";
-  joint_states_.position[8] = state.pos.hand.left[0];
-
-  joint_states_.name[9] = hand_name_ + "_finger_13_joint";
-  joint_states_.position[9] = state.pos.hand.left[1];
-
-  joint_states_.name[10] = hand_name_ + "_finger_22_joint";
-  joint_states_.position[10] = state.pos.hand.right[0];
-
-  joint_states_.name[11] = hand_name_ + "_finger_23_joint";
-  joint_states_.position[11] = state.pos.hand.right[1];
-
-  joint_states_.name[12] = hand_name_ + "_thumb_2_joint";
-  joint_states_.position[12] = state.pos.hand.middle[0];
-
-  joint_states_.name[13] = hand_name_ + "_thumb_3_joint";
-  joint_states_.position[13] = state.pos.hand.middle[1];
+  joint_states.position[7] = state.pos.hand.rotation;
+  joint_states.position[8] = state.pos.hand.left[0];
+  joint_states.position[9] = state.pos.hand.left[1];
+  joint_states.position[10] = state.pos.hand.right[0];
+  joint_states.position[11] = state.pos.hand.right[1];
+  joint_states.position[12] = state.pos.hand.middle[0];
+  joint_states.position[13] = state.pos.hand.middle[1];
 
   return;
 }
@@ -193,6 +207,7 @@ void GolemController::convertStateToJointStateMsg(const RobotUIBK::State &state)
 
 void GolemController::publishRobotState()
 {
+  // read the current data from the controller
   try 
   {  
     controller_->lookupState(controller_->time(), &uibk_robot_state_);
@@ -203,7 +218,7 @@ void GolemController::publishRobotState()
   }
 
   // convert from pacman to ros joint states
-  convertStateToJointStateMsg(uibk_robot_state_);
+  convertStateToJointStateMsg(uibk_robot_state_, joint_states_);
 
   // publish the joint states, this functionality could be ported to another node to increase speed and versatility.
   pub_robot_state_.publish(joint_states_);
@@ -220,20 +235,29 @@ void GolemController::publishRobotState()
 //   return true;
 // }
 
-// bool GolemController::executeTrajectoryFromDemoNode(definitions::TrajectoryExecution::Request &req, definitions::TrajectoryExecution::Response &res)
-// {
-//   uibk_robot_command_.clear();
-//   convertTrajFromDefinitions(trajectory, uibk_robot_command_);
-//   executeTrajectory(uibk_robot_command_);
+bool GolemController::executeTrajectoryFromCode(definitions::TrajectoryExecution::Request &req, definitions::TrajectoryExecution::Response &res)
+{
+  uibk_robot_command_.clear();
 
-//   return true;
-// }
+  // for now, just take the first one, need to be improved in the future
+  definitions::Trajectory trajectory = req.trajectory[0];
 
-bool GolemController::executeTrajectory()
+  //convert the trajectory to the command 
+  convertTrajFromDefinitionsMsg(trajectory, uibk_robot_command_);
+
+  // excexute the trajectory
+  executeTrajectory(uibk_robot_command_);
+
+  return true;
+}
+
+bool GolemController::executeTrajectory(const RobotUIBK::Command::Seq &command)
 {
   try 
   {  
-    controller_->send(uibk_robot_command_.data(), uibk_robot_command_.size());
+    controller_->send(command.data(), command.size());
+    // wait for completion
+    //controller_->waitForTrajectoryEnd();
   }
   catch (const std::exception& ex) 
   {
@@ -290,11 +314,9 @@ bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Em
     commands[8].t = commands[7].t + pacman::float_t(5.0);
     commands[8].pos = begin.pos;
     //commands[8].pos.arm.c[3] -= pacman::float_t(0.75);
-    // send trajectory
-    controller_->send(commands.data(), commands.size());
-
-    // wait for completion
-    //controller_->waitForTrajectoryEnd();
+    
+    // execute trajectory
+    executeTrajectory(commands);
   }
   catch (const std::exception& ex) {
     printf("ControlTest exception: %s\n", ex.what());

@@ -9,7 +9,9 @@ find_package(catkin REQUIRED roscpp tf eigen_conversions definitions moveit_msgs
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system thread)
 set(CMAKE_CXX_FLAGS "-std=c++0x")
-set(PACMAN /home/pacman/CODE/)
+
+# SET YOUR PACMAN ROOT PATH HERE !!!!!!!
+set(PACMAN /home/pacman/Code/pacman)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -110,12 +112,24 @@ add_executable(golem_control_bham_node
 	src/golem_control_bham_node.cpp
 	)
 
+add_executable(ping_controller
+  src/ping_controller_w_trajectory_msg.cpp
+  )
+
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 add_dependencies(golem_control_bham_node definitions_generate_messages_cpp)
+add_dependencies(ping_controller definitions_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(golem_control_bham_node
+  PaCMan
+  PaCManBhamControl
+  ${Boost_LIBRARIES}
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(ping_controller
   PaCMan
   PaCManBhamControl
   ${Boost_LIBRARIES}

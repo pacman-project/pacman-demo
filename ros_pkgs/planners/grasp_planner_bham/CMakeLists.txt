@@ -11,6 +11,8 @@ find_package(PCL 1.7 REQUIRED)
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system)
 set(CMAKE_CXX_FLAGS "-std=c++0x")
+
+# SET YOUR PACMAN ROOT PATH HERE !!!!!!!
 set(PACMAN /home/pacman/CODE/)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
