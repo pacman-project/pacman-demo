@@ -294,6 +294,7 @@ bool planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, d
 
 } // namespace uibk_robot_moveit_config
 
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "name_performer_node");

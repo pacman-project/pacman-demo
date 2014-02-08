@@ -139,9 +139,13 @@ target_link_libraries(ping_controller
 ## DIRTY SOLUTION
 ## Copy robot config files to node execution path, I didn't find any other way to do it
 file(COPY config/ControlRobotUIBK.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
+file(COPY config/GolemDeviceKukaLWR.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
 file(COPY config/GolemDeviceKukaLWRSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
-file(COPY config/GolemDeviceRobotUIBK.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
+file(COPY config/GolemDeviceSchunkDexHand.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
 file(COPY config/GolemDeviceSchunkDexHandSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
+file(COPY config/GolemDeviceRobotUIBK.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
+file(COPY config/GolemDeviceRobotUIBKSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
+
 
 #############
 ## Install ##

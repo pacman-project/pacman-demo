@@ -276,7 +276,7 @@ bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Em
     controller_->lookupState(controller_->time(), &begin);
 
     // Prepare trajectory
-    RobotUIBK::Command::Seq commands(9);
+    RobotUIBK::Command::Seq commands(12);
     // Initial pose
     commands[0].t = controller_->time();
     commands[0].pos = begin.pos;
@@ -285,7 +285,6 @@ bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Em
     commands[1].t = commands[0].t + pacman::float_t(5.0);
     commands[1].pos = begin.pos;
     commands[1].pos.arm.c[0] += pacman::float_t(0.1);
-    //commands[1].pos.hand.rotation += pacman::float_t(0.1);
     // Pose #2
     commands[2].t = commands[1].t + pacman::float_t(5.0);
     commands[2].pos = begin.pos;
@@ -313,8 +312,24 @@ bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Em
     // Back to the initial pose
     commands[8].t = commands[7].t + pacman::float_t(5.0);
     commands[8].pos = begin.pos;
-    //commands[8].pos.arm.c[3] -= pacman::float_t(0.1);
-    
+    // Test the hand as well
+    // Move knucle
+    commands[9].t = commands[8].t + pacman::float_t(5.0);
+    commands[9].pos = begin.pos;
+    commands[9].pos.hand.rotation += pacman::float_t(0.25);
+    // Open
+    commands[10].t = commands[9].t + pacman::float_t(5.0);
+    commands[10].pos = begin.pos;
+    commands[10].pos.hand.middle[0] -= pacman::float_t(0.3);
+    commands[10].pos.hand.middle[1] -= pacman::float_t(0.3);
+    commands[10].pos.hand.left[0] -= pacman::float_t(0.3);
+    commands[10].pos.hand.left[1] -= pacman::float_t(0.3);
+    commands[10].pos.hand.right[0] -= pacman::float_t(0.3);
+    commands[10].pos.hand.right[1] -= pacman::float_t(0.3);
+    // Close to home position
+    commands[11].t = commands[10].t + pacman::float_t(5.0);
+    commands[1].pos = begin.pos;
+
     // execute trajectory
     executeTrajectory(commands);
   }
