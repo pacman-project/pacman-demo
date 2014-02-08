@@ -1,10 +1,12 @@
 // system headers
 #include <exception>
+#include <boost/thread.hpp>
 
 // ros headers
 #include <ros/ros.h>
 #include <std_srvs/Empty.h>
 #include <moveit_msgs/ExecuteKnownTrajectory.h>
+#include <moveit_msgs/RobotTrajectory.h>
 #include <sensor_msgs/JointState.h>
 
 // local headers
@@ -30,9 +32,10 @@ namespace golem_control_bham{
       // the controller object
       BhamControl::Ptr controller_;
 
-      // the robot type
+      // the robot type and data structures fro state and comman
       RobotUIBK uibk_robot_;
       RobotUIBK::State uibk_robot_state_;
+      RobotUIBK::Command::Seq uibk_robot_command_;
 
       // variables where conversions are saved to
       //BhamControl trajectory_;
@@ -59,18 +62,20 @@ namespace golem_control_bham{
       // publishers of this node
       ros::Publisher pub_robot_state_;
 
+      // conversion functions
+      // void convertTrajFromJointTrajectoryMsg(moveit_msgs::RobotTrajectory &trajectory);
+      // void convertTrajFromDefinitionsMsg(const definitions::Trajectory &trajectory)
+      void convertStateToJointStateMsg(const RobotUIBK::State &state);
+
     public:
     
-      // helper functions
-      // void convertTrajFromMoveIt();
-      void convertStateToROS(const RobotUIBK::State &state);
-
       // loop function to update the robot state
       void publishRobotState();
 
       // service function to request trajectory execution
-      //bool executeTrajectory(moveit_msgs::ExecuteKnownTrajectory::Request &req, moveit_msgs::ExecuteKnownTrajectory::Response &res);
-      bool executeTrajectory(definitions::TrajectoryExecution::Request &req, definitions::TrajectoryExecution::Response &res);
+      //bool executeTrajectoryFromMoveItGUI(moveit_msgs::ExecuteKnownTrajectory::Request &req, moveit_msgs::ExecuteKnownTrajectory::Response &res);
+      //bool executeTrajectoryFromDemoNode(definitions::TrajectoryExecution::Request &req, definitions::TrajectoryExecution::Response &res);
+      bool executeTrajectory();
 
 
       // helper function to get the time stamp of the controllers
@@ -100,8 +105,7 @@ namespace golem_control_bham{
         // load(test_trajectory_file_, test_trajectory_);
 
         // advertise the node services
-        srv_trajectory_execution_ = nh_.advertiseService(nh_.resolveName("/trajectory_execution_srv"),&GolemController::executeTrajectory, this);
-        // //srv_get_controller_time_ = nh_.advertiseService(nh_.resolveName("/get_controller_time_srv"),&GolemController::testControlller, this);
+        //srv_trajectory_execution_ = nh_.advertiseService(nh_.resolveName("/trajectory_execution_srv"),&GolemController::executeTrajectory, this);
         srv_test_controller_ = nh_.advertiseService(nh_.resolveName("/test_controller_srv"),&GolemController::testController, this);
 
         // advertise the node topics
@@ -112,6 +116,9 @@ namespace golem_control_bham{
         joint_states_.position.resize(RobotUIBK::Config::JOINTS);
         joint_states_.velocity.resize(RobotUIBK::Config::JOINTS);
         joint_states_.effort.resize(RobotUIBK::Config::JOINTS);
+
+        // initialze the command 
+        uibk_robot_command_.resize(1);
 
 
       }
@@ -125,8 +132,12 @@ namespace golem_control_bham{
 //   return;
 // }
 
+// void GolemController::convertTrajFromDefinitions()
+// {
+//   return;
+// }
 
-void GolemController::convertStateToROS(const RobotUIBK::State &state) 
+void GolemController::convertStateToJointStateMsg(const RobotUIBK::State &state) 
 {
 
   joint_states_.header.stamp = ros::Time::now();
@@ -192,7 +203,7 @@ void GolemController::publishRobotState()
   }
 
   // convert from pacman to ros joint states
-  convertStateToROS(uibk_robot_state_);
+  convertStateToJointStateMsg(uibk_robot_state_);
 
   // publish the joint states, this functionality could be ported to another node to increase speed and versatility.
   pub_robot_state_.publish(joint_states_);
@@ -200,42 +211,39 @@ void GolemController::publishRobotState()
   return;
 }
 
-// bool GolemController::executeTrajectory(moveit_msgs::ExecuteKnownTrajectory::Request &req, moveit_msgs::ExecuteKnownTrajectory::Response &res)
+// bool GolemController::executeTrajectoryFromMoveItGUI(moveit_msgs::ExecuteKnownTrajectory::Request &req, moveit_msgs::ExecuteKnownTrajectory::Response &res)
 // {
-
-//   // convert from moveit/pacmanROS to pacmanc++
-
-
-//   // try 
-//   // {  
-//   //   controller_->send(command.begin(), command.size());
-//   // }
-//   // catch (const std::exception& ex) 
-//   // {
-//   //   ROS_ERROR("Unable to execute the given trajectory: %s\n", ex.what());
-//   //   return false;
-//   // }
+//   uibk_robot_command_.clear();
+//   convertTrajFromMoveIt(trajectory, uibk_robot_command_);
+//   executeTrajectory(uibk_robot_command_);
 
 //   return true;
 // }
 
-bool GolemController::executeTrajectory(definitions::TrajectoryExecution::Request &req, definitions::TrajectoryExecution::Response &res)
+// bool GolemController::executeTrajectoryFromDemoNode(definitions::TrajectoryExecution::Request &req, definitions::TrajectoryExecution::Response &res)
+// {
+//   uibk_robot_command_.clear();
+//   convertTrajFromDefinitions(trajectory, uibk_robot_command_);
+//   executeTrajectory(uibk_robot_command_);
+
+//   return true;
+// }
+
+bool GolemController::executeTrajectory()
 {
-//   // convert from moveit/pacmanROS to pacmanc++
-
-
-//   // try 
-//   // {  
-//   //   controller_->send(command.begin(), command.size());
-//   // }
-//   // catch (const std::exception& ex) 
-//   // {
-//   //   ROS_ERROR("Unable to execute the given trajectory: %s\n", ex.what());
-//   //   return false;
-//   // }
+  try 
+  {  
+    controller_->send(uibk_robot_command_.data(), uibk_robot_command_.size());
+  }
+  catch (const std::exception& ex) 
+  {
+    ROS_ERROR("Unable to execute the given trajectory: %s\n", ex.what());
+    return false;
+  }
   return true;
 }
 
+// this function is called to test that the controller client works well with some basic motions
 bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
 {
   try {
@@ -248,10 +256,12 @@ bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Em
     // Initial pose
     commands[0].t = controller_->time();
     commands[0].pos = begin.pos;
+    // test arm
     // Pose #1
     commands[1].t = commands[0].t + pacman::float_t(5.0);
     commands[1].pos = begin.pos;
     commands[1].pos.arm.c[0] += pacman::float_t(0.75);
+    commands[1].pos.hand.rotation += pacman::float_t(0.75);
     // Pose #2
     commands[2].t = commands[1].t + pacman::float_t(5.0);
     commands[2].pos = begin.pos;
@@ -284,7 +294,7 @@ bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Em
     controller_->send(commands.data(), commands.size());
 
     // wait for completion
-    // controller_->waitForTrajectoryEnd();
+    //controller_->waitForTrajectoryEnd();
   }
   catch (const std::exception& ex) {
     printf("ControlTest exception: %s\n", ex.what());
@@ -294,7 +304,22 @@ bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Em
   return true;
 }
 
+
+
 } // end namespace golem_control_bham
+
+
+// // update the states in a different thread such that it is not affected by blocking functions.
+// void publishThread_fnc(golem_control_bham::GolemController &nn)
+// {
+//   while(ros::ok())
+//   {
+//     // publish joint states
+//     nn.publishRobotState();
+//   }
+//   return;
+// }
+
 
 int main(int argc, char **argv)
 {
@@ -306,14 +331,22 @@ int main(int argc, char **argv)
   ROS_INFO("Controller connected...");
   ROS_INFO("Ready to execute trajectories!");
   
+  //boost::thread publish_thread( publishThread_fnc, node );
+  //publish_thread.join();
+
   while(ros::ok())
   {
+    // do something
+
     // publish joint states
     node.publishRobotState();
-    
+
     // spin
     ros::spinOnce();
   }
+
+  // // detach the thread in case is not ok
+  // publish_thread.detach();
 
   return 0;
 }

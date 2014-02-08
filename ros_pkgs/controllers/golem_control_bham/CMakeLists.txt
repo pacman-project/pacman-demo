@@ -7,7 +7,7 @@ project(golem_control_bham)
 find_package(catkin REQUIRED roscpp tf eigen_conversions definitions moveit_msgs sensor_msgs)
 
 ## System dependencies are found with CMake's conventions
-find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system thread)
 set(CMAKE_CXX_FLAGS "-std=c++0x")
 set(PACMAN /home/pacman/CODE/)
 
