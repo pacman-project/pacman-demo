@@ -261,7 +261,7 @@ bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Em
     commands[1].t = commands[0].t + pacman::float_t(5.0);
     commands[1].pos = begin.pos;
     commands[1].pos.arm.c[0] += pacman::float_t(0.75);
-    commands[1].pos.hand.rotation += pacman::float_t(0.75);
+    //commands[1].pos.hand.rotation += pacman::float_t(0.75);
     // Pose #2
     commands[2].t = commands[1].t + pacman::float_t(5.0);
     commands[2].pos = begin.pos;
