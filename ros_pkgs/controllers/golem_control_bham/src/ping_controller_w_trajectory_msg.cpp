@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 
     // second way point
     trajectory.robot_path[1] = trajectory.robot_path[0];
-    trajectory.robot_path[1].arm.joints[1] = trajectory.robot_path[0].arm.joints[0] + 0.5;
+    trajectory.robot_path[1].arm.joints[1] = trajectory.robot_path[0].arm.joints[1] + 0.5;
     trajectory.time_from_previous[1] = five_seconds;
 
     // third way point

@@ -125,7 +125,7 @@ target_link_libraries(ping_grasp_planner_bham_node
 ## DIRTY SOLUTION
 ## Copy robot config files to node execution path, I didn't find any other way to do it
 file(COPY config/GolemDeviceKukaLWRSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
-file(COPY config/GolemDeviceRobotUIBK.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
+file(COPY config/GolemDeviceRobotUIBKSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
 file(COPY config/GolemDeviceSchunkDexHandSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
 file(COPY resources/pacman_mug1.pcd DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
 
