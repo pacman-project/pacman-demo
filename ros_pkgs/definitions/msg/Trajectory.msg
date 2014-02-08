@@ -2,3 +2,4 @@
 
 UIBKRobot[] robot_path
 duration[] time_from_previous
+int32 trajectory_id
