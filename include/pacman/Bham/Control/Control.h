@@ -87,7 +87,7 @@ namespace pacman {
 			config.left[1] = (pacman::float_t)c[4];
 			config.right[0] = (pacman::float_t)c[6];
 			config.right[1] = (pacman::float_t)c[7];
-			config.rotation = (pacman::float_t)c[2];
+			config.rotation = -(pacman::float_t)c[2];// reverse rotation
 		}
 		/** ShunkDexHand config conversion */
 		template <typename _Real> static void configToGolem(const ShunkDexHand::Config& config, _Real* c) {
@@ -97,8 +97,8 @@ namespace pacman {
 			c[4] = (_Real)config.left[1];
 			c[6] = (_Real)config.right[0];
 			c[7] = (_Real)config.right[1];
-			c[2] = (_Real)config.rotation;
-			c[5] = -(_Real)config.rotation;
+			c[2] = -(_Real)config.rotation;// reverse rotation
+			c[5] = (_Real)config.rotation;// reverse rotation
 		}
 		
 
