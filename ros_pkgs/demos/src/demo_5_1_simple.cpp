@@ -442,7 +442,7 @@ bool DemoSimple::executeMovement(bool pre_grasp)
   std::cout << "second point: "<< my_calculated_grasp[0].grasp_trajectory[1].wrist_pose << std::endl;
   std::cout << "third point: "<< my_calculated_grasp[0].grasp_trajectory[2].wrist_pose << std::endl;
   if( !pre_grasp ) {
-   /* reader_srv.request.detected_objects = my_detected_objects;
+    /*reader_srv.request.detected_objects = my_detected_objects;
     reader_srv.request.object_id = 0;
     reconstruct_scene();*/
 
