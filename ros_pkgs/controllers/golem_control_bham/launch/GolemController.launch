@@ -1,0 +1,7 @@
+<launch>
+	<!-- THE cwd ATRIBUTE IS NECESSARY TO MAKE THE NODE PATH AS THE PATH FOR THE EXECUTION, SUCH THAT THE XML FILES ARE AVAILABLE 
+	(see in the CMakeLists.txt that the Robot config files are copied)/-->	
+	<node pkg="golem_control_bham" name="golem_controller" type="golem_control_bham_node" respawn="false" output="screen" cwd="node">
+      <param name="config_file" value="$(find golem_control_bham)/config/ControlRobotUIBK.xml" />
+  	</node>
+</launch>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <golem>
-  <controller name="Kuka LWR simulator" enable_io="1" debug="0">
+  <controller name="Kuka LWR simulator" enable_io="1" local_port="49939" debug="0">
     <global_pose v1="0.0" v2="0.0" v3="0.0" roll="0.0" pitch="0.0" yaw="0.0"></global_pose>
     <io thread_priority="critical" thread_timeout="10000" state_queue_size="5000" command_queue_size="500" time_quant="0.0001" cycle_avr_len="50" cycle_dur_ctrl="0" cycle_dur_init="0.0011" cycle_dur_offs="0.001" cycle_dur_max_dev="5.0" sim_delta_recv="0.0001" sim_delta_send="0.0001"/>
     <limits pos_tolerance="0.0031415927" vel_tolerance="0.031415927" acc_tolerance="0.31415927"/>

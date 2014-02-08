@@ -67,11 +67,11 @@ include_directories(
 # )
 
 ## Declare a cpp executable
- add_executable(kinect_grabber_node src/kinect_grabber_node.cpp)
+add_executable(kinect_grabber_node src/kinect_grabber_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(grab_node_node grab_node_generate_messages_cpp)
+add_dependencies(kinect_grabber_node definitions_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
  target_link_libraries(kinect_grabber_node

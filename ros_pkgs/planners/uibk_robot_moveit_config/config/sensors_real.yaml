@@ -1,6 +1,7 @@
 sensors: 
  - sensor_plugin: occupancy_map_monitor/PointCloudOctomapUpdater
-   point_cloud_topic: /camera/depth/points
+   #point_cloud_topic: /camera/depth/points
+   point_cloud_topic: /pose_estimation_uibk/reconstructed_scene
    max_range: 2.0
    frame_subsample: 1
    point_subsample: 1

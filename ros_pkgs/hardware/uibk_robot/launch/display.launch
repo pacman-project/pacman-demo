@@ -3,14 +3,14 @@
     <!--node pkg="tf" type="static_transform_publisher" name="world_2_lwr_arm_1_link" args="0 0 0 0 1.57 0 /world_link /lwr_arm_1_link 100"/--> 
 	
 	
-    <arg name="gui" default="True" />
+    <arg name="gui" default="False" />
     <param name="use_gui" value="$(arg gui)"/>
 
     <!-- This is required to test any posture of the robot by writing on the joint states /-->
-    <rosparam param="source_list">[joint_states]</rosparam>
+    <rosparam param="source_list">[/golem/joint_states]</rosparam>
     
     <param name="robot_description" command="$(find xacro)/xacro.py $(find uibk_robot)/urdf/uibk_robot.urdf.xacro"/> 
     <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" ></node>
-    <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher"/>
 	
 </launch>
