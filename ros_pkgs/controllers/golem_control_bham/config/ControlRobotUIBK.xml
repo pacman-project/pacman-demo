@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<golem>
+  <messages level="debug"/><!-- level="undef" level="verbose" level="debug" level="info" level="warning" level="error" level="crit" -->
+
+  <controller library_path="GolemDeviceCtrlClient" config_path="GolemDeviceRobotUIBK"/>
+</golem>
