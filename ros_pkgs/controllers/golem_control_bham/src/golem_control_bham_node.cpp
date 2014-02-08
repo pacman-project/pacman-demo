@@ -261,7 +261,7 @@ bool GolemController::executeTrajectory(const RobotUIBK::Command::Seq &command)
   }
   catch (const std::exception& ex) 
   {
-    ROS_ERROR("Unable to execute the given trajectory: %s\n", ex.what());
+    ROS_ERROR("Unable to execute the given trajectory:  %s\n", ex.what());
     return false;
   }
   return true;
@@ -284,36 +284,36 @@ bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Em
     // Pose #1
     commands[1].t = commands[0].t + pacman::float_t(5.0);
     commands[1].pos = begin.pos;
-    commands[1].pos.arm.c[0] += pacman::float_t(0.75);
-    //commands[1].pos.hand.rotation += pacman::float_t(0.75);
+    commands[1].pos.arm.c[0] += pacman::float_t(0.1);
+    //commands[1].pos.hand.rotation += pacman::float_t(0.1);
     // Pose #2
     commands[2].t = commands[1].t + pacman::float_t(5.0);
     commands[2].pos = begin.pos;
-    commands[2].pos.arm.c[1] -= pacman::float_t(0.75);
+    commands[2].pos.arm.c[1] -= pacman::float_t(0.1);
     // Pose #3
     commands[3].t = commands[2].t + pacman::float_t(5.0);
     commands[3].pos = begin.pos;
-    commands[3].pos.arm.c[2] += pacman::float_t(0.75);
+    commands[3].pos.arm.c[2] += pacman::float_t(0.1);
     // Pose #4
     commands[4].t = commands[3].t + pacman::float_t(5.0);
     commands[4].pos = begin.pos;
-    commands[4].pos.arm.c[3] -= pacman::float_t(0.75);
+    commands[4].pos.arm.c[3] -= pacman::float_t(0.1);
     // Pose #5
     commands[5].t = commands[4].t + pacman::float_t(5.0);
     commands[5].pos = begin.pos;
-    commands[5].pos.arm.c[4] += pacman::float_t(0.75);
+    commands[5].pos.arm.c[4] += pacman::float_t(0.1);
     // Pose #6
     commands[6].t = commands[5].t + pacman::float_t(5.0);
     commands[6].pos = begin.pos;
-    commands[6].pos.arm.c[5] -= pacman::float_t(0.75);
+    commands[6].pos.arm.c[5] -= pacman::float_t(0.1);
     // Pose #7
     commands[7].t = commands[6].t + pacman::float_t(5.0);
     commands[7].pos = begin.pos;
-    commands[7].pos.arm.c[6] += pacman::float_t(0.75);
+    commands[7].pos.arm.c[6] += pacman::float_t(0.1);
     // Back to the initial pose
     commands[8].t = commands[7].t + pacman::float_t(5.0);
     commands[8].pos = begin.pos;
-    //commands[8].pos.arm.c[3] -= pacman::float_t(0.75);
+    //commands[8].pos.arm.c[3] -= pacman::float_t(0.1);
     
     // execute trajectory
     executeTrajectory(commands);
