@@ -37,26 +37,19 @@ namespace golem_control_bham{
       RobotUIBK::State uibk_robot_state_;
       RobotUIBK::Command::Seq uibk_robot_command_;
 
-      // variables where conversions are saved to
-      //BhamControl trajectory_;
-      //BhamControl test_trajectory_;
-
-      // configuration files
+      // roslaunch parameters
+      // configuration file for golem
       std::string config_file_;
-
-      // test files
-      //std::string test_trajectory_file_;
-
-      // ros variables where conversions are saved to
-      sensor_msgs::JointState joint_states_;
-      //actionlib::SimpleActionServer<control_msgs::FollowJointTrajectoryAction> as_;
-      std::string action_name_;
       std::string arm_name_;
       std::string hand_name_;
 
+      // ros variables where conversions are saved to
+      sensor_msgs::JointState joint_states_;
+      //std::string action_name_;
+      //actionlib::SimpleActionServer<control_msgs::FollowJointTrajectoryAction> as_;
+
       // service servers offered by this node
       ros::ServiceServer srv_trajectory_execution_;
-      //ros::ServiceServer srv_get_controller_time_;
       ros::ServiceServer srv_test_controller_;
 
       // publishers of this node
@@ -94,15 +87,9 @@ namespace golem_control_bham{
         // define the names passed in the urdf files corresponding to the current move group
         priv_nh_.param<std::string>("arm_name", arm_name_, "right");
         priv_nh_.param<std::string>("hand_name", hand_name_, "right_sdh");
-        
-        // // load test files from the launch file
-        // priv_nh_.param<std::string>("test_trajectory_file", test_trajectory_file_, "");
 
         // create the controller object using the config file
         controller_ = BhamControl::create(RobotType::ROBOT_UIBK, config_file_);
-
-        // load the test trajectory file (if function exist?)
-        // load(test_trajectory_file_, test_trajectory_);
 
         // advertise the node services
         srv_trajectory_execution_ = nh_.advertiseService(nh_.resolveName("/trajectory_execution_srv"),&GolemController::executeTrajectoryFromCode, this);
@@ -285,6 +272,8 @@ bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Em
     commands[1].t = commands[0].t + pacman::float_t(5.0);
     commands[1].pos = begin.pos;
     commands[1].pos.arm.c[0] += pacman::float_t(0.1);
+    // Go to home in the hand at pose 1
+    commands[1].pos.hand.setToDefault();
     // Pose #2
     commands[2].t = commands[1].t + pacman::float_t(5.0);
     commands[2].pos = begin.pos;
@@ -328,7 +317,7 @@ bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Em
     commands[10].pos.hand.right[1] -= pacman::float_t(0.3);
     // Close to home position
     commands[11].t = commands[10].t + pacman::float_t(5.0);
-    commands[1].pos = begin.pos;
+    commands[11].pos = begin.pos;
 
     // execute trajectory
     executeTrajectory(commands);

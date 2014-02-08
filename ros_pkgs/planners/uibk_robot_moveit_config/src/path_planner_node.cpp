@@ -1,199 +1,14 @@
-/*
- * PlanExecutionNode.cpp
- *
- *  Created on: Oct 25, 2013
- *      Author: martin
- */
+//// system headers
+#include <boost/shared_ptr.hpp> 
 
-
-
-typedef boost::shared_ptr<moveit_msgs::MotionPlanResponse> MotionPlanPtr;
-
-#define MAX_TRAJ_PTS 50
-#define PLAN_ATTEMPTS 2
-#define MAX_PLAN_TIME 1
-
-using namespace moveit_msgs;
-using namespace kinematic_constraints;
-
-ServiceClient planning_client;
-ServiceClient execution_client;
-
-ServiceServer planning_server;
-ServiceServer execution_server;
-// caches all planned trajectories for later execution
-vector<MotionPlanPtr> motion_plans;
-
-/**
- * Convenience method to fill in the trajectory data from the given MotionPlanResponse into
- * the given Trajectory
- *
- * @param plan
- * @param trajectory
- */
-void MotionPlanToTrajectory(const MotionPlanResponse &plan, Trajectory &trajectory) {
-	const vector<trajectory_msgs::JointTrajectoryPoint> &points = plan.trajectory.joint_trajectory.points;
-
-	// pick each point from the trajectory and create a UIBKRobot object
-	for (size_t i = 0; i < points.size(); ++i) {
-		definitions::UIBKRobot robot_point;
-		robot_point.arm.joints.assign(points[i].positions.begin(), points[i].positions.end());
-		trajectory.robot_path.push_back(robot_point);
-	}
-}
-/**
- * Plan a trajectory for given pose goal and insert the trajectory into given vector of trajectories.
- * Returns true in case of success. Also store a Pointer to the motion plan for later usage.
- *
- * @param trajectories
- * @param goal
- * @return
- */
-bool planTrajectory(vector<Trajectory> &trajectories, geometry_msgs::PoseStamped &goal) {
-
-	GetMotionPlan mp;
-	MotionPlanRequest &mp_request = mp.request.motion_plan_request;
-
-	// should not be hardcoded...
-	mp_request.group_name = "right_arm";
-
-	// ensure that the frame id of our goal is set to the world reference frame
-	goal.header.frame_id = "world_link";
-
-	Constraints pose_goal = constructGoalConstraints("right_arm_7_link", goal, 0.001, 0.001);
-
-	mp_request.goal_constraints.push_back(pose_goal);
-	// play with theese values to achieve better performance and effizient motion plans...
-	mp_request.num_planning_attempts = PLAN_ATTEMPTS;
-	mp_request.allowed_planning_time = MAX_PLAN_TIME;
-
-	ROS_INFO("Calling plannig service...");
-	bool success = planning_client.call(mp);
-
-	if(success) {
-		MotionPlanResponse &mp_response = mp.response.motion_plan_response;
-		int trajSize = (int)mp_response.trajectory.joint_trajectory.points.size();
-
-		ROS_INFO("Planning completed with code %d", mp_response.error_code.val);
-		ROS_INFO("Planning took %.2fs", mp_response.planning_time);
-
-		if(trajSize > MAX_TRAJ_PTS) {
-			ROS_WARN("Computed trajectory contains to many points, so it will be dropped!");
-			return false;
-		} else {
-			ROS_INFO("Trajectory contains %d points.", trajSize);
-			// store the motion plan for later usage
-			int index = motion_plans.size();
-			MotionPlanPtr motion_plan_ptr(new MotionPlanResponse(mp_response));
-			motion_plans.push_back(motion_plan_ptr);
-
-			Trajectory trajectory;
-			trajectory.trajectory_id = index;
-			// populate trajectory with motion plan data
-			MotionPlanToTrajectory(mp_response, trajectory);
-
-			trajectories.push_back(trajectory);
-			return true;
-		}
-
-	} else {
-		ROS_WARN("No solution found");
-		return false;
-	}
-}
-/**
- * Callback method for the trajectory planning service server
- *
- * @param request
- * @param response
- * @return
- */
-bool PlanningServiceCB(TrajectoryPlanning::Request &request,
-						TrajectoryPlanning::Response &response) {
-
-	ROS_INFO("Received trajectory planning request");
-	ros::Time start_time = ros::Time::now();
-
-	// clear all previously cached motion plans
-	motion_plans.clear();
-	vector<Trajectory> &trajectories = response.trajectory;
-
-	for(size_t i = 0; i < request.ordered_grasp.size(); ++i) {
-
-		geometry_msgs::PoseStamped &goal = request.ordered_grasp[i].grasp_trajectory[0].wrist_pose;
-		// ensure that the frame id is set to the world reference frame
-		goal.header.frame_id = "world_link";
-
-		if(!planTrajectory(trajectories, goal)) {
-			ROS_WARN("No trajectory found for grasp %d", (int)i);
-		}
-	}
-
-	if(trajectories.size() > 0) {
-		response.result = TrajectoryPlanning::Response::SUCCESS;
-	} else {
-		response.result = TrajectoryPlanning::Response::NO_FEASIBLE_TRAJECTORY_FOUND;
-	}
-
-	ros::Duration duration = ros::Time::now() - start_time;
-
-	ROS_INFO("Trajectory planning request completed");
-	ROS_INFO_STREAM("Total trajectory calculation took " << duration);
-
-	return true;
-}
-
-
-int main(int argc, char **argv) {
-	ros::init(argc, argv, "plan_execution_node");
-	ros::NodeHandle nh;
-
-	ROS_INFO("Launching plan_executrion_node");
-
-	string planning_service_name = "/plan_kinematic_path";
-
-	ROS_INFO("Waiting for 'plan_kinematic_path' service node...");
-	ros::service::waitForService(planning_service_name, -1);
-	planning_client = nh.serviceClient<moveit_msgs::GetMotionPlan>(planning_service_name);
-
-	planning_server = nh.advertiseService("/trajectory_planner_srv", PlanningServiceCB);
-
-	ROS_INFO("Connected!");
-
-	ros::spin();
-
-	return EXIT_SUCCESS;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//// NEW STRUCTURE 
+//// ros headers 
 #include <ros/ros.h>
-#include <geometry_msgs/PoseStamped>
-
-#include <definitions/TrajectoryPlanning.h>
-
+#include <geometry_msgs/PoseStamped.h>
 #include <moveit_msgs/GetMotionPlan.h>
 #include <moveit/kinematic_constraints/utils.h>
 
-#include <boost/shared_ptr.hpp> 
-
+//// local headers
+#include <definitions/TrajectoryPlanning.h>
 
 namespace uibk_robot_moveit_config {
 
@@ -215,24 +30,29 @@ class PathPlanner
     //ros::Publisher pub_class_postprocessing_info_;
     
     // services
-    ros::ServiceServer 
-    //ros::ServiceServer srv_set_parameters_;
+    ros::ServiceServer srv_trajectory_planning_;
+    ros::ServiceServer srv_test_trajectory_planning_;
 
+    // clients
+    ros::ServiceClient clt_moveit_planning_;
 
+	// planning related parameters
+	int max_points_in_trajectory_;
+	int max_planning_attempts_;
+	int max_planning_time_;
 
-    // it is very useful to have a listener and broadcaster to know where all frames are
-    //tf::TransformListener tf_listener_;
-    //tf::TransformBroadcaster tf_broadcaster_;
+    // define the names passed in the urdf files corresponding to the current move group for planning
+    std::string group_name_;
+    std::string base_frame_for_goal_;
+	std::string plan_for_frame_;
+
+	// the variable where the plans are stored
+	std::vector<moveit_msgs::MotionPlanPtr> motion_plans_;
 
     // conversion function
     convertFromMotionPlanToTrajectory(const MotionPlanResponse &plan, Trajectory &trajectory);
     
   public:
-
-    // callback functions
-    //void doClassComputations(const X_msgs::Wrench & msg);
-    //bool setClassParameters(ClassParameterSetting::Request &request, ClassParameterSetting::Response &response);
-    //void doSomething();
 
   	// the service callback 
   	bool PlanningServiceCB(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response);
@@ -245,27 +65,25 @@ class PathPlanner
     {
 
 		// wait for moveit to load
-		string planning_service_name = "/plan_kinematic_path";
+		std::string planning_service_name = "/plan_kinematic_path";
 
 		ROS_INFO("Waiting for MoveIt! to fully load...");
 		ros::service::waitForService(planning_service_name, -1);
-		ros::ServiceClient planning_client = node.serviceClient<moveit_msgs::GetMotionPlan>(planning_service_name);
+		clt_moveit_planning_ = this.serviceClient<moveit_msgs::GetMotionPlan>(planning_service_name);
 
-		#define MAX_TRAJ_PTS 50
-#define PLAN_ATTEMPTS 2
-#define MAX_PLAN_TIME 1
+		// planning related parameters
+		priv_nh_.param<int>("max_points_in_trajectory", max_points_in_trajectory_, "50");
+		priv_nh_.param<int>("max_planning_attempts", max_planning_attempts_, "2");
+		priv_nh_.param<int>("max_planning_time", max_planning_time_, "2");
 
-        // // subscribe to topics
-        // sub_some_node_messages_ = nh_.subscribe(nh_.resolveName("topic_name_you_want_to_subscribe_to"), 10, &PathPlanner::doClassComputations, this);
+        // define the names passed in the urdf files corresponding to the current move group for planning
+        priv_nh_.param<std::string>("arm_name", group_name_, "right_arm");
+        priv_nh_.param<std::string>("base_frame_for_goal", base_frame_for_goal_, "world_link");
+		priv_nh_.param<std::string>("plan_for_frame", plan_for_frame_, "right_sdh_palm_link");
 
-        // // advertise topics
-        // pub_class_postprocessing_info_ =
-        //   nh_.advertise<type_msgs::MessageType>(nh_.resolveName("topic_name_you_want_to_pusblih"), 10);
-        
-        // // advertise service
-        // srv_set_parameters_ = 
-        //   nh_.advertiseService(nh_.resolveName("service_name_you_want_to_advertise"), 
-        //                                                 &PathPlanner::setClassParameterss, this);
+		srv_trajectory_planning_ = nh_.advertiseService(nh_.resolveName("/trajectory_planning_srv"),&GolemController::planTrajectoryFromCode, this);
+		srv_test_trajectory_planning_ = nh_.advertiseService(nh_.resolveName("/test_trajectory_planning_srv"),&GolemController::planTrajectoryFromCode, this);
+
     }
 
     //! Empty stub
@@ -273,9 +91,9 @@ class PathPlanner
 
 };
 
-void convertFromMotionPlanToTrajectory(const MotionPlanResponse &plan, Trajectory &trajectory)
+void PathPlanner::convertFromMotionPlanToTrajectory(const MotionPlanResponse &plan, Trajectory &trajectory)
 {
-	const vector<trajectory_msgs::JointTrajectoryPoint> &points = plan.trajectory.joint_trajectory.points;
+	const std::vector<trajectory_msgs::JointTrajectoryPoint> &points = plan.trajectory.joint_trajectory.points;
 
 	// pick each point from the trajectory and create a UIBKRobot object
 	for (size_t i = 0; i < points.size(); ++i) {
@@ -285,10 +103,96 @@ void convertFromMotionPlanToTrajectory(const MotionPlanResponse &plan, Trajector
 	}
 }
 
-bool planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response) 
+bool PathPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response) 
 {
-	return true;
+	ROS_INFO("Received trajectory planning request");
+	ros::Time now = ros::Time::now();
 
+	// clear all previously cached motion plans
+	motion_plans_.clear();
+	std::vector<Trajectory> &trajectories = response.trajectory;
+
+	for(size_t i = 0; i < request.ordered_grasp.size(); ++i) 
+	{
+
+		geometry_msgs::PoseStamped &goal = request.ordered_grasp[i].grasp_trajectory[0].wrist_pose;
+		goal.header.frame_id = base_frame_for_goal_;
+
+		if( !planTrajectory(trajectories, goal) ) 
+		{
+			ROS_WARN("No trajectory found for grasp %d", (int)i);
+		}
+	}
+
+	if(trajectories.size() > 0) 
+	{
+		response.result = TrajectoryPlanning::Response::SUCCESS;
+	} else 
+	{
+		response.result = TrajectoryPlanning::Response::NO_FEASIBLE_TRAJECTORY_FOUND;
+	}
+
+	ros::Duration duration = ros::Time::now() - now;
+
+	ROS_INFO("Trajectory planning request completed");
+	ROS_INFO_STREAM("Total trajectory calculation took " << duration);
+
+	return true;
+}
+
+bool PathPlanner::planTrajectory(std::vector<Trajectory> &trajectories, geometry_msgs::PoseStamped &goal) 
+{
+	// first state the planning constraint
+	goal.header.frame_id = base_frame_for_goal_; // just to ensure we plan with respect to the base_frame
+	moveit_msgs::Constraints pose_goal = moveit_msgs::constructGoalConstraints(goal_frame_, goal, 0.001, 0.001);
+
+	// now construct the motion plan request
+	moveit_msgs::GetMotionPlan mp;
+	moveit_msgs::MotionPlanRequest &mp_request = mp.request.motion_plan_request;
+	mp_request.group_name = group_name_;
+	mp_request.goal_constraints.push_back(pose_goal);
+	mp_request.num_planning_attempts = max_planning_attempts_;
+	mp_request.allowed_planning_time = max_planning_time_;
+
+	// and call the service with the request
+	ROS_INFO("Calling plannig service...");
+	bool success = clt_moveit_planning_.call(mp);
+
+	// check results 
+	if(success) 
+	{
+		MotionPlanResponse &mp_response = mp.response.motion_plan_response;
+		int trajSize = (int)mp_response.trajectory.joint_trajectory.points.size();
+
+		ROS_INFO("Planning completed with code %d", mp_response.error_code.val);
+		ROS_INFO("Planning took %.2fs", mp_response.planning_time);
+
+		if(trajSize > max_points_in_trajectory_) 
+		{
+			ROS_WARN("Computed trajectory contains too many points, so it will be dropped!");
+			return false;
+		} 
+		else 
+		{
+			ROS_INFO("Trajectory contains %d points.", trajSize);
+
+			// store the motion plan for later usage
+			int index = motion_plans.size();
+			moveit::msgs::MotionPlanPtr motion_plan_ptr(new MotionPlanResponse(mp_response));
+			motion_plans.push_back(motion_plan_ptr);
+
+			// populate trajectory with motion plan data
+			convertFromMotionPlanToTrajectory(mp_response, trajectory);
+			trajectories.push_back(trajectory);
+
+			return true;
+		}
+	} 
+	else 
+	{
+		ROS_WARN("No solution found");
+		return false;
+	}
 }
 
 
@@ -297,12 +201,12 @@ bool planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, d
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "name_performer_node");
+    ros::init(argc, argv, "path_planner_node");
     ros::NodeHandle nh;
 
     uibk_robot_moveit_config::PathPlanner node(nh);
 
-    ROS_INFO("This node is ready to do Path Planning!")
+    ROS_INFO("This node is ready to do path planning!")
 
     while(ros::ok())
     {

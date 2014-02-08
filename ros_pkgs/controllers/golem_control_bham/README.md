@@ -18,3 +18,5 @@ Check the in the ControlRobotUIBK.xml if you are using the real (GolemDeviceRobo
 And check within them, the host="ip" to connect to local or remote control servers. Important: 
 
 Important: You might need to copy the files manually if they are updated into the {catkin_workspace}/devel/lib/golem_controller_bham so the changes can take effect, because the COPY command in the CMakeLists.txt does not seem to overwrite the files that are already copied.
+
+If you want to run the server in localhost, you need to go into the Golem binaries, and modify the GolemDeviceCtrlPhysServer.xml to point to the simulated robot, since by default it points to the real one.
