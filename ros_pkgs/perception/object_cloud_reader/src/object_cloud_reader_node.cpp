@@ -3,6 +3,7 @@
 #include <tf/transform_listener.h>
 #include <geometry_msgs/PoseArray.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <moveit_msgs/AttachedCollisionObject.h>
 #include <sensor_msgs/point_cloud_conversion.h>
 #include <pcl_conversions/pcl_conversions.h>
 
@@ -17,8 +18,9 @@
 // typically these ones are generated at compilation time, 
 // for instance, for a service called ClassParameterSetting.srv 
 // within object_cloud_reader, we need to include this 
-//#include "definitions/PoseEstimation.h" 
-#include "definitions/ObjectCloudReader.h" 
+#include "definitions/ObjectCloudReader.h"
+
+using namespace std;
 namespace object_cloud_reader {
 
 // use a name for the node and a verb it is suppose to do, Publisher, Server, etc...
@@ -35,7 +37,6 @@ class ObjectReader
     ros::NodeHandle priv_nh_;
 
     // services
-    //ros::ServiceServer srv_estimate_poses_;
     ros::ServiceServer srv_object_reader_;
     //publisher
     ros::Publisher pub_object_point_clouds_;
@@ -46,26 +47,24 @@ class ObjectReader
 
     // reconstructed scene
     sensor_msgs::PointCloud2 current_scene_ros_;
-
+    ros::Publisher attached_object_publisher;
   public:
 
     // callback functions
-    //bool processObjects(definitions::PoseEstimation::Request& request, definitions::PoseEstimation::Response& response);
     bool processObjects(definitions::ObjectCloudReader::Request& request, definitions::ObjectCloudReader::Response& response);
     void poseToMatrix4f(geometry_msgs::Pose &pose,Eigen::Matrix4f &mat); 
 
     // publishes the reconstructed scene
     void publishScene();
-
+    void send_occlusion_shape(vector<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > obj_pcds,vector<geometry_msgs::Pose> obj_poses);
     // constructor
     ObjectReader(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
     {
         // advertise service
-        //srv_estimate_poses_ = nh_.advertiseService(nh_.resolveName("/pose_estimation_uibk"), &ObjectReader::processObjects, this);
         srv_object_reader_ = nh_.advertiseService(nh_.resolveName("/object_reader"), &ObjectReader::processObjects, this);
-        //pub_object_point_clouds_ = nh_.advertise<sensor_msgs::PointCloud2>(nh_.resolveName("/object_clouds_from_mesh"), 10,true);
-        pub_object_point_clouds_ = nh_.advertise<sensor_msgs::PointCloud2>(nh_.resolveName("/reconstructed_scene"), 10);
-
+        // ** point cloud publishing is disabled  use primitives instead
+        //pub_object_point_clouds_ = nh_.advertise<sensor_msgs::PointCloud2>(nh_.resolveName("/reconstructed_scene"), 10);
+        attached_object_publisher = nh_.advertise<moveit_msgs::AttachedCollisionObject>(nh_.resolveName("attached_collision_object"), 1,true);
         // change this at will
         current_scene_ros_.header.frame_id = "world_link";
     }
@@ -97,42 +96,12 @@ void ObjectReader::poseToMatrix4f(geometry_msgs::Pose &pose,Eigen::Matrix4f &mat
 //bool ObjectReader::processObjects(definitions::PoseEstimation::Request& request, definitions::PoseEstimation::Response& response)
 bool ObjectReader::processObjects(definitions::ObjectCloudReader::Request& request, definitions::ObjectCloudReader::Response& response)
 {
-
-    /*std::string topic = "/camera/depth_registered/points";
-
-    sensor_msgs::PointCloud2::ConstPtr scene_ptr (new sensor_msgs::PointCloud2);
-    scene_ptr = ros::topic::waitForMessage<sensor_msgs::PointCloud2>(topic, nh_, ros::Duration(3.0));
-    
-    if (!scene_ptr)
-    {
-        ROS_ERROR("Point Cloud Conversion service: no point_cloud2 has been received");
-        return false;
-    }*/
-    
-
-
-    // 1. call /estimate_pose 
-    /*definitions::PoseEstimation pose_estimation_result;
-    std::string pose_estimation_service_name("/estimate_poses");
-    while ( !ros::service::waitForService(pose_estimation_service_name, ros::Duration().fromSec(3.0)) )
-    {
-        ROS_ERROR("Waiting for service %s...", pose_estimation_service_name.c_str());
-        ros::Duration(2).sleep();  
-
-    }
-
-    if (!ros::service::call(pose_estimation_service_name, pose_estimation_result))
-    {
-        ROS_ERROR("Call to pose estimatione service failed. Continue...");
-        ros::Duration(2).sleep();  
-        return false; 
-    }*/
-
     //std::vector<definitions::Object> objects = pose_estimation_result.response.detected_objects;
     std::vector<definitions::Object> objects = request.detected_objects;
-    
+    vector<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > obj_pcds;
+    vector<geometry_msgs::Pose> obj_poses;
     // 2. read the pcd files
-    std::string path_to_database("/home/pacman/poseEstimation/data/PCD-MODELS-DOWNSAMPLED/");
+    std::string path_to_database("/home/pacman/CODE/poseEstimation/dataFiles/PCD-MODELS-DOWNSAMPLED/");
     pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr current_scene (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
     for (int i=0;i<objects.size();i++)
     {
@@ -155,18 +124,14 @@ bool ObjectReader::processObjects(definitions::ObjectCloudReader::Request& reque
         poseToMatrix4f(objects[i].pose, transform_pose);
         pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr transform_cloud(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
         transformPointCloudWithNormals(*cloud, *transform_cloud, transform_pose); 
+        obj_pcds.push_back(transform_cloud);
+        obj_poses.push_back(objects[i].pose);
+        
         for( size_t id = 0; id < transform_cloud->points.size(); id++ )
             current_scene->points.push_back(transform_cloud->points[id]);
-       /* sensor_msgs::PointCloud2 current_object;
-
-        pcl::toROSMsg(*transform_cloud, current_object);
-
-        current_object.header = scene_ptr->header;
-
-        pub_object_point_clouds_.publish(current_object);     */  
-
     }  
-    
+    send_occlusion_shape(obj_pcds,obj_poses);
+
     pcl::toROSMsg(*current_scene, current_scene_ros_);    
     response.rec_scene = current_scene_ros_;
     response.result = response.SUCCESS;
@@ -174,12 +139,51 @@ bool ObjectReader::processObjects(definitions::ObjectCloudReader::Request& reque
     
 }
 
+void ObjectReader::send_occlusion_shape(vector<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > obj_pcds,vector<geometry_msgs::Pose> obj_poses)
+{
+    moveit_msgs::AttachedCollisionObject attached_object;
+    attached_object.object.header.frame_id = "world_link";
+    attached_object.object.id = "box";
+    attached_object.link_name = "world_link";
+    for( size_t i = 0; i < obj_pcds.size(); i++ )
+    { 
+      double min_x = 1000; double min_y = 1000;  double min_z = 1000;
+      double max_x = 0; double max_y = 0; double max_z = 0;
+      for( size_t j = 0; j < obj_pcds[i]->points.size(); j++ )
+      {
+        if( obj_pcds[i]->points[j].x < min_x )
+            min_x = obj_pcds[i]->points[j].x;
+        if( obj_pcds[i]->points[j].x > max_x )
+            max_x = obj_pcds[i]->points[j].x;
+
+        if( obj_pcds[i]->points[j].y < min_y )
+            min_y = obj_pcds[i]->points[j].y;  
+        if( obj_pcds[i]->points[j].y > max_y )
+            max_y = obj_pcds[i]->points[j].y; 
+
+        if( obj_pcds[i]->points[j].z < min_z )
+            min_z = obj_pcds[i]->points[j].z;  
+        if( obj_pcds[i]->points[j].z > max_z )
+            max_z = obj_pcds[i]->points[j].z;                              
+      }
+      shape_msgs::SolidPrimitive primitive;
+      primitive.type = primitive.BOX;  
+      primitive.dimensions.resize(3);
+      primitive.dimensions[0] = (max_x - min_x);
+      primitive.dimensions[1] = (max_y - min_y);   
+      primitive.dimensions[2] = (max_z - min_z);
+   //   cout << "box size: " <<  primitive.dimensions[0] << " "<< primitive.dimensions[1] << " "<< primitive.dimensions[2] <<  endl;
+      attached_object.object.primitives.push_back(primitive);
+      attached_object.object.primitive_poses.push_back(obj_poses[i]);
+      attached_object.object.operation = attached_object.object.ADD;
+    }
+    attached_object_publisher.publish(attached_object);
+}
+
 void ObjectReader::publishScene()
 {
     pub_object_point_clouds_.publish(current_scene_ros_);
 }
-
-
 
 } // namespace object_cloud_reader
 
@@ -193,7 +197,7 @@ int main(int argc, char **argv)
     while(ros::ok())
     {
         ros::spinOnce();
-        node.publishScene();
+        //node.publishScene();
     }
 
     return 0;

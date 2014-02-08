@@ -16,11 +16,10 @@
 #include <definitions/KinectGrabberService.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
+
+#include <moveit_msgs/AttachedCollisionObject.h>
 /*#include <pcl/ros/conversions.h>
 #include <pcl_ros/point_cloud.h>*/
-// PCL 1.7 headers
-//#include <pcl/point_cloud.h>
-//#include <pcl/point_types.h>
 
 // use "" for local headers
 #include "I_SegmentedObjects.h"
@@ -55,9 +54,10 @@ class PoseEstimator
     ros::ServiceClient srv_kinect;
     ros::Publisher pub_rec_scene_;
     
+    // ** disable this when using object cloud reader ** //
+
     Eigen::Matrix4f kinectToRobot;
     
-  //  ros::Publisher pub_pcd;
     double offset_x,offset_y;
     sensor_msgs::PointCloud2 rec_scene_cloud;
 
@@ -70,6 +70,7 @@ class PoseEstimator
     void poseEigenToMsg(const Eigen::Affine3d&, geometry_msgs::Pose&);
 
     void callback_kinect(const sensor_msgs::PointCloud2ConstPtr & input);
+    void send_occlusion_shape(vector<pcl::PointCloud<pcl::PointXYZ>::Ptr > obj_pcds,vector<geometry_msgs::Pose> obj_poses);
 
     // constructor
     PoseEstimator(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
@@ -78,21 +79,14 @@ class PoseEstimator
 
         // advertise service
         srv_estimate_poses_ = nh_.advertiseService(nh_.resolveName("/pose_estimation_uibk/estimate_poses"), &PoseEstimator::estimatePoses, this);
-//	pub_pcd = nh_.advertise<pcl::PointCloud<pcl::PointXYZ> >(nh_.resolveName("/pose_estimation_uibk/object"), 1);
-      /*  kinectToRobot <<
-       -0.12718, -0.990185, 0.0579525,  0.559081,
-         -0.760843, 0.0599052, -0.646166,  0.168621,
-         0.636352, -0.126272, -0.760994,  0.946187,
-        0,         0,         0,         1;*/
-       kinectToRobot <<
- -0.065648,  -0.996571 , 0.0503785,   0.645214,
- -0.644791, 0.00383551,   -0.76435,   0.332272,
-  0.761535, -0.0826616 , -0.642831 ,  0.714251,
-         0,          0 ,         0,          1;        
 
-    //  offset_x = 0.22;     
-   /*    offset_y = 0.055; // can be 0 -- -0.03
-       offset_x = 0.245;  // can 3cm more --- 0.22*/
+       kinectToRobot <<
+           -0.065648,  -0.996571 , 0.0503785,   0.645214,
+           -0.644791, 0.00383551,   -0.76435,   0.332272,
+            0.761535, -0.0826616 , -0.642831 ,  0.714251,
+            0,          0 ,         0,          1;        
+
+
        offset_x = 0;
        offset_y = 0;
        rec_scene_cloud.header.frame_id = "/world_link"; 
@@ -148,23 +142,17 @@ bool PoseEstimator::estimatePoses(definitions::PoseEstimation::Request& request,
     boost::shared_ptr<vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > > transforms = objects.getTransforms ();
     
     std::vector<definitions::Object> detected_objects(names.size());
-
     int j;
     //Transform these types to ros message types
-
-    /*pcl::PointCloud<pcl::PointXYZ>::Ptr xyz_points_trans (new pcl::PointCloud<pcl::PointXYZ>());
-         Eigen::Matrix4d md_(kinectToRobot.inverse().cast<double>());
-        Eigen::Affine3d e_ = Eigen::Affine3d(md_);   
-    pcl::transformPointCloud(*xyz_points_,*xyz_points_trans,e_); 
-     pcl::io::savePCDFileASCII ("/tmp/points_trans.pcd",*xyz_points_trans);*/
+    vector<geometry_msgs::Pose> poses;
     for (int i = 0; i < names.size (); i++)
     {     
         j = orderedList[i]; 
         std::cout << j << std::endl;
 
         Eigen::Matrix4f transform_matrix = kinectToRobot.inverse()*transforms->at(j);
-	//Eigen::Matrix4f transform_matrix = kinectToRobot*transforms->at(j);
-	std::cout << "transformation matrix: " << kinectToRobot.inverse() << std::endl;
+	   //Eigen::Matrix4f transform_matrix = kinectToRobot*transforms->at(j);
+	   std::cout << "transformation matrix: " << kinectToRobot.inverse() << std::endl;
 
         std::cout <<    names.at(j) << std::endl;
         std::cout << transform_matrix << std::endl;
@@ -174,58 +162,17 @@ bool PoseEstimator::estimatePoses(definitions::PoseEstimation::Request& request,
 
         geometry_msgs::Pose current_pose;
         poseEigenToMsg(e, current_pose);
-        
-	// ** add offset ** //
-	 current_pose.position.x += offset_x;
-	current_pose.position.y += offset_y;
+	   // ** add offset ** //
+	    current_pose.position.x += offset_x;
+	    current_pose.position.y += offset_y;
 	
         definitions::Object object;
         object.pose = current_pose;
         object.name.data = names.at(j);
         detected_objects[i] = object;
-	
-/*	if( i == 0 ){
-	  vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> pcds = objects.getPointClouds();
-	  pub_pcd.publish(*pcds[j]);
-	}*/
     }
-    
     response.detected_objects = detected_objects;
-
-   /*  pcl::PointCloud<pcl::PointXYZ>::Ptr xyz_objs_ (new pcl::PointCloud<pcl::PointXYZ>());
-     xyz_objs_->width = 640; xyz_objs_->height = 480;
-     xyz_objs_->points.resize(xyz_points_->width*xyz_points_->height);
-     for( size_t i = 0; i < xyz_objs_->points.size(); i++ )
-     {
-        pcl::PointXYZ point; point.x = std::numeric_limits<double>::quiet_NaN(); 
-        point.y = std::numeric_limits<double>::quiet_NaN(); 
-        point.z = std::numeric_limits<double>::quiet_NaN();
-        xyz_objs_->points[i] = point;
-     }
-     for( int i = 0; i < names.size(); i++ )
-     {
-        vector<int> id_cur = give_object_ids(xyz_points_,objects.getPointCloudAt(i));
-        for( size_t j = 0; j < id_cur.size(); j++ )
-            xyz_objs_->points[id_cur[j]] = xyz_points_->points[id_cur[j]];
-     }
-      
-
-     Eigen::Matrix4d md_(kinectToRobot.inverse().cast<double>());
-     Eigen::Quaternion<double> quat(md_.block<3,3>(0,0));
-     cout << "Quaternion: " << quat.x() << " "<<quat.y() << " "<< quat.z() << " "<<quat.w() << endl;
-     Eigen::Quaternion<float> quat_inv(kinectToRobot.block<3,3>(0,0));
-     cout << "Quaternion inv: " << quat_inv.x() << " "<<quat_inv.y() << " "<< quat_inv.z() << " "<<quat_inv.w() << endl;
-     Eigen::Affine3d e_ = Eigen::Affine3d(md_);  
-     pcl::transformPointCloud(*xyz_objs_,*xyz_objs_,e_);
-
-     rec_scene_cloud.width = xyz_objs_->width;  rec_scene_cloud.height = xyz_objs_->height;
-     rec_scene_cloud.data.resize(rec_scene_cloud.width*rec_scene_cloud.height);
-     rec_scene_cloud.is_dense = false;
-     pcl::toROSMsg(*xyz_objs_,rec_scene_cloud);
-     rec_scene_cloud.header.frame_id = "/world_link";
-     rec_scene_cloud.header.stamp = ros::Time::now();
-    // rec_scene_cloud.header.seq ++;
-    pub_rec_scene_.publish(rec_scene_cloud);*/
+    
     ROS_INFO("Pose estimation service finisihed, and ready for another service requests...");
     return true;
 }
@@ -252,13 +199,7 @@ vector<int> PoseEstimator::give_object_ids(pcl::PointCloud<pcl::PointXYZ>::Ptr c
      }
     return ids;
 }
-void PoseEstimator::publish_scene()
-{
-    rec_scene_cloud.header.frame_id = "/world_link";
-    rec_scene_cloud.header.stamp = ros::Time::now();
-    //rec_scene_cloud.header.seq ++;
-    pub_rec_scene_.publish(rec_scene_cloud);
-}
+
 void PoseEstimator::poseEigenToMsg(const Eigen::Affine3d &e, geometry_msgs::Pose &m)
 {
     m.position.x = e.translation()[0];
@@ -287,12 +228,9 @@ int main(int argc, char **argv)
 
     pose_estimation_uibk::PoseEstimator node(nh);
     ROS_INFO("Pose estimation node ready for service requests...");
-   // ros::Rate loop_rate(30);
     while(ros::ok())
     {
         ros::spinOnce();
-        /*node.publish_scene();
-        loop_rate.sleep();*/
     }
 
     return 0;

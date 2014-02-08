@@ -268,7 +268,7 @@
   <!-- DLR Justin robot (controller, planner): library_path="GolemDeviceRobotJustin" config_path="GolemDeviceRobotJustin" -->
   <!-- UIBK robot simulation (controller, planner): library_path="GolemDeviceMultiCtrl" config_path="GolemDeviceRobotUIBK" -->
 
-  <controller library_path="GolemDeviceMultiCtrl" config_path="GolemDeviceRobotUIBK">
+  <controller library_path="GolemDeviceMultiCtrl" config_path="GolemDeviceRobotUIBKSim">
     <renderer>
       <joint_appearance line_width="1.0">
         <solid_colour R="192" G="192" B="0" A="100"></solid_colour>
