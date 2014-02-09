@@ -22,7 +22,7 @@ term1:
 
 term2:
 
-`rosrun uibk_robot_moveit_config path_planner_node
+`rosrun uibk_robot_moveit_config path_planner_node`
 
 To test, go to term3 (this will plan to wrist which is known to have solution):
 
