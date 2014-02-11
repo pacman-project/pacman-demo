@@ -5,17 +5,17 @@ using namespace pacman;
 
 int main(int argc, char *argv[]) {
 	try {
-		if (argc < 3) {
-			printf("ControlTest <robot_type> <configuration_file>\n");
+		if (argc < 2) {
+			printf("ControlTest <configuration_file>\n");
 			return 1;
 		}
 
 		// Create controller
-		BhamControl::Ptr controller = BhamControl::create((RobotType)std::strtoul(argv[1], nullptr, 10), argv[2]);
-		
+		BhamControl::Ptr controller = BhamControl::create(argv[1]);
+
 		// Read current state
 		pacman::RobotUIBK::State begin;
-		controller->lookupState(controller->time(), &begin);
+		controller->lookupState(controller->time(), begin);
 
 		// Prepare trajectory
 		pacman::RobotUIBK::Command::Seq commands(5);

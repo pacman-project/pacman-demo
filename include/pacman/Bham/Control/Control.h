@@ -21,11 +21,10 @@ namespace pacman {
 		typedef boost::shared_ptr<BhamControl> Ptr;
 
 		/** Creates Birmingham control interface
-		 *	@param[in]	type			robot type
-		 *	@param[in]	path			configuration file with robot type specs
+		 *	@param[in]	path			configuration file
 		 *  @return						interface pointer
 		*/
-		static Ptr create(RobotType type, const std::string& path);
+		static Ptr create(const std::string& path);
 		
 		/** Current time counted from an arbitrary moment
 		 *	@return						current time [sec]
@@ -39,21 +38,21 @@ namespace pacman {
 
 		/**	State of a robot at time t
 		 *	@param[in]	t				query time [sec]
-		 *	@param[out]	state			pointer to the state
+		 *	@param[out]	state			robot state
 		*/
-		virtual void lookupState(float_t t, void* state) const = 0;
+		virtual void lookupState(float_t t, RobotState& state) const = 0;
 
 		/**	Command sent to a robot at time t
 		 *	@param[in]	t				query time [sec]
-		 *	@param[out]	command			pointer to the command
+		 *	@param[out]	command			robot command
 		*/
-		virtual void lookupCommand(float_t t, void* command) const = 0;
+		virtual void lookupCommand(float_t t, RobotCommand& command) const = 0;
 
 		/**	Robot control
 		 *	@param[in]	command			command sequence begin
 		 *	@param[in]	size			number of commands in the sequence
 		*/
-		virtual void send(const void* command, std::uintptr_t size = 1) = 0;
+		virtual void send(const RobotCommand* command, std::uintptr_t size = 1) = 0;
 
 		/**	Wait for begin of the robot control cycle
 		 *	@param[in]	timewait		maximum time wait [sec]

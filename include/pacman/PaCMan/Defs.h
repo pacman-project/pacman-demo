@@ -128,24 +128,76 @@ namespace pacman {
 		}
 	};
 
-	/** Innsbruck robot state */
-	class TimeStamp {
+	/** Robot types */
+	enum RobotType {
+		/** Kuka LWR */
+		KUKA_LWR = 1,
+		/** Shunk Dexterous Hand */
+		SHUNK_DEX_HAND,
+		/** Innsbruck robot */
+		ROBOT_UIBK = 101,
+	};
+
+	/** Robot data */
+	class RobotData {
 	public:
 		/** Time stamp */
 		float_t t;
 
-		/** Default constructor sets the default values. */
-		inline TimeStamp() {
-			setToDefault();
+		/** Robot type */
+		inline RobotType getRobotType() const {
+			return robotType;
 		}
+		/** Data size */
+		inline std::uintptr_t getDataSize() const {
+			return dataSize;
+		}
+		
+		/** Data array access */
+		inline RobotData& operator () (std::uintptr_t idx) {
+			return *(RobotData*)((char*)this + idx*dataSize);
+		}
+		/** Data array access */
+		inline const RobotData& operator () (std::uintptr_t idx) const {
+			return *(const RobotData*)((const char*)this + idx*dataSize);
+		}
+
 		/** The default values. */
 		inline void setToDefault() {
 			t = float_t(0.);
 		}
+
+	protected:
+		/** Set robot type and data size. */
+		RobotData(RobotType robotType, std::uintptr_t dataSize) : robotType(robotType), dataSize(dataSize) {
+			setToDefault();
+		}
+
+	private:
+		/** Robot type */
+		RobotType robotType;
+		/** Data size */
+		std::uintptr_t dataSize;
+	};
+
+	/** Robot state base */
+	class RobotState : public RobotData {
+	protected:
+		/** Set robot type and data size. */
+		RobotState(RobotType robotType, std::uintptr_t dataSize) : RobotData(robotType, dataSize) {
+		}
+	};
+	
+	/** Robot command base */
+	class RobotCommand : public RobotData {
+	protected:
+		/** Set robot type and data size. */
+		RobotCommand(RobotType robotType, std::uintptr_t dataSize) : RobotData(robotType, dataSize) {
+		}
 	};
 
 	/** State template (position control) */
-	template <typename _Config> class State : public TimeStamp {
+	template <typename _Config, RobotType _RobotType> class State : public RobotState  {
 	public:
 		/** Sequence */
 		typedef std::vector<State> Seq;
@@ -154,18 +206,18 @@ namespace pacman {
 		_Config pos;
 
 		/** Default constructor sets the default values. */
-		inline State() {
+		inline State() : RobotState(_RobotType, sizeof(State<_Config, _RobotType>)) {
 			setToDefault();
 		}
 		/** The default values. */
 		inline void setToDefault() {
-			TimeStamp::setToDefault();
+			RobotData::setToDefault();
 			pos.setToDefault();
 		}
 	};
 
 	/** Command template (position control) */
-	template <typename _Config> class Command : public TimeStamp {
+	template <typename _Config, RobotType _RobotType> class Command : public RobotCommand {
 	public:
 		/** Sequence */
 		typedef std::vector<Command> Seq;
@@ -178,8 +230,8 @@ namespace pacman {
 		_Config acc;
 
 		/** Default constructor sets the default values. */
-		inline Command() {
-			TimeStamp::setToDefault();
+		inline Command() : RobotCommand(_RobotType, sizeof(Command<_Config, _RobotType>)) {
+			RobotData::setToDefault();
 			setToDefault();
 		}
 		/** The default values. */
@@ -219,10 +271,10 @@ namespace pacman {
 		};
 
 		/** Kuka LWR state */
-		typedef pacman::State<Config> State;
+		typedef pacman::State<Config, RobotType::KUKA_LWR> State;
 
 		/** Kuka LWR command */
-		typedef pacman::Command<Config> Command;
+		typedef pacman::Command<Config, RobotType::KUKA_LWR> Command;
 	};
 
 	/** Shunk Dexterous Hand */
@@ -284,10 +336,10 @@ namespace pacman {
 		};
 
 		/** Shunk Dexterous Hand state */
-		typedef pacman::State<Config> State;
+		typedef pacman::State<Config, RobotType::SHUNK_DEX_HAND> State;
 
 		/** Shunk Dexterous Hand command */
-		typedef pacman::Command<Config> Command;
+		typedef pacman::Command<Config, RobotType::SHUNK_DEX_HAND> Command;
 	};
 
 	/** Innsbruck robot */
@@ -342,16 +394,10 @@ namespace pacman {
 		};
 
 		/**  Innsbruck robot state */
-		typedef pacman::State<Config> State;
+		typedef pacman::State<Config, RobotType::ROBOT_UIBK> State;
 
 		/**  Innsbruck robot command */
-		typedef pacman::Command<Config> Command;
-	};
-
-	/** Robot type */
-	enum RobotType {
-		/** Innsbruck robot */
-		ROBOT_UIBK,
+		typedef pacman::Command<Config, RobotType::ROBOT_UIBK> Command;
 	};
 };
 
