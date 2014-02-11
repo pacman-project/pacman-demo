@@ -178,6 +178,8 @@ if (WIN32)
 	#MARK_AS_ADVANCED(GOLEM_LIBRARY)
 	SET(GOLEM_BINARIES "${PROGRAM_FILES}/Golem/bin" CACHE PATH "Path prefix for Golem binaries")
 	#MARK_AS_ADVANCED(GOLEM_BINARIES)
+	SET(GOLEM_RESOURCES "${PROGRAM_FILES}/Golem/bin" CACHE PATH "Path prefix for Golem device resources")
+	#MARK_AS_ADVANCED(GOLEM_RESOURCES)
 	# Grasp
 	SET(GRASP_INCLUDE "${PROGRAM_FILES}/Grasp/include" CACHE PATH "Path prefix for Grasp include")
 	#MARK_AS_ADVANCED(GRASP_INCLUDE)
@@ -234,6 +236,8 @@ elseif (UNIX)
 	#MARK_AS_ADVANCED(GOLEM_LIBRARY)
 	SET(GOLEM_BINARIES /usr/local/bin CACHE PATH "Path prefix for Golem binaries")
 	#MARK_AS_ADVANCED(GOLEM_BINARIES)
+	SET(GOLEM_RESOURCES /usr/local/bin CACHE PATH "Path prefix for Golem device resources")
+	#MARK_AS_ADVANCED(GOLEM_RESOURCES)
 	# Grasp
 	SET(GRASP_INCLUDE /usr/local/include CACHE PATH "Path prefix for Grasp include")
 	#MARK_AS_ADVANCED(GRASP_INCLUDE)
@@ -400,6 +404,17 @@ SOURCE_GROUP("Resource Files" FILES ${BHAM_GRASP_FILES})
 INSTALL(TARGETS PaCManBhamGrasp RUNTIME DESTINATION bin LIBRARY DESTINATION bin ARCHIVE DESTINATION lib)
 INSTALL(FILES ${BHAM_GRASP_HEADERS} DESTINATION include/pacman/Bham/Grasp/)
 INSTALL(FILES ${BHAM_GRASP_FILES} DESTINATION bin)
+
+if(BUILD_ROS_PKGS)
+SET(BHAM_GRASP_ROS_FILES
+	${PROJECT_ROOT}/resources/Bham/Grasp.xml
+	${GOLEM_RESOURCES}/GolemDeviceKukaLWRSim.xml
+	${GOLEM_RESOURCES}/GolemDeviceSchunkDexHandSim.xml
+	${GOLEM_RESOURCES}/GolemDeviceRobotUIBKSim.xml
+)
+COPY_FILES(PaCManBhamGrasp ${PROJECT_ROOT}/pacman/ros_pkgs/planners/grasp_planner_bham/config ${BHAM_GRASP_ROS_FILES})
+endif()
+
 # Bham grasp test
 SET(BHAM_GRASP_TEST_SOURCES
 	${PROJECT_ROOT}/src/pacman/Bham/GraspTest/GraspTest.cpp
@@ -460,6 +475,20 @@ SOURCE_GROUP("Resource Files" FILES ${BHAM_CONTROL_FILES})
 INSTALL(TARGETS PaCManBhamControl RUNTIME DESTINATION bin LIBRARY DESTINATION bin ARCHIVE DESTINATION lib)
 INSTALL(FILES ${BHAM_CONTROL_HEADERS} DESTINATION include/pacman/Bham/Control/)
 INSTALL(FILES ${BHAM_CONTROL_FILES} DESTINATION bin)
+
+if(BUILD_ROS_PKGS)
+SET(BHAM_CONTROL_ROS_FILES
+	${PROJECT_ROOT}/resources/Bham/ControlRobotUIBK.xml
+	${GOLEM_RESOURCES}/GolemDeviceKukaLWR.xml
+	${GOLEM_RESOURCES}/GolemDeviceKukaLWRSim.xml
+	${GOLEM_RESOURCES}/GolemDeviceSchunkDexHand.xml
+	${GOLEM_RESOURCES}/GolemDeviceSchunkDexHandSim.xml
+	${GOLEM_RESOURCES}/GolemDeviceRobotUIBK.xml
+	${GOLEM_RESOURCES}/GolemDeviceRobotUIBKSim.xml
+)
+COPY_FILES(PaCManBhamControl ${PROJECT_ROOT}/pacman/ros_pkgs/controllers/golem_control_bham/config ${BHAM_CONTROL_ROS_FILES})
+endif()
+
 # Bham control test
 SET(BHAM_CONTROL_TEST_SOURCES
 	${PROJECT_ROOT}/src/pacman/Bham/ControlTest/ControlTest.cpp
