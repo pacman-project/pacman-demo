@@ -14,7 +14,7 @@ PaCMan demo.
 * VTK >= 5.6 (PCL)
 * OpenNI 1.5.4 (PCL)
 * PCL 1.7
-* ROS Groovy (uibk, unipi)
+* ROS Hydro (uibk, unipi)
 * OpenCV >= 2.4.6 (bham)
 * Expat (bham)
 * Freeglut (bham)
@@ -32,7 +32,7 @@ PaCMan demo.
 
 * Boost installation: `sudo apt-get install libboost-date-time1.46.1 libboost-date-time1.46-dev libboost-filesystem1.46.1 libboost-filesystem1.46-dev libboost-iostreams1.46.1 libboost-iostreams1.46-dev libboost-mpi1.46.1 libboost-mpi1.46-dev libboost-serialization1.46.1 libboost-serialization1.46-dev libboost-system1.46.1 libboost-system1.46-dev libboost-thread1.46.1 libboost-thread1.46-dev`
 
-### PCL and ROS prerequisites
+### PCL
 
 * `sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'`
 
@@ -62,68 +62,55 @@ PaCMan demo.
 
 * Build and install PCL: `sudo make install`
 
+* In some architectures, PCL and dependant libs such as Grasp, might present compilation problems regarding the lack of low level instructions. If so, edit PCLROOT/cmake/pcl_find_sse.cmake with your available hardware options `-march=CPU-TYPE (for Ubuntu 12.04, gcc-4.6.3) [here](http://gcc.gnu.org/onlinedocs/gcc-4.6.3/gcc/Submodel-Options.html#Submodel-Options)
 
-### Installing PaCMan ROS packages
 
-NOTE1: We agreed that the top level CMakeLists.txt file should configure this part, but for now, we need to do this manually.
+### Installing PaCMan soft
 
-NOTE2: The partners libraries should be built before building the ROS pkgs, and please, write down the build path of them, because you will need them in step 4.
+
+#### Step 0. Suggested folder tree
+
+* `mkdir pacman`
+
+* `cd pacman`
+
+* `git clone https://github.com/pacman-project/pacman.git`
+
+* `git clone https://github.com/PARTNERLIBS`
+
+Build PARTNERLIBS.
 
 
 #### Step 1. Configure your [ROS environment](http://wiki.ros.org/groovy/Installation/Ubuntu#groovy.2BAC8-Installation.2BAC8-DebEnvironment.Environment_setup)
 
 Only if you haven't done it from installing the prerequisites. For the current terminal session, type:
 
-* `source /opt/ros/groovy/setup.bash`
+* `source /opt/ros/hydro/setup.bash`
 
 To set permamently the ROS environment for future sessions type:
 
-* `echo "source /opt/ros/groovy/setup.bash" >> ~/.bashrc`
+* `echo "source /opt/ros/hydro/setup.bash" >> ~/.bashrc`
 
-#### Step 2. Configure a [catkin environment](http://wiki.ros.org/catkin/Tutorials/create_a_workspace) 
+#### Step 3. Typicall cmake building
 
-* `mkdir -p ~/catkin_ws/src`
+* `mkdir build`
 
-* `cd ~/catkin_ws/src`
- 
-* `catkin_init_workspace`
+* `cd build`
 
-* `cd ~/catkin_ws/`
+* `cmake-gui ..`  (<- set the directories for partner libraries)
 
-* `catkin_make`
+* `make -jN` (<- N the number of processor to speed up compilation)
 
-* `source ~/catkin_ws/devel/setup.bash`
+
+#### Step 3. Configure the pacman [catkin environment](http://wiki.ros.org/catkin/Tutorials/create_a_workspace) for use:
+
+In order to use the ros packages, you need to:
+
+* `source PACMAN_ROOT/catkin/devel/setup.bash`
 
 Again, to set permamently the catkin environment for future terminal sessions type:
 
-* `echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc`
-
-#### Step 3. Clone the main pacman repository
-
-* `cd ~`
-
-* `git clone https://github.com/pacman-project/pacman.git pacman`
-
-* `ln -s -d ~/pacman/ros_pkgs/ ~/catkin_ws/src/ros_pkgs`
-
-#### Step 4. Edit packages that use partners libraries
-
-Edit the link_directories and include_directories in the CMakeLists.txt of packages that use partners libraries to ensure proper linking and then build.
-
-* `cd ~/catkin_ws/`
-
-* `catkin_make`
-
-NOTE: I don't know why, but the `find_packge(PCL 1.7 REQUIRED)` does not set the variables `{PCL_INCLUDE_DIRS}` and so on, at the first run, so, type again:
-
-* `catkin_make`
-
-This problem might be caused by the inconsistency between the PCL libraries 1.7 compiled by us and the PCL included in ROS. For example the libopenNI available in PCL is 1.5.2.23 and the package is called openni-dev. Whereas when installing ROS the libopenNI library is 1.5.4.0 (which also works with PrimeSense Carmine), the package name is libopenni-dev. To get rid of the problems when configuring the installation of the pcl 1.7 it is possible to make the symbolic link
-
-sudo ln -s /usr/lib/pkgconfig/libopenni.pc /usr/local/lib/pkgconfig/openni-dev.pc
-
-This enables to have consistent naming while using pkg-config.
-
+* `echo "source PACMAN_ROOT/catkin/devel/setup.bash" >> ~/.bashrc`
 
 
 

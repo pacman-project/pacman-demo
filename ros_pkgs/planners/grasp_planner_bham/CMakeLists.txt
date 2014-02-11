@@ -6,14 +6,14 @@ project(grasp_planner_bham)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED roscpp tf eigen_conversions definitions)
 
-find_package(PCL 1.7 REQUIRED)
-
 ## System dependencies are found with CMake's conventions
+find_package(PCL 1.7 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
+
 set(CMAKE_CXX_FLAGS "-std=c++0x")
 
-# SET YOUR PACMAN ROOT PATH HERE !!!!!!!
-set(PACMAN /home/pacman/CODE/)
+# STILL NEED TO SEE HOW TO PASS THE PACMAN ROOT FOLDER, PERHAPS SETTING AN ENV VAR?
+set(PACMAN ../../../../)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -63,16 +63,14 @@ catkin_package(
 ###########
 ## Build ##
 ###########
-FIND_PACKAGE(VTK 5.10 REQUIRED)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
 	/usr/local/include
-        ${PACMAN}/pacman/include
+  ${PACMAN}/pacman/include
 	${Boost_INCLUDE_DIR}
 	${PCL_INCLUDE_DIRS}
-	${VTK_INCLUDE_DIR}
 	${catkin_INCLUDE_DIRS}
 )
 
@@ -81,11 +79,9 @@ add_definitions(
 )
 
 link_directories(
-
-        /usr/local/bin  #if you do sudo make install .so files are there, although they should be installed in lib/
+  /usr/local/bin  #if you do sudo make install .so files are there, although they should be installed in lib/
 	${PCL_LIBRARY_DIRS}
 	${PACMAN}/bin
-	${VTK_LIBRARY_DIRS}
 )
 
 ## Declare a cpp library
@@ -109,8 +105,6 @@ target_link_libraries(grasp_planner_bham_node
   ${PCL_LIBRARIES}
   ${Boost_LIBRARIES}
   ${catkin_LIBRARIES}
-   CamcalbCalb
-   GolemDeviceRobotJustin
 )
 
 target_link_libraries(ping_grasp_planner_bham_node
@@ -118,16 +112,14 @@ target_link_libraries(ping_grasp_planner_bham_node
   PaCManBhamGrasp
   ${Boost_LIBRARIES}
   ${catkin_LIBRARIES}
-   CamcalbCalb
-   GolemDeviceRobotJustin
 )
 
 ## DIRTY SOLUTION
 ## Copy robot config files to node execution path, I didn't find any other way to do it
-file(COPY config/GolemDeviceKukaLWRSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
-file(COPY config/GolemDeviceRobotUIBKSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
-file(COPY config/GolemDeviceSchunkDexHandSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
-file(COPY resources/pacman_mug1.pcd DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
+# file(COPY config/GolemDeviceKukaLWRSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
+# file(COPY config/GolemDeviceRobotUIBKSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
+# file(COPY config/GolemDeviceSchunkDexHandSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
+# file(COPY resources/pacman_mug1.pcd DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
 
 #############
 ## Install ##

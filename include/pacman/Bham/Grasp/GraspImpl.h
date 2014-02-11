@@ -42,9 +42,9 @@ namespace pacman {
 		/** Point cloud conversion */
 		void convert(const Point3D::Seq& src, ::grasp::Cloud::PointSeq& dst) const;
 		/** Waypoint conversion */
-		void convert(const ::grasp::Manipulator::Config& src, ShunkDexHand::Config& dst) const;
+		void convert(const ::grasp::Manipulator::Config& src, SchunkDexHand::Config& dst) const;
 		/** Waypoint conversion */
-		void convert(const ShunkDexHand::Config& src, ::grasp::Manipulator::Config& dst) const;
+		void convert(const SchunkDexHand::Config& src, ::grasp::Manipulator::Config& dst) const;
 		/** Trajectory conversion */
 		void convert(const ::grasp::RobotState::List& src, RobotUIBK::Config::Seq& dst) const;
 		/** Trajectory conversion */

@@ -78,6 +78,17 @@ elseif (UNIX)
 	mark_as_advanced(BUILD_DYNAMIC_LIBS)
 endif()
 
+# ROS option
+if(WIN32)
+	MESSAGE("ROS is only supported in UNIX")
+elseif(UNIX)
+	# we need the ROS version to be hydro
+	SET(ROS_DIRECTORY /opt/ros/hydro CACHE PATH "ROS directory")
+	SET(CATKIN_DIRECTORY ${PROJECT_PARENT}/catkin CACHE PATH "Catkin workspace directory")	
+	option(BUILD_ROS_PKGS "Build ROS packages" YES)
+	mark_as_advanced(BUILD_ROS_PKGS)
+endif()
+
 # Boost
 FIND_PACKAGE(Boost COMPONENTS system filesystem thread)
 
@@ -542,5 +553,30 @@ INSTALL(TARGETS PaCManUIBKPoseEstimationTest RUNTIME DESTINATION bin)
 #
 ###############################################################################
 
-# TODO
-
+if(BUILD_ROS_PKGS)
+	if(DEFINED ENV{ROS_DISTRO})	
+		if($ENV{ROS_DISTRO} STREQUAL "hydro")
+			MESSAGE(STATUS "current ROS_DISTRO: $ENV{ROS_DISTRO}")
+			# catkin workspace environment configuration
+			if(NOT(EXISTS "${PROJECT_PARENT}/catkin"))
+				FILE(MAKE_DIRECTORY ${CATKIN_DIRECTORY})  
+				FILE(MAKE_DIRECTORY ${CATKIN_DIRECTORY}/src) 
+				EXECUTE_PROCESS(COMMAND catkin_init_workspace ${CATKIN_DIRECTORY}/src)
+				EXECUTE_PROCESS(COMMAND catkin_make -C ${CATKIN_DIRECTORY})
+				# this is not working as expected, needs to be done outside
+				#EXECUTE_PROCESS(COMMAND source ${CATKIN_DIRECTORY}/setup.bash)
+				EXECUTE_PROCESS(COMMAND ln -s ${PROJECT_PARENT}/pacman/ros_pkgs ${CATKIN_DIRECTORY}/src)
+			endif()
+			# build and rebuild re-build the packages after all desired targets are built
+			ADD_CUSTOM_TARGET(ROSPkgs ALL catkin_make -C ${CATKIN_DIRECTORY}
+				COMMENT "Built target ROSPkgs"
+				DEPENDS PaCManBhamControl PaCManBhamGrasp PaCManUIBKPoseEstimationTest PaCManUIBKPoseEstimation
+			)
+			# and copy configuration files afterwards
+			COPY_FILES(ROSPkgs ${CATKIN_DIRECTORY}/devel/lib/golem_control_bham ${BHAM_CONTROL_FILES})
+			COPY_FILES(ROSPkgs ${CATKIN_DIRECTORY}/devel/lib/grasp_planner_bham ${BHAM_GRASP_FILES})
+		endif()		
+	else()
+		MESSAGE(SEND_ERROR "No ROS distribution found or the distribution is not hydro.\nUncheck the BUILD_ROS_PKGS, or install ROS/hydro and ensure you run:\nsource /opt/ros/hydro/setup.bash" )		
+	endif()
+endif()

@@ -132,8 +132,8 @@ namespace pacman {
 	enum RobotType {
 		/** Kuka LWR */
 		KUKA_LWR = 1,
-		/** Shunk Dexterous Hand */
-		SHUNK_DEX_HAND,
+		/** Schunk Dexterous Hand */
+		SCHUNK_DEX_HAND,
 		/** Innsbruck robot */
 		ROBOT_UIBK = 101,
 	};
@@ -277,10 +277,10 @@ namespace pacman {
 		typedef pacman::Command<Config, RobotType::KUKA_LWR> Command;
 	};
 
-	/** Shunk Dexterous Hand */
-	class ShunkDexHand {
+	/** Schunk Dexterous Hand */
+	class SchunkDexHand {
 	public:
-		/** Shunk Dexterous Hand configuration */
+		/** Schunk Dexterous Hand configuration */
 		class Config {
 		public:
 			/** Sequence */
@@ -313,7 +313,7 @@ namespace pacman {
 			}
 		};
 
-		/** Shunk Dexterous Hand configuration + pose */
+		/** Schunk Dexterous Hand configuration + pose */
 		class Pose {
 		public:
 			/** Sequence */
@@ -335,11 +335,11 @@ namespace pacman {
 			}
 		};
 
-		/** Shunk Dexterous Hand state */
-		typedef pacman::State<Config, RobotType::SHUNK_DEX_HAND> State;
+		/** Schunk Dexterous Hand state */
+		typedef pacman::State<Config, RobotType::SCHUNK_DEX_HAND> State;
 
-		/** Shunk Dexterous Hand command */
-		typedef pacman::Command<Config, RobotType::SHUNK_DEX_HAND> Command;
+		/** Schunk Dexterous Hand command */
+		typedef pacman::Command<Config, RobotType::SCHUNK_DEX_HAND> Command;
 	};
 
 	/** Innsbruck robot */
@@ -352,14 +352,14 @@ namespace pacman {
 			typedef std::vector<Config> Seq;
 
 			/** Number of kinematic chains */
-			static const std::uintptr_t CHAINS = KukaLWR::Config::CHAINS + ShunkDexHand::Config::CHAINS;
+			static const std::uintptr_t CHAINS = KukaLWR::Config::CHAINS + SchunkDexHand::Config::CHAINS;
 			/** Number of joints */
-			static const std::uintptr_t JOINTS = KukaLWR::Config::JOINTS + ShunkDexHand::Config::JOINTS;
+			static const std::uintptr_t JOINTS = KukaLWR::Config::JOINTS + SchunkDexHand::Config::JOINTS;
 
 			/** Arm configuration. */
 			KukaLWR::Config arm;
 			/** Hand configuration. */
-			ShunkDexHand::Config hand;
+			SchunkDexHand::Config hand;
 
 			/** Default constructor sets the default values. */
 			inline Config() {

@@ -89,7 +89,7 @@ namespace golem_control_bham{
         priv_nh_.param<std::string>("hand_name", hand_name_, "right_sdh");
 
         // create the controller object using the config file
-        controller_ = BhamControl::create(RobotType::ROBOT_UIBK, config_file_);
+        controller_ = BhamControl::create(config_file_);
 
         // advertise the node services
         srv_trajectory_execution_ = nh_.advertiseService(nh_.resolveName("/trajectory_execution_srv"),&GolemController::executeTrajectoryFromCode, this);
@@ -197,7 +197,7 @@ void GolemController::publishRobotState()
   // read the current data from the controller
   try 
   {  
-    controller_->lookupState(controller_->time(), &uibk_robot_state_);
+    controller_->lookupState(controller_->time(), uibk_robot_state_);
   }
   catch (const std::exception& ex) 
   {
@@ -260,7 +260,7 @@ bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Em
   try {
     // Read current state
     RobotUIBK::State begin;
-    controller_->lookupState(controller_->time(), &begin);
+    controller_->lookupState(controller_->time(), begin);
 
     // Prepare trajectory
     RobotUIBK::Command::Seq commands(12);

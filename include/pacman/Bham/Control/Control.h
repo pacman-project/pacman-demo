@@ -78,8 +78,8 @@ namespace pacman {
 				c[i] = (_Real)config.c[i];
 		}
 		
-		/** ShunkDexHand config conversion */
-		template <typename _Real> static void configToPacman(const _Real* c, ShunkDexHand::Config& config) {
+		/** SchunkDexHand config conversion */
+		template <typename _Real> static void configToPacman(const _Real* c, SchunkDexHand::Config& config) {
 			config.middle[0] = (pacman::float_t)c[0];
 			config.middle[1] = (pacman::float_t)c[1];
 			config.left[0] = (pacman::float_t)c[3];
@@ -88,8 +88,8 @@ namespace pacman {
 			config.right[1] = (pacman::float_t)c[7];
 			config.rotation = (pacman::float_t)c[2];
 		}
-		/** ShunkDexHand config conversion */
-		template <typename _Real> static void configToGolem(const ShunkDexHand::Config& config, _Real* c) {
+		/** SchunkDexHand config conversion */
+		template <typename _Real> static void configToGolem(const SchunkDexHand::Config& config, _Real* c) {
 			c[0] = (_Real)config.middle[0];
 			c[1] = (_Real)config.middle[1];
 			c[3] = (_Real)config.left[0];

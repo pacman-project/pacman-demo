@@ -87,7 +87,7 @@ void BhamGraspImpl::estimate(const Point3D::Seq& points, Trajectory::Seq& trajec
 		trn.multiply(i.toMat34(), trnInv);
 		
 		for (auto j: model) {
-			ShunkDexHand::Pose pose;
+			SchunkDexHand::Pose pose;
 			convert(j, pose.config);
 			golem::Mat34 frame;
 			frame.multiply(trn, j);
@@ -233,12 +233,12 @@ void BhamGraspImpl::convert(const Point3D::Seq& src, ::grasp::Cloud::PointSeq& d
 	Cloud::nanRem(context, dst, Cloud::isNanXYZNormalCurvature<Cloud::Point>);
 }
 
-void BhamGraspImpl::convert(const ::grasp::Manipulator::Config& src, ShunkDexHand::Config& dst) const {
+void BhamGraspImpl::convert(const ::grasp::Manipulator::Config& src, SchunkDexHand::Config& dst) const {
 	const std::uintptr_t offset = grasp.second->getManipulator().getArmJoints();
 	BhamControl::configToPacman(src.jc + grasp.second->getManipulator().getArmJoints(), dst);
 }
 
-void BhamGraspImpl::convert(const ShunkDexHand::Config& src, ::grasp::Manipulator::Config& dst) const {
+void BhamGraspImpl::convert(const SchunkDexHand::Config& src, ::grasp::Manipulator::Config& dst) const {
 	const std::uintptr_t offset = grasp.second->getManipulator().getArmJoints();
 	BhamControl::configToGolem(src, dst.jc + grasp.second->getManipulator().getArmJoints());
 }
@@ -257,7 +257,7 @@ void BhamGraspImpl::convert(const ::grasp::RobotState::List& src, RobotUIBK::Con
 		// KukaLWR
 		for (std::uintptr_t j = 0; j < grasp.second->getManipulator().getArmJoints(); ++j)
 			configDst.arm.c[j] = (float_t)configSrc.jc[j];
-		// ShunkDexHand
+		// SchunkDexHand
 		convert(configSrc, configDst.hand);
 
 		dst.push_back(configDst);
@@ -276,7 +276,7 @@ void BhamGraspImpl::convert(const RobotUIBK::Config::Seq& src, ::grasp::RobotSta
 		// KukaLWR
 		for (std::uintptr_t j = 0; j < grasp.second->getManipulator().getArmJoints(); ++j)
 			config.jc[j] = (Real)i.arm.c[j];
-		// ShunkDexHand
+		// SchunkDexHand
 		convert(i.hand, config);
 
 		configDst.command = configDst.config = grasp.second->getManipulator().getState(config);
@@ -311,7 +311,7 @@ void pacman::save(const std::string& path, const RobotUIBK::Config::Seq& traject
 	str << "#";
 	for (std::uintptr_t i = 0; i < KukaLWR::Config::JOINTS; ++i)
 		str << '\t' << "arm_" << i;
-	for (std::uintptr_t i = 0; i < ShunkDexHand::Config::JOINTS; ++i)
+	for (std::uintptr_t i = 0; i < SchunkDexHand::Config::JOINTS; ++i)
 		str << '\t' << "hand_" << i;
 	file << str.str() << std::endl;
 

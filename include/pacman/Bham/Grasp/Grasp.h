@@ -27,7 +27,7 @@ namespace pacman {
 			typedef std::vector<Trajectory> Seq;
 
 			/** Trajectory */
-			ShunkDexHand::Pose::Seq trajectory;
+			SchunkDexHand::Pose::Seq trajectory;
 			/** Likelihood */
 			float_t likelihood;
 
