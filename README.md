@@ -6,33 +6,30 @@ PaCMan demo.
 
 ## Dependencies
 
-* Boost >= 1.46 (PCL)
+General tools:
+
+* `sudo apt-get install cmake build-essential`
+* `sudo apt-get install git`
+* `sudo apt-get install cmake-gui`
+
+External libs that can be installed in synaptic/apt-get:
+
+* Boost >= 1.48 (PCL/bham)
 * FLANN >= 1.7.1 (PCL)
 * Eigen >= 3.0 (PCL)
 * VTK >= 5.6 (PCL)
 * OpenNI 1.5.4 (PCL)
-* PCL 1.7
-* ROS Hydro (uibk, unipi)
 * OpenCV >= 2.4.6 (bham)
 * Expat (bham)
 * Freeglut (bham)
-* NVIDIA PhysX 2.8 (bham)
 
-All of them can be installed from the synaptic/apt-get standard repos.
+Alternatively, dependencies for PCL can be installed following the instruction at [Install PCL 1.7 from sources](http://pointclouds.org/downloads/source.html).
 
-### Installation of ROS Hydro
+External lib from private download link:
 
-### General prerequisites
+* [NVIDIA PhysX 2.8](https://www.dropbox.com/sh/2o9e4sgt6xp0e5c/FhYfhRLmvt) (bham) 
 
-* `sudo apt-get install cmake build-essential`
-
-* `sudo apt-get install git`
-
-* `sudo apt-get install cmake-gui`
-
-* Boost installation: `sudo apt-get install libboost-date-time1.46.1 libboost-date-time1.46-dev libboost-filesystem1.46.1 libboost-filesystem1.46-dev libboost-iostreams1.46.1 libboost-iostreams1.46-dev libboost-mpi1.46.1 libboost-mpi1.46-dev libboost-serialization1.46.1 libboost-serialization1.46-dev libboost-system1.46.1 libboost-system1.46-dev libboost-thread1.46.1 libboost-thread1.46-dev`
-
-### PCL
+ROS system and components can be installed following the instructions from their [website](http://wiki.ros.org/hydro/Installation/Ubuntu), we summarize it here for our settings:
 
 * `sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'`
 
@@ -40,29 +37,30 @@ All of them can be installed from the synaptic/apt-get standard repos.
 
 * `sudo apt-get update`
 
-* `sudo apt-get install libflann1 libflann-dev libeigen3-dev libvtk5.8 libvtk5.8-qt4 libvtk5-dev libvtk5-qt4-dev libopenni-dev`
+* `sudo apt-get install ros-hydro-desktop-full`
 
-### [Installation PCL 1.7 (from sources)](http://pointclouds.org/downloads/source.html)
+* `sudo apt-get install ros-hydro-moveit-full ros-hydro-octomap ros-hydro-octomap-msgs` 
 
-* `git clone https://github.com/PointCloudLibrary/pcl pcl-trunk`
+PCL library can be installed using our forked repo which it is already configured for our settings:
 
-* `cd pcl-trunk && mkdir BUILD && cd BUILD`
 
-* `cmake-gui ..`
 
-* Press **Configure** and then choose Unix makefiles target.
++++ Boost installation: `sudo apt-get install libboost-date-time1.46.1 libboost-date-time1.46-dev libboost-filesystem1.46.1 libboost-filesystem1.46-dev libboost-iostreams1.46.1 libboost-iostreams1.46-dev libboost-mpi1.46.1 libboost-mpi1.46-dev libboost-serialization1.46.1 libboost-serialization1.46-dev libboost-system1.46.1 libboost-system1.46-dev libboost-thread1.46.1 libboost-thread1.46-dev`
 
-* Set **Grouped** to group options.
+### PCL
 
-* In **BUILD** group set options: **BUILD_apps** 
+* `git clone https://github.com/pacman-project/pcl.git pcl-trunk-Feb-11-2014`
 
-* Press **Configure** and then choose **BUILD_app_3d_rec_framework**.
+* `cd pcl-trunk-Feb-11-2014 && mkdir build && cd build`
 
-* Press **Configure** and then **Generate**.
+* `cmake ..`
 
-* Build and install PCL: `sudo make install`
+* `make ..`
 
-* In some architectures, PCL and dependant libs such as Grasp, might present compilation problems regarding the lack of low level instructions. If so, edit PCLROOT/cmake/pcl_find_sse.cmake with your available hardware options `-march=CPU-TYPE (for Ubuntu 12.04, gcc-4.6.3) [here](http://gcc.gnu.org/onlinedocs/gcc-4.6.3/gcc/Submodel-Options.html#Submodel-Options)
+* `sudo make install`
+
+
+NOTE: In some architectures, PCL and dependant libs such as Grasp, might present compilation problems regarding the lack of low level instructions which are CPU-dependant. If so, edit pcl-trunk-Feb-11-2014/cmake/pcl_find_sse.cmake at line 18 with your available hardware option `-march=CPU-TYPE` (for Ubuntu 12.04, gcc-4.6.3 options are found here [here](http://gcc.gnu.org/onlinedocs/gcc-4.6.3/gcc/Submodel-Options.html#Submodel-Options) )
 
 
 ## PaCMan libraries
