@@ -126,7 +126,7 @@ All required files should be in the /PATH/TO/PACMAN_ROOT/bin folder. If you need
 
 * `cd /PATH/TO/PACMAN_ROOT/pacman/build`
 
-*`make`
+* `make`
 
 
 
