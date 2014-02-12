@@ -289,7 +289,7 @@
     </renderer>
   </controller>
 
-  <planner library_path="GolemDeviceMultiCtrl" config_path="GolemDeviceRobotUIBK">
+  <planner library_path="GolemDeviceMultiCtrl" config_path="GolemDeviceRobotUIBKSim">
     <renderer show_duration="600.0">
       <goal_renderer show="1" vertex_position_show="0" vertex_frame_show="1" edge_show="0">
         <vertex_position_colour R="255" G="255" B="0" A="255"></vertex_position_colour>

@@ -1,10 +1,8 @@
 <launch>
-
-	<!-- THE cwd ATRIBUTE IS NECESSARY TO MAKE THE NODE PATH AS THE PATH FOR THE EXECUTION, SUCH THAT THE XML FILES ARE AVAILABLE 
-	(see in the CMakeList.txt that the Robot config files are copied)/-->	
+	<!-- THE "cwd" ATRIBUTE IS NECESSARY TO MAKE THE NODE PATH AS THE PATH FOR THE EXECUTION, SINCE THE XML FILES ARE COPIED THERE BY THE MAIN CMAKELISTS.TXT, IF YOU NEED TO RECONFIGURE THE CONFIG FILE, DO IT FROM THE PACMAN/BIN FOLDER AND MAKE AGAIN TO MAKE IT AVAILABLE TO THE NODE/-->	
 	<node pkg="grasp_planner_bham" name="grasp_planner" type="grasp_planner_bham_node" respawn="false" output="screen" cwd="node">
-      <param name="config_file" value="$(find grasp_planner_bham)/config/Grasp.xml" />
-      <param name="trajectory_file" value="$(find grasp_planner_bham)/resources/pacman_mug1.trj" />
-      <param name="pcd_file" value="$(find grasp_planner_bham)/resources/pacman_mug1.pcd" />
+      <param name="config_file" value="Grasp.xml" />
+      <param name="trajectory_file" value="pacman_container_2.trj" />
+      <param name="pcd_file" value="pacman_container_2.pcd" />
   	</node>
 </launch>

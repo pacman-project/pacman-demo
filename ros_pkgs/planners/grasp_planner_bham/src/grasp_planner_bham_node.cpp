@@ -87,7 +87,7 @@ namespace grasp_planner_bham{
 
               pacman::load(pcd_file_, object_);
               pacman::load(trajectory_file_, trajectory_);
-              grasp_->add("pacman_mug1", object_, trajectory_);
+              grasp_->add("pacman_object", object_, trajectory_);
 
               // advertise service
               srv_grasp_planner_ = nh_.advertiseService(nh_.resolveName("/grasp_planner_srv"),&GraspPlanner::planGrasp, this);

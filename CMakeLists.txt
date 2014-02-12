@@ -408,11 +408,13 @@ INSTALL(FILES ${BHAM_GRASP_FILES} DESTINATION bin)
 if(BUILD_ROS_PKGS)
 SET(BHAM_GRASP_ROS_FILES
 	${PROJECT_ROOT}/resources/Bham/Grasp.xml
+	${PROJECT_ROOT}/resources/Bham/pacman_container_1.pcd
+	${PROJECT_ROOT}/resources/Bham/pacman_container_2.pcd
+	${PROJECT_ROOT}/resources/Bham/pacman_container_2.trj
 	${GOLEM_RESOURCES}/GolemDeviceKukaLWRSim.xml
 	${GOLEM_RESOURCES}/GolemDeviceSchunkDexHandSim.xml
 	${GOLEM_RESOURCES}/GolemDeviceRobotUIBKSim.xml
 )
-COPY_FILES(PaCManBhamGrasp ${PROJECT_ROOT}/pacman/ros_pkgs/planners/grasp_planner_bham/config ${BHAM_GRASP_ROS_FILES})
 endif()
 
 # Bham grasp test
@@ -486,7 +488,6 @@ SET(BHAM_CONTROL_ROS_FILES
 	${GOLEM_RESOURCES}/GolemDeviceRobotUIBK.xml
 	${GOLEM_RESOURCES}/GolemDeviceRobotUIBKSim.xml
 )
-COPY_FILES(PaCManBhamControl ${PROJECT_ROOT}/pacman/ros_pkgs/controllers/golem_control_bham/config ${BHAM_CONTROL_ROS_FILES})
 endif()
 
 # Bham control test
@@ -508,10 +509,9 @@ INSTALL(TARGETS PaCManBhamControlTest RUNTIME DESTINATION bin)
 #
 ###############################################################################
 
-
 # Innsbruck pose estimation library
-SET(UIBK_POSE_ESTIMATION_EXTERNALLIB
-    ${PROJECT_PARENT}/poseEstimation
+SET(UIBK_POSE_ESTIMATION_EXTERNALLIB  
+	"${PROJECT_PARENT}/poseEstimation" CACHE PATH "Path prefix for poseEstmiation lib"
 )
 SET(UIBK_POSE_ESTIMATION_HEADERS
 	${PROJECT_ROOT}/include/pacman/UIBK/PoseEstimation/PoseEstimation.h
@@ -602,8 +602,8 @@ if(BUILD_ROS_PKGS)
 				DEPENDS PaCManBhamControl PaCManBhamGrasp PaCManUIBKPoseEstimationTest PaCManUIBKPoseEstimation
 			)
 			# and copy configuration files afterwards
-			COPY_FILES(ROSPkgs ${CATKIN_DIRECTORY}/devel/lib/golem_control_bham ${BHAM_CONTROL_FILES})
-			COPY_FILES(ROSPkgs ${CATKIN_DIRECTORY}/devel/lib/grasp_planner_bham ${BHAM_GRASP_FILES})
+			COPY_FILES(ROSPkgs ${CATKIN_DIRECTORY}/devel/lib/golem_control_bham ${BHAM_CONTROL_ROS_FILES})
+			COPY_FILES(ROSPkgs ${CATKIN_DIRECTORY}/devel/lib/grasp_planner_bham ${BHAM_GRASP_ROS_FILES})
 		endif()		
 	else()
 		MESSAGE(SEND_ERROR "No ROS distribution found or the distribution is not hydro.\nUncheck the BUILD_ROS_PKGS, or install ROS/hydro and ensure you run:\nsource /opt/ros/hydro/setup.bash" )		
