@@ -6,8 +6,6 @@ PaCMan demo.
 
 ## Dependencies
 
-### General 3rd party software dependencies
-
 * Boost >= 1.46 (PCL)
 * FLANN >= 1.7.1 (PCL)
 * Eigen >= 3.0 (PCL)
@@ -20,7 +18,9 @@ PaCMan demo.
 * Freeglut (bham)
 * NVIDIA PhysX 2.8 (bham)
 
-## Installation
+All of them can be installed from the synaptic/apt-get standard repos.
+
+### Installation of ROS Hydro
 
 ### General prerequisites
 
@@ -65,53 +65,68 @@ PaCMan demo.
 * In some architectures, PCL and dependant libs such as Grasp, might present compilation problems regarding the lack of low level instructions. If so, edit PCLROOT/cmake/pcl_find_sse.cmake with your available hardware options `-march=CPU-TYPE (for Ubuntu 12.04, gcc-4.6.3) [here](http://gcc.gnu.org/onlinedocs/gcc-4.6.3/gcc/Submodel-Options.html#Submodel-Options)
 
 
-### Installing PaCMan soft
+## PaCMan libraries
 
 
-#### Step 0. Suggested folder tree
+### Getting
 
-* `mkdir pacman`
+Suggested folder tree (althought not strictly necessary)
 
-* `cd pacman`
+* `mkdir PACMAN_ROOT`
+
+* `cd PACMAN_ROOT`
 
 * `git clone https://github.com/pacman-project/pacman.git`
 
-* `git clone https://github.com/PARTNERLIBS`
+* `git clone https://github.com/pacman-project/poseEstimation.git`
 
-Build PARTNERLIBS.
+* `git clone https://github.com/pacman-project/Golem.git`
 
+* `git clone https://github.com/pacman-project/Grasp.git`
 
-#### Step 1. Configure your [ROS environment](http://wiki.ros.org/groovy/Installation/Ubuntu#groovy.2BAC8-Installation.2BAC8-DebEnvironment.Environment_setup)
+And build the partner libraries following their instructions. It is advised to work locally, instead of installing.
 
-Only if you haven't done it from installing the prerequisites. For the current terminal session, type:
+### Build
 
-* `source /opt/ros/hydro/setup.bash`
-
-To set permamently the ROS environment for future sessions type:
-
-* `echo "source /opt/ros/hydro/setup.bash" >> ~/.bashrc`
-
-#### Step 3. Typicall cmake building
+* cd `/PATH/TO/PACMAN_ROOT/pacman`
 
 * `mkdir build`
 
 * `cd build`
 
-* `cmake-gui ..`  (<- set the directories for partner libraries)
+* `cmake-gui ..`
 
-* `make -jN` (<- N the number of processor to speed up compilation)
+* Set the GRASP_{INCLUDE,BINARIES,LIBRARY}, GOLEM_{INCLUDE,BINARIES,LIBRARY,RESOURCES} and UIBK_POSE_ESTIMATION_EXTERNALLIB paths to point where partner libraries are.
 
+* `make`
 
-#### Step 3. Configure the pacman [catkin environment](http://wiki.ros.org/catkin/Tutorials/create_a_workspace) for use:
+NOTE: By default, ROS packages are not built, since it is less likely that people has ROS installed. To enable this, check the `BUILD_ROS_PKGS` option. In such case, you need to follow the next subsection instructions before building. 
 
-In order to use the ros packages, you need to:
+### Configuration the [ROS](http://wiki.ros.org/groovy/Installation/Ubuntu#groovy.2BAC8-Installation.2BAC8-DebEnvironment.Environment_setup)[/catkin](http://wiki.ros.org/catkin/Tutorials/create_a_workspace) environment:
 
-* `source PACMAN_ROOT/catkin/devel/setup.bash`
+Before building the pacman software, ensure you have the ROS environment lodaded. For the current terminal session, type:
 
-Again, to set permamently the catkin environment for future terminal sessions type:
+* `source /opt/ros/hydro/setup.bash`
 
-* `echo "source PACMAN_ROOT/catkin/devel/setup.bash" >> ~/.bashrc`
+To make ROS environment available for all sessions type:
 
+* `echo "source /opt/ros/hydro/setup.bash" >> ~/.bashrc`
+
+After the pacman software is built, you need to load also the created catkin workspace in order to use the pacman ROS packages. For For the current terminal session, type:
+
+* `source /PATH/TO/PACMAN_ROOT/catkin/devel/setup.bash`
+
+Again, To make the catkin environment available for all sessions type:
+
+* `echo "source /PATH/TO/PACMAN_ROOT/catkin/devel/setup.bash" >> ~/.bashrc`
+
+### Changing Golem/Grasp configuration files
+
+All required files should be in the /PATH/TO/PACMAN_ROOT/bin folder. If you need to modify any of these, please, do it here, and type
+
+* `cd /PATH/TO/PACMAN_ROOT/pacman/build`
+
+*`make`
 
 
 

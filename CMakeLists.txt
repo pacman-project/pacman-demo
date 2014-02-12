@@ -85,7 +85,7 @@ elseif(UNIX)
 	# we need the ROS version to be hydro
 	SET(ROS_DIRECTORY /opt/ros/hydro CACHE PATH "ROS directory")
 	SET(CATKIN_DIRECTORY ${PROJECT_PARENT}/catkin CACHE PATH "Catkin workspace directory")	
-	option(BUILD_ROS_PKGS "Build ROS packages" YES)
+	option(BUILD_ROS_PKGS "Build ROS packages" NO)
 	mark_as_advanced(BUILD_ROS_PKGS)
 endif()
 
