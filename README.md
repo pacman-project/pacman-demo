@@ -100,7 +100,7 @@ And build the partner libraries following their instructions. It is advised to w
 
 * `make`
 
-NOTE: By default, ROS packages are not built, since it is less likely that people has ROS installed. To enable this, check the `BUILD_ROS_PKGS` option. In such case, you need to follow the next subsection instructions before building. 
+NOTE: By default, ROS packages are not built, since it is less likely that people has ROS installed. To enable this, check the `BUILD_ROS_PKGS` option and recall the current support is for ROS/hydro. In such case, you need to follow the next subsection instructions before building. 
 
 ### Configuration the [ROS](http://wiki.ros.org/groovy/Installation/Ubuntu#groovy.2BAC8-Installation.2BAC8-DebEnvironment.Environment_setup)[/catkin](http://wiki.ros.org/catkin/Tutorials/create_a_workspace) environment:
 
