@@ -23,7 +23,7 @@ PaCMan demo.
 * Expat (bham)
 * Freeglut (bham)
 
-Alternatively, dependencies for PCL can be installed following the instruction at [Install PCL 1.7 from sources](http://pointclouds.org/downloads/source.html).
+Alternatively, dependencies for PCL can be installed following the instructions given at [Install PCL 1.7 from sources](http://pointclouds.org/downloads/source.html).
 
 3.- External lib from private download link:
 
@@ -45,7 +45,7 @@ Alternatively, dependencies for PCL can be installed following the instruction a
 * `make ..`
 * `sudo make install`
 
-NOTE: In some architectures, PCL and dependant libs such as Grasp, might present compilation problems regarding the lack of low level instructions which are CPU-dependant. If so, edit pcl-trunk-Feb-11-2014/cmake/pcl_find_sse.cmake at line 18 with your available hardware option `-march=CPU-TYPE` (for Ubuntu 12.04, gcc-4.6.3 options are found here [here](http://gcc.gnu.org/onlinedocs/gcc-4.6.3/gcc/Submodel-Options.html#Submodel-Options) )
+NOTE: In some architectures, PCL and dependant libs such as Grasp, might present compilation problems regarding the lack of low level instructions which are CPU-dependant. If so, edit the file `pcl-trunk-Feb-11-2014/cmake/pcl_find_sse.cmake` at line 18 with your available hardware option `-march=CPU-TYPE` (for Ubuntu 12.04, gcc-4.6.3 options are found here [here](http://gcc.gnu.org/onlinedocs/gcc-4.6.3/gcc/Submodel-Options.html#Submodel-Options) )
 
 ## PaCMan libraries
 
