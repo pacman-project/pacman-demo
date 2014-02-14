@@ -511,7 +511,7 @@ INSTALL(TARGETS PaCManBhamControlTest RUNTIME DESTINATION bin)
 
 # Innsbruck pose estimation library
 SET(UIBK_POSE_ESTIMATION_EXTERNALLIB  
-	"${PROJECT_PARENT}/poseEstimation" CACHE PATH "Path prefix for poseEstmiation lib"
+	"${PROJECT_PARENT}/poseEstimation" CACHE PATH "Path prefix for poseEstimation lib"
 )
 SET(UIBK_POSE_ESTIMATION_HEADERS
 	${PROJECT_ROOT}/include/pacman/UIBK/PoseEstimation/PoseEstimation.h

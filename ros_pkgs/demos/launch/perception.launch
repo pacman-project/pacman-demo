@@ -1,0 +1,13 @@
+<launch>
+	
+	<!-- CONFIGURE YOUR PERCEPTION SYSTEM -->
+
+	<!-- SENSORS AND PARAMS -->
+	<include file="$(find openni_launch)/launch/openni.launch"/>
+	
+	<!-- METHODS AND PARAMS -->
+	<include file="$(find kinect_grabber)/launch/kinect_grabber.launch"/>
+	<include file="$(find object_cloud_reader)/launch/object_reader.launch"/>
+	<include file="$(find pose_estimation_uibk)/launch/pose_estimation_uibk.launch"/>
+
+</launch>

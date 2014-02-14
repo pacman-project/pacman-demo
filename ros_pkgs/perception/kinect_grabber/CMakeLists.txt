@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   message_generation
+  definitions
 )
 
 ## System dependencies are found with CMake's conventions
@@ -27,10 +28,6 @@ find_package(PCL 1.7 REQUIRED)
 #######################################
 
 ## Generate messages in the 'msg' folder
-
-
-
-
 ## Generate added messages and services with any dependencies listed here
 
 ###################################
@@ -43,9 +40,9 @@ find_package(PCL 1.7 REQUIRED)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
- # INCLUDE_DIRS include
+# INCLUDE_DIRS include
 #  LIBRARIES grab_node
- CATKIN_DEPENDS pcl pcl_ros roscpp sensor_msgs std_msgs message_generation
+#  CATKIN_DEPENDS pcl pcl_ros roscpp sensor_msgs std_msgs message_generation
 #  DEPENDS system_lib
 )
 
@@ -67,17 +64,21 @@ include_directories(
 # )
 
 ## Declare a cpp executable
-add_executable(kinect_grabber_node src/kinect_grabber_node.cpp)
+add_executable(kinect_grabber_node 
+  src/kinect_grabber_node.cpp
+  )
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(kinect_grabber_node definitions_generate_messages_cpp)
+add_dependencies(kinect_grabber_node 
+  definitions_generate_messages_cpp
+  )
 
 ## Specify libraries to link a library or executable target against
  target_link_libraries(kinect_grabber_node
    ${catkin_LIBRARIES}
    ${PCL_LIBRARIES}
- )
+  )
 
 #############
 ## Install ##

@@ -1,5 +1,5 @@
 <launch>
-
+	<node name="pose_estimation_node" pkg="pose_estimation_uibk" type="pose_estimation_node" output="screen" />
 </launch>
                                                                                                                       
 

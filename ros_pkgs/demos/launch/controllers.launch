@@ -1,0 +1,12 @@
+<launch>
+	<!-- CONFIGURE YOUR CONTROL SYSTEM -->
+
+	<!-- 1. OROCOS/SCHUNK 2. GOLEM -->
+	
+  	<!-- OROCOS/SCHUNK CONFIG -->
+  	<!-- include file="$(find schunk_bringup)/components/sdh_solo.launch"/ -->
+
+ 	<!-- GOLEM CONFIG -->
+ 	<include file="$(find golem_control_bham)/launch/GolemController.launch"/>
+
+</launch>

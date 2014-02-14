@@ -9,12 +9,12 @@ Folder strucure
 
 The subfolders are organized according to the topic is inside. Each folder, including this one, is a ROS metapackage, that is, a collection of packages. This is just a matter of file/package organization, however, each package can be used independently of where it is located. The main folders we have are
 
-* `controllers` self-explained, contains code related to controllers we develop for the available hardware.
+* `controllers` self-explains, contains code related to controllers we develop for the available hardware.
 * `definitions` contains the messages we should be using to communicate between the ROS packages, initially thought to be similar to the PaCMan defs in c++. However, it might be the case that these messages are redundant with respect to the ones already available in ROS.
 * `demos` contains code related to the demos we perform. Typically, all logic/state/information flow management should be here.
 * `hardware` contains the geometric and dynnamic description of the available hardware. Any change in the geometry of the robots should be updated here, and not in the c++ code, such as adding connectors, mounting different hands, and so on.
-* `perception` self-explained, contains code related to perception algorithms we develop for the available hardware.
-* `planners` self-explained, contais code related to the planning algorithms we develop for the available hardware.
+* `perception` self-explains, contains code related to perception algorithms we develop for the available hardware.
+* `planners` self-explains, contais code related to the planning algorithms we develop for the available hardware.
 * `ros_pkgs` is the folder defining that this is a meta-package.
 
 You can find more details on how to build/use the (meta-)packages in their spcific README files.
@@ -22,9 +22,13 @@ You can find more details on how to build/use the (meta-)packages in their spcif
 Build
 -----
 
-It advised to build the packages from the main CMakeLists.txt, such that all configuration files and paths are already configured.
+It is strongly advised that all packages be built using the main CMakeLists.txt.
 
-However, you can build the packages independently, if you know where/what to modify in the CMakeLists.txt of a particular package, so please, read the README files before going crazy for compilation errors.
+However, you can build this package following [this tutorial](http://wiki.ros.org/ROS/Tutorials/BuildingPackages) as a ROS package, but you might need to change the CMakeLists.txt to correct paths.
+
+ToDo: Port the [pose_estimation_uibk](https://github.com/pacman-project/pacman/tree/master/ros_pkgs/perception/pose_estimation_uibk) package to use the pacman interface so there will be no need to adjust the internal CMakeLists.txt file.
+
+IMPORTANT: If the compilation breaks, please, see the README of the package that is breaking the compilation before going crazy because this project is under development. 
 
 Use
 ---
@@ -32,8 +36,8 @@ Use
 From the user point of view, the main folder you need to see is the `demos` folder, which contains the available demos. Please, go there, and take a look at the README file for more details. 
 
 
-Guidelines to write a ROS package that wraps your lib/class functionality
--------------------------------------------------------------------------
+Guidelines to write a ROS wrapper of your lib/class
+---------------------------------------------------
 
 1. Create your package using catkin_create_pkg tool. you can configure the dependencies later.
 
@@ -47,9 +51,9 @@ Guidelines to write a ROS package that wraps your lib/class functionality
 `CMakeLists.txt`
 `package.xml`
 
-Other folders might be added as well, such as include, urdf, models, geometry, etc.
+Other folders might be added as well, such as urdf, meshes, xacro, etc.
 
-3. Launch files go into the `launch` folder. There should be a launch file for each node, which remaps, set parameters, and any configuration for this node to work well. Launch files can be nested in other launch files, and configuration can be done at higher levels, but this is not advised, only if it is strictly necessary. There might be a general launch file for the package which brings up the all nodes available for a proper functionality.
+3. Launch files go into the `launch` folder. There should be a launch file for each node, which remaps, set parameters, and any configuration for this node to work well. Launch files can be nested in other launch files, and configuration can be done at higher levels, but this is not advised, only if it is strictly necessary. There might be a general launch file for the package which brings up the all nodes available for a proper functionality. Try not to include launch files from other packages to make your package as independent as posisble. The high level app, such as a demo node, shall include and assemble all the required launch files.
 
 4. Message files go into the `msg` folder and define ROS data types. The naming should use capital letters at the beggining, such as `Object.msg` or `Grasp.msg`, which define what an object or a grasp is within the PaCMan project.
 
@@ -185,3 +189,7 @@ int main(int argc, char **argv)
 }
 
 ```
+
+9. In addition to the node that wraps your controller, you are asked to have a test for its functionality. The test can be implemented as a message/service/action advertising that uses the ROS shell interface, or as ping_YOUR_NODE.cpp that uses the ROS c++ interface.
+
+10. Last but not least, please, the minimum documentation required is to comment your code, and provide a README file explaining what your package do, installation specifics, or anyother special things you would like users to be noticed.

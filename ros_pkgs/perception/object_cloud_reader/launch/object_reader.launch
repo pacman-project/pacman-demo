@@ -1,0 +1,3 @@
+<launch>
+	<node name="object_cloud_reader" pkg="object_cloud_reader_node" type="object_cloud_reader_node" output="screen" />
+</launch>

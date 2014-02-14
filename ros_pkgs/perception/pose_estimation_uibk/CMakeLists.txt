@@ -65,17 +65,11 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(
-  include
-  ${PCL_INCLUDE_DIRS}
-
-  #/home/krzysztof/Dokumenty/Birmingham_research/pacman_poseEstimation/include
-   ${POSE_ESTIMATION_EXT}/include
-
-
-
-
-)
+include_directories(include
+    ${catkin_INCLUDE_DIRS}
+    ${PCL_INCLUDE_DIRS}
+    ${POSE_ESTIMATION_EXT}/include
+    )
 
 add_definitions(
   ${PCL_DEFINITIONS}
@@ -83,7 +77,6 @@ add_definitions(
 
 link_directories(
   ${PCL_LIBRARY_DIRS}
- # /home/crosales/Code/poseEstimation/build
   ${POSE_ESTIMATION_EXT}/build
 )
 
@@ -94,7 +87,9 @@ link_directories(
 #)
 
 ## Declare a cpp executable
-add_executable(pose_estimation_node src/pose_estimation_node.cpp)
+add_executable(pose_estimation_node 
+    src/pose_estimation_node.cpp
+    )
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -102,7 +97,11 @@ add_dependencies(pose_estimation_node definitions_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(pose_estimation_node
-   ${catkin_LIBRARIES} ${boost_LIBRARIES} ${PCL_LIBRARIES} pose_estimation  pcl_3d_rec_framework
+   ${catkin_LIBRARIES} 
+   ${boost_LIBRARIES} 
+   ${PCL_LIBRARIES} 
+   pose_estimation  
+   pcl_3d_rec_framework # find_package does not find it
 )
 
 

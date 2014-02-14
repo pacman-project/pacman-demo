@@ -1,0 +1,3 @@
+<launch>
+	<node name="kinect_grabber_node" pkg="kinect_grabber" type="kinect_grabber_node" output="screen" />
+</launch>

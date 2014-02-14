@@ -1,0 +1,18 @@
+<launch>
+	<!-- load the moveit environment -->
+	<include file="$(find uibk_robot_moveit_config)/launch/demo.launch"/>
+	
+	<!-- adjust the planner parameters -->
+	<param name="max_points_in_trajectory" value="50" />
+	<param name="max_planning_attempts" value="2" />
+	<param name="max_planning_time" value="2" />
+	<param name="tolerance_in_position" value="0.1" />
+	<param name="tolerance_in_orientation" value="0.1" />
+	<!-- choose for which frames you wish to plan -->
+    <param name="arm_name" value="right_arm" />
+    <param name="base_frame_for_goal" value="world_link" />
+	<param name="plan_for_frame" value="right_sdh_palm_link" />
+	<!-- load the node that implements the /trajectory_planning_srv -->
+	<node name="uibk_robot_path_planner" pkg="uibk_robot_moveit_config" type="path_planner_node" />
+
+</launch>

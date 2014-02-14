@@ -1,21 +1,14 @@
 <launch>
+
   <!--TODO before launching:  check chmod dev sdh, check if robot topics are up-->
   
-  <include file="$(find pose_estimation_uibk)/launch/perception.launch"/>
- 
-  <!--ROBOT HARDWARE AND PLANNERS-->
-  <node name="object_cloud_reader" pkg="object_cloud_reader_node" type="object_cloud_reader_node" output="screen" />
-  
-  <!-- include file="$(find schunk_bringup)/components/sdh_solo.launch"/ -->
-  
-  <include file="$(find uibk_moveit_adapter)/launch/uibk_plan_execution.launch"/> 
-  
-  <include file="$(find grasp_planner_bham)/launch/GraspPlannerBHAM.launch"/>
-  
-  <!-- PATH PLANNING -->
-  <!--  <include file="$(find path_planner_unipi/launch/xxxxxxx.launch"></include> -->
-  
-  <!-- PATH EXECUTION -->
-  <!-- <include file="$(find XXXXX/XXXX/launch/xxxxxxx.launch"></include> -->
+  <!-- PERCEPTION -->
+  <include file="$(find demos)/launch/perception.launch"/>
+
+  <!-- PLANNERS -->
+  <include file="$(find demos)/launch/planners.launch"/>
+
+  <!-- CONTROLLERS -->
+  <include file="$(find demos)/launch/controllers.launch"/>
 
 </launch>

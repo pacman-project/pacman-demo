@@ -1,6 +1,4 @@
 <launch>
-
-  <!-- <include file="$(find rgbd_sensor)/launch/RGBDsensor.launch"/> /-->
   
   <node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
 

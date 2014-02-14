@@ -75,12 +75,12 @@ namespace grasp_planner_bham{
             {
 
               // load configuration file from the launch file
-              priv_nh_.param<std::string>("config_file", config_file_, "");
+              nh_.param<std::string>("config_file", config_file_, "");
               
               // LOAD TEST FILES FROM THE LAUNCH FILE
 	      
-              priv_nh_.param<std::string>("trajectory_file", trajectory_file_, "");
-              priv_nh_.param<std::string>("pcd_file", pcd_file_, "");
+              nh_.param<std::string>("trajectory_file", trajectory_file_, "");
+              nh_.param<std::string>("pcd_file", pcd_file_, "");
 
               // create the grasp object using the config file
               grasp_ = pacman::BhamGrasp::create(config_file_);

@@ -1,0 +1,6 @@
+<launch>
+	<!-- CONFIGURE YOUR HARDWARE -->
+
+	<!-- include file="$(find schunk_bringup)/components/sdh_solo.launch"/ -->
+	
+</launch>
