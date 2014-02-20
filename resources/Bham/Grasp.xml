@@ -63,7 +63,7 @@
       <configuration_model distance_scale="500.0" distance_stddev="2.0" distance_max="20.0" kernels="1000">
         <pose_stddev lin="0.002" ang="1000.0"/>
         <config_stddev c1="0.15708" c2="0.15708" c3="0.15708" c4="0.15708" c5="0.15708" c6="0.15708" c7="0.15708" c8="0.015708" c9="0.015708" c10="0.015708" c11="0.015708" c12="0.015708" c13="0.015708" c14="0.015708" c15="0.015708" c16="0.015708" c17="0.015708" c18="0.015708" c19="0.015708" c20="0.015708" c21="0.015708" c22="0.015708" c23="0.015708" c24="0.015708" c25="0.015708" c26="0.015708" c27="0.015708"/>
-        <config_map i1="0" i2="0" i3="0" i4="0" i5="0" i6="0" i7="0" i8="0" i9="0" i10="0" i11="0" i12="0" i13="-10" i14="0" i15="0" i16="0" i17="0" i18="0" i19="0" i20="0" i21="0" i22="0" i23="0" i24="0" i25="0" i26="0" i27="0"/>
+        <config_map i1="0" i2="0" i3="0" i4="0" i5="0" i6="0" i7="0" i8="0" i9="0" i10="0" i11="0" i12="0" i13="10" i14="0" i15="0" i16="0" i17="0" i18="0" i19="0" i20="0" i21="0" i22="0" i23="0" i24="0" i25="0" i26="0" i27="0"/>
       </configuration_model>
 
       <optimisation runs="1000" steps="1000" sa_temp="0.1" sa_delta="1.0" sa_energy="0.1"/>
@@ -398,6 +398,13 @@
         <sample_magnitude lin="0.5" ang="1.0"/>
       </optimisation>
     </camera>-->
+
+    <pose_estimation features="500000" attempts="10" kernels="500000" neighbours="10000" distance_range="20.0" feature_norm_eps="1e-7" search_checks="-1" search_kdtrees="1">
+      <covariance dim="7" c1="0.01" c2="0.01" c3="0.01" c4="0.01" c5="0.01" c6="0.01" c7="0.01"/>
+      <mean_shift population_size="100" generations_min="20" generations_max="200" distance_diff="1e-4"/>
+      <pose_stddev lin="0.01" ang="100.0"/>
+      <dist prod="0" lin="1.0" ang="1.0" feature="0"/>
+    </pose_estimation>
 
     <data dir="data/" name="default" ext_data=".xml" ext_cloud=".pcd" ext_action=".act" ext_grasp_pose=".grasppose" ext_grasp_cluster=".graspcluster" sep_name="-" sep_field="&#x9;">
       <appearance mode="point" mode_3d="1" mode_3d_a="177" point_size="1.0" frame_num="10" camera_frame="1" camera_frame_size="0.05">

@@ -16,15 +16,18 @@ int main(int argc, char *argv[]) {
 		// load and add initial training data
 		Point3D::Seq trainingPoints;
 		load("pacman_container_2.pcd", trainingPoints);
+		//load("pacman_kettle.pcd", trainingPoints);
 		RobotUIBK::Config::Seq trainingTrajectory;
 		load("pacman_container_2.trj", trainingTrajectory);
+		//load("pacman_kettle.trj", trainingTrajectory);
 		grasp->add("pacman_container_2", trainingPoints, trainingTrajectory);
 		
-		// run service here and comment out the 3 lines of code below
+		// run service here and comment out all the code lines below in this block
 
 		// find grasp on an object
 		Point3D::Seq graspPoints;
 		load("pacman_container_1.pcd", graspPoints);
+		//load("pacman_kettle.pcd", graspPoints);
 		BhamGrasp::Trajectory::Seq graspTrajectories;
 		grasp->estimate(graspPoints, graspTrajectories);
 
