@@ -35,7 +35,7 @@ Alternatively, dependencies for PCL can be installed following the instructions 
 * `wget http://packages.ros.org/ros.key -O - | sudo apt-key add -`
 * `sudo apt-get update`
 * `sudo apt-get install ros-hydro-desktop-full`
-* `sudo apt-get install ros-hydro-moveit-full ros-hydro-octomap ros-hydro-octomap-msgs ros-hydro-openni-launch ros-hydro-openn2-launch` (if you find you need to install additional packages, please complete this list)
+* `sudo apt-get install ros-hydro-moveit-full ros-hydro-octomap ros-hydro-octomap-msgs ros-hydro-openni-launch ros-hydro-openni2-launch` (if you find you need to install additional packages, please complete this list)
 
 5.- PCL library can be installed using our forked repo which is already configured for our settings:
 
