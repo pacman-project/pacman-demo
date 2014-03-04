@@ -42,7 +42,7 @@ Alternatively, dependencies for PCL can be installed following the instructions 
 * `git clone https://github.com/pacman-project/pcl.git pcl-trunk-Feb-11-2014`
 * `cd pcl-trunk-Feb-11-2014 && mkdir build && cd build`
 * `cmake ..`
-* `make ..`
+* `make`
 * `sudo make install`
 
 NOTE: In some architectures, PCL and dependant libs such as Grasp and PaCManGrasp, might present compilation problems regarding the lack of low level instructions which are CPU-dependant. If so, edit the file `pcl-trunk-Feb-11-2014/cmake/pcl_find_sse.cmake` at line 18 with your available hardware option `-march=CPU-TYPE` (for Ubuntu 12.04, gcc-4.6.3 options are found here [here](http://gcc.gnu.org/onlinedocs/gcc-4.6.3/gcc/Submodel-Options.html#Submodel-Options) ). This flag is required to compile anything taht depends on PCL.
