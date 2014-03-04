@@ -73,10 +73,7 @@ And build the partner libraries following their instructions. It is advised to w
 
 * `make`
 
-NOTE: In case of linker problems (Grasp + PCL) the PCL library should be recompiled using revision: 3cd3608931257c238729f595032b2ffebd9b4698
-Author: Jochen Sprickerhof <github@jochen.sprickerhof.de>
-Date: 2013-10-28 20:13:08
-Message: Merge pull request #340 from juagargi/static_lib_fix; Fix bug to allow static library creation
+NOTE: In case of linker problems (Grasp + PCL) the PCL library should be recompiled using revision: 3cd3608931257c238729f595032b2ffebd9b4698; Author: Jochen Sprickerhof <github@jochen.sprickerhof.de>; Date: 2013-10-28 20:13:08; Message: Merge pull request #340 from juagargi/static_lib_fix; Fix bug to allow static library creation
 
 
 NOTE: By default, ROS packages are not built, since it is less likely that people has ROS installed. To enable this, check the `BUILD_ROS_PKGS` option and recall the current support is for ROS/hydro. In such case, you need to follow the next subsection instructions before building. 
