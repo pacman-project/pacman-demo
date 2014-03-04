@@ -104,6 +104,16 @@ All required files should be in the /PATH/TO/PACMAN_ROOT/bin folder. If you need
 * `make`
 
 
+### Configuring poseEstimation module:
+
+Before using poseEstimation node in ROS, OpenNI has to be properly installed from ROS repositories. In order to do so the default installation of PCL 1.7 from repositories has to be completely removed from the system. Then run: 
+
+* 'sudo apt-get install ros-hydro-openni-launch' this will install, appropriate for ROS, OpenNI drivers and the whole PCL 1.7 from ROS-hydro repositories
+* ${PCL_INCLUDE_DIRS} in a CMakeFile (pacman/ros_pkgs/perception/pose_estimation_uibk/CMakeLists.txt) has to be set manually to: /usr/include/ni
+
+Additionally, the note from poseEstimation library has to be taken into account:
+*You need to set the var `UIBK_POSE_ESTIMATION_EXTERNALLIB` in the (pacman/CMakeLists.txt) to point where the poseEstimation library was built, and check that the build folder is called `build` in there. And you might need to change the paths in `src/pose_estimation_uibk.cpp` for configuration and database location
+
 
 
 
