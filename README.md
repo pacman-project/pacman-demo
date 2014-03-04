@@ -112,7 +112,7 @@ Before using poseEstimation node in ROS, OpenNI has to be properly installed fro
 * `${PCL_INCLUDE_DIRS}` in a CMakeFile (`pacman/ros_pkgs/perception/pose_estimation_uibk/CMakeLists.txt`) has to be set manually to: `/usr/include/ni`
 
 Additionally, the note from poseEstimation library has to be taken into account:
-*You need to set the var `UIBK_POSE_ESTIMATION_EXTERNALLIB` in the (pacman/CMakeLists.txt) to point where the poseEstimation library was built, and check that the build folder is called `build` in there. And you might need to change the paths in `src/pose_estimation_uibk.cpp` for configuration and database location
+* The var `UIBK_POSE_ESTIMATION_EXTERNALLIB` in the (pacman/CMakeLists.txt) has to point where the poseEstimation library was built. The build folder has to be called `build` in there. The paths in `src/pose_estimation_uibk.cpp` for configuration and database location might need to be changed.
 
 
 
