@@ -31,7 +31,7 @@ class PathPlanner
     
     // services
     ros::ServiceServer srv_trajectory_planning_;
-    ros::ServiceServer srv_test_trajectory_planning_;
+    //ros::ServiceServer srv_test_trajectory_planning_;
 
     // clients
     ros::ServiceClient clt_moveit_planning_;
@@ -86,7 +86,7 @@ class PathPlanner
 		nh_.param<std::string>("plan_for_frame", plan_for_frame_, "right_sdh_palm_link");
 
 		srv_trajectory_planning_ = nh_.advertiseService(nh_.resolveName("/trajectory_planning_srv"),&PathPlanner::planTrajectoryFromCode, this);
-		srv_test_trajectory_planning_ = nh_.advertiseService(nh_.resolveName("/test_trajectory_planning_srv"),&PathPlanner::planTrajectoryFromCode, this);
+		//srv_test_trajectory_planning_ = nh_.advertiseService(nh_.resolveName("/test_trajectory_planning_srv"),&PathPlanner::planTrajectoryFromCode, this);
 
     }
 
@@ -104,22 +104,22 @@ void PathPlanner::convertFromMRobotTrajectoryToTrajectory(const moveit_msgs::Rob
 	for (size_t i = 0; i < points.size(); ++i) {
 		definitions::UIBKRobot robot_point;
 		robot_point.arm.joints.assign(points[i].positions.begin(), points[i].positions.end());
+		
+		for(int h = 0; h < 6; h++)
+		 	robot_point.hand.joints.push_back(0);
+
 		trajectory.robot_path.push_back(robot_point);
 
 		if (i == 0)
 		{
-			ROS_INFO("BREAKPOINT");
-			trajectory.time_from_previous.push_back(ros::Duration().fromSec(0.));
-			
+			trajectory.time_from_previous.push_back( ros::Duration().fromSec(0.) );	
 		}
 		else
 		{
 			// the RobotTrajectory gives time_from_start, we prefer from previous for easier transformation to pacman commands
-			trajectory.time_from_previous.push_back(points[i].time_from_start - points[i-1].time_from_start);
-			ROS_INFO("BREAKPOINT");
+			trajectory.time_from_previous.push_back( points[i].time_from_start - points[i-1].time_from_start );
 		}
 	}
-	ROS_INFO("BREAKPOINT");
 }
 
 bool PathPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response) 
@@ -144,10 +144,12 @@ bool PathPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 		}
 	}
 
-	if(trajectories.size() > 0) 
+	ROS_INFO("trajectories.size() %lu",trajectories.size());
+	if(trajectories.size() > 1) 
 	{
 		response.result = response.SUCCESS;
-	} else 
+	} 
+	else 
 	{
 		response.result = response.NO_FEASIBLE_TRAJECTORY_FOUND;
 	}
@@ -204,14 +206,16 @@ bool PathPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 			// moveit_msgs::MotionPlanResponse response = motion_plan.response.motion_plan_response;
 			// motion_plans_.push_back(response);
 
-
 			definitions::Trajectory trajectory;
 			trajectory.trajectory_id = 0;
 
+			ROS_INFO("Before assigning response");
 			moveit_msgs::RobotTrajectory robot_trajectory = motion_plan.response.motion_plan_response.trajectory;
 
 			// populate trajectory with motion plan data
+			ROS_INFO("Before converting");
 			convertFromMRobotTrajectoryToTrajectory(robot_trajectory, trajectory);
+			ROS_INFO("After converting");
 			trajectories.push_back(trajectory);
 
 			return true;

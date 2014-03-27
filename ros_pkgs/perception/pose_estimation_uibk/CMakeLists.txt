@@ -11,7 +11,7 @@ find_package(Boost REQUIRED COMPONENTS filesystem system)
 find_package(Eigen REQUIRED)
 find_package(PCL 1.7 REQUIRED)
 
-set(POSE_ESTIMATION_EXT /home/pacman/Code/pacman/poseEstimation)
+set(POSE_ESTIMATION_EXT /home/crosales/Code/pacman/poseEstimation)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed

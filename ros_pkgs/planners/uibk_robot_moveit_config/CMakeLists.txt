@@ -22,10 +22,15 @@ add_executable(ping_path_planner
 	src/ping_path_planner.cpp
 	)
 
+add_executable(ping_path_planner_and_execution
+	src/ping_path_planner_and_execution.cpp
+	)
+
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 add_dependencies(path_planner_node definitions_generate_messages_cpp)
 add_dependencies(ping_path_planner definitions_generate_messages_cpp)
+add_dependencies(ping_path_planner_and_execution definitions_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(path_planner_node
@@ -33,5 +38,9 @@ target_link_libraries(path_planner_node
   )
 
 target_link_libraries(ping_path_planner
+  ${catkin_LIBRARIES}
+  )
+
+target_link_libraries(ping_path_planner_and_execution
   ${catkin_LIBRARIES}
   )

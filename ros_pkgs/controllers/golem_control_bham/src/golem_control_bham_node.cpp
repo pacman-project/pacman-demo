@@ -225,6 +225,7 @@ void GolemController::publishRobotState()
 bool GolemController::executeTrajectoryFromCode(definitions::TrajectoryExecution::Request &req, definitions::TrajectoryExecution::Response &res)
 {
   uibk_robot_command_.clear();
+  res.result = res.OTHER_ERROR;
 
   // for now, just take the first one, need to be improved in the future
   definitions::Trajectory trajectory = req.trajectory[0];
@@ -233,7 +234,10 @@ bool GolemController::executeTrajectoryFromCode(definitions::TrajectoryExecution
   convertTrajFromDefinitionsMsg(trajectory, uibk_robot_command_);
 
   // excexute the trajectory
-  executeTrajectory(uibk_robot_command_);
+  if( executeTrajectory(uibk_robot_command_) )
+  {
+    res.result = res.SUCCESS;
+  }
 
   return true;
 }

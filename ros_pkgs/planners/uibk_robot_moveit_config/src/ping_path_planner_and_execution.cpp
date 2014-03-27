@@ -8,6 +8,7 @@
 
 //for the messages used in the services
 #include "definitions/TrajectoryPlanning.h"
+#include "definitions/TrajectoryExecution.h"
 
 int main(int argc, char **argv)
 {
@@ -43,8 +44,8 @@ int main(int argc, char **argv)
     definitions::TrajectoryPlanning trajectory_planning_srv;
     trajectory_planning_srv.request.ordered_grasp.push_back(grasp);
 
-    // call the service with the instance
-    ROS_INFO("Calling the service");
+    // call the planning service with the instance
+    ROS_INFO("Calling the planning service");
     if ( !ros::service::call( planning_service_name, trajectory_planning_srv) )
     { 
         ROS_ERROR("Call to the service %s failed.", planning_service_name.c_str());  
@@ -53,7 +54,7 @@ int main(int argc, char **argv)
 
     if (trajectory_planning_srv.response.result == trajectory_planning_srv.response.OTHER_ERROR)
     {   
-        ROS_ERROR("Unable to execute the trajectory");
+        ROS_ERROR("Unable to plan a trajectory: OTHER_ERROR");
         return (-1);
     }
 
@@ -65,8 +66,41 @@ int main(int argc, char **argv)
 
     if (trajectory_planning_srv.response.result == trajectory_planning_srv.response.SUCCESS)
     { 
-        ROS_INFO("Trajectory Planning OK...\n");
-        return 0;
+        ROS_INFO("Trajectory Planning OK, now test execution after 10 seconds...\n");
+    }
+
+    // wait 10 seconds before calling the execution service
+    ros::Duration(10).sleep();
+
+    // execution service
+    std::string execution_service_name("/trajectory_execution_srv");
+    if ( !ros::service::waitForService(execution_service_name, ros::Duration().fromSec(1.0)) )
+    { 
+      ROS_ERROR("After one second, the service %s hasn't shown up...",  execution_service_name.c_str());
+      return (-1);     
+    }
+
+    // create the service instance
+    definitions::TrajectoryExecution trajectory_execution_srv;
+    trajectory_execution_srv.request.trajectory = trajectory_planning_srv.response.trajectory;
+
+    // call the execution service with the instance
+    ROS_INFO("Calling the execution service");
+    if ( !ros::service::call( execution_service_name, trajectory_execution_srv) )
+    { 
+        ROS_ERROR("Call to the service %s failed.", execution_service_name.c_str());  
+        return (-1);
+    }   
+
+    if (trajectory_execution_srv.response.result == trajectory_execution_srv.response.OTHER_ERROR)
+    {   
+        ROS_ERROR("Unable to execute the trajectory: OTHER_ERROR");
+        return (-1);
+    }
+
+    if (trajectory_execution_srv.response.result == trajectory_execution_srv.response.SUCCESS)
+    { 
+        ROS_INFO("Trajectory execution OK... pinging done succesfully!\n");
     }
 
     return 0;

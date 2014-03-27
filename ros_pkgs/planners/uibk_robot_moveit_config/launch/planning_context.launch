@@ -7,6 +7,7 @@
 
   <!-- Load universal robot description format (URDF) -->
   <param if="$(arg load_robot_description)" name="$(arg robot_description)" command="$(find xacro)/xacro.py '$(find uibk_robot)/urdf/uibk_robot.urdf.xacro'"/>
+  <rosparam param="source_list">[/golem/joint_states]</rosparam>
 
   <!-- The semantic description that corresponds to the URDF -->
   <param name="$(arg robot_description)_semantic" textfile="$(find uibk_robot_moveit_config)/config/uibk_robot.srdf" />
