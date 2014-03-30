@@ -176,7 +176,7 @@
     </appearance>
   </shape_planner>
 
-  <pose_planner features="1000000" attempts="10" kernels="500000" neighbours="10000" distance_range="20.0" feature_norm_eps="1e-7" search_checks="-1" search_kdtrees="1">
+  <pose_planner points="100000" features="1000000" attempts="10" kernels="500000" neighbours="10000" distance_range="20.0" feature_norm_eps="1e-7" search_checks="-1" search_kdtrees="1">
     <covariance dim="7" c1="0.01" c2="0.01" c3="0.01" c4="0.01" c5="0.01" c6="0.01" c7="0.01"/>
     <mean_shift population_size="200" generations_min="20" generations_max="200" distance_diff="1e-4"/>
     <pose_stddev lin="0.01" ang="100.0"/>
@@ -399,7 +399,7 @@
       </optimisation>
     </camera>-->
 
-    <pose_estimation features="500000" attempts="10" kernels="500000" neighbours="10000" distance_range="20.0" feature_norm_eps="1e-7" search_checks="-1" search_kdtrees="1">
+    <pose_estimation points="100000" features="500000" attempts="10" kernels="500000" neighbours="10000" distance_range="20.0" feature_norm_eps="1e-7" search_checks="-1" search_kdtrees="1">
       <covariance dim="7" c1="0.01" c2="0.01" c3="0.01" c4="0.01" c5="0.01" c6="0.01" c7="0.01"/>
       <mean_shift population_size="100" generations_min="20" generations_max="200" distance_diff="1e-4"/>
       <pose_stddev lin="0.01" ang="100.0"/>
