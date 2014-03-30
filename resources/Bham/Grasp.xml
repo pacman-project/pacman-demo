@@ -176,11 +176,12 @@
     </appearance>
   </shape_planner>
 
-  <pose_planner features="1000000" attempts="10" kernels="500000" neighbours="10000" distance_range="20.0" feature_norm_eps="1e-7" search_checks="-1" search_kdtrees="1">
+  <pose_planner points="100000" features="500000" attempts="10" kernels="500000" neighbours="20000" distance_range="20.0" feature_norm_eps="1e-7" search_checks="32" search_kdtrees="4">
     <covariance dim="7" c1="0.01" c2="0.01" c3="0.01" c4="0.01" c5="0.01" c6="0.01" c7="0.01"/>
-    <mean_shift population_size="200" generations_min="20" generations_max="200" distance_diff="1e-4"/>
-    <pose_stddev lin="0.01" ang="100.0"/>
-    <dist prod="1" lin="1.0" ang="1.0" feature="0"/>
+    <mean_shift population_size="100" generations_min="20" generations_max="200" distance_diff="1e-4"/>
+    <pose_stddev lin="0.001" ang="100.0"/>
+    <dist prod="0" lin="1.0" ang="1.0" feature="0"/>
+    <optimisation minimum="1" population_size="10" generations_num="1000" de_diff_fac="0.5" de_cross_prob="0.1" test_generations="100" test_pairs="100" test_variance="1e-6" num_of_threads="-1" thread_priority="lowest"/>
     <appearance distrib_samples="100">
       <model>
         <line show="1" R="255" G="255" B="0" A="255"/>
@@ -399,11 +400,12 @@
       </optimisation>
     </camera>-->
 
-    <pose_estimation features="500000" attempts="10" kernels="500000" neighbours="10000" distance_range="20.0" feature_norm_eps="1e-7" search_checks="-1" search_kdtrees="1">
+    <pose_estimation points="100000" features="500000" attempts="10" kernels="500000" neighbours="20000" distance_range="20.0" feature_norm_eps="1e-7" search_checks="32" search_kdtrees="4">
       <covariance dim="7" c1="0.01" c2="0.01" c3="0.01" c4="0.01" c5="0.01" c6="0.01" c7="0.01"/>
       <mean_shift population_size="100" generations_min="20" generations_max="200" distance_diff="1e-4"/>
-      <pose_stddev lin="0.01" ang="100.0"/>
+      <pose_stddev lin="0.001" ang="100.0"/>
       <dist prod="0" lin="1.0" ang="1.0" feature="0"/>
+      <optimisation minimum="1" population_size="20" generations_num="2000" de_diff_fac="0.5" de_cross_prob="0.1" test_generations="100" test_pairs="100" test_variance="1e-6" num_of_threads="-1" thread_priority="lowest"/>
     </pose_estimation>
 
     <data dir="data/" name="default" ext_data=".xml" ext_cloud=".pcd" ext_action=".act" ext_grasp_pose=".grasppose" ext_grasp_cluster=".graspcluster" sep_name="-" sep_field="&#x9;">
