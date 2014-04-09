@@ -1,0 +1,6 @@
+<launch>
+
+	<node name="grasp_planner" pkg="grasp_planner_uibk" type="grasp_planner_uibk_node" output="screen"></node>
+	<param name="path_to_dir" value="$(find grasp_planner_uibk)/resources" />
+
+</launch>
