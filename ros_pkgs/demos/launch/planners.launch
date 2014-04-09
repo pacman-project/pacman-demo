@@ -5,6 +5,8 @@
   <!-- GRASP PLANNER -->
   <include file="$(find grasp_planner_bham)/launch/GraspPlannerBHAM.launch"/>
 
+  <!-- include file="$(find grasp_planner_uibk)/launch/GraspPlannerUIBK.launch" /-->
+
 
   <!-- PLANNER FOR ARM TRAJECTORIES: 1. OROCOS 2. GOLEM -->
   <!-- OROCOS CONFIG -->
