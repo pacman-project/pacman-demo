@@ -14,10 +14,11 @@
   <!--> PACKAGES </-->
   
   <!--> Marerk's grasp planner </-->
-  <run_depend>grasp_planner_BHAM</run_depend>
+  <run_depend>grasp_planner_bham</run_depend>
 
-  <!--> MoveIt!-based path planner  </-->
-  <run_depend>path_planner_UNIPI</run_depend>
+  <!--> Mirela and Safoura's grasp planner </-->
+  <run_depend>grasp_planner_uibk</run_depend>
+
 
   <!--> UIBK robot configuration for MoveIt!  </-->
   <run_depend>uibk_robot_moveit_config</run_depend>

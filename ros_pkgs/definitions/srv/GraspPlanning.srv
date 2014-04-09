@@ -6,6 +6,9 @@ Object[] ordered_objects
 # id of the object to grasp
 int32 object_id
 
+# arm name to be used to grasp
+string arm
+
 ---
 
 # this grasp list are different grasps for the first object in the list
