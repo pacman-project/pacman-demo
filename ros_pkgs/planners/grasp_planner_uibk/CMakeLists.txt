@@ -112,7 +112,9 @@ add_executable(grasp_planner_uibk_node
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(grasp_planner_uibk_node grasp_planner_uibk_generate_messages_cpp)
+add_dependencies(grasp_planner_uibk_node 
+  definitions_generate_messages_cpp
+)
 
 ## Specify libraries to link a library or executable target against
  target_link_libraries(grasp_planner_uibk_node

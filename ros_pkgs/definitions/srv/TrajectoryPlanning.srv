@@ -9,6 +9,9 @@ Object[] object_list
 # the id of the object to grasp
 int32 object_id
 
+# name of the arm we are planning for
+string arm
+
 ---
 
 # these are several trajectories for the first grasp in the ordered list
