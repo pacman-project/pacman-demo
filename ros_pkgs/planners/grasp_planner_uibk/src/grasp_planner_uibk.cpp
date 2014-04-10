@@ -58,7 +58,6 @@ public:
     {}
     
     bool extractGrasp(definitions::GraspPlanning::Request  &req, definitions::GraspPlanning::Response &res);
-   // definitions::Grasp searchGraspFile(string obj_id);
     
     vector<geometry_msgs::PoseStamped> searchGraspFile(vector<string> path_to_obj_dir,bool pre_grasp);
     
@@ -76,54 +75,113 @@ public:
     void poseEigenToMsg(const Eigen::Affine3d &e, geometry_msgs::PoseStamped &m);
     
     geometry_msgs::PoseStamped find_transformation(geometry_msgs::Pose ref_obj,geometry_msgs::Pose cur_obj,geometry_msgs::PoseStamped cur_grasp);
-    void visualize_gripper(geometry_msgs::PoseStamped gripper_pre_pose,geometry_msgs::PoseStamped gripper_pose);
-    //void evaluate_grasp(vector<geometry_msgs::PoseStamped> pre_grasps,vector<geometry_msgs::PoseStamped> grasps,string obj_name);
+    void visualize_gripper(geometry_msgs::PoseStamped gripper_pre_pose,geometry_msgs::PoseStamped gripper_pose,int id);
     void set_arm(string arm);
-    void visualize_gripper(vector<geometry_msgs::PoseStamped> pre_grasps,vector<geometry_msgs::PoseStamped> grasps);
 };
 
 void GraspPlanner::set_arm(string arm)
 {
   if( arm == "right" )
     path_to_dir = root + "/grasps-models-multi-grasps_right/";
-    //path_to_dir = "/home/pacman/Documents/backup-grasps-models_intellact-multi-grasps_right/";
   else if(arm == "left")
     path_to_dir = root + "/grasps-models-multi-grasps_left/";
   cout << "path to directory is: " << path_to_dir << endl;
 }
 
-void GraspPlanner::visualize_gripper(geometry_msgs::PoseStamped gripper_pre_pose,geometry_msgs::PoseStamped gripper_pose)
+void GraspPlanner::visualize_gripper(geometry_msgs::PoseStamped gripper_pre_pose,geometry_msgs::PoseStamped gripper_pose,int grasp_id)
 {
   visualization_msgs::MarkerArray markers;
   
   visualization_msgs::Marker marker;
   marker.header.frame_id = "world_link";
   marker.header.stamp = ros::Time();
-  marker.ns = "gripper_pre_ns";
-  marker.id = 0;
-  marker.type = visualization_msgs::Marker::CUBE;
+  stringstream ss;
+  ss << "gripper_ns_" << grasp_id;
+  marker.ns = ss.str();
+  marker.type = visualization_msgs::Marker::MESH_RESOURCE;
   marker.action = visualization_msgs::Marker::ADD;
-  marker.pose.position = gripper_pre_pose.pose.position;
-  marker.pose.orientation = gripper_pre_pose.pose.orientation;
-  marker.scale.x = 0.1;
-  marker.scale.y = 0.1;
-  marker.scale.z = 0.1;
-  marker.color.a = 1.0;
-  marker.color.r = 1.0;
-  marker.color.g = 0.0;
-  marker.color.b = 0.0;
-  markers.markers.push_back(marker);
   
-  marker.ns = "gripper_ns";
-  marker.id = 1;
+  int id = -1;
+  marker.scale.x = 1.0;
+  marker.scale.y = 1.0;
+  marker.scale.z = 1.0;
+  marker.id = ++id;
   marker.pose.position = gripper_pose.pose.position;
   marker.pose.orientation = gripper_pose.pose.orientation;
-  marker.color.a = 1.0;
-  marker.color.r = 1.0;
-  marker.color.g = 0.0;
-  marker.color.b = 1.0;
+  marker.color.a = 0.5;
+  marker.color.r = 0.8;
+  marker.color.g = 1;
+  marker.color.b = 0;
+  marker.mesh_resource = "package://schunk_description/meshes/sdh/palm.stl";
+  markers.markers.push_back(marker);
+ 
+  Eigen::Quaternionf quat(gripper_pose.pose.orientation.w,gripper_pose.pose.orientation.x,gripper_pose.pose.orientation.y,gripper_pose.pose.orientation.z);
+  Eigen::Matrix3f rot = quat.toRotationMatrix();
+  Eigen::Matrix4f trans_g;
+  trans_g.block<3,3>(0,0) = rot;
+  trans_g(0,3) = gripper_pose.pose.position.x; trans_g(1,3) = gripper_pose.pose.position.y; trans_g(2,3) = gripper_pose.pose.position.z; 
+  trans_g(3,0) = 0; trans_g(3,1) = 0; trans_g(3,2) = 0; trans_g(3,3) = 1;
+    
+  Eigen::Matrix4f trans_1;
+  trans_1 << 
+    1,0,0,-0.05,
+    0,1,0,-0.02,
+    0,0,1,-0.12,
+    0,0,0,1;
+  
+  marker.type = visualization_msgs::Marker::CYLINDER;
+  marker.id = ++id; 
+  Eigen::Matrix4f trans = trans_g * trans_1.inverse();
+  Eigen::Matrix3f rot_mat = trans.block<3,3>(0,0);
+  Eigen::Quaternionf quat_(rot_mat);
+  
+  marker.pose.position.x = trans(0,3);
+  marker.pose.position.y = trans(1,3);
+  marker.pose.position.z = trans(2,3);
+  marker.scale.x = 0.01;
+  marker.scale.y = 0.01;
+  marker.scale.z = 0.1;
+  markers.markers.push_back(marker);
+ 
+  marker.type = visualization_msgs::Marker::CYLINDER;
+  marker.id = ++id; 
+  Eigen::Matrix4f trans_2;
+  trans_2 << 
+    1,0,0,-0.03,
+    0,1,0,0.04,
+    0,0,1,-0.12,
+    0,0,0,1;  
+  Eigen::Matrix4f trans_2_ = trans_g * trans_2.inverse();
+  Eigen::Matrix3f rot_mat_2 = trans_2_.block<3,3>(0,0);
+  Eigen::Quaternionf quat_2(rot_mat_2);
+  
+  marker.pose.position.x = trans_2_(0,3);
+  marker.pose.position.y = trans_2_(1,3);
+  marker.pose.position.z = trans_2_(2,3);  
+  marker.scale.x = 0.01;
+  marker.scale.y = 0.01;
+  marker.scale.z = 0.1;
   markers.markers.push_back(marker);
   
+  marker.type = visualization_msgs::Marker::CYLINDER;
+  marker.id = ++id; 
+  Eigen::Matrix4f trans_3;
+  trans_3 << 
+    1,0,0,0.04,
+    0,1,0,-0.02,
+    0,0,1,-0.12,
+    0,0,0,1;   
+  Eigen::Matrix4f trans_3_ = trans_g * trans_3.inverse();
+  Eigen::Matrix3f rot_mat_3 = trans_3_.block<3,3>(0,0);
+  Eigen::Quaternionf quat_3(rot_mat_3);
+  
+  marker.pose.position.x = trans_3_(0,3);
+  marker.pose.position.y = trans_3_(1,3);
+  marker.pose.position.z = trans_3_(2,3);  
+  marker.scale.x = 0.01;
+  marker.scale.y = 0.01;
+  marker.scale.z = 0.1;
+  markers.markers.push_back(marker); 
   vis_pub.publish( markers );
 }
 
@@ -424,8 +482,8 @@ bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, defin
     geometry_msgs::PoseStamped old_grasp = grasps[i];
     pre_grasps[i] = find_transformation(obj_ref,obj_pose,pre_grasps[i]);
     grasps[i] = find_transformation(obj_ref,obj_pose,grasps[i]);
-    if( i == 0 )
-      visualize_gripper(pre_grasps[i],grasps[i]);
+    if( i == 0)
+      visualize_gripper(pre_grasps[i],grasps[i],i);
     double gs = (grasp_score_[grasp_score_.size()-1] + grasp_score_[grasp_score_.size()-2]) / 2.;
     grasp_score_.pop_back();
     grasp_score_[grasp_score_.size()-1] = gs;
@@ -478,81 +536,7 @@ bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, defin
     success = false;
     return false;
   }
- // evaluate_grasp(pre_grasps,grasps,obj_name);
-  visualize_gripper(pre_grasps,grasps);
   return success;
-}
-
-// void GraspPlanner::evaluate_grasp(vector<geometry_msgs::PoseStamped> pre_grasps,vector<geometry_msgs::PoseStamped> grasps,string obj_name)
-// {
-//   path_to_dir = "/home/pacman/Documents/grasp-ground-truth/";
-//   vector<string> path_to_obj_dir = giveAllFiles(obj_name);
-//   vector<geometry_msgs::PoseStamped> pre_grasps_ref = searchGraspFile(path_to_obj_dir,true);
-//   vector<geometry_msgs::PoseStamped> grasps_ref = searchGraspFile(path_to_obj_dir,false);
-//   cout << grasps_ref.size() << endl;
-//   double min_dist = 1000.;
-//   double min_rot_dist = 1000.;
-//   geometry_msgs::Pose min_pose;
-//   Eigen::Quaternion<float> dq;
-
-//   for( size_t i = 0; i < grasps.size(); i++ )
-//   {
-//     geometry_msgs::PoseStamped grasp_cur = grasps[i];
-//     Eigen::Vector3f grasp_trans_cur;
-//     grasp_trans_cur(0) = grasp_cur.pose.position.x; grasp_trans_cur(1) = grasp_cur.pose.position.y; grasp_trans_cur(2) = grasp_cur.pose.position.z;
-//     Eigen::Quaternion<float> q_grasp_cur(grasp_cur.pose.orientation.w,grasp_cur.pose.orientation.x,grasp_cur.pose.orientation.y,grasp_cur.pose.orientation.z);
-//     for( size_t j = 0; j < grasps_ref.size(); j++ )
-//     {
-//       geometry_msgs::PoseStamped gr = grasps_ref[j];
-//       Eigen::Vector3f grasp_trans_ref;
-//       grasp_trans_ref(0) = gr.pose.position.x; grasp_trans_ref(1) = gr.pose.position.y; grasp_trans_ref(2) = gr.pose.position.z;
-//       Eigen::Quaternion<float> q_grasp_ref(gr.pose.orientation.w,gr.pose.orientation.x,gr.pose.orientation.y,gr.pose.orientation.z);  
-//       geometry_msgs::Pose pose_ref = searchPoseFile(path_to_obj_dir[j]);
-//       double dist = (grasp_trans_cur - grasp_trans_ref).norm();
-//       if( dist < min_dist )
-//       {
-// 	min_dist = dist;
-// 	min_pose = pose_ref;
-// 	dq = q_grasp_cur * q_grasp_ref.conjugate();
-//       }
-//     }
-//   }
-//   path_to_dir = "/home/pacman/Documents/backup-grasps-models-multi-grasps/";
-//   cout << "min ref gripper pose is: " << endl <<
-//        min_pose.position.x << " "<< min_pose.position.y << " "<< min_pose.position.z << " "<< 
-//        min_pose.orientation.x << " " << min_pose.orientation.y << " "<< min_pose.orientation.z << " "<< min_pose.orientation.w << " "<<endl;  
-//   cout << "error is: " << min_dist << endl;
-//   cout << "quaternion diff is: " << dq.x() << " "<< dq.y() << " "<< dq.z() << " " << dq.w() << endl;
-// }
-
-void GraspPlanner::visualize_gripper(vector<geometry_msgs::PoseStamped> pre_grasps,vector<geometry_msgs::PoseStamped> grasps)
-{
-  string path_to_model = root + "/hand.pcd";
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_model (new pcl::PointCloud<pcl::PointXYZ>);
-  if (pcl::io::loadPCDFile<pcl::PointXYZ> (path_to_model.c_str(), *cloud_model) == -1) //* load the file
-  {
-    ROS_ERROR("Error at reading hand model ...");
-    return;
-  }
-  
-  string pre_path = "/tmp/gripper"; 
-  if(!boost::filesystem::exists(pre_path))  
-    boost::filesystem::create_directory(pre_path);   
-  for( size_t i = 0; i < grasps.size(); i++ )
-  {
-    Eigen::Matrix4f trans;
-    Eigen::Quaternion<float> quat(grasps[i].pose.orientation.w,grasps[i].pose.orientation.x,grasps[i].pose.orientation.y,grasps[i].pose.orientation.z);
-    trans.block<3,3>(0,0) = quat.toRotationMatrix();
-    trans(0,3) = grasps[i].pose.position.x; trans(1,3) = grasps[i].pose.position.y; trans(2,3) = grasps[i].pose.position.z; trans(3,3) = 1;
-    trans(3,0) = 0; trans(3,1) = 0; trans(3,2) = 0; 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr transform_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-    pcl::transformPointCloud(*cloud_model,*transform_cloud,trans);  
-    
-    stringstream ss_grasp;
-    ss_grasp << pre_path << "/gripper_" << i << ".pcd";
-    pcl::PCDWriter writer;
-    writer.write<pcl::PointXYZ> (ss_grasp.str(),*transform_cloud, false);
-  }
 }
 
 }
