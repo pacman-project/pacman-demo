@@ -5,11 +5,9 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /MotionPlanning1
-        - /MotionPlanning1/Planning Request1
-        - /TF1/Frames1
-        - /TF1/Tree1
+        - /MotionPlanning1/Planned Path1
       Splitter Ratio: 0.74256
-    Tree Height: 119
+    Tree Height: 459
   - Class: rviz/Help
     Name: Help
   - Class: rviz/Views
@@ -310,7 +308,7 @@ Visualization Manager:
         Robot Alpha: 0.5
         Show Robot Collision: false
         Show Robot Visual: true
-        Show Trail: false
+        Show Trail: true
         State Display Time: 0.05 s
         Trajectory Topic: /move_group/display_planned_path
       Planning Metrics:
@@ -326,7 +324,7 @@ Visualization Manager:
         Goal State Color: 250; 128; 0
         Interactive Marker Size: 0
         Joint Violation Color: 255; 0; 255
-        Planning Group: right_arm
+        Planning Group: left_arm
         Query Goal State: true
         Query Start State: false
         Show Workspace: false
@@ -335,7 +333,7 @@ Visualization Manager:
       Planning Scene Topic: /move_group/monitored_planning_scene
       Robot Description: robot_description
       Scene Geometry:
-        Scene Alpha: 0.9
+        Scene Alpha: 1
         Scene Color: 50; 230; 50
         Scene Display Time: 0.2
         Show Scene Geometry: true
@@ -606,201 +604,6 @@ Visualization Manager:
         Show Robot Collision: false
         Show Robot Visual: true
       Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /end_effector_marker
-      Name: Marker
-      Namespaces:
-        {}
-      Queue Size: 100
-      Value: true
-    - Class: rviz/TF
-      Enabled: true
-      Frame Timeout: 15
-      Frames:
-        All Enabled: true
-        base_link:
-          Value: true
-        calib_left_arm_base_link:
-          Value: true
-        calib_right_arm_base_link:
-          Value: true
-        kit_head_link:
-          Value: true
-        left_arm_1_link:
-          Value: true
-        left_arm_2_link:
-          Value: true
-        left_arm_3_link:
-          Value: true
-        left_arm_4_link:
-          Value: true
-        left_arm_5_link:
-          Value: true
-        left_arm_6_link:
-          Value: true
-        left_arm_7_link:
-          Value: true
-        left_arm_base_link:
-          Value: true
-        left_sdh_connector_link:
-          Value: true
-        left_sdh_finger_11_link:
-          Value: true
-        left_sdh_finger_12_link:
-          Value: true
-        left_sdh_finger_13_link:
-          Value: true
-        left_sdh_finger_21_link:
-          Value: true
-        left_sdh_finger_22_link:
-          Value: true
-        left_sdh_finger_23_link:
-          Value: true
-        left_sdh_grasp_link:
-          Value: true
-        left_sdh_palm_link:
-          Value: true
-        left_sdh_thumb_1_link:
-          Value: true
-        left_sdh_thumb_2_link:
-          Value: true
-        left_sdh_thumb_3_link:
-          Value: true
-        left_sdh_tip_link:
-          Value: true
-        leg_0_link:
-          Value: true
-        leg_1_link:
-          Value: true
-        leg_2_link:
-          Value: true
-        leg_3_link:
-          Value: true
-        right_arm_1_link:
-          Value: true
-        right_arm_2_link:
-          Value: true
-        right_arm_3_link:
-          Value: true
-        right_arm_4_link:
-          Value: true
-        right_arm_5_link:
-          Value: true
-        right_arm_6_link:
-          Value: true
-        right_arm_7_link:
-          Value: true
-        right_arm_base_link:
-          Value: true
-        right_sdh_connector_link:
-          Value: true
-        right_sdh_finger_11_link:
-          Value: true
-        right_sdh_finger_12_link:
-          Value: true
-        right_sdh_finger_13_link:
-          Value: true
-        right_sdh_finger_21_link:
-          Value: true
-        right_sdh_finger_22_link:
-          Value: true
-        right_sdh_finger_23_link:
-          Value: true
-        right_sdh_grasp_link:
-          Value: true
-        right_sdh_palm_link:
-          Value: true
-        right_sdh_thumb_1_link:
-          Value: true
-        right_sdh_thumb_2_link:
-          Value: true
-        right_sdh_thumb_3_link:
-          Value: true
-        right_sdh_tip_link:
-          Value: true
-        sdh_grasp_link:
-          Value: true
-        sdh_palm_link:
-          Value: true
-        sdh_thumb_1_link:
-          Value: true
-        sdh_tip_link:
-          Value: true
-        table_plate_link:
-          Value: true
-        torso_link:
-          Value: true
-        world_link:
-          Value: true
-      Marker Scale: 1
-      Name: TF
-      Show Arrows: false
-      Show Axes: false
-      Show Names: false
-      Tree:
-        world_link:
-          calib_left_arm_base_link:
-            left_arm_base_link:
-              left_arm_1_link:
-                left_arm_2_link:
-                  left_arm_3_link:
-                    left_arm_4_link:
-                      left_arm_5_link:
-                        left_arm_6_link:
-                          left_arm_7_link:
-                            left_sdh_connector_link:
-                              left_sdh_palm_link:
-                                left_sdh_finger_11_link:
-                                  left_sdh_finger_12_link:
-                                    left_sdh_finger_13_link:
-                                      {}
-                                left_sdh_grasp_link:
-                                  {}
-                                left_sdh_thumb_1_link:
-                                  left_sdh_thumb_2_link:
-                                    left_sdh_thumb_3_link:
-                                      {}
-                                left_sdh_tip_link:
-                                  {}
-          calib_right_arm_base_link:
-            right_arm_base_link:
-              right_arm_1_link:
-                right_arm_2_link:
-                  right_arm_3_link:
-                    right_arm_4_link:
-                      right_arm_5_link:
-                        right_arm_6_link:
-                          right_arm_7_link:
-                            right_sdh_connector_link:
-                              right_sdh_palm_link:
-                                right_sdh_finger_11_link:
-                                  right_sdh_finger_12_link:
-                                    right_sdh_finger_13_link:
-                                      {}
-                                right_sdh_grasp_link:
-                                  {}
-                                right_sdh_thumb_1_link:
-                                  right_sdh_thumb_2_link:
-                                    right_sdh_thumb_3_link:
-                                      {}
-                                right_sdh_tip_link:
-                                  {}
-          kit_head_link:
-            {}
-          table_plate_link:
-            leg_0_link:
-              {}
-            leg_1_link:
-              {}
-            leg_2_link:
-              {}
-            leg_3_link:
-              {}
-          torso_link:
-            {}
-      Update Interval: 0
-      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -816,31 +619,36 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 2.10498
+      Distance: 2.9965
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.06
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
       Focal Point:
         X: 0.113567
         Y: 0.10592
         Z: 2.23518e-07
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.309797
+      Pitch: -0.105203
       Target Frame: world_link
       Value: XYOrbit (rviz)
-      Yaw: 5.93498
+      Yaw: 0.0467672
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 744
+  Height: 1056
   Help:
     collapsed: false
   Hide Left Dock: false
   Hide Right Dock: false
   Motion Planning:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd0000000100000000000002a2000002a2fc0200000005fb000000100044006900730070006c00610079007301000000280000010c000000dd00fffffffb0000000800480065006c00700000000342000000bb0000007600fffffffb0000000a0056006900650077007300000003b0000000b0000000b000fffffffb0000000c00430061006d00650072006100000002ff000001610000000000000000fb0000001e004d006f00740069006f006e00200050006c0061006e006e0069006e0067010000013a000001900000017f00ffffff0000026d000002a200000001000000020000000100000002fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000100000000000002a2000003dafc0200000005fb000000100044006900730070006c006100790073010000002800000260000000dd00fffffffb0000000800480065006c00700000000342000000bb0000007600fffffffb0000000a0056006900650077007300000003b0000000b0000000b000fffffffb0000000c00430061006d00650072006100000002ff000001610000000000000000fb0000001e004d006f00740069006f006e00200050006c0061006e006e0069006e0067010000028e000001740000017400ffffff00000497000003da00000001000000020000000100000002fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Views:
     collapsed: false
-  Width: 1301
-  X: 58
-  Y: 24
+  Width: 1855
+  X: 57
+  Y: -4

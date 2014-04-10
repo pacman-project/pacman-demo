@@ -13,7 +13,7 @@
   <arg     if="$(arg info)" name="command_args" value="--debug" />
 
   <!-- move_group settings -->
-  <arg name="allow_trajectory_execution" default="false"/> 
+  <arg name="allow_trajectory_execution" default="true"/> 
   <arg name="fake_execution" default="false"/>
   <arg name="max_safe_path_cost" default="1"/>
   <arg name="jiggle_fraction" default="0.05" />
@@ -54,6 +54,7 @@
 				      move_group/MoveGroupPlanService
 				      move_group/MoveGroupQueryPlannersService
 				      move_group/MoveGroupStateValidationService
+				      move_group/MoveGroupGetPlanningSceneService
 				      " />
 
     <!-- Publish the planning scene of the physical robot so that rviz plugin can know actual robot -->

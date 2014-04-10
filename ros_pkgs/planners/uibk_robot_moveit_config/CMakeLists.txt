@@ -44,3 +44,6 @@ target_link_libraries(ping_path_planner
 target_link_libraries(ping_path_planner_and_execution
   ${catkin_LIBRARIES}
   )
+
+install(DIRECTORY launch DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+install(DIRECTORY config DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})

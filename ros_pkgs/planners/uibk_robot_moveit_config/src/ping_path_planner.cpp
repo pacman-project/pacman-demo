@@ -23,6 +23,9 @@ int main(int argc, char **argv)
       return (-1);     
     }
 
+    // create the service instance
+    definitions::TrajectoryPlanning trajectory_planning_srv;
+
     // create a test trajectory
     definitions::Grasp grasp;
     ros::Duration five_seconds(5.0);
@@ -31,16 +34,58 @@ int main(int argc, char **argv)
     grasp.grasp_trajectory.resize(1);
 
     // there is suppose to be solution for this pose, since it was taken from the moveit-gui
-    grasp.grasp_trajectory[0].wrist_pose.pose.position.x = 0.114;
-    grasp.grasp_trajectory[0].wrist_pose.pose.position.y = 0.349;
-    grasp.grasp_trajectory[0].wrist_pose.pose.position.z = 0.445;
-    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.x = 0.368;
-    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.y = 0.687;
-    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.z = 0.600;
-    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.w = -0.182;
+    grasp.grasp_trajectory[0].wrist_pose.pose.position.x = 0.207500562072;
+    grasp.grasp_trajectory[0].wrist_pose.pose.position.y = 0.558501422405;
+    grasp.grasp_trajectory[0].wrist_pose.pose.position.z = 0.469974249601;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.x = 0.630408406258;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.y = -0.77248442173;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.z = -0.0736171901226;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.w = 0.0208686068654;
+    trajectory_planning_srv.request.ordered_grasp.push_back(grasp);
 
-    // create the service instance
-    definitions::TrajectoryPlanning trajectory_planning_srv;
+    grasp.grasp_trajectory[0].wrist_pose.pose.position.x = 0.285089105368;
+    grasp.grasp_trajectory[0].wrist_pose.pose.position.y = 0.627856254578;
+    grasp.grasp_trajectory[0].wrist_pose.pose.position.z = 0.46203365922;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.x = -0.0602076053619;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.y = -0.997133851051;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.z = -0.032443780452;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.w = 0.0323820859194;
+    trajectory_planning_srv.request.ordered_grasp.push_back(grasp);
+
+    grasp.grasp_trajectory[0].wrist_pose.pose.position.x = 0.257347553968;
+    grasp.grasp_trajectory[0].wrist_pose.pose.position.y = 0.483040869236;
+    grasp.grasp_trajectory[0].wrist_pose.pose.position.z = 0.460594981909;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.x = 0.995404422283;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.y = -0.0931990146637;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.z = -0.0217804089189;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.w = -0.00340245850384;
+    trajectory_planning_srv.request.ordered_grasp.push_back(grasp);
+
+    grasp.grasp_trajectory[0].wrist_pose.pose.position.x = 0.342958420515;
+    grasp.grasp_trajectory[0].wrist_pose.pose.position.y = 0.542339384556;
+    grasp.grasp_trajectory[0].wrist_pose.pose.position.z = 0.466535836458;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.x = 0.772745728493;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.y = 0.634146571159;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.z = -0.00403589010239;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.w = -0.0266053937376;
+    trajectory_planning_srv.request.ordered_grasp.push_back(grasp);
+
+    grasp.grasp_trajectory[0].wrist_pose.pose.position.x = 0.0494939684868;
+    grasp.grasp_trajectory[0].wrist_pose.pose.position.y = 0.752711713314;
+    grasp.grasp_trajectory[0].wrist_pose.pose.position.z = 0.465163171291;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.x = -0.251597672701;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.y = 0.964012026787;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.z = -0.0859108045697;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.w = 0.00193554908037;
+    trajectory_planning_srv.request.ordered_grasp.push_back(grasp);
+
+    grasp.grasp_trajectory[0].wrist_pose.pose.position.x = 0.0494939684868;
+    grasp.grasp_trajectory[0].wrist_pose.pose.position.y = 0.752711713314;
+    grasp.grasp_trajectory[0].wrist_pose.pose.position.z = 0.465163171291;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.x = -0.251597672701;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.y = 0.964012026787;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.z = -0.0859108045697;
+    grasp.grasp_trajectory[0].wrist_pose.pose.orientation.w = 0.00193554908037;
     trajectory_planning_srv.request.ordered_grasp.push_back(grasp);
 
     // call the service with the instance
@@ -50,6 +95,9 @@ int main(int argc, char **argv)
         ROS_ERROR("Call to the service %s failed.", planning_service_name.c_str());  
         return (-1);
     }   
+
+    ROS_INFO("trajectory_planning_srv.response.result %d", trajectory_planning_srv.response.result);
+
 
     if (trajectory_planning_srv.response.result == trajectory_planning_srv.response.OTHER_ERROR)
     {   

@@ -142,24 +142,25 @@ bool PathPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 		{
 			ROS_WARN("No trajectory found for grasp %d", (int)i);
 		}
+		ros::Duration(5).sleep();
 	}
 
 	ROS_INFO("trajectories.size() %lu",trajectories.size());
-	if(trajectories.size() > 1) 
+	if(trajectories.size() > 0)
 	{
 		response.result = response.SUCCESS;
+		ros::Duration duration = ros::Time::now() - now;
+
+		ROS_INFO("Trajectory planning request completed");
+		ROS_INFO_STREAM("Total trajectory calculation took " << duration);
+		return true;
 	} 
 	else 
 	{
 		response.result = response.NO_FEASIBLE_TRAJECTORY_FOUND;
+		return false;
 	}
 
-	ros::Duration duration = ros::Time::now() - now;
-
-	ROS_INFO("Trajectory planning request completed");
-	ROS_INFO_STREAM("Total trajectory calculation took " << duration);
-
-	return true;
 }
 
 bool PathPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajectories, geometry_msgs::PoseStamped &goal) 
@@ -169,6 +170,7 @@ bool PathPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 	moveit_msgs::Constraints pose_goal = kinematic_constraints::constructGoalConstraints(plan_for_frame_.c_str(), goal, tolerance_in_position_, tolerance_in_orientation_);
 
 	ROS_INFO("Planning for wrist (px, py, pz, qx, qy, qz, qw):\t%f\t%f\t%f\t%f\t%f\t%f\t%f", goal.pose.position.x, goal.pose.position.y, goal.pose.position.z, goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z, goal.pose.orientation.w);
+	
 
 	// now construct the motion plan request
 	moveit_msgs::GetMotionPlan motion_plan;
@@ -178,6 +180,25 @@ bool PathPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 	motion_plan_request.goal_constraints.push_back(pose_goal);
 	motion_plan_request.num_planning_attempts = max_planning_attempts_;
 	motion_plan_request.allowed_planning_time = max_planning_time_;
+
+	// if 
+
+	// wait for a joint state
+	std::string topic = nh_.resolveName("/joint_states");
+	boost::shared_ptr<const sensor_msgs::JointState> current_state_ptr = ros::topic::waitForMessage<sensor_msgs::JointState>(topic, ros::Duration(3.0));
+	if (!current_state_ptr)
+	{
+		ROS_ERROR("No real start state available, since no joint state recevied in topic: %s", topic.c_str());
+		ROS_WARN("Did you forget to start a controller?");
+		ROS_WARN("Planning will be done from home position, however this trajectory might not be good for execution!");
+	}
+	else
+	{
+		// take the current state of the robot as the start state
+		moveit_msgs::RobotState start_state;
+		start_state.joint_state = *current_state_ptr;
+		motion_plan_request.start_state = start_state;
+	}
 
 	// and call the service with the request
 	ROS_INFO("Calling plannig service...");
@@ -192,7 +213,7 @@ bool PathPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 		ROS_INFO("Planning completed with code %d", motion_plan_response.error_code.val);
 		ROS_INFO("Planning took %.2fs", motion_plan_response.planning_time);
 
-		if(trajSize > max_points_in_trajectory_) 
+		if(trajSize > max_points_in_trajectory_)
 		{
 			ROS_WARN("Computed trajectory contains too many points, so it will be dropped!");
 			return false;
@@ -209,13 +230,10 @@ bool PathPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 			definitions::Trajectory trajectory;
 			trajectory.trajectory_id = 0;
 
-			ROS_INFO("Before assigning response");
 			moveit_msgs::RobotTrajectory robot_trajectory = motion_plan.response.motion_plan_response.trajectory;
 
 			// populate trajectory with motion plan data
-			ROS_INFO("Before converting");
 			convertFromMRobotTrajectoryToTrajectory(robot_trajectory, trajectory);
-			ROS_INFO("After converting");
 			trajectories.push_back(trajectory);
 
 			return true;

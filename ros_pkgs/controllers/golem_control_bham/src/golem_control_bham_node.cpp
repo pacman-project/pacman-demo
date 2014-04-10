@@ -248,7 +248,7 @@ bool GolemController::executeTrajectory(const RobotUIBK::Command::Seq &command)
   {  
     controller_->send(command.data(), command.size());
     // wait for completion
-    //controller_->waitForTrajectoryEnd();
+    controller_->waitForTrajectoryEnd();
   }
   catch (const std::exception& ex) 
   {
@@ -339,16 +339,21 @@ bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Em
 } // end namespace golem_control_bham
 
 
-// // update the states in a different thread such that it is not affected by blocking functions.
-// void publishThread_fnc(golem_control_bham::GolemController &nn)
-// {
-//   while(ros::ok())
-//   {
-//     // publish joint states
-//     nn.publishRobotState();
-//   }
-//   return;
-// }
+void publishThread_fnc(golem_control_bham::GolemController &nn)
+{
+  while(ros::ok())
+  {
+    // publish joint states
+    nn.publishRobotState();
+  }
+  return;
+}
+
+void controlThread_fnc(golem_control_bham::GolemController &nn)
+{
+  ros::spin();
+  return;
+}
 
 
 int main(int argc, char **argv)
@@ -360,23 +365,20 @@ int main(int argc, char **argv)
 
   ROS_INFO("Controller connected...");
   ROS_INFO("Ready to execute trajectories!");
-  
-  //boost::thread publish_thread( publishThread_fnc, node );
-  //publish_thread.join();
 
-  while(ros::ok())
-  {
-    // do something
+  // this has to be done separately because the execution control is blocking,
+  // and we need to continuously pusblish the joint state to visualize whats going on
+  // so instead of the typical while loop with ros::spin(), we need to split 
+  // the control and the publishing into two threads.
+  boost::thread publish_thread( publishThread_fnc, node );
+  boost::thread control_thread( controlThread_fnc, node );
+  publish_thread.join();
+  control_thread.join();
 
-    // publish joint states
-    node.publishRobotState();
 
-    // spin
-    ros::spinOnce();
-  }
-
-  // // detach the thread in case is not ok
-  // publish_thread.detach();
+  // detach the threads
+  publish_thread.detach();
+  control_thread.detach();
 
   return 0;
 }
