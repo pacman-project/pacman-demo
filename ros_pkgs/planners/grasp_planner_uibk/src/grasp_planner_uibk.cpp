@@ -18,6 +18,16 @@
 #include "definitions/GraspPlanning.h"
 
 using namespace std;
+enum Grasps 
+{
+  cylindrical,
+  parallel,
+  centrical,
+  spherical,
+  rim_open,
+  rim_close,
+  rim_pre_grasp
+};
 
 namespace grasp_planner_uibk
 {
@@ -77,8 +87,95 @@ public:
     geometry_msgs::PoseStamped find_transformation(geometry_msgs::Pose ref_obj,geometry_msgs::Pose cur_obj,geometry_msgs::PoseStamped cur_grasp);
     void visualize_gripper(geometry_msgs::PoseStamped gripper_pre_pose,geometry_msgs::PoseStamped gripper_pose,int id);
     void set_arm(string arm);
+    vector<float> getTargetAnglesFromGraspType(Grasps grasp_type, float close_ratio) ;
 };
 
+vector<float> GraspPlanner::getTargetAnglesFromGraspType(Grasps grasp_type, float close_ratio) 
+{
+  
+  std::vector<float> hand_pose;
+  if (close_ratio > 1.0)
+    close_ratio = 1.0;
+  else if (close_ratio < 0.0)
+    close_ratio = 0.0;
+ 
+  // joints angle based on thumb, finger_1, finger_2, knuckle
+  switch(grasp_type) {
+    case cylindrical: 
+    hand_pose.push_back((-30+close_ratio*30)* M_PI/180.0);
+    hand_pose.push_back((30+close_ratio*35)* M_PI/180.0);
+    hand_pose.push_back((-30+close_ratio*30)* M_PI/180.0);
+    hand_pose.push_back((30+close_ratio*35)* M_PI/180.0);
+    hand_pose.push_back((-30+close_ratio*30)* M_PI/180.0);
+    hand_pose.push_back((30+close_ratio*35)* M_PI/180.0);
+    hand_pose.push_back(0);
+    return hand_pose; 
+    break;
+    case parallel: 
+    hand_pose.push_back((-75.+close_ratio*82.)* M_PI/180.0);
+    hand_pose.push_back((75.-close_ratio*82.)* M_PI/180.0);
+    hand_pose.push_back((-75.+close_ratio*82.)* M_PI/180.0);
+    hand_pose.push_back((75.-close_ratio*82.)* M_PI/180.0);
+    hand_pose.push_back((-75.+close_ratio*82.)* M_PI/180.0);
+    hand_pose.push_back((75.-close_ratio*82.)* M_PI/180.0);
+    hand_pose.push_back(0);
+    return hand_pose;
+ 
+    case centrical: 
+    hand_pose.push_back((-75+close_ratio*82)* M_PI/180.0);
+    hand_pose.push_back((75-close_ratio*82)* M_PI/180.0);
+    hand_pose.push_back((-75+close_ratio*82)* M_PI/180.0);
+    hand_pose.push_back((75-close_ratio*82)* M_PI/180.0);
+    hand_pose.push_back((-75+close_ratio*82)* M_PI/180.0);
+    hand_pose.push_back((75-close_ratio*82)* M_PI/180.0);
+    hand_pose.push_back((60)* M_PI/180.0);
+    return hand_pose;
+ 
+    case spherical: 
+    hand_pose.push_back((-40+close_ratio*25)* M_PI/180.0);
+    hand_pose.push_back((40+close_ratio*15)* M_PI/180.0);
+    hand_pose.push_back((-40+close_ratio*25)* M_PI/180.0);
+    hand_pose.push_back((40+close_ratio*15)* M_PI/180.0);
+    hand_pose.push_back((-40+close_ratio*25)* M_PI/180.0);
+    hand_pose.push_back((40+close_ratio*15)* M_PI/180.0);
+    hand_pose.push_back((60)* M_PI/180.0);
+    return hand_pose;
+
+    case rim_open: 
+    hand_pose.push_back(-0.8);
+    hand_pose.push_back(0.8);
+    hand_pose.push_back(-0.8);
+    hand_pose.push_back(0.8);
+    hand_pose.push_back(-0.8);
+    hand_pose.push_back(0.8);
+    hand_pose.push_back(0.0);
+    return hand_pose;
+
+    case rim_close: 
+    hand_pose = std::vector<float>(7,0.15);
+    return hand_pose;
+
+    case rim_pre_grasp:
+    hand_pose.push_back(-0.2);
+    hand_pose.push_back(0.1);
+    hand_pose.push_back(-0.25);
+    hand_pose.push_back(0.15);
+    hand_pose.push_back(-0.25);
+    hand_pose.push_back(0.15);
+    hand_pose.push_back(0.0);
+    return hand_pose;
+
+    default:
+    hand_pose.push_back(-0.8);
+    hand_pose.push_back(0.8);
+    hand_pose.push_back(-0.8);
+    hand_pose.push_back(0.8);
+    hand_pose.push_back(-0.8);
+    hand_pose.push_back(0.8);
+    hand_pose.push_back(0.);
+    return hand_pose;
+  }
+}
 void GraspPlanner::set_arm(string arm)
 {
   if( arm == "right" )
@@ -473,11 +570,13 @@ bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, defin
   vector<geometry_msgs::PoseStamped> grasps = searchGraspFile(path_to_obj_dir,false);
   
   vector<definitions::Grasp> grasp_traj;
+  vector<float> pre_grasp_joints = getTargetAnglesFromGraspType(rim_pre_grasp,1.0);
+  vector<float> grasp_joints = getTargetAnglesFromGraspType(rim_close,1.0);
+  
   int min_id = 0;
   double min = 1000.;
   for( size_t i = 0; i < grasps.size(); i++ )
   {
-    //cout << grasps[i] << endl;
     geometry_msgs::PoseStamped old_pre_grasp = pre_grasps[i];
     geometry_msgs::PoseStamped old_grasp = grasps[i];
     pre_grasps[i] = find_transformation(obj_ref,obj_pose,pre_grasps[i]);
@@ -488,31 +587,19 @@ bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, defin
     grasp_score_.pop_back();
     grasp_score_[grasp_score_.size()-1] = gs;
     if( gs < min )
-      {
-	min = gs;
-	min_id = i;
-      }
+    {
+      min = gs;
+      min_id = i;
+    }
     definitions::Grasp cur_traj;
     cur_traj.grasp_trajectory.resize(3);
     cur_traj.grasp_trajectory[0].wrist_pose.pose = pre_grasps[i].pose;
+    cur_traj.grasp_trajectory[0].joints = pre_grasp_joints;
     cur_traj.grasp_trajectory[1].wrist_pose.pose = grasps[i].pose;
+    cur_traj.grasp_trajectory[1].joints = grasp_joints;
     cur_traj.grasp_trajectory[2].wrist_pose.pose = grasps[i].pose;   
+    cur_traj.grasp_trajectory[2].joints = grasp_joints;
     grasp_traj.push_back(cur_traj);
-    
-    if( ( obj_name.find("Shaft") != string::npos ) || ( obj_name.find("Bolt") != string::npos ) )
-    {
-      cout << "consider the real orientation of the object" << endl;
-      geometry_msgs::Pose obj_pose_tmp = obj_pose;
-      obj_pose.orientation = obj_ref.orientation;
-      old_pre_grasp = find_transformation(obj_ref,obj_pose_tmp,old_pre_grasp);
-      old_grasp = find_transformation(obj_ref,obj_pose,old_grasp);
-      definitions::Grasp old_traj;
-      old_traj.grasp_trajectory.resize(3);
-      old_traj.grasp_trajectory[0].wrist_pose.pose = old_pre_grasp.pose;
-      old_traj.grasp_trajectory[1].wrist_pose.pose = old_grasp.pose;
-      old_traj.grasp_trajectory[2].wrist_pose.pose = old_grasp.pose;
-      grasp_traj.push_back(old_traj);  
-    }
   }
   cout << "after getting all the grasps" << endl;
   if( grasp_traj.size() > 0 ){
