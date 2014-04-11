@@ -482,6 +482,7 @@ INSTALL(FILES ${BHAM_CONTROL_FILES} DESTINATION bin)
 if(BUILD_ROS_PKGS)
 SET(BHAM_CONTROL_ROS_FILES
 	${PROJECT_ROOT}/resources/Bham/ControlRobotUIBK.xml
+	${PROJECT_ROOT}/resources/Bham/ControlRobotUIBKSim.xml
 	${GOLEM_RESOURCES}/GolemDeviceKukaLWR.xml
 	${GOLEM_RESOURCES}/GolemDeviceKukaLWREddieL.xml
 	${GOLEM_RESOURCES}/GolemDeviceKukaLWREddieR.xml
