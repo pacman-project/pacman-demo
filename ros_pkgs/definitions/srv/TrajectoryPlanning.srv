@@ -1,9 +1,14 @@
 ## THIS FILE DEFINES THE TRAJECTORY PLANNING SERVICE
 
-# this grasp list was obtained for is needed
+# the goal state for the robot, it can be used for both MOVE_TO_CART_GOAL and for MOVE_TO_STATE_GOAL
+# for the MOVE_TO_CART_GOAL, you need to fill the goal_state.hand.wrist_pose
+# for the MOVE_TO_STATE_GOAL, you need to fill the goal_state.hand.joints and goal_state.arm.joints
+UIBKRobot goal_state
+
+# the grasp list obtained for one object, which is needed for the PICK planning
 Grasp[] ordered_grasp
 
-# this is needed for collision detection and removing the object from the scene
+# this is needed for collision detection and removing the object from the scene for the PICK planning
 Object[] object_list
 
 # the id of the object to grasp
@@ -11,6 +16,14 @@ int32 object_id
 
 # name of the arm we are planning for
 string arm
+
+# select which type of planning service you need
+int32 PICK = 0
+int32 PLACE = 1
+int32 MOVE_TO_CART_GOAL = 2
+int32 MOVE_TO_STATE_GOAL = 3
+int32 type
+
 
 ---
 

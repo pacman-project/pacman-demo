@@ -15,6 +15,6 @@
 
 	<remap from="/joint_states" to="/golem/joint_states"/>
 	<!-- load the node that implements the /trajectory_planning_srv -->
-	<node name="uibk_robot_path_planner" pkg="uibk_robot_moveit_config" type="path_planner_node" respawn="true" output="screen"/>
+	<node name="move_to_cart_goal" pkg="trajectory_planner_moveit" type="cart_planner_node" respawn="true" output="screen"/>
 
 </launch>

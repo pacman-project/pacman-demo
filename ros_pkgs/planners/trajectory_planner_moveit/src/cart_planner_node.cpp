@@ -10,10 +10,10 @@
 //// local headers
 #include <definitions/TrajectoryPlanning.h>
 
-namespace uibk_robot_moveit_config {
+namespace trajectory_planner_moveit {
 
 // use a name for the node and a verb it is suppose to do, Publisher, Server, etc...
-class PathPlanner
+class CartPlanner
 {
   private:
 
@@ -63,7 +63,7 @@ class PathPlanner
     bool planTrajectory(std::vector<definitions::Trajectory> &trajectories, geometry_msgs::PoseStamped &goal);
 
     // constructor
-    PathPlanner(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
+    CartPlanner(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
     {
 
 		// wait for moveit to load
@@ -85,17 +85,17 @@ class PathPlanner
         nh_.param<std::string>("base_frame_for_goal", base_frame_for_goal_, "world_link");
 		nh_.param<std::string>("plan_for_frame", plan_for_frame_, "right_sdh_palm_link");
 
-		srv_trajectory_planning_ = nh_.advertiseService(nh_.resolveName("/trajectory_planning_srv"),&PathPlanner::planTrajectoryFromCode, this);
-		//srv_test_trajectory_planning_ = nh_.advertiseService(nh_.resolveName("/test_trajectory_planning_srv"),&PathPlanner::planTrajectoryFromCode, this);
+		srv_trajectory_planning_ = nh_.advertiseService(nh_.resolveName("/trajectory_planning_srv"),&CartPlanner::planTrajectoryFromCode, this);
+		//srv_test_trajectory_planning_ = nh_.advertiseService(nh_.resolveName("/test_trajectory_planning_srv"),&CartPlanner::planTrajectoryFromCode, this);
 
     }
 
     //! Empty stub
-    ~PathPlanner() {}
+    ~CartPlanner() {}
 
 };
 
-void PathPlanner::convertFromMRobotTrajectoryToTrajectory(const moveit_msgs::RobotTrajectory &moveitTraj, definitions::Trajectory &trajectory)
+void CartPlanner::convertFromMRobotTrajectoryToTrajectory(const moveit_msgs::RobotTrajectory &moveitTraj, definitions::Trajectory &trajectory)
 {
 	// get the points from robot trajector
 	const std::vector<trajectory_msgs::JointTrajectoryPoint> &points = moveitTraj.joint_trajectory.points;
@@ -128,48 +128,52 @@ void PathPlanner::convertFromMRobotTrajectoryToTrajectory(const moveit_msgs::Rob
 	}
 }
 
-bool PathPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response) 
+bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response) 
 {
-	ROS_INFO("Received trajectory planning request");
-	ros::Time now = ros::Time::now();
 
-	// clear all previously cached motion plans
-	motion_plans_.clear();
-	std::vector<definitions::Trajectory> &trajectories = response.trajectory;
-
-	for(size_t i = 0; i < request.ordered_grasp.size(); ++i) 
+	ROS_INFO("Planning request of type %d", request.type);
+	if( request.type == request.MOVE_TO_CART_GOAL)
 	{
+		ROS_INFO("Received trajectory planning request");
+		ros::Time now = ros::Time::now();
+
+		// clear all previously cached motion plans
+		motion_plans_.clear();
+		std::vector<definitions::Trajectory> &trajectories = response.trajectory;
 
 		// note that we plan for the first element [0] of the grasp trajectory of the i-th object grasp
-		geometry_msgs::PoseStamped &goal = request.ordered_grasp[i].grasp_trajectory[0].wrist_pose;
+		geometry_msgs::PoseStamped &goal = request.goal_state.hand.wrist_pose;
 		goal.header.frame_id = base_frame_for_goal_.c_str();
 
 		if( !planTrajectory(trajectories, goal) ) 
 		{
-			ROS_WARN("No trajectory found for grasp %d", (int)i);
+			ROS_WARN("No trajectory found for the required goal state");
 		}
-		ros::Duration(5).sleep();
+
+		ROS_INFO("trajectories.size() %lu",trajectories.size());
+		if(trajectories.size() > 0)
+		{
+			response.result = response.SUCCESS;
+			ros::Duration duration = ros::Time::now() - now;
+
+			ROS_INFO("Trajectory planning request completed");
+			ROS_INFO_STREAM("Total trajectory calculation took " << duration);
+			return true;
+		} 
+		else 
+		{
+			response.result = response.NO_FEASIBLE_TRAJECTORY_FOUND;
+			return false;
+		}
 	}
-
-	ROS_INFO("trajectories.size() %lu",trajectories.size());
-	if(trajectories.size() > 0)
+	else
 	{
-		response.result = response.SUCCESS;
-		ros::Duration duration = ros::Time::now() - now;
-
-		ROS_INFO("Trajectory planning request completed");
-		ROS_INFO_STREAM("Total trajectory calculation took " << duration);
-		return true;
-	} 
-	else 
-	{
-		response.result = response.NO_FEASIBLE_TRAJECTORY_FOUND;
-		return false;
+		ROS_INFO("not for me!");
 	}
 
 }
 
-bool PathPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajectories, geometry_msgs::PoseStamped &goal) 
+bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajectories, geometry_msgs::PoseStamped &goal) 
 {
 	// first state the planning constraint
 	goal.header.frame_id = base_frame_for_goal_.c_str(); // just to ensure we plan with respect to the base_frame
@@ -253,7 +257,7 @@ bool PathPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 }
 
 
-} // namespace uibk_robot_moveit_config
+} // namespace trajectory_planner_moveit
 
 
 int main(int argc, char **argv)
@@ -261,7 +265,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "path_planner_node");
     ros::NodeHandle nh;
 
-    uibk_robot_moveit_config::PathPlanner node(nh);
+    trajectory_planner_moveit::CartPlanner node(nh);
 
     ROS_INFO("This node is ready to do path planning!");
 
