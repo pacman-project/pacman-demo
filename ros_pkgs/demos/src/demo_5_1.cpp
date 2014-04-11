@@ -438,8 +438,8 @@ bool DemoSimple::goToSafePos()
     std::cout << "Executing arm trajectory" << std::endl;
     std::cout << "#of found trajectories: "  << my_calculated_trajectory.size() << std::endl;
     my_calculated_trajectory[0].trajectory_id=0;
-    trajectory_execution_srv.request.trajectory = my_calculated_trajectory; //execute 0 trajectory id
-
+   // trajectory_execution_srv.request.trajectory = my_calculated_trajectory; //execute 0 trajectory id
+    trajectory_execution_srv.request.trajectory = my_calculated_trajectory[0];
       if( !trajectory_execution_client.call(trajectory_execution_srv) )
       {
 	      ROS_INFO("trajectory planner service call failed.");
@@ -555,8 +555,8 @@ bool DemoSimple::goToStartPos(bool beginning)
     std::cout << "Executing arm trajectory" << std::endl;
     std::cout << "#of found trajectories: "  << my_calculated_trajectory.size() << std::endl;
     my_calculated_trajectory[0].trajectory_id=0;
-    trajectory_execution_srv.request.trajectory = my_calculated_trajectory; //execute 0 trajectory id
-
+   // trajectory_execution_srv.request.trajectory = my_calculated_trajectory; //execute 0 trajectory id
+    trajectory_execution_srv.request.trajectory = my_calculated_trajectory[0]; 
       if( !trajectory_execution_client.call(trajectory_execution_srv) )
       {
 	      ROS_INFO("trajectory planner service call failed.");
@@ -803,7 +803,8 @@ bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id)
         std::cout << "Executing arm trajectory" << std::endl;
         my_calculated_trajectory[0].trajectory_id=0;
       
-        trajectory_execution_srv.request.trajectory = my_calculated_trajectory; //execute 0 trajectory id
+       // trajectory_execution_srv.request.trajectory = my_calculated_trajectory; //execute 0 trajectory id
+        trajectory_execution_srv.request.trajectory = my_calculated_trajectory[0];
         if( !trajectory_execution_client.call(trajectory_execution_srv) )
         {
 	      ROS_INFO("trajectory planner service call failed.");
