@@ -3,5 +3,5 @@
 <golem>
   <messages level="debug"/><!-- level="undef" level="verbose" level="debug" level="info" level="warning" level="error" level="crit" -->
 
-  <controller library_path="GolemDeviceCtrlClient" config_path="GolemDeviceRobotUIBK"/>
+  <controller library_path="GolemDeviceCtrlClient" config_path="GolemDeviceRobotUIBKSim"/>
 </golem>
