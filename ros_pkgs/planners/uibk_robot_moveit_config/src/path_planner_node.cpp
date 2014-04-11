@@ -104,9 +104,15 @@ void PathPlanner::convertFromMRobotTrajectoryToTrajectory(const moveit_msgs::Rob
 	for (size_t i = 0; i < points.size(); ++i) {
 		definitions::UIBKRobot robot_point;
 		robot_point.arm.joints.assign(points[i].positions.begin(), points[i].positions.end());
+		robot_point.arm.velocity.assign(points[i].velocities.begin(), points[i].velocities.end());
+		robot_point.arm.acceleration.assign(points[i].accelerations.begin(), points[i].accelerations.end());
 		
 		for(int h = 0; h < 6; h++)
+		{
 		 	robot_point.hand.joints.push_back(0);
+		 	//robot_point.hand.velocity.push_back(0);
+		 	//robot_point.hand.acceleration.push_back(0);
+		}
 
 		trajectory.robot_path.push_back(robot_point);
 

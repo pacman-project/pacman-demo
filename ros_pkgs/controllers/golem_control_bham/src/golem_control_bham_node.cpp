@@ -145,16 +145,38 @@ void GolemController::convertTrajFromDefinitionsMsg(const definitions::Trajector
     for (int j = 0; j < KukaLWR::Config::JOINTS; j++)
     {
       commands[i].pos.arm.c[j] = trajectory.robot_path[i].arm.joints[j];
+      commands[i].vel.arm.c[j] = trajectory.robot_path[i].arm.velocity[j];
+      commands[i].acc.arm.c[j] = trajectory.robot_path[i].arm.acceleration[j];
     }
 
     // then the hand
     commands[i].pos.hand.left[0] = trajectory.robot_path[i].hand.joints[0];
+    commands[i].vel.hand.left[0] = trajectory.robot_path[i].hand.velocity[0];
+    commands[i].acc.hand.left[0] = trajectory.robot_path[i].hand.acceleration[0];
+
     commands[i].pos.hand.left[1] = trajectory.robot_path[i].hand.joints[1];
+    commands[i].vel.hand.left[1] = trajectory.robot_path[i].hand.velocity[1];
+    commands[i].acc.hand.left[1] = trajectory.robot_path[i].hand.acceleration[1];
+
     commands[i].pos.hand.middle[0] = trajectory.robot_path[i].hand.joints[2];
+    commands[i].vel.hand.middle[0] = trajectory.robot_path[i].hand.velocity[2];
+    commands[i].acc.hand.middle[0] = trajectory.robot_path[i].hand.acceleration[2];
+
     commands[i].pos.hand.middle[1] = trajectory.robot_path[i].hand.joints[3];
+    commands[i].vel.hand.middle[1] = trajectory.robot_path[i].hand.velocity[3];
+    commands[i].acc.hand.middle[1] = trajectory.robot_path[i].hand.acceleration[3];
+
     commands[i].pos.hand.right[0] = trajectory.robot_path[i].hand.joints[4];
+    commands[i].vel.hand.right[0] = trajectory.robot_path[i].hand.velocity[4];
+    commands[i].acc.hand.right[0] = trajectory.robot_path[i].hand.acceleration[4];
+
     commands[i].pos.hand.right[1] = trajectory.robot_path[i].hand.joints[5];
+    commands[i].vel.hand.right[1] = trajectory.robot_path[i].hand.velocity[5];
+    commands[i].acc.hand.right[1] = trajectory.robot_path[i].hand.acceleration[5];
+
     commands[i].pos.hand.rotation = trajectory.robot_path[i].hand.joints[6];
+    commands[i].vel.hand.rotation = trajectory.robot_path[i].hand.velocity[6];
+    commands[i].acc.hand.rotation = trajectory.robot_path[i].hand.acceleration[6];
 
     // and finally the time
     if(i==0)
@@ -228,7 +250,7 @@ bool GolemController::executeTrajectoryFromCode(definitions::TrajectoryExecution
   res.result = res.OTHER_ERROR;
 
   // for now, just take the first one, need to be improved in the future
-  definitions::Trajectory trajectory = req.trajectory[0];
+  definitions::Trajectory trajectory = req.trajectory;
 
   //convert the trajectory to the command 
   convertTrajFromDefinitionsMsg(trajectory, uibk_robot_command_);

@@ -92,14 +92,12 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(include
-	/usr/local/include
   ${catkin_INCLUDE_DIRS}
   ${PACMAN}/pacman/include
 	${Boost_INCLUDE_DIR}
 )
 
 link_directories(
-    /usr/local/bin  #if you do sudo make install .so files are there, although they should be installed in lib/
 	${PACMAN}/bin
 )
 

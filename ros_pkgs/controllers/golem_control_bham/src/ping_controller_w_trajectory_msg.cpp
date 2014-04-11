@@ -50,7 +50,7 @@ int main(int argc, char **argv)
 
     // create the service instance
     definitions::TrajectoryExecution trajectory_execution_srv;
-    trajectory_execution_srv.request.trajectory.push_back(trajectory);
+    trajectory_execution_srv.request.trajectory = trajectory;
 
     // call the service with the instance
     ROS_INFO("Calling the service");

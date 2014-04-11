@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 
     // create the service instance
     definitions::TrajectoryExecution trajectory_execution_srv;
-    trajectory_execution_srv.request.trajectory = trajectory_planning_srv.response.trajectory;
+    trajectory_execution_srv.request.trajectory = trajectory_planning_srv.response.trajectory[0];
 
     // call the execution service with the instance
     ROS_INFO("Calling the execution service");
@@ -194,7 +194,7 @@ int main(int argc, char **argv)
     }
 
     // fill with new data
-    trajectory_execution_srv.request.trajectory = trajectory_planning_srv.response.trajectory;
+    trajectory_execution_srv.request.trajectory = trajectory_planning_srv.response.trajectory[0];
 
     // call the execution service
     ROS_INFO("Calling the execution service");
