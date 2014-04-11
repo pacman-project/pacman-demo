@@ -99,56 +99,56 @@ vector<float> GraspPlanner::getTargetAnglesFromGraspType(Grasps grasp_type, floa
   else if (close_ratio < 0.0)
     close_ratio = 0.0;
  
-  // joints angle based on thumb, finger_1, finger_2, knuckle
+  // joints angle based on knuckle, thumb, finger_1, finger_2
   switch(grasp_type) {
     case cylindrical: 
-    hand_pose.push_back((-30+close_ratio*30)* M_PI/180.0);
-    hand_pose.push_back((30+close_ratio*35)* M_PI/180.0);
-    hand_pose.push_back((-30+close_ratio*30)* M_PI/180.0);
-    hand_pose.push_back((30+close_ratio*35)* M_PI/180.0);
-    hand_pose.push_back((-30+close_ratio*30)* M_PI/180.0);
-    hand_pose.push_back((30+close_ratio*35)* M_PI/180.0);
     hand_pose.push_back(0);
-    return hand_pose; 
+    hand_pose.push_back((-30+close_ratio*30)* M_PI/180.0);
+    hand_pose.push_back((30+close_ratio*35)* M_PI/180.0);
+    hand_pose.push_back((-30+close_ratio*30)* M_PI/180.0);
+    hand_pose.push_back((30+close_ratio*35)* M_PI/180.0);
+    hand_pose.push_back((-30+close_ratio*30)* M_PI/180.0);
+    hand_pose.push_back((30+close_ratio*35)* M_PI/180.0);
+    return hand_pose;
     break;
     case parallel: 
-    hand_pose.push_back((-75.+close_ratio*82.)* M_PI/180.0);
-    hand_pose.push_back((75.-close_ratio*82.)* M_PI/180.0);
-    hand_pose.push_back((-75.+close_ratio*82.)* M_PI/180.0);
-    hand_pose.push_back((75.-close_ratio*82.)* M_PI/180.0);
-    hand_pose.push_back((-75.+close_ratio*82.)* M_PI/180.0);
-    hand_pose.push_back((75.-close_ratio*82.)* M_PI/180.0);
     hand_pose.push_back(0);
+    hand_pose.push_back((-75.+close_ratio*82.)* M_PI/180.0);
+    hand_pose.push_back((75.-close_ratio*82.)* M_PI/180.0);
+    hand_pose.push_back((-75.+close_ratio*82.)* M_PI/180.0);
+    hand_pose.push_back((75.-close_ratio*82.)* M_PI/180.0);
+    hand_pose.push_back((-75.+close_ratio*82.)* M_PI/180.0);
+    hand_pose.push_back((75.-close_ratio*82.)* M_PI/180.0);
     return hand_pose;
  
     case centrical: 
-    hand_pose.push_back((-75+close_ratio*82)* M_PI/180.0);
-    hand_pose.push_back((75-close_ratio*82)* M_PI/180.0);
-    hand_pose.push_back((-75+close_ratio*82)* M_PI/180.0);
-    hand_pose.push_back((75-close_ratio*82)* M_PI/180.0);
-    hand_pose.push_back((-75+close_ratio*82)* M_PI/180.0);
-    hand_pose.push_back((75-close_ratio*82)* M_PI/180.0);
     hand_pose.push_back((60)* M_PI/180.0);
+    hand_pose.push_back((-75+close_ratio*82)* M_PI/180.0);
+    hand_pose.push_back((75-close_ratio*82)* M_PI/180.0);
+    hand_pose.push_back((-75+close_ratio*82)* M_PI/180.0);
+    hand_pose.push_back((75-close_ratio*82)* M_PI/180.0);
+    hand_pose.push_back((-75+close_ratio*82)* M_PI/180.0);
+    hand_pose.push_back((75-close_ratio*82)* M_PI/180.0);
     return hand_pose;
  
     case spherical: 
-    hand_pose.push_back((-40+close_ratio*25)* M_PI/180.0);
-    hand_pose.push_back((40+close_ratio*15)* M_PI/180.0);
-    hand_pose.push_back((-40+close_ratio*25)* M_PI/180.0);
-    hand_pose.push_back((40+close_ratio*15)* M_PI/180.0);
-    hand_pose.push_back((-40+close_ratio*25)* M_PI/180.0);
-    hand_pose.push_back((40+close_ratio*15)* M_PI/180.0);
     hand_pose.push_back((60)* M_PI/180.0);
+    hand_pose.push_back((-40+close_ratio*25)* M_PI/180.0);
+    hand_pose.push_back((40+close_ratio*15)* M_PI/180.0);
+    hand_pose.push_back((-40+close_ratio*25)* M_PI/180.0);
+    hand_pose.push_back((40+close_ratio*15)* M_PI/180.0);
+    hand_pose.push_back((-40+close_ratio*25)* M_PI/180.0);
+    hand_pose.push_back((40+close_ratio*15)* M_PI/180.0);
     return hand_pose;
 
     case rim_open: 
+    hand_pose.push_back(0.);
     hand_pose.push_back(-0.8);
     hand_pose.push_back(0.8);
     hand_pose.push_back(-0.8);
     hand_pose.push_back(0.8);
     hand_pose.push_back(-0.8);
     hand_pose.push_back(0.8);
-    hand_pose.push_back(0.0);
     return hand_pose;
 
     case rim_close: 
@@ -156,23 +156,23 @@ vector<float> GraspPlanner::getTargetAnglesFromGraspType(Grasps grasp_type, floa
     return hand_pose;
 
     case rim_pre_grasp:
+    hand_pose.push_back(0.0);
     hand_pose.push_back(-0.2);
     hand_pose.push_back(0.1);
     hand_pose.push_back(-0.25);
     hand_pose.push_back(0.15);
     hand_pose.push_back(-0.25);
     hand_pose.push_back(0.15);
-    hand_pose.push_back(0.0);
     return hand_pose;
 
     default:
-    hand_pose.push_back(-0.8);
-    hand_pose.push_back(0.8);
-    hand_pose.push_back(-0.8);
-    hand_pose.push_back(0.8);
-    hand_pose.push_back(-0.8);
-    hand_pose.push_back(0.8);
     hand_pose.push_back(0.);
+    hand_pose.push_back(-0.8); 
+    hand_pose.push_back(0.8);
+    hand_pose.push_back(-0.8);
+    hand_pose.push_back(0.8);
+    hand_pose.push_back(-0.8);
+    hand_pose.push_back(0.8);
     return hand_pose;
   }
 }
