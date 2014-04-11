@@ -25,7 +25,7 @@ PaCMan demo.
 
 Alternatively, dependencies for PCL can be installed following the instructions given at [Install PCL 1.7 from sources](http://pointclouds.org/downloads/source.html).
 
-3.- External lib from private download link:
+3.- For the Golem Library, you will need the all PhysX libs in the compressed folder which correspond to your architecture. You can download it from here.
 
 * [NVIDIA PhysX 2.8](https://www.dropbox.com/sh/2o9e4sgt6xp0e5c/FhYfhRLmvt) (bham) 
 
@@ -37,7 +37,7 @@ Alternatively, dependencies for PCL can be installed following the instructions 
 * `sudo apt-get install ros-hydro-desktop-full`
 * `sudo apt-get install ros-hydro-moveit-full ros-hydro-octomap ros-hydro-octomap-msgs ros-hydro-openni-launch ros-hydro-openni2-launch` (if you find you need to install additional packages, please complete this list)
 
-5.- PCL library can be installed using our forked repo which is already configured for our settings:
+5.- PCL library should be installed using our forked repo which is already configured for our settings:
 
 * `git clone https://github.com/pacman-project/pcl.git pcl-trunk-Feb-11-2014`
 * `cd pcl-trunk-Feb-11-2014 && mkdir build && cd build`
@@ -55,12 +55,14 @@ Althought not strictly necessary, the suggested folder tree can be created as:
 
 * `mkdir PACMAN_ROOT`
 * `cd PACMAN_ROOT`
-* `git clone https://github.com/pacman-project/pacman.git`
 * `git clone https://github.com/pacman-project/poseEstimation.git`
 * `git clone https://github.com/pacman-project/Golem.git`
 * `git clone https://github.com/pacman-project/Grasp.git`
+* `git clone https://github.com/pacman-project/pacman.git`
 
-And build the partner libraries following their instructions. It is advised to work locally, instead of installing.
+You need to build the external libraries before building the pacman libraries, because you need to point to where the libraries were build. Follow the instructions in each of the repos.
+
+It is advised not to install the libraries in the system when testing.
 
 ### Build
 
@@ -69,14 +71,14 @@ And build the partner libraries following their instructions. It is advised to w
 * `cd build`
 * `cmake-gui ..`
 
-* Set the GRASP_{INCLUDE,BINARIES,LIBRARY}, GOLEM_{INCLUDE,BINARIES,LIBRARY,RESOURCES} and UIBK_POSE_ESTIMATION_EXTERNALLIB paths to point where partner libraries are.
+* Set the GRASP_{INCLUDE,BINARIES,LIBRARY} and GOLEM_{INCLUDE,BINARIES,LIBRARY,RESOURCES}. Set the UIBK_POSE_ESTIMATION_EXTERNALLIB to point to the root folder of the pose estimation library. Note that, the build directory of the library must be named `build` (case sensitive).
 
 * `make`
 
 NOTE: In case of linker problems (Grasp + PCL) the PCL library should be recompiled using revision: 3cd3608931257c238729f595032b2ffebd9b4698; Author: Jochen Sprickerhof <github@jochen.sprickerhof.de>; Date: 2013-10-28 20:13:08; Message: Merge pull request #340 from juagargi/static_lib_fix; Fix bug to allow static library creation
 
 
-NOTE: By default, ROS packages are not built, since it is less likely that people has ROS installed. To enable this, check the `BUILD_ROS_PKGS` option and recall the current support is for ROS/hydro. In such case, you need to follow the next subsection instructions before building. 
+NOTE: By default, ROS packages are not built, since it is less likely that people has ROS installed. To enable this, check the `BUILD_ROS_PKGS` option and recall the current support is for ROS/hydro. In such case, you need to follow the next subsection instructions before building.
 
 ### Configuration of the [ROS](http://wiki.ros.org/groovy/Installation/Ubuntu#groovy.2BAC8-Installation.2BAC8-DebEnvironment.Environment_setup)[/catkin](http://wiki.ros.org/catkin/Tutorials/create_a_workspace) environment:
 
@@ -109,10 +111,7 @@ All required files should be in the /PATH/TO/PACMAN_ROOT/bin folder. If you need
 Before using poseEstimation node in ROS, OpenNI has to be properly installed from ROS repositories. In order to do so the default installation of PCL 1.7 from repositories has to be completely removed from the system. Then run: 
 
 * `sudo apt-get install ros-hydro-openni-launch` this will install, appropriate for ROS, OpenNI drivers and the whole PCL 1.7 from ROS-hydro repositories
-* `${PCL_INCLUDE_DIRS}` in a CMakeFile (`pacman/ros_pkgs/perception/pose_estimation_uibk/CMakeLists.txt`) has to be set manually to: `/usr/include/ni`
-
-Additionally, the note from poseEstimation library has to be taken into account:
-* The var `UIBK_POSE_ESTIMATION_EXTERNALLIB` in the (pacman/CMakeLists.txt) has to point where the poseEstimation library was built. The build folder has to be called `build` in there. The paths in `src/pose_estimation_uibk.cpp` for configuration and database location might need to be changed.
+* You need to set the var `POSE_ESTIMATION_EXT` in the `ros_pkgs/perception/pose_estimation_uibk/CMakeLists.txt` to point where the poseEstimation library root folder, and check that the build folder is called `build` in there. And you might need to change the paths in `src/pose_estimation_uibk.cpp` for configuration and database location (ToDo: improve this to avoid compiling everytime, e.g. passing the path as a parameter in the launch file).
 
 
 
