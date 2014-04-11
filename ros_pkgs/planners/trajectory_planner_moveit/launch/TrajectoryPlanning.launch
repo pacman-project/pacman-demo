@@ -1,0 +1,4 @@
+<launch>
+	<!-- load the node that implements the /trajectory_planning_srv -->
+	<node name="fake_planner" pkg="trajectory_planner_moveit" type="fake_trajectory_planner_node" respawn="true" output="screen"/>
+</launch>
