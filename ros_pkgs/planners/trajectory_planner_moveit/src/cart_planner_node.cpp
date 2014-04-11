@@ -80,11 +80,6 @@ class CartPlanner
 		nh_.param<double>("tolerance_in_position", tolerance_in_position_, 0.1);
 		nh_.param<double>("tolerance_in_orientation", tolerance_in_orientation_, 0.1);
 
-        // define the names passed in the urdf files corresponding to the current move group for planning
-        nh_.param<std::string>("arm_name", group_name_, "right_arm");
-        nh_.param<std::string>("base_frame_for_goal", base_frame_for_goal_, "world_link");
-		nh_.param<std::string>("plan_for_frame", plan_for_frame_, "right_sdh_palm_link");
-
 		srv_trajectory_planning_ = nh_.advertiseService(nh_.resolveName("/trajectory_planning_srv"),&CartPlanner::planTrajectoryFromCode, this);
 		//srv_test_trajectory_planning_ = nh_.advertiseService(nh_.resolveName("/test_trajectory_planning_srv"),&CartPlanner::planTrajectoryFromCode, this);
 
@@ -141,9 +136,10 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 		motion_plans_.clear();
 		std::vector<definitions::Trajectory> &trajectories = response.trajectory;
 
-		// note that we plan for the first element [0] of the grasp trajectory of the i-th object grasp
+		// note that we plan for wrist frame
 		geometry_msgs::PoseStamped &goal = request.goal_state.hand.wrist_pose;
-		goal.header.frame_id = base_frame_for_goal_.c_str();
+		plan_for_frame_ = request.arm + "_sdh_palm_link";
+		group_name_ = request.arm + "_arm";
 
 		if( !planTrajectory(trajectories, goal) ) 
 		{
@@ -176,7 +172,6 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajectories, geometry_msgs::PoseStamped &goal) 
 {
 	// first state the planning constraint
-	goal.header.frame_id = base_frame_for_goal_.c_str(); // just to ensure we plan with respect to the base_frame
 	moveit_msgs::Constraints pose_goal = kinematic_constraints::constructGoalConstraints(plan_for_frame_.c_str(), goal, tolerance_in_position_, tolerance_in_orientation_);
 
 	ROS_INFO("Planning for wrist (px, py, pz, qx, qy, qz, qw):\t%f\t%f\t%f\t%f\t%f\t%f\t%f", goal.pose.position.x, goal.pose.position.y, goal.pose.position.z, goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z, goal.pose.orientation.w);
@@ -198,7 +193,7 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 	boost::shared_ptr<const sensor_msgs::JointState> current_state_ptr = ros::topic::waitForMessage<sensor_msgs::JointState>(topic, ros::Duration(3.0));
 	if (!current_state_ptr)
 	{
-		ROS_ERROR("No real start state available, since no joint state recevied in topic: %s", topic.c_str());
+		ROS_WARN("No real start state available, since no joint state recevied in topic: %s", topic.c_str());
 		ROS_WARN("Did you forget to start a controller?");
 		ROS_WARN("Planning will be done from home position, however this trajectory might not be good for execution!");
 	}

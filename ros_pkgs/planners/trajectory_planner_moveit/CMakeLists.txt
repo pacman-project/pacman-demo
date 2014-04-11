@@ -99,6 +99,10 @@ include_directories(include
 # )
 
 ## Declare a cpp executable
+add_executable(fake_trajectory_planner_node 
+	src/fake_trajectory_planner.cpp
+	)
+
 add_executable(cart_planner_node 
 	src/cart_planner_node.cpp
 	)
@@ -113,6 +117,9 @@ add_executable(ping_cart_planner_and_execution
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
+add_dependencies(fake_trajectory_planner_node 
+	definitions_generate_messages_cpp
+	)
 add_dependencies(cart_planner_node 
 	definitions_generate_messages_cpp
 	)
@@ -124,10 +131,12 @@ add_dependencies(ping_cart_planner_and_execution
 	)
 
 ## Specify libraries to link a library or executable target against
+target_link_libraries(fake_trajectory_planner_node 
+	${catkin_LIBRARIES}
+	)
 target_link_libraries(cart_planner_node
 	${catkin_LIBRARIES}
 	)
-
 target_link_libraries(ping_cart_planner
 	${catkin_LIBRARIES}
 	)

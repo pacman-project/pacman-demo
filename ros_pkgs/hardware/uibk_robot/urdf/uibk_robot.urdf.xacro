@@ -12,7 +12,7 @@
   
   <xacro:model_table name="table" 
          parent="world"
-         length="2.22"
+         length="2.0"
          width="1.2"
          height="0.8"
          plate_thickness="0.11">

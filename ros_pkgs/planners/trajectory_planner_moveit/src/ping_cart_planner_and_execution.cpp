@@ -24,13 +24,14 @@ int main(int argc, char **argv)
       return (-1);     
     }
 
-    // create a test trajectory
+    // create a test goal state
     definitions::UIBKRobot goal_state;
     ros::Duration five_seconds(5.0);
 
     // create the service instance
     definitions::TrajectoryPlanning trajectory_planning_srv;
     trajectory_planning_srv.request.type = definitions::TrajectoryPlanning::Request::MOVE_TO_CART_GOAL;
+    trajectory_planning_srv.request.arm = "right";
 
     // first, one simple motion: try to move to the safe position first without checking
     goal_state.hand.wrist_pose.pose.position.x = 0.1624;
@@ -40,11 +41,12 @@ int main(int argc, char **argv)
     goal_state.hand.wrist_pose.pose.orientation.y = 0.86333;
     goal_state.hand.wrist_pose.pose.orientation.z = -0.139283;
     goal_state.hand.wrist_pose.pose.orientation.w = 0.267076;
+    goal_state.hand.wrist_pose.header.frame_id = "world_link";
 
     trajectory_planning_srv.request.goal_state = goal_state;
 
     // call the planning service with the instance
-    ROS_INFO("Calling the planning service");
+    ROS_INFO("Calling the planning service for the right arm");
     if ( !ros::service::call( planning_service_name, trajectory_planning_srv) )
     { 
         ROS_ERROR("Call to the service %s failed.", planning_service_name.c_str());  
