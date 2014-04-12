@@ -10,9 +10,10 @@
 #include <sensor_msgs/JointState.h>
 
 // local headers
-#include <definitions/TrajectoryExecution.h>
+#include "definitions/TrajectoryExecution.h"
 #include <pacman/Bham/Control/Control.h>
 #include <pacman/PaCMan/Defs.h>
+#include <pacman/PaCMan/ROS.h>
 
 using namespace pacman;
 
@@ -41,12 +42,9 @@ namespace golem_control_bham{
       // configuration file for golem
       std::string config_file_;
       std::string arm_name_;
-      std::string hand_name_;
 
       // ros variables where conversions are saved to
       sensor_msgs::JointState joint_states_;
-      //std::string action_name_;
-      //actionlib::SimpleActionServer<control_msgs::FollowJointTrajectoryAction> as_;
 
       // service servers offered by this node
       ros::ServiceServer srv_trajectory_execution_;
@@ -54,11 +52,6 @@ namespace golem_control_bham{
 
       // publishers of this node
       ros::Publisher pub_robot_state_;
-
-      // // conversion functions, they are hard-code because golem and ros need to agree here
-      void convertTrajFromMoveItMsg(const moveit_msgs::RobotTrajectory &trajectory, RobotUIBK::Command::Seq &commands);
-      void convertTrajFromDefinitionsMsg(const definitions::Trajectory &trajectory, RobotUIBK::Command::Seq &command);
-      void convertStateToJointStateMsg(const RobotUIBK::State &state, sensor_msgs::JointState &joint_states);
 
     public:
     
@@ -69,10 +62,6 @@ namespace golem_control_bham{
       //bool executeTrajectoryFromMoveItGUI(moveit_msgs::RobotTrajectory::Request &req, moveit_msgs::RobotTrajectory::Response &res);
       bool executeTrajectoryFromCode(definitions::TrajectoryExecution::Request &req, definitions::TrajectoryExecution::Response &res);
       bool executeTrajectory(const RobotUIBK::Command::Seq &command);
-
-
-      // helper function to get the time stamp of the controllers
-      // void getTimeStamp(time);
 
       // service function to test the controller
       bool testController(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
@@ -85,8 +74,7 @@ namespace golem_control_bham{
         priv_nh_.param<std::string>("config_file", config_file_, "");
 
         // define the names passed in the urdf files corresponding to the current move group
-        priv_nh_.param<std::string>("arm_name", arm_name_, "right");
-        priv_nh_.param<std::string>("hand_name", hand_name_, "right_sdh");
+        priv_nh_.param<std::string>("arm_name", arm_name_, "left");
 
         // create the controller object using the config file
         controller_ = BhamControl::create(config_file_);
@@ -98,122 +86,14 @@ namespace golem_control_bham{
         // advertise the node topics
         pub_robot_state_ = nh_.advertise<sensor_msgs::JointState>(nh_.resolveName("/golem/joint_states"), 10);
 
-        // initialize the joint state topic
-        joint_states_.name.resize(RobotUIBK::Config::JOINTS);
-        joint_states_.position.resize(RobotUIBK::Config::JOINTS);
-        joint_states_.velocity.resize(RobotUIBK::Config::JOINTS);
-        joint_states_.effort.resize(RobotUIBK::Config::JOINTS);
-        joint_states_.name[0] = arm_name_ + "_arm_0_joint";
-        joint_states_.name[1] = arm_name_ + "_arm_1_joint";
-        joint_states_.name[2] = arm_name_ + "_arm_2_joint";
-        joint_states_.name[3] = arm_name_ + "_arm_3_joint";
-        joint_states_.name[4] = arm_name_ + "_arm_4_joint";
-        joint_states_.name[5] = arm_name_ + "_arm_5_joint";
-        joint_states_.name[6] = arm_name_ + "_arm_6_joint";
-        joint_states_.name[7] = hand_name_ + "_knuckle_joint";
-        joint_states_.name[8] = hand_name_ + "_finger_12_joint";
-        joint_states_.name[9] = hand_name_ + "_finger_13_joint";
-        joint_states_.name[10] = hand_name_ + "_finger_22_joint";
-        joint_states_.name[11] = hand_name_ + "_finger_23_joint";
-        joint_states_.name[12] = hand_name_ + "_thumb_2_joint";
-        joint_states_.name[13] = hand_name_ + "_thumb_3_joint";
-
         // initialze the command 
         uibk_robot_command_.resize(1);
-
 
       }
 
       //! Empty stub
       ~GolemController() {}
   };
-  
-void GolemController::convertTrajFromMoveItMsg(const moveit_msgs::RobotTrajectory &trajectory, RobotUIBK::Command::Seq &commands)
-{
-
-  return;
-}
-
-void GolemController::convertTrajFromDefinitionsMsg(const definitions::Trajectory &trajectory, RobotUIBK::Command::Seq &commands)
-{
-  ROS_INFO("trajectory.robot_path.size() %li", trajectory.robot_path.size());
-  int NWayPoints = trajectory.robot_path.size();
-  commands.resize(NWayPoints);
-
-  for (int i = 0; i < NWayPoints; i++)
-  {
-    // first the arm
-    for (int j = 0; j < KukaLWR::Config::JOINTS; j++)
-    {
-      commands[i].arm.pos.c[j] = trajectory.robot_path[i].arm.joints[j];
-      commands[i].arm.vel.c[j] = trajectory.robot_path[i].arm.velocity[j];
-      commands[i].arm.acc.c[j] = trajectory.robot_path[i].arm.acceleration[j];
-    }
-
-    // then the hand
-    commands[i].hand.pos.left[0] = trajectory.robot_path[i].hand.joints[0];
-    commands[i].hand.vel.left[0] = trajectory.robot_path[i].hand.velocity[0];
-    commands[i].hand.acc.left[0] = trajectory.robot_path[i].hand.acceleration[0];
-
-    commands[i].hand.pos.left[1] = trajectory.robot_path[i].hand.joints[1];
-    commands[i].hand.vel.left[1] = trajectory.robot_path[i].hand.velocity[1];
-    commands[i].hand.acc.left[1] = trajectory.robot_path[i].hand.acceleration[1];
-
-    commands[i].hand.pos.middle[0] = trajectory.robot_path[i].hand.joints[2];
-    commands[i].hand.vel.middle[0] = trajectory.robot_path[i].hand.velocity[2];
-    commands[i].hand.acc.middle[0] = trajectory.robot_path[i].hand.acceleration[2];
-
-    commands[i].hand.pos.middle[1] = trajectory.robot_path[i].hand.joints[3];
-    commands[i].hand.vel.middle[1] = trajectory.robot_path[i].hand.velocity[3];
-    commands[i].hand.acc.middle[1] = trajectory.robot_path[i].hand.acceleration[3];
-
-    commands[i].hand.pos.right[0] = trajectory.robot_path[i].hand.joints[4];
-    commands[i].hand.vel.right[0] = trajectory.robot_path[i].hand.velocity[4];
-    commands[i].hand.acc.right[0] = trajectory.robot_path[i].hand.acceleration[4];
-
-    commands[i].hand.pos.right[1] = trajectory.robot_path[i].hand.joints[5];
-    commands[i].hand.vel.right[1] = trajectory.robot_path[i].hand.velocity[5];
-    commands[i].hand.acc.right[1] = trajectory.robot_path[i].hand.acceleration[5];
-
-    commands[i].hand.pos.rotation = trajectory.robot_path[i].hand.joints[6];
-    commands[i].hand.vel.rotation = trajectory.robot_path[i].hand.velocity[6];
-    commands[i].hand.acc.rotation = trajectory.robot_path[i].hand.acceleration[6];
-
-    // and finally the time
-    if(i==0)
-      commands[i].t = controller_->time();
-    else
-      commands[i].t = commands[i-1].t + pacman::float_t(trajectory.time_from_previous[i].toSec());
-  }
-
-  return;
-}
-
-void GolemController::convertStateToJointStateMsg(const RobotUIBK::State &state, sensor_msgs::JointState &joint_states) 
-{
-
-  joint_states.header.stamp = ros::Time::now();
-
-  // the joint mapping needs to be hardcoded to match Golem.xml and Ros.urdf structures
-  // note that, the names are set in the class constructor for the order convention
-  // and let the party begin... first the arm:
-  for (int j = 0; j < KukaLWR::Config::JOINTS; j++)
-  {
-    joint_states.position[j] = state.arm.pos.c[j];
-  }
-
-  // and continue with the hand:
-  joint_states.position[7] = state.hand.pos.rotation;
-  joint_states.position[8] = state.hand.pos.left[0];
-  joint_states.position[9] = state.hand.pos.left[1];
-  joint_states.position[10] = state.hand.pos.right[0];
-  joint_states.position[11] = state.hand.pos.right[1];
-  joint_states.position[12] = state.hand.pos.middle[0];
-  joint_states.position[13] = state.hand.pos.middle[1];
-
-  return;
-}
-
 
 void GolemController::publishRobotState()
 {
@@ -228,22 +108,13 @@ void GolemController::publishRobotState()
   }
 
   // convert from pacman to ros joint states 
-  convertStateToJointStateMsg(uibk_robot_state_, joint_states_);
+  pacman::mapStates(uibk_robot_state_, arm_name_, joint_states_, ros::Time::now());
 
   // publish the joint states, this functionality could be ported to another node to increase speed and versatility.
   pub_robot_state_.publish(joint_states_);
 
   return;
 }
-
-// bool GolemController::executeTrajectoryFromMoveItGUI(moveit_msgs::ExecuteKnownTrajectory::Request &req, moveit_msgs::ExecuteKnownTrajectory::Response &res)
-// {
-//   uibk_robot_command_.clear();
-//   convertTrajFromMoveIt(trajectory, uibk_robot_command_);
-//   executeTrajectory(uibk_robot_command_);
-
-//   return true;
-// }
 
 bool GolemController::executeTrajectoryFromCode(definitions::TrajectoryExecution::Request &req, definitions::TrajectoryExecution::Response &res)
 {
@@ -254,12 +125,18 @@ bool GolemController::executeTrajectoryFromCode(definitions::TrajectoryExecution
   definitions::Trajectory trajectory = req.trajectory;
 
   //convert the trajectory to the command ToDo: double check that the trajectory has velocity and acceleration
-  convertTrajFromDefinitionsMsg(trajectory, uibk_robot_command_);
+  pacman::convert(trajectory, uibk_robot_command_, controller_->time());
 
   // excexute the trajectory
   if( executeTrajectory(uibk_robot_command_) )
   {
+    ROS_INFO("Exectution finished cleanly...");
     res.result = res.SUCCESS;
+  }
+  else
+  {
+    ROS_ERROR("Trajectory could not be executed...");
+    res.result = res.OTHER_ERROR;
   }
 
   return true;
@@ -364,7 +241,6 @@ bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Em
 
   return true;
 }
-
 
 
 } // end namespace golem_control_bham

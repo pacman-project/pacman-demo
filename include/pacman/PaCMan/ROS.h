@@ -1,6 +1,6 @@
 /** @file ROS.h
  *
- * PaCMan ROS definitions
+ * PaCMan ROS conversions
  *
  */
 
@@ -8,168 +8,120 @@
 #ifndef _PACMAN_PACMAN_ROS_H_ // if #pragma once is not supported
 #define _PACMAN_PACMAN_ROS_H_
 
+// our pacman definitions
 #include <pacman/PaCMan/Defs.h>
-#include <ros/ros.h>
-#include <ros/message_operations.h>
-#include <sensor_msgs/PointField.h>
-#include <sensor_msgs/PointCloud2.h>
-#include "definitions/GraspPlanning.h"
 
-//In ROS messages the size of the data structure could be 16-byte (for point data alone) or 32-byte (for point data + any other information);
+// all generated headers from services we have in pacman ros_pkgs
+#include <ros/ros.h>
+#include "definitions/GraspPlanning.h"
+#include "definitions/KinectGrabberService.h"
+#include "definitions/ObjectCloudReader.h"
+#include "definitions/PoseEstimation.h"
+#include "definitions/TrajectoryExecution.h"
+#include "definitions/TrajectoryPlanning.h"
 
 /** PaCMan name space */
 namespace pacman {
 
+	/** from ros trajectory to pacman interface */
+	void convert(const definitions::Trajectory &trajectory, RobotUIBK::Command::Seq &commands, pacman::float_t start_time)
+	{
+		int NWayPoints = trajectory.robot_path.size();
+		commands.resize(NWayPoints);
 
+		for (int i = 0; i < NWayPoints; i++)
+		{
+			// first the arm
+			for (int j = 0; j < KukaLWR::Config::JOINTS; j++)
+			{
+				commands[i].arm.pos.c[j] = trajectory.robot_path[i].arm.joints[j];
+				commands[i].arm.vel.c[j] = trajectory.robot_path[i].arm.velocity[j];
+				commands[i].arm.acc.c[j] = trajectory.robot_path[i].arm.acceleration[j];
+			}
 
+			// then the hand
+			commands[i].hand.pos.left[0] = trajectory.robot_path[i].hand.joints[0];
+			commands[i].hand.vel.left[0] = trajectory.robot_path[i].hand.velocity[0];
+			commands[i].hand.acc.left[0] = trajectory.robot_path[i].hand.acceleration[0];
 
- 	/** RGBA colour space */
-	struct RGBAROS {
-		/** Colour elements. */
-		union {
-			struct {
-				std::uint8_t r, g, b, a;
-			};
-			std::uint32_t uint32;
-			std::uint8_t uint8[4];
-		};
-	};
+			commands[i].hand.pos.left[1] = trajectory.robot_path[i].hand.joints[1];
+			commands[i].hand.vel.left[1] = trajectory.robot_path[i].hand.velocity[1];
+			commands[i].hand.acc.left[1] = trajectory.robot_path[i].hand.acceleration[1];
 
-    struct position{
-        float x, y, z;
-    };
+			commands[i].hand.pos.middle[0] = trajectory.robot_path[i].hand.joints[2];
+			commands[i].hand.vel.middle[0] = trajectory.robot_path[i].hand.velocity[2];
+			commands[i].hand.acc.middle[0] = trajectory.robot_path[i].hand.acceleration[2];
 
-    struct normals{
-        float nx, ny, nz;
-    };
+			commands[i].hand.pos.middle[1] = trajectory.robot_path[i].hand.joints[3];
+			commands[i].hand.vel.middle[1] = trajectory.robot_path[i].hand.velocity[3];
+			commands[i].hand.acc.middle[1] = trajectory.robot_path[i].hand.acceleration[3];
 
- 	/** Point */
-	struct Point3DROS {
-		/** . */
-		union {
-			struct {
-				position pxyz;
-				float c;  //dummy data
-				RGBAROS rgba;
-				normals nxyz;
-			};
-			std::uint8_t uint8[32];
-		};
-	};
+			commands[i].hand.pos.right[0] = trajectory.robot_path[i].hand.joints[4];
+			commands[i].hand.vel.right[0] = trajectory.robot_path[i].hand.velocity[4];
+			commands[i].hand.acc.right[0] = trajectory.robot_path[i].hand.acceleration[4];
 
+			commands[i].hand.pos.right[1] = trajectory.robot_path[i].hand.joints[5];
+			commands[i].hand.vel.right[1] = trajectory.robot_path[i].hand.velocity[5];
+			commands[i].hand.acc.right[1] = trajectory.robot_path[i].hand.acceleration[5];
 
+			commands[i].hand.pos.rotation = trajectory.robot_path[i].hand.joints[6];
+			commands[i].hand.vel.rotation = trajectory.robot_path[i].hand.velocity[6];
+			commands[i].hand.acc.rotation = trajectory.robot_path[i].hand.acceleration[6];
 
-    template <typename _ROSPointXYZ> void convertROSPointXYZ(const _ROSPointXYZ& src, Point3D& dst) {
-		dst.position.x = (float_t)src.pxyz.x;
-		dst.position.y = (float_t)src.pxyz.y;
-		dst.position.z = (float_t)src.pxyz.z;
-	}
-
-    template <typename _ROSPointNormal> void convertROSPointNormal(const _ROSPointNormal& src, Point3D& dst) {
-		dst.normal.x = (float_t)src.nxyz.nx;
-		dst.normal.y = (float_t)src.nxyz.ny;
-		dst.normal.z = (float_t)src.nxyz.nz;
-	}
-
-    template <typename _ROSPointRGBA> void convertROSPointRGBA(const _ROSPointRGBA& src, Point3D& dst) {
-		dst.colour.r = (std::uint8_t)src.rgba.r;
-		dst.colour.g = (std::uint8_t)src.rgba.g;
-		dst.colour.b = (std::uint8_t)src.rgba.b;
-	}
-
-
-    inline void convert(const Point3DROS.pxyz& src, Point3D& dst) {
-		convertROSPointXYZ(src, dst);
-	}
-
-    inline void convert(const Point3DROS.nxyz& src, Point3D& dst) {
-		convertROSPointXYZ(src, dst);
-		convertROSPointNormal(src, dst);
-	}
-
-	inline void convert(const Point3DROS.rgba& src, Point3D& dst) {
-		convertROSPointXYZ(src, dst);
-		convertROSPointNormal(src, dst);
-		convertROSPointRGBA(src, dst);
-	}
-
-    void convert(const sensor_msgs::PointCloud2& src, Point3D::Seq& dst) {
-		dst.resize(0);
-		dst.reserve(src->width*src->height);
-		for (int i=0;i < src->width*src->height;i++) {
-		    Point3DROS pr;
-			Point3D p;
-			memcpy(pr.uint8,src->data[i*sizeof(pr.uint8)],sizeof(pr.uint8))
-			convert(pr, p);
-			dst.push_back(p);
+			// and finally the time
+			if(i==0)
+			commands[i].t = start_time + pacman::float_t(0.1);
+			else
+			commands[i].t = commands[i-1].t + pacman::float_t(trajectory.time_from_previous[i].toSec());
 		}
+		return;
 	}
 
+	// this mapping uses names defined in the urdf of the UIBK robot, so be careful
+	void mapStates(const RobotUIBK::State &state, std::string name, sensor_msgs::JointState &joint_states, ros::Time stamp) 
+	{
 
+		// initialize the joint state topic
+		joint_states.name.resize(RobotUIBK::Config::JOINTS);
+		joint_states.position.resize(RobotUIBK::Config::JOINTS);
+		joint_states.velocity.resize(RobotUIBK::Config::JOINTS);
+		joint_states.effort.resize(RobotUIBK::Config::JOINTS);
+		joint_states.name[0] = name + "_arm_0_joint";
+		joint_states.name[1] = name + "_arm_1_joint";
+		joint_states.name[2] = name + "_arm_2_joint";
+		joint_states.name[3] = name + "_arm_3_joint";
+		joint_states.name[4] = name + "_arm_4_joint";
+		joint_states.name[5] = name + "_arm_5_joint";
+		joint_states.name[6] = name + "_arm_6_joint";
+		joint_states.name[7] = name + "_sdh_knuckle_joint";
+		joint_states.name[8] = name + "_sdh_finger_12_joint";
+		joint_states.name[9] = name + "_sdh_finger_13_joint";
+		joint_states.name[10] = name + "_sdh_finger_22_joint";
+		joint_states.name[11] = name + "_sdh_finger_23_joint";
+		joint_states.name[12] = name + "_sdh_thumb_2_joint";
+		joint_states.name[13] = name + "_sdh_thumb_3_joint";
 
+		joint_states.header.stamp = stamp;
 
+		// the joint mapping needs to be hardcoded to match Golem.xml and Ros.urdf structures
+		// note that, the names are set in the class constructor for the order convention
+		// and let the party begin... first the arm:
+		for (int j = 0; j < KukaLWR::Config::JOINTS; j++)
+		{
+			joint_states.position[j] = state.arm.pos.c[j];
+		}
 
+			// and continue with the hand:
+			joint_states.position[7] = state.hand.pos.rotation;
+			joint_states.position[8] = state.hand.pos.left[0];
+			joint_states.position[9] = state.hand.pos.left[1];
+			joint_states.position[10] = state.hand.pos.right[0];
+			joint_states.position[11] = state.hand.pos.right[1];
+			joint_states.position[12] = state.hand.pos.middle[0];
+			joint_states.position[13] = state.hand.pos.middle[1];
 
-
-
-	/** ros::PointCloud2 to Point3D */
-	inline void convert(const sensor_msgs::PointCloud2& src, const Point3D::Seq& dst){
-        dst.resize(src->width*src->height);
-        if(src->fields[0].name !="x"){
-            cout << "Wrong field in PointCloud2 structure"
-            return 0;
-        }
-        if(src->fields[4].name !="nx"){
-            cout << "Wrong field in PointCloud2 structure"
-            return 0;
-        }
-
-        uint8_t tab[4];
-        for(int i=0;i<src->height;i++){
-            for(int j=0;j<src->width;j++){
-                // filling x field of the pacman::Point3D from sensor_msgs::PointCloud2
-
-                for(int k=0;k<4;k++) tab[k]=src->data[k+src->fields[0].offset+j*src->point_step+i*src->row_step];
-                dst[src->width*i+j].position.x = *(const float*)tab;
-
-                // filling y of the pacman::Point3D from sensor_msgs::PointCloud2
-                for(int k=0;k<4;k++) tab[k]=src->data[k+src->fields[1].offset+j*src->point_step+i*src->row_step];
-                dst[src->width*i+j].position.y = *(const float*)tab;
-
-                // filling z of the pacman::Point3D from sensor_msgs::PointCloud2
-                for(int k=0;k<4;k++) tab[k]=src->data[k+src->fields[2].offset+j*src->point_step+i*src->row_step];
-                dst[src->width*i+j].position.z = *(const float*)tab;
-
-                // filling rgb of the pacman::Point3D from sensor_msgs::PointCloud2
-                for(int k=0;k<4;k++) dst[src->width*i+j].colour.uint8[k]=src->data[k+src->fields[3].offset+j*src->point_step+i*src->row_step];
-
-                // filling nx field of the pacman::Point3D from sensor_msgs::PointCloud2
-                for(int k=0;k<4;k++) tab[k]=src->data[k+src->fields[4].offset+j*src->point_step+i*src->row_step];
-                dst[src->width*i+j].normal.x = *(const float*)tab;
-
-                // filling ny of the pacman::Point3D from sensor_msgs::PointCloud2
-                for(int k=0;k<4;k++) tab[k]=src->data[k+src->fields[5].offset+j*src->point_step+i*src->row_step];
-                dst[src->width*i+j].normal.y = *(const float*)tab;
-
-                // filling nz of the pacman::Point3D from sensor_msgs::PointCloud2
-                for(int k=0;k<4;k++) tab[k]=src->data[k+src->fields[6].offset+j*src->point_step+i*src->row_step];
-                dst[src->width*i+j].normal.z = *(const float*)tab;
-            }
-        }
-
-	}
-	inline void convert(const ShunkDexHand::Config& src, const definitions::GraspPlanning::GraspList::joints& dst){
-            dst[0] = src->middle[0];
-            dst[1] = src->middle[1];
-            dst[2] = src->left[0];
-            dst[3] = src->left[1];
-            dst[4] = src->right[0];
-            dst[5] = src->right[1];
-            dst[6] = src->rotation;
-	}
-//	inline void convert(const ShunkDexHand::Pose& src, const ros::pose& dst){
-//
-//	}
+			return;
+		}
 
 };
 

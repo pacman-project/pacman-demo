@@ -3,7 +3,7 @@
     <!--node pkg="tf" type="static_transform_publisher" name="world_2_lwr_arm_1_link" args="0 0 0 0 1.57 0 /world_link /lwr_arm_1_link 100"/--> 
 	
 	
-    <arg name="gui" default="True" />
+    <arg name="gui" default="False" />
     <param name="use_gui" value="$(arg gui)"/>
 
     <!-- This is required to test any posture of the robot by writing on the joint states /-->
