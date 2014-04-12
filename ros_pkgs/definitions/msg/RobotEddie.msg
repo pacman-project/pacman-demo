@@ -1,0 +1,5 @@
+## THIS FILE DEFINES THE UIBK ROBOT INTERFACE
+
+KukaLWR[] arm
+SDHand[] hand
+# KITHead head

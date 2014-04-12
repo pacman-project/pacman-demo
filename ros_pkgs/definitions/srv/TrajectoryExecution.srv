@@ -2,6 +2,11 @@
 
 Trajectory trajectory
 
+# select which robot configuration you would like to use to execute the trajectory
+int32 UIBKRobot = 0
+int32 RobotEddie = 1
+int32 robot
+
 ---
 
 # whether the service succeded or not

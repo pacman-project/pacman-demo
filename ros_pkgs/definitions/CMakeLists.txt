@@ -32,6 +32,7 @@ add_message_files(
   TrajectoryList.msg
   UIBKRobot.msg
   KinectGrabber.msg
+  RobotEddie.msg
 )
 
 ## Generate services in the 'srv' folder

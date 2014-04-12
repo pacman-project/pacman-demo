@@ -119,25 +119,30 @@ void GolemController::publishRobotState()
 bool GolemController::executeTrajectoryFromCode(definitions::TrajectoryExecution::Request &req, definitions::TrajectoryExecution::Response &res)
 {
   ROS_INFO("Exectution service requested...");
-  uibk_robot_command_.clear();
-  res.result = res.OTHER_ERROR;
 
   definitions::Trajectory trajectory = req.trajectory;
 
-  //convert the trajectory to the command ToDo: double check that the trajectory has velocity and acceleration
-  pacman::convert(trajectory, uibk_robot_command_, controller_->time());
+  // if (req.robot == req.UIBKRobot)
+  // {
+    //convert the trajectory to the command ToDo: double check that the trajectory has velocity and acceleration
+    pacman::convert(trajectory, uibk_robot_command_, controller_->time());
 
-  // excexute the trajectory
-  if( executeTrajectory(uibk_robot_command_) )
-  {
-    ROS_INFO("Exectution finished cleanly...");
-    res.result = res.SUCCESS;
-  }
-  else
-  {
-    ROS_ERROR("Trajectory could not be executed...");
-    res.result = res.OTHER_ERROR;
-  }
+    // excexute the trajectory
+    if( executeTrajectory(uibk_robot_command_) )
+    {
+      ROS_INFO("Exectution finished cleanly...");
+      res.result = res.SUCCESS;
+    }
+    else
+    {
+      ROS_ERROR("Trajectory could not be executed...");
+      res.result = res.OTHER_ERROR;
+    }
+  // }
+  // if (req.robot == req.RobotEddie)
+  // {
+
+  // }
 
   return true;
 }
