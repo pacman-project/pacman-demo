@@ -1,6 +1,6 @@
 <launch>
 	<!-- THE "cwd" ATRIBUTE IS NECESSARY TO MAKE THE NODE PATH AS THE PATH FOR THE EXECUTION, SINCE THE XML FILES ARE COPIED THERE BY THE MAIN CMAKELISTS.TXT, IF YOU NEED TO RECONFIGURE THE CONFIG FILE, DO IT FROM THE PACMAN/BIN FOLDER AND MAKE AGAIN TO MAKE IT AVAILABLE TO THE NODE/-->		
 	<node pkg="golem_control_bham" name="golem_controller" type="golem_control_bham_node" respawn="true" output="screen" cwd="node" >
-      <param name="config_file" value="ControlRobotUIBKSim.xml" />
+      <param name="config_file" value="ControlRobotUIBK.xml" />
   	</node>
 </launch>
