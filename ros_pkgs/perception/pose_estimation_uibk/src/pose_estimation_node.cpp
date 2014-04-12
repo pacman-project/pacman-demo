@@ -172,6 +172,7 @@ bool PoseEstimator::estimatePoses(definitions::PoseEstimation::Request& request,
         detected_objects[i] = object;
     }
     response.detected_objects = detected_objects;
+    response.result = response.SUCCESS;
     
     ROS_INFO("Pose estimation service finisihed, and ready for another service requests...");
     return true;
