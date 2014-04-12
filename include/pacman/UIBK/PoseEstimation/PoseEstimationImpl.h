@@ -11,8 +11,8 @@
 #include <pacman/UIBK/PoseEstimation/PoseEstimation.h>
 #include <pacman/PaCMan/PCL.h>
 
-#include "/home/pacman/CODE/pacman/poseEstimation/include/I_SegmentedObjects.h"
-#include "/home/pacman/CODE/pacman/poseEstimation/include/ParametersPoseEstimation.h"
+#include "I_SegmentedObjects.h"
+#include "ParametersPoseEstimation.h"
 /** PaCMan name space */
 namespace pacman {
         /** Transformation from UIBK pose to pacman pose */
