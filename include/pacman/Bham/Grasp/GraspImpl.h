@@ -25,7 +25,7 @@ namespace pacman {
 		/**	Adds a single grasp example */
 		virtual void add(const std::string& id, const Point3D::Seq& points, const RobotUIBK::Config::Seq& trajectory);
 
-		/** Removes a given grasp example */
+		/** Removes the given grasp example */
 		virtual void remove(const std::string& id);
 
 		/** Lists all grasp examples */
@@ -46,9 +46,9 @@ namespace pacman {
 		/** Waypoint conversion */
 		void convert(const SchunkDexHand::Config& src, ::grasp::Manipulator::Config& dst) const;
 		/** Trajectory conversion */
-		void convert(const ::grasp::RobotState::List& src, RobotUIBK::Config::Seq& dst) const;
+		void convert(const ::grasp::Robot::State::List& src, RobotUIBK::Config::Seq& dst) const;
 		/** Trajectory conversion */
-		void convert(const RobotUIBK::Config::Seq& src, ::grasp::RobotState::List& dst) const;
+		void convert(const RobotUIBK::Config::Seq& src, ::grasp::Robot::State::List& dst) const;
 
 	protected:
 		BhamGraspImpl(golem::Scene &scene);
