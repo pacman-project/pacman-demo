@@ -40,19 +40,19 @@ namespace pacman {
 		 *	@param[in]	t				query time [sec]
 		 *	@param[out]	state			robot state
 		*/
-		virtual void lookupState(float_t t, RobotState& state) const = 0;
+		virtual void lookupState(float_t t, Robot::State& state) const = 0;
 
 		/**	Command sent to a robot at time t
 		 *	@param[in]	t				query time [sec]
 		 *	@param[out]	command			robot command
 		*/
-		virtual void lookupCommand(float_t t, RobotCommand& command) const = 0;
+		virtual void lookupCommand(float_t t, Robot::Command& command) const = 0;
 
 		/**	Robot control
 		 *	@param[in]	command			command sequence begin
 		 *	@param[in]	size			number of commands in the sequence
 		*/
-		virtual void send(const RobotCommand* command, std::uintptr_t size = 1) = 0;
+		virtual void send(const Robot::Command* command, std::uintptr_t size = 1) = 0;
 
 		/**	Wait for begin of the robot control cycle
 		 *	@param[in]	timewait		maximum time wait [sec]
@@ -66,45 +66,43 @@ namespace pacman {
 		*/
 		virtual bool waitForTrajectoryEnd(double timewait = std::numeric_limits<float_t>::max()) = 0;
 
-		
-		/** Kuka LWR config conversion */
-		template <typename _Real> static void configToPacman(const _Real* c, KukaLWR::Config& config) {
-			for (std::uintptr_t i = 0; i < KukaLWR::Config::JOINTS; ++i)
-				config.c[i] = (pacman::float_t)c[i];
-		}
-		/** Kuka LWR config conversion */
-		template <typename _Real> static void configToGolem(const KukaLWR::Config& config, _Real* c) {
-			for (std::uintptr_t i = 0; i < KukaLWR::Config::JOINTS; ++i)
-				c[i] = (_Real)config.c[i];
-		}
-		
-		/** SchunkDexHand config conversion */
-		template <typename _Real> static void configToPacman(const _Real* c, SchunkDexHand::Config& config) {
-			config.middle[0] = (pacman::float_t)c[0];
-			config.middle[1] = (pacman::float_t)c[1];
-			config.left[0] = (pacman::float_t)c[3];
-			config.left[1] = (pacman::float_t)c[4];
-			config.right[0] = (pacman::float_t)c[6];
-			config.right[1] = (pacman::float_t)c[7];
-			config.rotation = (pacman::float_t)c[2];
-		}
-		/** SchunkDexHand config conversion */
-		template <typename _Real> static void configToGolem(const SchunkDexHand::Config& config, _Real* c) {
-			c[0] = (_Real)config.middle[0];
-			c[1] = (_Real)config.middle[1];
-			c[3] = (_Real)config.left[0];
-			c[4] = (_Real)config.left[1];
-			c[6] = (_Real)config.right[0];
-			c[7] = (_Real)config.right[1];
-			c[2] = (_Real)config.rotation;
-			c[5] = (_Real)config.rotation;
-		}
-		
-
 		/** Destruction
 		*/
 		virtual ~BhamControl() {}
 	};
+
+	/** Default config conversion */
+	template <typename _Real, typename _Config> void configToPacman(const _Real* c, _Config& config) {
+		for (std::uintptr_t i = 0; i < _Config::JOINTS; ++i)
+			config.c[i] = (pacman::float_t)c[i];
+	}
+	/** Default config conversion */
+	template <typename _Real, typename _Config> void configToGolem(const _Config& config, _Real* c) {
+		for (std::uintptr_t i = 0; i < _Config::JOINTS; ++i)
+			c[i] = (_Real)config.c[i];
+	}
+	
+	/** SchunkDexHand config conversion */
+	template <typename _Real> void configToPacman(const _Real* c, SchunkDexHand::Config& config) {
+		config.middle[0] = (pacman::float_t)c[0];
+		config.middle[1] = (pacman::float_t)c[1];
+		config.left[0] = (pacman::float_t)c[3];
+		config.left[1] = (pacman::float_t)c[4];
+		config.right[0] = (pacman::float_t)c[6];
+		config.right[1] = (pacman::float_t)c[7];
+		config.rotation = (pacman::float_t)c[2];
+	}
+	/** SchunkDexHand config conversion */
+	template <typename _Real> void configToGolem(const SchunkDexHand::Config& config, _Real* c) {
+		c[0] = (_Real)config.middle[0];
+		c[1] = (_Real)config.middle[1];
+		c[3] = (_Real)config.left[0];
+		c[4] = (_Real)config.left[1];
+		c[6] = (_Real)config.right[0];
+		c[7] = (_Real)config.right[1];
+		c[2] = (_Real)config.rotation;
+		c[5] = (_Real)config.rotation;
+	}
 };
 
 #endif // _PACMAN_BHAM_CONTROL_CONTROL_H_
