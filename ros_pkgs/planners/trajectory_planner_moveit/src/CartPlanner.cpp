@@ -7,88 +7,13 @@
 #include <moveit_msgs/GetMotionPlan.h>
 #include <moveit/kinematic_constraints/utils.h>
 
-//// local headers
+//// generated headers
 #include <definitions/TrajectoryPlanning.h>
 
+//// local headers
+#include "CartPlanner.h"
+
 namespace trajectory_planner_moveit {
-
-// use a name for the node and a verb it is suppose to do, Publisher, Server, etc...
-class CartPlanner
-{
-  private:
-
-    // the node handle
-    ros::NodeHandle nh_;
-    
-    // Node handle in the private namespace
-    ros::NodeHandle priv_nh_;
-
-    // subscribers
-    //ros::Subscriber sub_some_node_messages_;
-
-    // publishers
-    //ros::Publisher pub_class_postprocessing_info_;
-    
-    // services
-    ros::ServiceServer srv_trajectory_planning_;
-    //ros::ServiceServer srv_test_trajectory_planning_;
-
-    // clients
-    ros::ServiceClient clt_moveit_planning_;
-
-	// planning related parameters
-	int max_points_in_trajectory_;
-	int max_planning_attempts_;
-	int max_planning_time_;
-	double tolerance_in_position_;
-	double tolerance_in_orientation_;
-
-    // define the names passed in the urdf files corresponding to the current move group for planning
-    std::string group_name_;
-    std::string base_frame_for_goal_;
-	std::string plan_for_frame_;
-
-	// the variable where the plans are stored
-	std::vector<moveit_msgs::MotionPlanResponse> motion_plans_;
-
-    // conversion function
-    void convertFromMRobotTrajectoryToTrajectory(const moveit_msgs::RobotTrajectory &moveitTraj, definitions::Trajectory &trajectory);
-    
-  public:
-
-  	// the service callback 
-  	bool planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response);
-
-  	// the actual planning function
-    bool planTrajectory(std::vector<definitions::Trajectory> &trajectories, geometry_msgs::PoseStamped &goal);
-
-    // constructor
-    CartPlanner(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
-    {
-
-		// wait for moveit to load
-		std::string planning_service_name = "/plan_kinematic_path";
-
-		ROS_INFO("Waiting for MoveIt! to fully load...");
-		ros::service::waitForService(planning_service_name, -1);
-		clt_moveit_planning_ = nh_.serviceClient<moveit_msgs::GetMotionPlan>(planning_service_name);
-
-		// planning related parameters
-		nh_.param<int>("max_points_in_trajectory", max_points_in_trajectory_, 50);
-		nh_.param<int>("max_planning_attempts", max_planning_attempts_, 2);
-		nh_.param<int>("max_planning_time", max_planning_time_, 2);
-		nh_.param<double>("tolerance_in_position", tolerance_in_position_, 0.1);
-		nh_.param<double>("tolerance_in_orientation", tolerance_in_orientation_, 0.1);
-
-		srv_trajectory_planning_ = nh_.advertiseService(nh_.resolveName("/trajectory_planning_srv"),&CartPlanner::planTrajectoryFromCode, this);
-		//srv_test_trajectory_planning_ = nh_.advertiseService(nh_.resolveName("/test_trajectory_planning_srv"),&CartPlanner::planTrajectoryFromCode, this);
-
-    }
-
-    //! Empty stub
-    ~CartPlanner() {}
-
-};
 
 void CartPlanner::convertFromMRobotTrajectoryToTrajectory(const moveit_msgs::RobotTrajectory &moveitTraj, definitions::Trajectory &trajectory)
 {
@@ -125,8 +50,6 @@ void CartPlanner::convertFromMRobotTrajectoryToTrajectory(const moveit_msgs::Rob
 
 bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response) 
 {
-
-	ROS_INFO("Planning request of type %d", request.type);
 	if( request.type == request.MOVE_TO_CART_GOAL)
 	{
 		ROS_INFO("Received trajectory planning request");
@@ -164,7 +87,7 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 	}
 	else
 	{
-		ROS_INFO("not for me!");
+		ROS_INFO("I can't process this request! Check the request type");
 	}
 
 }
@@ -185,15 +108,13 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 	motion_plan_request.goal_constraints.push_back(pose_goal);
 	motion_plan_request.num_planning_attempts = max_planning_attempts_;
 	motion_plan_request.allowed_planning_time = max_planning_time_;
-
-	// if 
+	motion_plan_request.planner_id = "PRMkConfigDefault";
 
 	// wait for a joint state
-	std::string topic = nh_.resolveName("/joint_states");
-	boost::shared_ptr<const sensor_msgs::JointState> current_state_ptr = ros::topic::waitForMessage<sensor_msgs::JointState>(topic, ros::Duration(3.0));
+	boost::shared_ptr<const sensor_msgs::JointState> current_state_ptr = ros::topic::waitForMessage<sensor_msgs::JointState>(topic_, ros::Duration(3.0));
 	if (!current_state_ptr)
 	{
-		ROS_WARN("No real start state available, since no joint state recevied in topic: %s", topic.c_str());
+		ROS_WARN("No real start state available, since no joint state recevied in topic: %s", topic_.c_str());
 		ROS_WARN("Did you forget to start a controller?");
 		ROS_WARN("Planning will be done from home position, however this trajectory might not be good for execution!");
 	}
@@ -227,11 +148,6 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 		{
 			ROS_INFO("Trajectory contains %d points.", trajSize);
 
-			// // store the motion plan for later usage
-			// int index = motion_plans.size();
-			// moveit_msgs::MotionPlanResponse response = motion_plan.response.motion_plan_response;
-			// motion_plans_.push_back(response);
-
 			definitions::Trajectory trajectory;
 			trajectory.trajectory_id = 0;
 
@@ -253,21 +169,3 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 
 
 } // namespace trajectory_planner_moveit
-
-
-int main(int argc, char **argv)
-{
-    ros::init(argc, argv, "path_planner_node");
-    ros::NodeHandle nh;
-
-    trajectory_planner_moveit::CartPlanner node(nh);
-
-    ROS_INFO("This node is ready to do path planning!");
-
-    while(ros::ok())
-    {
-    	ros::spinOnce();
-    }
-
-    return 0;
-}

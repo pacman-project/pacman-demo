@@ -76,13 +76,13 @@ int main(int argc, char **argv)
     trajectory_planning_srv.request.arm = "left";
 
     // first, one simple motion: try to move to the safe position first without checking
-    goal_state.hand.wrist_pose.pose.position.x = 0.1624;
-    goal_state.hand.wrist_pose.pose.position.y = 1.1599;
-    goal_state.hand.wrist_pose.pose.position.z = 0.6642;
-    goal_state.hand.wrist_pose.pose.orientation.x = 0.404885;
-    goal_state.hand.wrist_pose.pose.orientation.y = 0.86333;
-    goal_state.hand.wrist_pose.pose.orientation.z = -0.139283;
-    goal_state.hand.wrist_pose.pose.orientation.w = 0.267076;
+    goal_state.hand.wrist_pose.pose.position.x = 0.201;
+    goal_state.hand.wrist_pose.pose.position.y = 1.451;
+    goal_state.hand.wrist_pose.pose.position.z = 0.750;
+    goal_state.hand.wrist_pose.pose.orientation.x = 0.270;
+    goal_state.hand.wrist_pose.pose.orientation.y = 0.051;
+    goal_state.hand.wrist_pose.pose.orientation.z = 0.363;
+    goal_state.hand.wrist_pose.pose.orientation.w = 0.891;
     goal_state.hand.wrist_pose.header.frame_id = "world_link";
 
     trajectory_planning_srv.request.goal_state = goal_state;

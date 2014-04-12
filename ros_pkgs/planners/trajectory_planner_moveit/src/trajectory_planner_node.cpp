@@ -7,12 +7,16 @@
 #include <moveit_msgs/GetMotionPlan.h>
 #include <moveit/kinematic_constraints/utils.h>
 
-//// local headers
+//// generated headers
 #include <definitions/TrajectoryPlanning.h>
+
+//// local headers
+#include "CartPlanner.h"
+
 
 namespace trajectory_planner_moveit {
 
-// use a name for the node and a verb it is suppose to do, Publisher, Server, etc...
+// template for the full trajectory planner node
 class FakePlanner
 {
   private:
@@ -29,38 +33,51 @@ class FakePlanner
   public:
 
   	// the service callback 
-  	bool planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response);
+  	bool planTrajectory(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response);
 
     // constructor
     FakePlanner(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
     {
-		srv_trajectory_planning_ = nh_.advertiseService(nh_.resolveName("/trajectory_planning_srv"),&FakePlanner::planTrajectoryFromCode, this);
-		//srv_test_trajectory_planning_ = nh_.advertiseService(nh_.resolveName("/test_trajectory_planning_srv"),&FakePlanner::planTrajectoryFromCode, this);
-    }
+		srv_trajectory_planning_ = nh_.advertiseService(nh_.resolveName("/trajectory_planning_srv"),&FakePlanner::planTrajectory, this);
+	}
 
     //! Empty stub
     ~FakePlanner() {}
 
 };
 
-bool FakePlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response) 
+bool FakePlanner::planTrajectory(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response) 
 {
+    // create an instance of the helper class
+    trajectory_planner_moveit::CartPlanner my_cart_planner(nh_);
+
 	ROS_INFO("Received trajectory planning requestof type %d", request.type);
 	int type = request.type;
 	switch (type)
 	{
 		case definitions::TrajectoryPlanning::Request::MOVE_TO_CART_GOAL:
-			ROS_INFO("Succesfully planned a trajectory to the desired MOVE_TO_CART_GOAL");
+            if ( my_cart_planner.planTrajectoryFromCode(request, response) )
+            {
+                ROS_INFO("Succesfully planned a trajectory to the desired MOVE_TO_CART_GOAL");    
+            }
+            else
+            {
+                ROS_ERROR("Could not plan a trajectory to the desired MOVE_TO_CART_GOAL"); 
+            }
 			break;
+
 		case definitions::TrajectoryPlanning::Request::PICK:
 			ROS_INFO("Succesfully planned a trajectory to the desired PICK operation");
 			break;
+
 		case definitions::TrajectoryPlanning::Request::PLACE:
 			ROS_INFO("Succesfully planned a trajectory to the desired PLACE operation");
 			break;
+
 		case definitions::TrajectoryPlanning::Request::MOVE_TO_STATE_GOAL:
 			ROS_INFO("Succesfully planned a trajectory to the desired MOVE_TO_STATE_GOAL operation");
 			break;
+
 	}	
 	return true;
 }
