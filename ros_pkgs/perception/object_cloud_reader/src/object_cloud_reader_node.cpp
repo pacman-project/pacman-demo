@@ -101,7 +101,7 @@ bool ObjectReader::processObjects(definitions::ObjectCloudReader::Request& reque
     vector<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > obj_pcds;
     vector<geometry_msgs::Pose> obj_poses;
     // 2. read the pcd files
-    std::string path_to_database("/home/pacman/CODE/poseEstimation/dataFiles/PCD-MODELS-DOWNSAMPLED/");
+    std::string path_to_database("/home/pacman/CODE/pacman/poseEstimation/dataFiles/PCD-MODELS-DOWNSAMPLED/");
     pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr current_scene (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
     for (int i=0;i<objects.size();i++)
     {
