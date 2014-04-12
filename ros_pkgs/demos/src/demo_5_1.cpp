@@ -508,16 +508,19 @@ bool DemoSimple::goToStartPos(bool beginning)
   
   std::cout << "Initial position: " << robotpose << std::endl;
   current_trajectory.grasp_trajectory[0].wrist_pose.pose = robotpose;
-  
+  current_trajectory.grasp_trajectory[0].wrist_pose.header.frame_id = "world_link";
   std::vector<definitions::Grasp> my_calculated_grasp_cur;
   my_calculated_grasp_cur.push_back(current_trajectory);
   
   trajectory_planning_srv.request.ordered_grasp = my_calculated_grasp_cur;
-  trajectory_planning_srv.request.arm = "right_arm";
+  trajectory_planning_srv.request.arm = "left";
   std::vector<definitions::Object> noObject;
   
   trajectory_planning_srv.request.object_list = noObject;
   trajectory_planning_srv.request.object_id = 0;
+  trajectory_planning_srv.request.type = trajectory_planning_srv.request.MOVE_TO_CART_GOAL;
+  trajectory_planning_srv.request.goal_state.hand.wrist_pose = current_trajectory.grasp_trajectory[0].wrist_pose;
+  trajectory_planning_srv.request.goal_state.hand.joints = current_trajectory.grasp_trajectory[0].joints;
   
   if( !trajectory_planner_client.call(trajectory_planning_srv) )
   {
@@ -836,10 +839,13 @@ bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id)
   my_calculated_grasp_cur.push_back(my_calculated_grasp[grasp_id]);
   
   //trajectory_planning_srv.request.ordered_grasp = my_calculated_grasp;
-  trajectory_planning_srv.request.arm = "right_arm";
+  trajectory_planning_srv.request.arm = "left";
+  trajectory_planning_srv.request.type = trajectory_planning_srv.request.MOVE_TO_CART_GOAL;
   trajectory_planning_srv.request.ordered_grasp = my_calculated_grasp_cur;
   trajectory_planning_srv.request.object_list = estimation_srv.response.detected_objects;
   trajectory_planning_srv.request.object_id = 0;
+  trajectory_planning_srv.request.goal_state.hand.wrist_pose = my_calculated_grasp[grasp_id].grasp_trajectory[0].wrist_pose;
+  trajectory_planning_srv.request.goal_state.hand.joints = my_calculated_grasp[grasp_id].grasp_trajectory[0].joints;
   //trajectory_planning_srv.request.object_id = grasp_id;
   
   if( !trajectory_planner_client.call(trajectory_planning_srv) )
@@ -878,6 +884,7 @@ bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id)
       
        // trajectory_execution_srv.request.trajectory = my_calculated_trajectory; //execute 0 trajectory id
         trajectory_execution_srv.request.trajectory = my_calculated_trajectory[0];
+	
         if( !trajectory_execution_client.call(trajectory_execution_srv) )
         {
 	      ROS_INFO("trajectory planner service call failed.");

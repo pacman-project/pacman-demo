@@ -3,18 +3,20 @@
   <!-- CONFIGURE YOUR PLANNING SYSTEM -->
   
   <!-- GRASP PLANNER -->
-  <include file="$(find grasp_planner_bham)/launch/GraspPlannerBHAM.launch"/>
+ <!-- <include file="$(find grasp_planner_bham)/launch/GraspPlannerBHAM.launch"/> -->
 
-  <!-- include file="$(find grasp_planner_uibk)/launch/GraspPlannerUIBK.launch" /-->
+  <include file="$(find grasp_planner_uibk)/launch/GraspPlannerUIBK.launch"/> 
 
 
-  <!-- PLANNER FOR ARM TRAJECTORIES: 1. OROCOS 2. GOLEM -->
+  <!-- PLANNER FOR ARM TRAJECTORIES -->
+  <include file="$(find trajectory_planner_moveit)/launch/TrajectoryPlanning.launch"/>
+  
   <!-- OROCOS CONFIG -->
   <!-- include file="$(find uibk_moveit_adapter)/launch/uibk_plan_execution.launch" /--> 
   <!-- include file="$(find uibk_robot_moveit_config)/launch/simulation_planning_execution.launch" /-->
 
   <!-- GOLEM CONFIG -->
-  <include file="$(find uibk_robot_moveit_config)/launch/uibk_robot_path_planner.launch"/>
+  <!-- <include file="$(find uibk_robot_moveit_config)/launch/uibk_robot_path_planner.launch"/> -->
 
 
 </launch>

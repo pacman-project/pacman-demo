@@ -35,11 +35,11 @@ The XML configuration file is specified in the launch file. Note that, this node
 Changing the XML configuration files
 ------------------------------------
 
-You should change the config files in the PACMAN_ROOT/bin folder, and make the pacman project to update the files into the running directory of the ROS nodes.
+You should change the config files in the `PACMAN_ROOT/bin` folder, and `make` the pacman project to update the files into the running directory of the ROS nodes.
 
 Memo notes: 
 
-* Check the host="ip" to connect to local or remote control servers.
+* Check the host="ip" in the `GolemDeviceRobotUIBK.xml`, or any other robot, to connect to local or remote control servers.
 
 * If you want to run the server in localhost, you need to go into the Golem binaries, and modify the GolemDeviceCtrlPhysServer.xml to point to the simulated robot, since by default it points to the real one.
 

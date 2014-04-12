@@ -593,6 +593,8 @@ bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, defin
     }
     definitions::Grasp cur_traj;
     cur_traj.grasp_trajectory.resize(3);
+    pre_grasps[i].header.frame_id = "world_link";
+    grasps[i].header.frame_id = "world_link";
     cur_traj.grasp_trajectory[0].wrist_pose.pose = pre_grasps[i].pose;
     cur_traj.grasp_trajectory[0].joints = pre_grasp_joints;
     cur_traj.grasp_trajectory[1].wrist_pose.pose = grasps[i].pose;
