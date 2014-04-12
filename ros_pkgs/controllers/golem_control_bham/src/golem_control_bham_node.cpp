@@ -136,6 +136,7 @@ void GolemController::convertTrajFromMoveItMsg(const moveit_msgs::RobotTrajector
 
 void GolemController::convertTrajFromDefinitionsMsg(const definitions::Trajectory &trajectory, RobotUIBK::Command::Seq &commands)
 {
+  ROS_INFO("trajectory.robot_path.size() %li", trajectory.robot_path.size());
   int NWayPoints = trajectory.robot_path.size();
   commands.resize(NWayPoints);
 
@@ -144,39 +145,39 @@ void GolemController::convertTrajFromDefinitionsMsg(const definitions::Trajector
     // first the arm
     for (int j = 0; j < KukaLWR::Config::JOINTS; j++)
     {
-      commands[i].pos.arm.c[j] = trajectory.robot_path[i].arm.joints[j];
-      commands[i].vel.arm.c[j] = trajectory.robot_path[i].arm.velocity[j];
-      commands[i].acc.arm.c[j] = trajectory.robot_path[i].arm.acceleration[j];
+      commands[i].arm.pos.c[j] = trajectory.robot_path[i].arm.joints[j];
+      commands[i].arm.vel.c[j] = trajectory.robot_path[i].arm.velocity[j];
+      commands[i].arm.acc.c[j] = trajectory.robot_path[i].arm.acceleration[j];
     }
 
     // then the hand
-    commands[i].pos.hand.left[0] = trajectory.robot_path[i].hand.joints[0];
-    commands[i].vel.hand.left[0] = trajectory.robot_path[i].hand.velocity[0];
-    commands[i].acc.hand.left[0] = trajectory.robot_path[i].hand.acceleration[0];
+    commands[i].hand.pos.left[0] = trajectory.robot_path[i].hand.joints[0];
+    commands[i].hand.vel.left[0] = trajectory.robot_path[i].hand.velocity[0];
+    commands[i].hand.acc.left[0] = trajectory.robot_path[i].hand.acceleration[0];
 
-    commands[i].pos.hand.left[1] = trajectory.robot_path[i].hand.joints[1];
-    commands[i].vel.hand.left[1] = trajectory.robot_path[i].hand.velocity[1];
-    commands[i].acc.hand.left[1] = trajectory.robot_path[i].hand.acceleration[1];
+    commands[i].hand.pos.left[1] = trajectory.robot_path[i].hand.joints[1];
+    commands[i].hand.vel.left[1] = trajectory.robot_path[i].hand.velocity[1];
+    commands[i].hand.acc.left[1] = trajectory.robot_path[i].hand.acceleration[1];
 
-    commands[i].pos.hand.middle[0] = trajectory.robot_path[i].hand.joints[2];
-    commands[i].vel.hand.middle[0] = trajectory.robot_path[i].hand.velocity[2];
-    commands[i].acc.hand.middle[0] = trajectory.robot_path[i].hand.acceleration[2];
+    commands[i].hand.pos.middle[0] = trajectory.robot_path[i].hand.joints[2];
+    commands[i].hand.vel.middle[0] = trajectory.robot_path[i].hand.velocity[2];
+    commands[i].hand.acc.middle[0] = trajectory.robot_path[i].hand.acceleration[2];
 
-    commands[i].pos.hand.middle[1] = trajectory.robot_path[i].hand.joints[3];
-    commands[i].vel.hand.middle[1] = trajectory.robot_path[i].hand.velocity[3];
-    commands[i].acc.hand.middle[1] = trajectory.robot_path[i].hand.acceleration[3];
+    commands[i].hand.pos.middle[1] = trajectory.robot_path[i].hand.joints[3];
+    commands[i].hand.vel.middle[1] = trajectory.robot_path[i].hand.velocity[3];
+    commands[i].hand.acc.middle[1] = trajectory.robot_path[i].hand.acceleration[3];
 
-    commands[i].pos.hand.right[0] = trajectory.robot_path[i].hand.joints[4];
-    commands[i].vel.hand.right[0] = trajectory.robot_path[i].hand.velocity[4];
-    commands[i].acc.hand.right[0] = trajectory.robot_path[i].hand.acceleration[4];
+    commands[i].hand.pos.right[0] = trajectory.robot_path[i].hand.joints[4];
+    commands[i].hand.vel.right[0] = trajectory.robot_path[i].hand.velocity[4];
+    commands[i].hand.acc.right[0] = trajectory.robot_path[i].hand.acceleration[4];
 
-    commands[i].pos.hand.right[1] = trajectory.robot_path[i].hand.joints[5];
-    commands[i].vel.hand.right[1] = trajectory.robot_path[i].hand.velocity[5];
-    commands[i].acc.hand.right[1] = trajectory.robot_path[i].hand.acceleration[5];
+    commands[i].hand.pos.right[1] = trajectory.robot_path[i].hand.joints[5];
+    commands[i].hand.vel.right[1] = trajectory.robot_path[i].hand.velocity[5];
+    commands[i].hand.acc.right[1] = trajectory.robot_path[i].hand.acceleration[5];
 
-    commands[i].pos.hand.rotation = trajectory.robot_path[i].hand.joints[6];
-    commands[i].vel.hand.rotation = trajectory.robot_path[i].hand.velocity[6];
-    commands[i].acc.hand.rotation = trajectory.robot_path[i].hand.acceleration[6];
+    commands[i].hand.pos.rotation = trajectory.robot_path[i].hand.joints[6];
+    commands[i].hand.vel.rotation = trajectory.robot_path[i].hand.velocity[6];
+    commands[i].hand.acc.rotation = trajectory.robot_path[i].hand.acceleration[6];
 
     // and finally the time
     if(i==0)
@@ -198,17 +199,17 @@ void GolemController::convertStateToJointStateMsg(const RobotUIBK::State &state,
   // and let the party begin... first the arm:
   for (int j = 0; j < KukaLWR::Config::JOINTS; j++)
   {
-    joint_states.position[j] = state.pos.arm.c[j];
+    joint_states.position[j] = state.arm.pos.c[j];
   }
 
   // and continue with the hand:
-  joint_states.position[7] = state.pos.hand.rotation;
-  joint_states.position[8] = state.pos.hand.left[0];
-  joint_states.position[9] = state.pos.hand.left[1];
-  joint_states.position[10] = state.pos.hand.right[0];
-  joint_states.position[11] = state.pos.hand.right[1];
-  joint_states.position[12] = state.pos.hand.middle[0];
-  joint_states.position[13] = state.pos.hand.middle[1];
+  joint_states.position[7] = state.hand.pos.rotation;
+  joint_states.position[8] = state.hand.pos.left[0];
+  joint_states.position[9] = state.hand.pos.left[1];
+  joint_states.position[10] = state.hand.pos.right[0];
+  joint_states.position[11] = state.hand.pos.right[1];
+  joint_states.position[12] = state.hand.pos.middle[0];
+  joint_states.position[13] = state.hand.pos.middle[1];
 
   return;
 }
@@ -226,7 +227,7 @@ void GolemController::publishRobotState()
     ROS_ERROR("Unable to read the robot state: %s\n", ex.what());
   }
 
-  // convert from pacman to ros joint states
+  // convert from pacman to ros joint states 
   convertStateToJointStateMsg(uibk_robot_state_, joint_states_);
 
   // publish the joint states, this functionality could be ported to another node to increase speed and versatility.
@@ -246,13 +247,13 @@ void GolemController::publishRobotState()
 
 bool GolemController::executeTrajectoryFromCode(definitions::TrajectoryExecution::Request &req, definitions::TrajectoryExecution::Response &res)
 {
+  ROS_INFO("Exectution service requested...");
   uibk_robot_command_.clear();
   res.result = res.OTHER_ERROR;
 
-  // for now, just take the first one, need to be improved in the future
   definitions::Trajectory trajectory = req.trajectory;
 
-  //convert the trajectory to the command 
+  //convert the trajectory to the command ToDo: double check that the trajectory has velocity and acceleration
   convertTrajFromDefinitionsMsg(trajectory, uibk_robot_command_);
 
   // excexute the trajectory
@@ -288,62 +289,70 @@ bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Em
     RobotUIBK::State begin;
     controller_->lookupState(controller_->time(), begin);
 
+    RobotUIBK::Command init;
+
+    init.hand.pos = begin.hand.pos;
+    init.arm.pos = begin.arm.pos;
+
     // Prepare trajectory
     RobotUIBK::Command::Seq commands(12);
     // Initial pose
-    commands[0].t = controller_->time();
-    commands[0].pos = begin.pos;
+    commands[0] = init;
+    
+    commands[0].t = controller_->time() + pacman::float_t(1.0);
+
     // test arm
     // Pose #1
+    commands[1] = init;
     commands[1].t = commands[0].t + pacman::float_t(5.0);
-    commands[1].pos = begin.pos;
-    commands[1].pos.arm.c[0] += pacman::float_t(0.1);
+    commands[1].arm.pos.c[0] += pacman::float_t(0.1);
     // Go to home in the hand at pose 1
-    commands[1].pos.hand.setToDefault();
+    commands[1].hand.pos.setToDefault();
     // Pose #2
+    commands[2] = init;
     commands[2].t = commands[1].t + pacman::float_t(5.0);
-    commands[2].pos = begin.pos;
-    commands[2].pos.arm.c[1] -= pacman::float_t(0.1);
+    commands[2].arm.pos.c[1] -= pacman::float_t(0.1);
     // Pose #3
+    commands[3] = init;
     commands[3].t = commands[2].t + pacman::float_t(5.0);
-    commands[3].pos = begin.pos;
-    commands[3].pos.arm.c[2] += pacman::float_t(0.1);
+    commands[3].arm.pos.c[2] += pacman::float_t(0.1);
     // Pose #4
+    commands[4] = init;
     commands[4].t = commands[3].t + pacman::float_t(5.0);
-    commands[4].pos = begin.pos;
-    commands[4].pos.arm.c[3] -= pacman::float_t(0.1);
+    commands[4].arm.pos.c[3] -= pacman::float_t(0.1);
     // Pose #5
+    commands[5] = init;
     commands[5].t = commands[4].t + pacman::float_t(5.0);
-    commands[5].pos = begin.pos;
-    commands[5].pos.arm.c[4] += pacman::float_t(0.1);
+    commands[5].arm.pos.c[4] += pacman::float_t(0.1);
     // Pose #6
+    commands[6] = init;
     commands[6].t = commands[5].t + pacman::float_t(5.0);
-    commands[6].pos = begin.pos;
-    commands[6].pos.arm.c[5] -= pacman::float_t(0.1);
+    commands[6].arm.pos.c[5] -= pacman::float_t(0.1);
     // Pose #7
+    commands[7] = init;
     commands[7].t = commands[6].t + pacman::float_t(5.0);
-    commands[7].pos = begin.pos;
-    commands[7].pos.arm.c[6] += pacman::float_t(0.1);
+    commands[7].arm.pos.c[6] += pacman::float_t(0.1);
     // Back to the initial pose
+    commands[8] = init;
     commands[8].t = commands[7].t + pacman::float_t(5.0);
-    commands[8].pos = begin.pos;
     // Test the hand as well
     // Move knucle
+    commands[9] = init;
     commands[9].t = commands[8].t + pacman::float_t(5.0);
-    commands[9].pos = begin.pos;
-    commands[9].pos.hand.rotation += pacman::float_t(0.25);
+    commands[9].hand.pos.rotation += pacman::float_t(0.25);
     // Open
+    commands[10] = init;
     commands[10].t = commands[9].t + pacman::float_t(5.0);
-    commands[10].pos = begin.pos;
-    commands[10].pos.hand.middle[0] -= pacman::float_t(0.3);
-    commands[10].pos.hand.middle[1] -= pacman::float_t(0.3);
-    commands[10].pos.hand.left[0] -= pacman::float_t(0.3);
-    commands[10].pos.hand.left[1] -= pacman::float_t(0.3);
-    commands[10].pos.hand.right[0] -= pacman::float_t(0.3);
-    commands[10].pos.hand.right[1] -= pacman::float_t(0.3);
+    commands[10].hand.pos.middle[0] -= pacman::float_t(0.3);
+    commands[10].hand.pos.middle[1] -= pacman::float_t(0.3);
+    commands[10].hand.pos.left[0] -= pacman::float_t(0.3);
+    commands[10].hand.pos.left[1] -= pacman::float_t(0.3);
+    commands[10].hand.pos.right[0] -= pacman::float_t(0.3);
+    commands[10].hand.pos.right[1] -= pacman::float_t(0.3);
     // Close to home position
+    commands[11] = init;
     commands[11].t = commands[10].t + pacman::float_t(5.0);
-    commands[11].pos = begin.pos;
+
 
     // execute trajectory
     executeTrajectory(commands);

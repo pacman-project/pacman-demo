@@ -94,33 +94,30 @@ include_directories(include
 	)
 
 ## Declare a cpp library
-# add_library(trajectory_planner_moveit
-#   src/${PROJECT_NAME}/trajectory_planner_moveit.cpp
-# )
+add_library(CartPlanner
+	src/CartPlanner.cpp
+	)
 
 ## Declare a cpp executable
-add_executable(fake_trajectory_planner_node 
-	src/fake_trajectory_planner.cpp
+add_executable(trajectory_planner_node 
+	src/trajectory_planner_node.cpp
 	)
-
-add_executable(cart_planner_node 
-	src/cart_planner_node.cpp
-	)
-
 add_executable(ping_cart_planner 
 	src/ping_cart_planner.cpp
 	)
-
 add_executable(ping_cart_planner_and_execution
 	src/ping_cart_planner_and_execution.cpp
 	)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(fake_trajectory_planner_node 
+# libraries
+add_dependencies(CartPlanner
 	definitions_generate_messages_cpp
 	)
-add_dependencies(cart_planner_node 
+# executables
+add_dependencies(trajectory_planner_node
+	CartPlanner
 	definitions_generate_messages_cpp
 	)
 add_dependencies(ping_cart_planner 
@@ -131,10 +128,13 @@ add_dependencies(ping_cart_planner_and_execution
 	)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(fake_trajectory_planner_node 
+# libraries
+target_link_libraries(CartPlanner 
 	${catkin_LIBRARIES}
 	)
-target_link_libraries(cart_planner_node
+# executables
+target_link_libraries(trajectory_planner_node 
+	CartPlanner
 	${catkin_LIBRARIES}
 	)
 target_link_libraries(ping_cart_planner

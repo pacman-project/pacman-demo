@@ -481,19 +481,19 @@ INSTALL(FILES ${BHAM_CONTROL_FILES} DESTINATION bin)
 
 if(BUILD_ROS_PKGS)
 SET(BHAM_CONTROL_ROS_FILES
-	#${PROJECT_ROOT}/resources/Bham/ControlRobotUIBK.xml
-	${PROJECT_ROOT}/resources/Bham/ControlRobotUIBKSim.xml
-	#${GOLEM_RESOURCES}/GolemDeviceKukaLWR.xml
-	#${GOLEM_RESOURCES}/GolemDeviceKukaLWREddieL.xml
-	#${GOLEM_RESOURCES}/GolemDeviceKukaLWREddieR.xml
+	${PROJECT_ROOT}/resources/Bham/ControlRobotUIBK.xml
+	#${PROJECT_ROOT}/resources/Bham/ControlRobotUIBKSim.xml
+	${GOLEM_RESOURCES}/GolemDeviceKukaLWR.xml
+	${GOLEM_RESOURCES}/GolemDeviceKukaLWREddieL.xml
+	${GOLEM_RESOURCES}/GolemDeviceKukaLWREddieR.xml
 	${GOLEM_RESOURCES}/GolemDeviceKukaLWRSim.xml
-	#${GOLEM_RESOURCES}/GolemDeviceSchunkDexHand.xml
-	#${GOLEM_RESOURCES}/GolemDeviceSchunkDexHandEddieL.xml
-	#${GOLEM_RESOURCES}/GolemDeviceSchunkDexHandEddieR.xml
+	${GOLEM_RESOURCES}/GolemDeviceSchunkDexHand.xml
+	${GOLEM_RESOURCES}/GolemDeviceSchunkDexHandEddieL.xml
+	${GOLEM_RESOURCES}/GolemDeviceSchunkDexHandEddieR.xml
 	${GOLEM_RESOURCES}/GolemDeviceSchunkDexHandSim.xml
-	#${GOLEM_RESOURCES}/GolemDeviceRobotEddie.xml
+	${GOLEM_RESOURCES}/GolemDeviceRobotEddie.xml
 	${GOLEM_RESOURCES}/GolemDeviceRobotEddieSim.xml
-	#${GOLEM_RESOURCES}/GolemDeviceRobotUIBK.xml
+	${GOLEM_RESOURCES}/GolemDeviceRobotUIBK.xml
 	${GOLEM_RESOURCES}/GolemDeviceRobotUIBKSim.xml
 )
 endif()

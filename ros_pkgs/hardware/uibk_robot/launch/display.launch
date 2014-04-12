@@ -7,7 +7,7 @@
     <param name="use_gui" value="$(arg gui)"/>
 
     <!-- This is required to test any posture of the robot by writing on the joint states /-->
-    <rosparam param="source_list">[/golem/joint_states]</rosparam>
+    <rosparam param="source_list">[/joint_states,/golem/joint_states]</rosparam>
     
     <param name="robot_description" command="$(find xacro)/xacro.py $(find uibk_robot)/urdf/uibk_robot.urdf.xacro"/> 
     <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" ></node>
