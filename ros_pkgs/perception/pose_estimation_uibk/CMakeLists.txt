@@ -11,7 +11,9 @@ find_package(Boost REQUIRED COMPONENTS filesystem system)
 find_package(Eigen REQUIRED)
 find_package(PCL 1.7 REQUIRED)
 
-set(POSE_ESTIMATION_EXT /home/pacman/Code/pacman/poseEstimation)
+set(CMAKE_CXX_FLAGS "-std=c++0x")
+
+set(PACMAN ../../../../)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -66,9 +68,9 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(include
+    ${PACMAN}/pacman/include
     ${catkin_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
-    ${POSE_ESTIMATION_EXT}/include
     )
 
 add_definitions(
@@ -77,7 +79,8 @@ add_definitions(
 
 link_directories(
   ${PCL_LIBRARY_DIRS}
-  ${POSE_ESTIMATION_EXT}/build
+  ${PACMAN}/bin
+  #${POSE_ESTIMATION_EXT}/build
 )
 
 ## Declare a cpp library
@@ -97,10 +100,11 @@ add_dependencies(pose_estimation_node definitions_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(pose_estimation_node
+   PaCMan   
+   PaCManUIBKPoseEstimation
    ${catkin_LIBRARIES} 
    ${boost_LIBRARIES} 
    ${PCL_LIBRARIES} 
-   pose_estimation  
    pcl_3d_rec_framework # find_package does not find it
 )
 

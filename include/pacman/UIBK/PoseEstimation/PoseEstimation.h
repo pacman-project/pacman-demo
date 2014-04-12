@@ -81,7 +81,7 @@ namespace pacman {
 		 *	@param[out]	points			object point cloud
 		*/
 		virtual void capture(Point3D::Seq& points) = 0;
-
+               virtual void load_cloud(std::string filename,Point3D::Seq& points) = 0;
 		/** Find list of objects with their poses from a given point cloud
 		 *	@param[in]	points			query point cloud
 		 *	@param[out]	poses			estimated set of object poses

@@ -88,9 +88,24 @@ void UIBKPoseEstimationImpl::capture(Point3D::Seq& points)
   convert(*xyz_points_,points);
 }
 
-void UIBKPoseEstimationImpl::estimate(const Point3D::Seq& points, Pose::Seq& poses) 
+void UIBKPoseEstimationImpl::load_cloud(string filename,Point3D::Seq& points)
 {
+  pcl::PointCloud<pcl::PointXYZ>::Ptr xyz_points( new pcl::PointCloud<pcl::PointXYZ>() );
+  
+  if (pcl::io::loadPCDFile<pcl::PointXYZ> (filename, *xyz_points) == -1) //* load the file
+  {
+    cout << "Couldn't read file: " << filename << endl;
+    return;
+  }
+  xyz_points_ = xyz_points;
+  xyz_points_->width = xyz_points->width;
+  xyz_points_->height = xyz_points->height;
+  *xyz_points_ = *xyz_points;   
+  convert(*xyz_points_,points);
+}
 
+void UIBKPoseEstimationImpl::estimate(const Point3D::Seq& points, Pose::Seq& poses) 
+{ 
   params_->recognizePose(*objects,xyz_points_);
   //params_->recognizePose(*objects);
 
