@@ -4,7 +4,8 @@ PERCEPTION
 Build
 -----
 
-ToDo: use the pacman interface for this node, such that the path is fixed w.r.t. the PACMAN_ROOT.
+For pose estimation node, set absolute object database file in pose estimation launch file ("path_to_object_db")
+Also, in config.txt which is copied in "$project_root$/catkin/devel/lib/pose_estimation_uibk", set training directory
 
 Use
 ---

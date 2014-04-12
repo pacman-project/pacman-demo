@@ -59,6 +59,7 @@ class PoseEstimator
     
     double offset_x,offset_y;
     sensor_msgs::PointCloud2 rec_scene_cloud;
+     string path_to_config,pathToObjDb;
 
   public:
 
@@ -89,6 +90,8 @@ class PoseEstimator
     
        rec_scene_cloud.header.frame_id = "/world_link"; 
        rec_scene_cloud.header.seq = 0;
+       nh_.param<std::string>("path_to_config",path_to_config, "");
+       nh_.param<std::string>("path_to_object_db",pathToObjDb, "");
     }
 
     //! Empty stub
@@ -137,14 +140,13 @@ bool PoseEstimator::estimatePoses(definitions::PoseEstimation::Request& request,
     ROS_INFO("Pose estimation service has been called...");
     
     ROS_INFO("Initializing...");
+     
+    //filename = "/home/pacman/CODE/pacman/poseEstimation/parametersFiles/config.txt";
+    //pathToObjDb ="/home/pacman/CODE/pacman/poseEstimation/data/recognizedObjects";
     
-    string filename,pathToConfigFile; 
-    filename = "/home/pacman/CODE/pacman/poseEstimation/parametersFiles/config.txt";
-    pathToConfigFile ="/home/pacman/CODE/pacman/poseEstimation/data/recognizedObjects";
     
-    
-    pacman::UIBKPoseEstimation* pose = pacman::UIBKPoseEstimation::create(filename);
-    pacman::UIBKObject* objects = pacman::UIBKObject::create(pathToConfigFile);
+    pacman::UIBKPoseEstimation* pose = pacman::UIBKPoseEstimation::create(path_to_config);
+    pacman::UIBKObject* objects = pacman::UIBKObject::create(pathToObjDb);
     pacman::UIBKPoseEstimation::Pose::Seq poses_;
     cout << "after creating" << endl;
     pacman::Point3D::Seq points_;

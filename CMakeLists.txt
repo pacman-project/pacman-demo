@@ -528,9 +528,14 @@ SET(UIBK_POSE_ESTIMATION_HEADERS
 SET(UIBK_POSE_ESTIMATION_SOURCES
 	${PROJECT_ROOT}/src/pacman/UIBK/PoseEstimation/PoseEstimation.cpp
 )
+
+if(BUILD_ROS_PKGS)
 SET(UIBK_POSE_ESTIMATION_FILES
 	${PROJECT_ROOT}/resources/UIBK/PoseEstimation.txt
+	${UIBK_POSE_ESTIMATION_EXTERNALLIB}/parametersFiles/config.txt
 )
+endif()
+
 SET(UIBK_POSE_ESTIMATION_UTILS
 	${UIBK_POSE_ESTIMATION_EXTERNALLIB}/src/ParametersPoseEstimation.cpp
         ${UIBK_POSE_ESTIMATION_EXTERNALLIB}/src/I_SegmentedObjects.cpp	
@@ -609,8 +614,9 @@ if(BUILD_ROS_PKGS)
 				DEPENDS PaCManBhamControl PaCManBhamGrasp PaCManUIBKPoseEstimationTest PaCManUIBKPoseEstimation
 			)
 			# and copy configuration files afterwards
-			COPY_FILES(ROSPkgs ${CATKIN_DIRECTORY}/devel/lib/golem_control_bham ${BHAM_CONTROL_ROS_FILES})
+			COPY_FILES(ROSPkgs ${CATKIN_DIRECTORY}/devel/lib/golem_control_bham ${BHAM_CONTROL_ROS_FILES}) 
 			COPY_FILES(ROSPkgs ${CATKIN_DIRECTORY}/devel/lib/grasp_planner_bham ${BHAM_GRASP_ROS_FILES})
+			COPY_FILES(ROSPkgs ${CATKIN_DIRECTORY}/devel/lib/pose_estimation_uibk ${UIBK_POSE_ESTIMATION_FILES})
 		endif()		
 	else()
 		MESSAGE(SEND_ERROR "You enabled BUILD_ROS_PKGS, but this option can not be processed because:\n1. ROS system is not installed. Recall to install the hydro distribution.\n2. The ROS environment is not loaded, so ensure you type in this terminal: source /opt/ros/hydro/setup.bash\n3. Loaded ROS distribution is not hydro.\n" )		
