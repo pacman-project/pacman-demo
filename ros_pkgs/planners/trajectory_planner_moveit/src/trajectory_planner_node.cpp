@@ -17,7 +17,7 @@
 namespace trajectory_planner_moveit {
 
 // template for the full trajectory planner node
-class FakePlanner
+class TrajPlanner
 {
   private:
 
@@ -30,33 +30,37 @@ class FakePlanner
     // services
     ros::ServiceServer srv_trajectory_planning_;
 
+    // the trajectory planner helper class
+    trajectory_planner_moveit::CartPlanner *my_cart_planner_;
+
   public:
 
   	// the service callback 
   	bool planTrajectory(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response);
 
     // constructor
-    FakePlanner(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
+    TrajPlanner(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
     {
-		srv_trajectory_planning_ = nh_.advertiseService(nh_.resolveName("/trajectory_planning_srv"),&FakePlanner::planTrajectory, this);
-	}
+       // advertise the main service
+	   srv_trajectory_planning_ = nh_.advertiseService(nh_.resolveName("/trajectory_planning_srv"),&TrajPlanner::planTrajectory, this);
+	   
+       // init class members
+       my_cart_planner_ = new trajectory_planner_moveit::CartPlanner(nh_);
+    }
 
     //! Empty stub
-    ~FakePlanner() {}
+    ~TrajPlanner() {}
 
 };
 
-bool FakePlanner::planTrajectory(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response) 
+bool TrajPlanner::planTrajectory(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response) 
 {
-    // create an instance of the helper class
-    trajectory_planner_moveit::CartPlanner my_cart_planner(nh_);
-
 	ROS_INFO("Received trajectory planning requestof type %d", request.type);
 	int type = request.type;
 	switch (type)
 	{
 		case definitions::TrajectoryPlanning::Request::MOVE_TO_CART_GOAL:
-            if ( my_cart_planner.planTrajectoryFromCode(request, response) )
+            if ( my_cart_planner_->planTrajectoryFromCode(request, response) )
             {
                 ROS_INFO("Succesfully planned a trajectory to the desired MOVE_TO_CART_GOAL");    
             }
@@ -88,12 +92,12 @@ bool FakePlanner::planTrajectory(definitions::TrajectoryPlanning::Request &reque
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "fake_trajectory_planner_node");
+    ros::init(argc, argv, "trajectory_planner_node");
     ros::NodeHandle nh;
 
-    trajectory_planner_moveit::FakePlanner node(nh);
+    trajectory_planner_moveit::TrajPlanner node(nh);
 
-    ROS_INFO("This node is ready to do fake trajectory planning!");
+    ROS_INFO("This node is ready to do trajectory planning!");
 
     while(ros::ok())
     {

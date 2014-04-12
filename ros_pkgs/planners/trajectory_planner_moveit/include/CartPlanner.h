@@ -40,6 +40,9 @@ class CartPlanner
 	// joint state topic
 	std::string topic_;
 
+	// speed scale for trajectory
+	double speed_;
+
   	// the service callback 
   	bool planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response);
 
@@ -58,14 +61,17 @@ class CartPlanner
 		clt_moveit_planning_ = nh.serviceClient<moveit_msgs::GetMotionPlan>(planning_service_name);
 
 		// planning related parameters default
-		max_points_in_trajectory_ = 50;
-		max_planning_attempts_ = 2;
-		max_planning_time_ = 2;
-		tolerance_in_position_ = 0.1;
-		tolerance_in_orientation_ = 0.1;
+		max_points_in_trajectory_ = 60;
+		max_planning_attempts_ = 100;
+		max_planning_time_ = 10;
+		tolerance_in_position_ = 0.01;
+		tolerance_in_orientation_ = 0.01;
 
 		// joint state topic
 		topic_ = nh.resolveName("/joint_states");
+
+		// to double the speed of the trajectory
+		speed_ = 2.0;
     }
 
     //! Empty stub

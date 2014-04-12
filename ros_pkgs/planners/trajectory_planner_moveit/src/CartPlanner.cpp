@@ -29,9 +29,9 @@ void CartPlanner::convertFromMRobotTrajectoryToTrajectory(const moveit_msgs::Rob
 		
 		for(int h = 0; h < 6; h++)
 		{
-		 	robot_point.hand.joints.push_back(0);
-		 	//robot_point.hand.velocity.push_back(0);
-		 	//robot_point.hand.acceleration.push_back(0);
+		 	robot_point.hand.joints.push_back(0.01);
+		 	robot_point.hand.velocity.push_back(0.01);
+		 	robot_point.hand.acceleration.push_back(0.01);
 		}
 
 		trajectory.robot_path.push_back(robot_point);
@@ -99,7 +99,6 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 
 	ROS_INFO("Planning for wrist (px, py, pz, qx, qy, qz, qw):\t%f\t%f\t%f\t%f\t%f\t%f\t%f", goal.pose.position.x, goal.pose.position.y, goal.pose.position.z, goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z, goal.pose.orientation.w);
 	
-
 	// now construct the motion plan request
 	moveit_msgs::GetMotionPlan motion_plan;
 	moveit_msgs::MotionPlanRequest &motion_plan_request = motion_plan.request.motion_plan_request;
@@ -108,7 +107,7 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 	motion_plan_request.goal_constraints.push_back(pose_goal);
 	motion_plan_request.num_planning_attempts = max_planning_attempts_;
 	motion_plan_request.allowed_planning_time = max_planning_time_;
-	motion_plan_request.planner_id = "PRMkConfigDefault";
+	motion_plan_request.planner_id = "SBLkConfigDefault";
 
 	// wait for a joint state
 	boost::shared_ptr<const sensor_msgs::JointState> current_state_ptr = ros::topic::waitForMessage<sensor_msgs::JointState>(topic_, ros::Duration(3.0));

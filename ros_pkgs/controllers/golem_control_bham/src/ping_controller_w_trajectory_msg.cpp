@@ -35,7 +35,12 @@ int main(int argc, char **argv)
     for (int j = 0; j < 7; j++)
     {
       trajectory.robot_path[0].arm.joints.push_back(0);
+      trajectory.robot_path[0].arm.velocity.push_back(0);
+      trajectory.robot_path[0].arm.acceleration.push_back(0);
+
       trajectory.robot_path[0].hand.joints.push_back(0);
+      trajectory.robot_path[0].hand.velocity.push_back(0);
+      trajectory.robot_path[0].hand.acceleration.push_back(0);
     }
     trajectory.time_from_previous[0] = ros::Duration().fromSec(0);
 
