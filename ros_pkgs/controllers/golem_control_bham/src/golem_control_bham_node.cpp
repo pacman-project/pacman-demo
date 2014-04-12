@@ -33,10 +33,15 @@ namespace golem_control_bham{
       // the controller object
       BhamControl::Ptr controller_;
 
-      // the robot type and data structures fro state and comman
+      // the robot type and data structures for state and comman
       RobotUIBK uibk_robot_;
       RobotUIBK::State uibk_robot_state_;
       RobotUIBK::Command::Seq uibk_robot_command_;
+
+      // the robot type and data structures for state and comman
+      RobotEddie robot_eddie_;
+      RobotEddie::State robot_eddie_state_;
+      RobotEddie::Command::Seq robot_eddie_command_;
 
       // roslaunch parameters
       // configuration file for golem
@@ -74,7 +79,7 @@ namespace golem_control_bham{
         priv_nh_.param<std::string>("config_file", config_file_, "");
 
         // define the names passed in the urdf files corresponding to the current move group
-        priv_nh_.param<std::string>("arm_name", arm_name_, "left");
+        priv_nh_.param<std::string>("arm_name", arm_name_, "right");
 
         // create the controller object using the config file
         controller_ = BhamControl::create(config_file_);
@@ -186,45 +191,45 @@ bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Em
     // test arm
     // Pose #1
     commands[1] = init;
-    commands[1].t = commands[0].t + pacman::float_t(5.0);
+    commands[1].t = commands[0].t + pacman::float_t(3.0);
     commands[1].arm.pos.c[0] += pacman::float_t(0.1);
     // Go to home in the hand at pose 1
     commands[1].hand.pos.setToDefault();
     // Pose #2
     commands[2] = init;
-    commands[2].t = commands[1].t + pacman::float_t(5.0);
+    commands[2].t = commands[1].t + pacman::float_t(3.0);
     commands[2].arm.pos.c[1] -= pacman::float_t(0.1);
     // Pose #3
     commands[3] = init;
-    commands[3].t = commands[2].t + pacman::float_t(5.0);
+    commands[3].t = commands[2].t + pacman::float_t(3.0);
     commands[3].arm.pos.c[2] += pacman::float_t(0.1);
     // Pose #4
     commands[4] = init;
-    commands[4].t = commands[3].t + pacman::float_t(5.0);
+    commands[4].t = commands[3].t + pacman::float_t(3.0);
     commands[4].arm.pos.c[3] -= pacman::float_t(0.1);
     // Pose #5
     commands[5] = init;
-    commands[5].t = commands[4].t + pacman::float_t(5.0);
+    commands[5].t = commands[4].t + pacman::float_t(3.0);
     commands[5].arm.pos.c[4] += pacman::float_t(0.1);
     // Pose #6
     commands[6] = init;
-    commands[6].t = commands[5].t + pacman::float_t(5.0);
+    commands[6].t = commands[5].t + pacman::float_t(3.0);
     commands[6].arm.pos.c[5] -= pacman::float_t(0.1);
     // Pose #7
     commands[7] = init;
-    commands[7].t = commands[6].t + pacman::float_t(5.0);
+    commands[7].t = commands[6].t + pacman::float_t(3.0);
     commands[7].arm.pos.c[6] += pacman::float_t(0.1);
     // Back to the initial pose
     commands[8] = init;
-    commands[8].t = commands[7].t + pacman::float_t(5.0);
+    commands[8].t = commands[7].t + pacman::float_t(3.0);
     // Test the hand as well
     // Move knucle
     commands[9] = init;
-    commands[9].t = commands[8].t + pacman::float_t(5.0);
+    commands[9].t = commands[8].t + pacman::float_t(3.0);
     commands[9].hand.pos.rotation += pacman::float_t(0.25);
     // Open
     commands[10] = init;
-    commands[10].t = commands[9].t + pacman::float_t(5.0);
+    commands[10].t = commands[9].t + pacman::float_t(3.0);
     commands[10].hand.pos.middle[0] -= pacman::float_t(0.3);
     commands[10].hand.pos.middle[1] -= pacman::float_t(0.3);
     commands[10].hand.pos.left[0] -= pacman::float_t(0.3);
@@ -233,7 +238,7 @@ bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Em
     commands[10].hand.pos.right[1] -= pacman::float_t(0.3);
     // Close to home position
     commands[11] = init;
-    commands[11].t = commands[10].t + pacman::float_t(5.0);
+    commands[11].t = commands[10].t + pacman::float_t(3.0);
 
 
     // execute trajectory

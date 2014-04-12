@@ -111,17 +111,63 @@ namespace pacman {
 			joint_states.position[j] = state.arm.pos.c[j];
 		}
 
-			// and continue with the hand:
-			joint_states.position[7] = state.hand.pos.rotation;
-			joint_states.position[8] = state.hand.pos.left[0];
-			joint_states.position[9] = state.hand.pos.left[1];
-			joint_states.position[10] = state.hand.pos.right[0];
-			joint_states.position[11] = state.hand.pos.right[1];
-			joint_states.position[12] = state.hand.pos.middle[0];
-			joint_states.position[13] = state.hand.pos.middle[1];
+		// and continue with the hand:
+		joint_states.position[7] = state.hand.pos.rotation;
+		joint_states.position[8] = state.hand.pos.left[0];
+		joint_states.position[9] = state.hand.pos.left[1];
+		joint_states.position[10] = state.hand.pos.right[0];
+		joint_states.position[11] = state.hand.pos.right[1];
+		joint_states.position[12] = state.hand.pos.middle[0];
+		joint_states.position[13] = state.hand.pos.middle[1];
 
-			return;
-		}
+		return;
+	}
+
+	// // this mapping uses names defined in the urdf of the UIBK robot, so be careful
+	// void mapStates(const RobotEddie::State &state, std::string name, sensor_msgs::JointState &joint_states, ros::Time stamp) 
+	// {
+
+	// 	// initialize the joint state topic
+	// 	joint_states.name.resize(RobotUIBK::Config::JOINTS);
+	// 	joint_states.position.resize(RobotUIBK::Config::JOINTS);
+	// 	joint_states.velocity.resize(RobotUIBK::Config::JOINTS);
+	// 	joint_states.effort.resize(RobotUIBK::Config::JOINTS);
+	// 	joint_states.name[0] = name + "_arm_0_joint";
+	// 	joint_states.name[1] = name + "_arm_1_joint";
+	// 	joint_states.name[2] = name + "_arm_2_joint";
+	// 	joint_states.name[3] = name + "_arm_3_joint";
+	// 	joint_states.name[4] = name + "_arm_4_joint";
+	// 	joint_states.name[5] = name + "_arm_5_joint";
+	// 	joint_states.name[6] = name + "_arm_6_joint";
+	// 	joint_states.name[7] = name + "_sdh_knuckle_joint";
+	// 	joint_states.name[8] = name + "_sdh_finger_12_joint";
+	// 	joint_states.name[9] = name + "_sdh_finger_13_joint";
+	// 	joint_states.name[10] = name + "_sdh_finger_22_joint";
+	// 	joint_states.name[11] = name + "_sdh_finger_23_joint";
+	// 	joint_states.name[12] = name + "_sdh_thumb_2_joint";
+	// 	joint_states.name[13] = name + "_sdh_thumb_3_joint";
+
+	// 	joint_states.header.stamp = stamp;
+
+	// 	// the joint mapping needs to be hardcoded to match Golem.xml and Ros.urdf structures
+	// 	// note that, the names are set in the class constructor for the order convention
+	// 	// and let the party begin... first the arm:
+	// 	for (int j = 0; j < KukaLWR::Config::JOINTS; j++)
+	// 	{
+	// 		joint_states.position[j] = state.arm.pos.c[j];
+	// 	}
+
+	// 	// and continue with the hand:
+	// 	joint_states.position[7] = state.hand.pos.rotation;
+	// 	joint_states.position[8] = state.hand.pos.left[0];
+	// 	joint_states.position[9] = state.hand.pos.left[1];
+	// 	joint_states.position[10] = state.hand.pos.right[0];
+	// 	joint_states.position[11] = state.hand.pos.right[1];
+	// 	joint_states.position[12] = state.hand.pos.middle[0];
+	// 	joint_states.position[13] = state.hand.pos.middle[1];
+
+	// 	return;
+	// }
 
 };
 
