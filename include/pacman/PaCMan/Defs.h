@@ -128,118 +128,134 @@ namespace pacman {
 		}
 	};
 
-	/** Robot types */
-	enum RobotType {
-		/** Kuka LWR */
-		KUKA_LWR = 1,
-		/** Schunk Dexterous Hand */
-		SCHUNK_DEX_HAND,
-		/** Innsbruck robot */
-		ROBOT_UIBK = 101,
-	};
-
-	/** Robot data */
-	class RobotData {
+	/** Robot */
+	class Robot {
 	public:
-		/** Time stamp */
-		float_t t;
+		/** Robot types */
+		enum Type {
+			/** Kuka LWR */
+			KUKA_LWR = 1,
+			/** Schunk Dexterous Hand */
+			SCHUNK_DEX_HAND,
+			/** KIT Head */
+			KIT_HEAD,
 
-		/** Robot type */
-		inline RobotType getRobotType() const {
-			return robotType;
-		}
-		/** Data size */
-		inline std::uintptr_t getDataSize() const {
-			return dataSize;
-		}
+			/** Innsbruck robot */
+			ROBOT_UIBK = 101,
+			/** Innsbruck robot Eddie */
+			ROBOT_EDDIE,
+		};
+
+		/** Robot data */
+		class Data {
+		public:
+			/** Robot type */
+			inline Type getType() const {
+				return type;
+			}
+			/** Data size */
+			inline std::uintptr_t getSize() const {
+				return size;
+			}
 		
-		/** Data array access */
-		inline RobotData& operator () (std::uintptr_t idx) {
-			return *(RobotData*)((char*)this + idx*dataSize);
-		}
-		/** Data array access */
-		inline const RobotData& operator () (std::uintptr_t idx) const {
-			return *(const RobotData*)((const char*)this + idx*dataSize);
-		}
+			/** Data array access */
+			inline Data& operator () (std::uintptr_t idx) {
+				return *(Data*)((char*)this + idx*size);
+			}
+			/** Data array access */
+			inline const Data& operator () (std::uintptr_t idx) const {
+				return *(const Data*)((const char*)this + idx*size);
+			}
 
-		/** The default values. */
-		inline void setToDefault() {
-			t = float_t(0.);
-		}
+		protected:
+			/** Set robot type and data size. */
+			Data(Type type, std::uintptr_t dataSize) : type(type), size(dataSize) {}
 
-	protected:
-		/** Set robot type and data size. */
-		RobotData(RobotType robotType, std::uintptr_t dataSize) : robotType(robotType), dataSize(dataSize) {
-			setToDefault();
-		}
+		private:
+			/** Robot type */
+			Type type;
+			/** Data size */
+			std::uintptr_t size;
+		};
+		
+		/** Robot state base */
+		class State : public Data {
+		protected:
+			/** Set robot type and data size. */
+			State(Type type, std::uintptr_t size) : Data(type, size) {}
+		};
 
-	private:
-		/** Robot type */
-		RobotType robotType;
-		/** Data size */
-		std::uintptr_t dataSize;
-	};
+		/** Robot command base */
+		class Command : public Data {
+		protected:
+			/** Set robot type and data size. */
+			Command(Type type, std::uintptr_t size) : Data(type, size) {}
+		};
 
-	/** Robot state base */
-	class RobotState : public RobotData {
-	protected:
-		/** Set robot type and data size. */
-		RobotState(RobotType robotType, std::uintptr_t dataSize) : RobotData(robotType, dataSize) {
-		}
-	};
-	
-	/** Robot command base */
-	class RobotCommand : public RobotData {
-	protected:
-		/** Set robot type and data size. */
-		RobotCommand(RobotType robotType, std::uintptr_t dataSize) : RobotData(robotType, dataSize) {
-		}
-	};
+		/** Robot state data template (position control) */
+		template <typename _Config> class StateData : public State  {
+		public:
+			/** Type */
+			static const Type TYPE = _Config::TYPE;
 
-	/** State template (position control) */
-	template <typename _Config, RobotType _RobotType> class State : public RobotState  {
-	public:
-		/** Sequence */
-		typedef std::vector<State> Seq;
+			/** Position */
+			_Config pos;
 
-		/** Position */
-		_Config pos;
+			/** Default constructor sets the default values. */
+			inline StateData(Type type = TYPE, std::uintptr_t size = sizeof(StateData<_Config>)) : State(type, size) {
+				setToDefault();
+			}
+			/** The default values. */
+			inline void setToDefault() {
+				pos.setToDefault();
+			}
+		};
+		/** Robot command data template (position control) */
+		template <typename _Config> class CommandData : public Command {
+		public:
+			/** Type */
+			static const Type TYPE = _Config::TYPE;
 
-		/** Default constructor sets the default values. */
-		inline State() : RobotState(_RobotType, sizeof(State<_Config, _RobotType>)) {
-			setToDefault();
-		}
-		/** The default values. */
-		inline void setToDefault() {
-			RobotData::setToDefault();
-			pos.setToDefault();
-		}
-	};
+			/** Position */
+			_Config pos;
+			/** Velocity */
+			_Config vel;
+			/** Acceleration */
+			_Config acc;
 
-	/** Command template (position control) */
-	template <typename _Config, RobotType _RobotType> class Command : public RobotCommand {
-	public:
-		/** Sequence */
-		typedef std::vector<Command> Seq;
+			/** Default constructor sets the default values. */
+			inline CommandData(Type type = TYPE, std::uintptr_t size = sizeof(CommandData<_Config>)) : Command(type, size) {
+				setToDefault();
+			}
+			/** The default values. */
+			inline void setToDefault() {
+				pos.setToDefault();
+				vel.setToDefault();
+				acc.setToDefault();
+			}
+		};
+		/** Time ordered sequence */
+		template <typename _RobotData> class TimeStamp : public _RobotData  {
+		public:
+			/** Sequence */
+			typedef std::vector<TimeStamp> Seq;
 
-		/** Position */
-		_Config pos;
-		/** Velocity */
-		_Config vel;
-		/** Acceleration */
-		_Config acc;
+			/** Type */
+			static const Type TYPE = _RobotData::TYPE;
 
-		/** Default constructor sets the default values. */
-		inline Command() : RobotCommand(_RobotType, sizeof(Command<_Config, _RobotType>)) {
-			RobotData::setToDefault();
-			setToDefault();
-		}
-		/** The default values. */
-		inline void setToDefault() {
-			pos.setToDefault();
-			vel.setToDefault();
-			acc.setToDefault();
-		}
+			/** Time stamp */
+			float_t t;
+
+			/** Default constructor sets the default values. */
+			inline TimeStamp() : _RobotData(TYPE, sizeof(TimeStamp<_RobotData>)) {
+				setToDefault();
+			}
+			/** The default values. */
+			inline void setToDefault() {
+				_RobotData::setToDefault();
+				t = float_t(0.);
+			}
+		};
 	};
 
 	/** Kuka LWR */
@@ -248,9 +264,8 @@ namespace pacman {
 		/** Kuka LWR configuration */
 		class Config {
 		public:
-			/** Sequence */
-			typedef std::vector<Config> Seq;
-
+			/** Type */
+			static const Robot::Type TYPE = Robot::Type::KUKA_LWR;
 			/** Number of kinematic chains */
 			static const std::uintptr_t CHAINS = 1;
 			/** Number of joints */
@@ -260,10 +275,7 @@ namespace pacman {
 			union {
 				float_t c[JOINTS];
 			};
-			/** Default constructor sets the default values. */
-			inline Config() {
-				setToDefault();
-			}
+
 			/** The default values. */
 			inline void setToDefault() {
 				std::fill(c, c + JOINTS, float_t(0.));
@@ -271,10 +283,12 @@ namespace pacman {
 		};
 
 		/** Kuka LWR state */
-		typedef pacman::State<Config, RobotType::KUKA_LWR> State;
+		typedef pacman::Robot::StateData<Config> StateData;
+		typedef pacman::Robot::TimeStamp<StateData> State;
 
 		/** Kuka LWR command */
-		typedef pacman::Command<Config, RobotType::KUKA_LWR> Command;
+		typedef pacman::Robot::CommandData<Config> CommandData;
+		typedef pacman::Robot::TimeStamp<CommandData> Command;
 	};
 
 	/** Schunk Dexterous Hand */
@@ -283,9 +297,8 @@ namespace pacman {
 		/** Schunk Dexterous Hand configuration */
 		class Config {
 		public:
-			/** Sequence */
-			typedef std::vector<Config> Seq;
-
+			/** Type */
+			static const Robot::Type TYPE = Robot::Type::SCHUNK_DEX_HAND;
 			/** Number of kinematic chains */
 			static const std::uintptr_t CHAINS = 3;
 			/** Number of joints per finger */
@@ -303,10 +316,7 @@ namespace pacman {
 				};
 				float_t c[JOINTS];
 			};
-			/** Default constructor sets the default values. */
-			inline Config() {
-				setToDefault();
-			}
+
 			/** The default values. */
 			inline void setToDefault() {
 				std::fill(c, c + JOINTS, float_t(0.));
@@ -336,35 +346,81 @@ namespace pacman {
 		};
 
 		/** Schunk Dexterous Hand state */
-		typedef pacman::State<Config, RobotType::SCHUNK_DEX_HAND> State;
+		typedef pacman::Robot::StateData<Config> StateData;
+		typedef pacman::Robot::TimeStamp<StateData> State;
 
 		/** Schunk Dexterous Hand command */
-		typedef pacman::Command<Config, RobotType::SCHUNK_DEX_HAND> Command;
+		typedef pacman::Robot::CommandData<Config> CommandData;
+		typedef pacman::Robot::TimeStamp<CommandData> Command;
+	};
+
+	/** KIT head */
+	class KITHead {
+	public:
+		/** KIT head configuration */
+		class Config {
+		public:
+			/** Type */
+			static const Robot::Type TYPE = Robot::Type::KIT_HEAD;
+			/** Number of kinematic chains */
+			static const std::uintptr_t CHAINS = 3;
+			/** Number of joints of the neck */
+			static const std::uintptr_t JOINTS_NECK = 5;
+			/** Number of joints of the left eye */
+			static const std::uintptr_t JOINTS_LEFT_EYE = 1;
+			/** Number of joints of the right eye */
+			static const std::uintptr_t JOINTS_RIGHT_EYE = 1;
+			/** Number of joints */
+			static const std::uintptr_t JOINTS = JOINTS_NECK + JOINTS_LEFT_EYE + JOINTS_RIGHT_EYE;
+
+			/** Config elements. */
+			union {
+				struct {
+					float_t neck[JOINTS_NECK];
+					float_t eyeLeft;
+					float_t eyeRight;
+				};
+				float_t c[JOINTS];
+			};
+
+			/** The default values. */
+			inline void setToDefault() {
+				std::fill(c, c + JOINTS, float_t(0.));
+			}
+		};
+
+		/** KIT head state */
+		typedef pacman::Robot::StateData<Config> StateData;
+		typedef pacman::Robot::TimeStamp<StateData> State;
+
+		/** KIT head command */
+		typedef pacman::Robot::CommandData<Config> CommandData;
+		typedef pacman::Robot::TimeStamp<CommandData> Command;
 	};
 
 	/** Innsbruck robot */
 	class RobotUIBK {
 	public:
-		/** Innsbruck robot configuration */
-		class Config {
+		/** Innsbruck robot data */
+		template <typename _Base, typename _ArmData, typename _HandData> class Data : public _Base {
 		public:
 			/** Sequence */
-			typedef std::vector<Config> Seq;
+			typedef std::vector<Data> Seq;
 
+			/** Type */
+			static const Robot::Type TYPE = Robot::Type::ROBOT_UIBK;
 			/** Number of kinematic chains */
 			static const std::uintptr_t CHAINS = KukaLWR::Config::CHAINS + SchunkDexHand::Config::CHAINS;
 			/** Number of joints */
 			static const std::uintptr_t JOINTS = KukaLWR::Config::JOINTS + SchunkDexHand::Config::JOINTS;
 
-			/** Arm configuration. */
-			KukaLWR::Config arm;
-			/** Hand configuration. */
-			SchunkDexHand::Config hand;
+			/** Arm. */
+			_ArmData arm;
+			/** Hand. */
+			_HandData hand;
 
-			/** Default constructor sets the default values. */
-			inline Config() {
-				setToDefault();
-			}
+			/** Default constructor sets data type and size. */
+			inline Data(Robot::Type type = TYPE, std::uintptr_t size = sizeof(Data<_Base, _ArmData, _HandData>)) : _Base(type, size) {}
 			/** The default values. */
 			inline void setToDefault() {
 				arm.setToDefault();
@@ -372,32 +428,68 @@ namespace pacman {
 			}
 		};
 
-		/** Innsbruck robot configuration + pose */
-		class Pose : public Config {
+		/** Innsbruck robot configuration */
+		typedef Data<Robot::Data, KukaLWR::Config, SchunkDexHand::Config> Config;
+
+		/** Innsbruck robot state */
+		typedef Data<Robot::State, KukaLWR::StateData, SchunkDexHand::StateData> StateData;
+		typedef pacman::Robot::TimeStamp<StateData> State;
+
+		/** Innsbruck robot command */
+		typedef Data<Robot::Command, KukaLWR::CommandData, SchunkDexHand::CommandData> CommandData;
+		typedef pacman::Robot::TimeStamp<CommandData> Command;
+	};
+
+	/** Innsbruck robot Eddie */
+	class RobotEddie {
+	public:
+		/**  Innsbruck robot Eddie data */
+		template <typename _Base, typename _ArmData, typename _HandData, typename _HeadData> class Data : public _Base {
 		public:
 			/** Sequence */
-			typedef std::vector<Pose> Seq;
+			typedef std::vector<Data> Seq;
 
-			/** 3D pose */
-			Mat34 pose;
+			/** Type */
+			static const Robot::Type TYPE = Robot::Type::ROBOT_EDDIE;
+			/** Number of kinematic chains */
+			static const std::uintptr_t CHAINS = 2*KukaLWR::Config::CHAINS + 2*SchunkDexHand::Config::CHAINS + KITHead::Config::CHAINS;
+			/** Number of joints */
+			static const std::uintptr_t JOINTS = 2*KukaLWR::Config::JOINTS + 2*SchunkDexHand::Config::JOINTS + KITHead::Config::JOINTS;
 
-			/** Default constructor sets the default values. */
-			inline Pose() {
-				setToDefault();
-			}
+			/** Left arm. */
+			_ArmData armLeft;
+			/** Left hand. */
+			_HandData handLeft;
+			/** Right arm. */
+			_ArmData armRight;
+			/** Right hand. */
+			_HandData handRight;
+			/** Head. */
+			_HeadData head;
+
+			/** Default constructor sets data type and size. */
+			inline Data(Robot::Type type = TYPE, std::uintptr_t size = sizeof(Data<_Base, _ArmData, _HandData, _HeadData>)) : _Base(type, size) {}
+
 			/** The default values. */
 			inline void setToDefault() {
-				arm.setToDefault();
-				hand.setToDefault();
-				pose.setToDefault();
+				armLeft.setToDefault();
+				handLeft.setToDefault();
+				armRight.setToDefault();
+				handRight.setToDefault();
+				head.setToDefault();
 			}
 		};
 
-		/**  Innsbruck robot state */
-		typedef pacman::State<Config, RobotType::ROBOT_UIBK> State;
+		/** Innsbruck robot Eddie configuration */
+		typedef Data<Robot::Data, KukaLWR::Config, SchunkDexHand::Config, KITHead::StateData> Config;
 
-		/**  Innsbruck robot command */
-		typedef pacman::Command<Config, RobotType::ROBOT_UIBK> Command;
+		/**  Innsbruck robot Eddie state */
+		typedef Data<Robot::State, KukaLWR::StateData, SchunkDexHand::StateData, KITHead::StateData> StateData;
+		typedef pacman::Robot::TimeStamp<StateData> State;
+
+		/**  Innsbruck robot Eddie command */
+		typedef Data<Robot::Command, KukaLWR::CommandData, SchunkDexHand::CommandData, KITHead::CommandData> CommandData;
+		typedef pacman::Robot::TimeStamp<CommandData> Command;
 	};
 };
 

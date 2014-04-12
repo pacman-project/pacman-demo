@@ -235,15 +235,15 @@ void BhamGraspImpl::convert(const Point3D::Seq& src, ::grasp::Cloud::PointSeq& d
 
 void BhamGraspImpl::convert(const ::grasp::Manipulator::Config& src, SchunkDexHand::Config& dst) const {
 	const std::uintptr_t offset = grasp.second->getManipulator().getArmJoints();
-	BhamControl::configToPacman(src.jc + grasp.second->getManipulator().getArmJoints(), dst);
+	configToPacman(src.jc + grasp.second->getManipulator().getArmJoints(), dst);
 }
 
 void BhamGraspImpl::convert(const SchunkDexHand::Config& src, ::grasp::Manipulator::Config& dst) const {
 	const std::uintptr_t offset = grasp.second->getManipulator().getArmJoints();
-	BhamControl::configToGolem(src, dst.jc + grasp.second->getManipulator().getArmJoints());
+	configToGolem(src, dst.jc + grasp.second->getManipulator().getArmJoints());
 }
 
-void BhamGraspImpl::convert(const ::grasp::RobotState::List& src, RobotUIBK::Config::Seq& dst) const {
+void BhamGraspImpl::convert(const ::grasp::Robot::State::List& src, RobotUIBK::Config::Seq& dst) const {
 	if (grasp.second->getManipulator().getJoints() < (U32)pacman::RobotUIBK::Config::JOINTS)
 		throw Message(Message::LEVEL_ERROR, "BhamGraspImpl::convert(): invalid number of joints");
 
@@ -264,13 +264,13 @@ void BhamGraspImpl::convert(const ::grasp::RobotState::List& src, RobotUIBK::Con
 	}
 }
 
-void BhamGraspImpl::convert(const RobotUIBK::Config::Seq& src, ::grasp::RobotState::List& dst) const {
+void BhamGraspImpl::convert(const RobotUIBK::Config::Seq& src, ::grasp::Robot::State::List& dst) const {
 	if (grasp.second->getManipulator().getJoints() < (U32)pacman::RobotUIBK::Config::JOINTS)
 		throw Message(Message::LEVEL_ERROR, "BhamGraspImpl::convert(): invalid number of joints");
 
 	dst.clear();
 	for (auto i: src) {
-		::grasp::RobotState configDst(*grasp.second->getManipulator().getController());
+		::grasp::Robot::State configDst(*grasp.second->getManipulator().getController());
 		::grasp::Manipulator::Config config;
 
 		// KukaLWR
