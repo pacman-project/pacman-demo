@@ -4,4 +4,4 @@ KukaLWR armLeft
 KukaLWR armRight
 SDHand handLeft
 SDHand handRight
-# KITHead head
+KITHead head

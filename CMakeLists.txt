@@ -483,6 +483,8 @@ if(BUILD_ROS_PKGS)
 SET(BHAM_CONTROL_ROS_FILES
 	${PROJECT_ROOT}/resources/Bham/ControlRobotUIBK.xml
 	#${PROJECT_ROOT}/resources/Bham/ControlRobotUIBKSim.xml
+	${PROJECT_ROOT}/resources/Bham/ControlRobotEddie.xml
+	#${PROJECT_ROOT}/resources/Bham/ControlRobotEddieSim.xml
 	${GOLEM_RESOURCES}/GolemDeviceKukaLWR.xml
 	${GOLEM_RESOURCES}/GolemDeviceKukaLWREddieL.xml
 	${GOLEM_RESOURCES}/GolemDeviceKukaLWREddieR.xml
@@ -495,6 +497,10 @@ SET(BHAM_CONTROL_ROS_FILES
 	${GOLEM_RESOURCES}/GolemDeviceRobotEddieSim.xml
 	${GOLEM_RESOURCES}/GolemDeviceRobotUIBK.xml
 	${GOLEM_RESOURCES}/GolemDeviceRobotUIBKSim.xml
+	${GOLEM_RESOURCES}/GolemDeviceKITHead.xml
+	${GOLEM_RESOURCES}/GolemDeviceKITHeadSim.xml
+	${GOLEM_RESOURCES}/GolemDeviceKITHeadEddie.xml
+	${GOLEM_RESOURCES}/GolemDeviceKITHeadBoris.xml
 )
 endif()
 

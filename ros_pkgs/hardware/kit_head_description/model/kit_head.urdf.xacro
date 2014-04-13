@@ -1,0 +1,256 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="$(find kit_head_description)/model/materials.urdf"/>
+
+  <xacro:property name="M_PI" value="3.1415926535897931" />
+  <xacro:property name="velocity_scale_factor" value="1.0"/>
+  
+  <xacro:macro name="kit_head" params="parent name *origin">
+
+
+    <!-- The base of the hand, fixed to its parent. -->
+    <joint name="${parent}_${name}_base_joint" type="fixed">
+      <insert_block name="origin"/>
+      <parent link="${parent}_link"/>
+      <child link="calib_${name}_base_link"/>
+    </joint>
+    
+    <link name="calib_${name}_base_link" />
+    
+    <!-- neck -->
+    <joint name="${name}_neck_pitch_joint" type="revolute">
+      <origin xyz="0 0 0" rpy="${-1*M_PI/2} 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-33 * M_PI / 180}" upper="${33 * M_PI / 180}"
+             effort="204" velocity="${velocity_scale_factor * 180 * M_PI / 180}" />
+      <safety_controller soft_lower_limit="${-33 * M_PI / 180}"
+                         soft_upper_limit="${33 * M_PI / 180}"
+                         k_position="30"
+                         k_velocity="30"/>
+      <dynamics damping="1.0"/>
+      <parent link="calib_${name}_base_link"/>
+      <child link="${name}_head_1_link"/>
+    </joint>
+
+    <link name="${name}_head_1_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.03" length="0.15"/>
+        </geometry>
+        <material name="KIT/DarkGrey"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.03" length="0.15"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${name}_neck_roll_joint" type="revolute">
+      <origin xyz="0 0 0" rpy="0 ${M_PI/2} 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-28 * M_PI / 180}" upper="${28 * M_PI / 180}"
+             effort="204" velocity="${velocity_scale_factor * 180 * M_PI / 180}" />
+      <safety_controller soft_lower_limit="${-28 * M_PI / 180}"
+                         soft_upper_limit="${28 * M_PI / 180}"
+                         k_position="30"
+                         k_velocity="30"/>
+      <dynamics damping="1.0"/>
+      <parent link="${name}_head_1_link"/>
+      <child link="${name}_head_2_link"/>
+    </joint>
+
+    <link name="${name}_head_2_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.03" length="0.15"/>
+        </geometry>
+        <material name="KIT/DarkGrey"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.03" length="0.15"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${name}_neck_yaw_joint" type="revolute">
+      <origin xyz="0 0 0" rpy="${-1*M_PI/2} ${-1*M_PI/2} 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-114 * M_PI / 180}" upper="${114 * M_PI / 180}"
+             effort="204" velocity="${velocity_scale_factor * 180 * M_PI / 180}" />
+      <safety_controller soft_lower_limit="${-114 * M_PI / 180}"
+                         soft_upper_limit="${114 * M_PI / 180}"
+                         k_position="30"
+                         k_velocity="30"/>
+      <dynamics damping="1.0"/>
+      <parent link="${name}_head_2_link"/>
+      <child link="${name}_head_3_link"/>
+    </joint>
+
+    <link name="${name}_head_3_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.03" length="0.15"/>
+        </geometry>
+        <material name="KIT/DarkGrey"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.03" length="0.15"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${name}_head_tilt_joint" type="revolute">
+      <origin xyz="0 0 -0.1745" rpy="${M_PI/2} 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-40 * M_PI / 180}" upper="${40 * M_PI / 180}"
+             effort="204" velocity="${velocity_scale_factor * 180 * M_PI / 180}" />
+      <safety_controller soft_lower_limit="${-40 * M_PI / 180}"
+                         soft_upper_limit="${40 * M_PI / 180}"
+                         k_position="30"
+                         k_velocity="30"/>
+      <dynamics damping="1.0"/>
+      <parent link="${name}_head_3_link"/>
+      <child link="${name}_head_4_link"/>
+    </joint>
+
+    <link name="${name}_head_4_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.03" length="0.15"/>
+        </geometry>
+        <material name="KIT/DarkGrey"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.03" length="0.15"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${name}_eyes_tilt_joint" type="revolute">
+      <origin xyz="0.1 0 0" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-20 * M_PI / 180}" upper="${20 * M_PI / 180}"
+             effort="204" velocity="${velocity_scale_factor * 180 * M_PI / 180}" />
+      <safety_controller soft_lower_limit="${-20 * M_PI / 180}"
+                         soft_upper_limit="${20 * M_PI / 180}"
+                         k_position="30"
+                         k_velocity="30"/>
+      <dynamics damping="1.0"/>
+      <parent link="${name}_head_4_link"/>
+      <child link="${name}_head_5_link"/>
+    </joint>
+
+    <link name="${name}_head_5_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.03" length="0.03"/>
+        </geometry>
+        <material name="KIT/DarkGrey"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.03" length="0.03"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${name}_left_eye_joint" type="revolute">
+      <origin xyz="0 0 0.0465" rpy="${M_PI/2} 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-20 * M_PI / 180}" upper="${20 * M_PI / 180}"
+             effort="204" velocity="${velocity_scale_factor * 180 * M_PI / 180}" />
+      <safety_controller soft_lower_limit="${-20 * M_PI / 180}"
+                         soft_upper_limit="${20 * M_PI / 180}"
+                         k_position="30"
+                         k_velocity="30"/>
+      <dynamics damping="1.0"/>
+      <parent link="${name}_head_5_link"/>
+      <child link="${name}_left_eye_link"/>
+    </joint>
+
+    <link name="${name}_left_eye_link">
+      <visual>
+        <origin xyz="0.02 0 0" rpy="0 ${M_PI/2} 0"/>
+        <geometry>
+          <cylinder radius="0.03" length="0.02"/>
+        </geometry>
+        <material name="KIT/White"/>
+      </visual>
+      <collision>
+        <origin xyz="0.02 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.03" length="0.02"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${name}_right_eye_joint" type="revolute">
+      <origin xyz="0 0 -0.0465" rpy="${M_PI/2} 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${-20 * M_PI / 180}" upper="${20 * M_PI / 180}"
+             effort="204" velocity="${velocity_scale_factor * 180 * M_PI / 180}" />
+      <safety_controller soft_lower_limit="${-20 * M_PI / 180}"
+                         soft_upper_limit="${20 * M_PI / 180}"
+                         k_position="30"
+                         k_velocity="30"/>
+      <dynamics damping="1.0"/>
+      <parent link="${name}_head_5_link"/>
+      <child link="${name}_right_eye_link"/>
+    </joint>
+
+    <link name="${name}_right_eye_link">
+      <visual>
+        <origin xyz="0.02 0 0" rpy="0 ${M_PI/2} 0"/>
+        <geometry>
+          <cylinder radius="0.03" length="0.02"/>
+        </geometry>
+        <material name="KIT/White"/>
+      </visual>
+      <collision>
+        <origin xyz="0.02 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.03" length="0.02"/>
+        </geometry>
+      </collision>
+    </link>
+
+<!--     <joint name="${name}_face_joint" type="fixed">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <parent link="${name}_head_5_link"/>
+      <child link="${name}_face_link"/>
+    </joint>
+
+    <link name="${name}_face_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://kit_head_description/meshes/inmoov_face.stl"/>
+        </geometry>
+        <material name="KIT/White"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.03" length="0.15"/>
+        </geometry>
+      </collision>
+    </link> -->
+
+  </xacro:macro>
+
+</robot>

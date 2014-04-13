@@ -2,7 +2,7 @@
 
 UIBKRobot[] robot_path
 
-RobotEddie[] robot_eddie_path
+RobotEddie[] eddie_path
 
 duration[] time_from_previous
 int32 trajectory_id
