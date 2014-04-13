@@ -28,29 +28,53 @@ int main(int argc, char **argv)
     ros::Duration five_seconds(5.0);
 
     // resize with the number of waypoints you want to test
-    trajectory.robot_path.resize(3);
+    trajectory.eddie_path.resize(3);
     trajectory.time_from_previous.resize(3);
 
     // start at home
     for (int j = 0; j < 7; j++)
     {
-      trajectory.robot_path[0].arm.joints.push_back(0);
-      trajectory.robot_path[0].arm.velocity.push_back(0);
-      trajectory.robot_path[0].arm.acceleration.push_back(0);
+        trajectory.eddie_path[0].armRight.joints.push_back(0);
+        trajectory.eddie_path[0].armRight.velocity.push_back(0);
+        trajectory.eddie_path[0].armRight.acceleration.push_back(0);
 
-      trajectory.robot_path[0].hand.joints.push_back(0);
-      trajectory.robot_path[0].hand.velocity.push_back(0);
-      trajectory.robot_path[0].hand.acceleration.push_back(0);
+        trajectory.eddie_path[0].armLeft.joints.push_back(0);
+        trajectory.eddie_path[0].armLeft.velocity.push_back(0);
+        trajectory.eddie_path[0].armLeft.acceleration.push_back(0);
+
+        trajectory.eddie_path[0].handRight.joints.push_back(0);
+        trajectory.eddie_path[0].handRight.velocity.push_back(0);
+        trajectory.eddie_path[0].handRight.acceleration.push_back(0);
+
+        trajectory.eddie_path[0].handLeft.joints.push_back(0);
+        trajectory.eddie_path[0].handLeft.velocity.push_back(0);
+        trajectory.eddie_path[0].handLeft.acceleration.push_back(0);
     }
+
+    for (int j = 0; j < 5; j++)
+    {
+        trajectory.eddie_path[0].head.joints.push_back(0);
+        trajectory.eddie_path[0].head.velocity.push_back(0);
+        trajectory.eddie_path[0].head.acceleration.push_back(0);
+    }
+
+    trajectory.eddie_path[0].head.jointsLEye = 0;
+    trajectory.eddie_path[0].head.velocityLEye = 0;
+    trajectory.eddie_path[0].head.accelerationLEye = 0;
+
+    trajectory.eddie_path[0].head.jointsREye = 0;
+    trajectory.eddie_path[0].head.velocityREye = 0;
+    trajectory.eddie_path[0].head.accelerationREye = 0;
+
     trajectory.time_from_previous[0] = ros::Duration().fromSec(0);
 
     // second way point
-    trajectory.robot_path[1] = trajectory.robot_path[0];
-    trajectory.robot_path[1].arm.joints[1] = trajectory.robot_path[0].arm.joints[1] + 0.3;
+    trajectory.eddie_path[1] = trajectory.eddie_path[0];
+    trajectory.eddie_path[1].armRight.joints[1] = trajectory.eddie_path[0].armRight.joints[1] + 0.3;
     trajectory.time_from_previous[1] = five_seconds;
 
     // third way point
-    trajectory.robot_path[2] = trajectory.robot_path[0];
+    trajectory.eddie_path[2] = trajectory.eddie_path[0];
     trajectory.time_from_previous[2] = five_seconds;
 
     // create the service instance

@@ -1,12 +1,11 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" 
-       name="uibk_robot">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="Eddie">
        
-  <xacro:include filename="$(find lwr_description)/urdf/materials.urdf"/>
   <xacro:include filename="$(find torso_uibk)/urdf/torso.xacro"/>
   <xacro:include filename="$(find torso_uibk)/urdf/table.xacro"/>
   <xacro:include filename="$(find lwr_description)/urdf/kuka_lwr_arm_defs.xacro"/>
   <xacro:include filename="$(find schunk_description)/urdf/sdh/sdh.urdf.xacro" />
+  <xacro:include filename="$(find kit_head_description)/model/kit_head.urdf.xacro" />
   
   <link name="world_link" />
   
@@ -95,28 +94,9 @@
 
 
   <!-- HEAD -->
-    <!-- joint between arm_7_link and the connector ring -->
-  <joint name="world_to_kit_head" type="fixed" >
-    <origin xyz="-0.35 0.675 0.85" rpy="0 0 0" />
-    <parent link="world_link" />
-    <child link="kit_head_link" />
-  </joint>
-  <link name="kit_head_link">
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry>
-        <cylinder radius="0.15" length="0.4"/>
-      </geometry>
-      <material name="Silver" />
-    </visual>
-    
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry>
-        <cylinder radius="0.15" length="0.4" />
-      </geometry>
-    </collision>
-  </link>
+  <xacro:kit_head name="head" parent="world">
+    <origin xyz="-0.4723 0.6767 0.85"/>
+  </xacro:kit_head>
   
   <!-- Kinect vision sensor -->
   <!-- <link name="camera_link"/>

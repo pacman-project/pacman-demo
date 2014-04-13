@@ -34,9 +34,9 @@ namespace golem_control_bham{
       BhamControl::Ptr controller_;
 
       // the robot type and data structures for state and comman
-      RobotUIBK uibk_robot_;
-      RobotUIBK::State uibk_robot_state_;
-      RobotUIBK::Command::Seq uibk_robot_command_;
+      // RobotUIBK uibk_robot_;
+      // RobotUIBK::State uibk_robot_state_;
+      // RobotUIBK::Command::Seq uibk_robot_command_;
 
       // the robot type and data structures for state and comman
       RobotEddie robot_eddie_;
@@ -53,7 +53,8 @@ namespace golem_control_bham{
 
       // service servers offered by this node
       ros::ServiceServer srv_trajectory_execution_;
-      ros::ServiceServer srv_test_controller_;
+      ros::ServiceServer srv_test_uibk_controller_;
+      ros::ServiceServer srv_test_eddie_controller_;
 
       // publishers of this node
       ros::Publisher pub_robot_state_;
@@ -66,10 +67,12 @@ namespace golem_control_bham{
       // service function to request trajectory execution
       //bool executeTrajectoryFromMoveItGUI(moveit_msgs::RobotTrajectory::Request &req, moveit_msgs::RobotTrajectory::Response &res);
       bool executeTrajectoryFromCode(definitions::TrajectoryExecution::Request &req, definitions::TrajectoryExecution::Response &res);
-      bool executeTrajectory(const RobotUIBK::Command::Seq &command);
+      //bool executeTrajectory(const RobotUIBK::Command::Seq &command);
+      bool executeTrajectory(const RobotEddie::Command::Seq &command);
 
       // service function to test the controller
-      bool testController(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
+      //bool testUIBKController(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
+      bool testEddieController(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 
       // constructor
       GolemController(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
@@ -86,13 +89,15 @@ namespace golem_control_bham{
 
         // advertise the node services
         srv_trajectory_execution_ = nh_.advertiseService(nh_.resolveName("/trajectory_execution_srv"),&GolemController::executeTrajectoryFromCode, this);
-        srv_test_controller_ = nh_.advertiseService(nh_.resolveName("/test_controller_srv"),&GolemController::testController, this);
+        //srv_test_uibk_controller_ = nh_.advertiseService(nh_.resolveName("/test_uibk_controller_srv"),&GolemController::testUIBKController, this);
+        srv_test_eddie_controller_ = nh_.advertiseService(nh_.resolveName("/test_eddie_controller_srv"),&GolemController::testEddieController, this);
+
 
         // advertise the node topics
         pub_robot_state_ = nh_.advertise<sensor_msgs::JointState>(nh_.resolveName("/golem/joint_states"), 10);
 
         // initialze the command 
-        uibk_robot_command_.resize(1);
+        robot_eddie_command_.resize(1);
 
       }
 
@@ -105,7 +110,7 @@ void GolemController::publishRobotState()
   // read the current data from the controller
   try 
   {  
-    controller_->lookupState(controller_->time(), uibk_robot_state_);
+    controller_->lookupState(controller_->time(), robot_eddie_state_);
   }
   catch (const std::exception& ex) 
   {
@@ -113,7 +118,7 @@ void GolemController::publishRobotState()
   }
 
   // convert from pacman to ros joint states 
-  pacman::mapStates(uibk_robot_state_, arm_name_, joint_states_, ros::Time::now());
+  pacman::mapStates(robot_eddie_state_, joint_states_, ros::Time::now());
 
   // publish the joint states, this functionality could be ported to another node to increase speed and versatility.
   pub_robot_state_.publish(joint_states_);
@@ -123,6 +128,10 @@ void GolemController::publishRobotState()
 
 bool GolemController::executeTrajectoryFromCode(definitions::TrajectoryExecution::Request &req, definitions::TrajectoryExecution::Response &res)
 {
+
+  robot_eddie_command_.clear();
+  res.result = res.OTHER_ERROR;
+
   ROS_INFO("Exectution service requested...");
 
   definitions::Trajectory trajectory = req.trajectory;
@@ -130,10 +139,10 @@ bool GolemController::executeTrajectoryFromCode(definitions::TrajectoryExecution
   // if (req.robot == req.UIBKRobot)
   // {
     //convert the trajectory to the command ToDo: double check that the trajectory has velocity and acceleration
-    pacman::convert(trajectory, uibk_robot_command_, controller_->time());
+    pacman::convert(trajectory, robot_eddie_command_, controller_->time());
 
     // excexute the trajectory
-    if( executeTrajectory(uibk_robot_command_) )
+    if( executeTrajectory(robot_eddie_command_) )
     {
       ROS_INFO("Exectution finished cleanly...");
       res.result = res.SUCCESS;
@@ -151,8 +160,24 @@ bool GolemController::executeTrajectoryFromCode(definitions::TrajectoryExecution
 
   return true;
 }
-
+/*
 bool GolemController::executeTrajectory(const RobotUIBK::Command::Seq &command)
+{
+  try 
+  {  
+    controller_->send(command.data(), command.size());
+    // wait for completion
+    controller_->waitForTrajectoryEnd();
+  }
+  catch (const std::exception& ex) 
+  {
+    ROS_ERROR("Unable to execute the given trajectory:  %s\n", ex.what());
+    return false;
+  }
+  return true;
+}*/
+
+bool GolemController::executeTrajectory(const RobotEddie::Command::Seq &command)
 {
   try 
   {  
@@ -169,7 +194,7 @@ bool GolemController::executeTrajectory(const RobotUIBK::Command::Seq &command)
 }
 
 // this function is called to test that the controller client works well with some basic motions
-bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
+/*bool GolemController::testUIBKController(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
 {
   try {
     // Read current state
@@ -240,6 +265,78 @@ bool GolemController::testController(std_srvs::Empty::Request &req, std_srvs::Em
     commands[11] = init;
     commands[11].t = commands[10].t + pacman::float_t(3.0);
 
+
+    // execute trajectory
+    executeTrajectory(commands);
+  }
+  catch (const std::exception& ex) {
+    printf("ControlTest exception: %s\n", ex.what());
+    return 1;
+  }
+
+  return true;
+}*/
+
+bool GolemController::testEddieController(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
+{
+  try {
+    // RobotEddie
+    // Read current state
+    RobotEddie::State begin;
+    controller_->lookupState(controller_->time(), begin);
+    // Initial configuration command
+    RobotEddie::Command init;
+    init.armLeft.pos = begin.armLeft.pos;
+    init.handLeft.pos = begin.handLeft.pos;
+    init.armRight.pos = begin.armRight.pos;
+    init.handRight.pos = begin.handRight.pos;
+    init.head.pos = begin.head.pos;
+    // Prepare trajectory
+    RobotEddie::Command::Seq commands(7);
+    // Pose #0
+    commands[0] = init;
+    commands[0].t = controller_->time() + pacman::float_t(1.0);
+    // Pose #1
+    commands[1] = init;
+    commands[1].armRight.pos.c[5] += pacman::float_t(0.5);
+    commands[1].handRight.pos.middle[0] -= pacman::float_t(0.3);
+    commands[1].handRight.pos.middle[1] -= pacman::float_t(0.3);
+    commands[1].handRight.pos.left[0] -= pacman::float_t(0.3);
+    commands[1].handRight.pos.left[1] -= pacman::float_t(0.3);
+    commands[1].handRight.pos.right[0] -= pacman::float_t(0.3);
+    commands[1].handRight.pos.right[1] -= pacman::float_t(0.3);
+    commands[1].t = commands[0].t + pacman::float_t(2.0);
+    // Pose #2
+    commands[2] = init;
+    commands[2].armRight.pos.c[5] -= pacman::float_t(0.5);
+    commands[2].t = commands[1].t + pacman::float_t(2.0);
+    // Pose #3
+    commands[3] = init;
+    commands[3].armRight.pos.c[6] += pacman::float_t(0.5);
+    commands[3].armLeft.pos.c[6] += pacman::float_t(0.5);
+    commands[3].handLeft.pos.middle[0] -= pacman::float_t(0.3);
+    commands[3].handLeft.pos.middle[1] -= pacman::float_t(0.3);
+    commands[3].handLeft.pos.left[0] -= pacman::float_t(0.3);
+    commands[3].handLeft.pos.left[1] -= pacman::float_t(0.3);
+    commands[3].handLeft.pos.right[0] -= pacman::float_t(0.3);
+    commands[3].handLeft.pos.right[1] -= pacman::float_t(0.3);
+    commands[3].t = commands[2].t + pacman::float_t(2.0);
+    // Pose #4
+    commands[4] = init;
+    commands[4].armLeft.pos.c[6] -= pacman::float_t(0.5);
+    commands[4].t = commands[3].t + pacman::float_t(2.0);
+    // Pose #5
+    commands[5] = init;
+    commands[5].head.pos.neck[0] += pacman::float_t(0.1);
+    commands[5].head.pos.neck[1] += pacman::float_t(0.1);
+    commands[5].head.pos.neck[2] += pacman::float_t(0.1);
+    commands[5].head.pos.neck[3] += pacman::float_t(0.1);
+    commands[5].head.pos.eyeLeft -= pacman::float_t(0.4);
+    commands[5].head.pos.eyeRight += pacman::float_t(0.4);
+    commands[5].t = commands[4].t + pacman::float_t(2.0);
+    // Pose #6
+    commands[6] = init;
+    commands[6].t = commands[5].t + pacman::float_t(2.0);
 
     // execute trajectory
     executeTrajectory(commands);

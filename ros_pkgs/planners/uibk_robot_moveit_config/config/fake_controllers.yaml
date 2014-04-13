@@ -67,3 +67,12 @@ controller_list:
       - left_sdh_finger_13_joint
       - left_sdh_thumb_2_joint
       - left_sdh_thumb_3_joint
+  - name: fake_head_controller
+    joints:
+      - head_neck_pitch_joint
+      - head_neck_roll_joint
+      - head_neck_yaw_joint
+      - head_head_tilt_joint
+      - head_eyes_tilt_joint
+      - head_left_eye_joint
+      - head_right_eye_joint
