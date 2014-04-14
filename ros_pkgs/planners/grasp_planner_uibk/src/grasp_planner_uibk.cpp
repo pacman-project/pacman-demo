@@ -29,6 +29,16 @@ enum Grasps
   rim_pre_grasp
 };
 
+struct handJoints
+{
+  float knuckle;
+  float finger_12;
+  float finger_13;
+  float finger_22;
+  float finger_23;
+  float thumb_2;
+  float thumb_3;
+};
 namespace grasp_planner_uibk
 {
 
@@ -93,88 +103,105 @@ public:
 vector<float> GraspPlanner::getTargetAnglesFromGraspType(Grasps grasp_type, float close_ratio) 
 {
   
-  std::vector<float> hand_pose;
+  std::vector<float> hand_pose(7,0);
+  handJoints hand_joints; 
   if (close_ratio > 1.0)
     close_ratio = 1.0;
   else if (close_ratio < 0.0)
     close_ratio = 0.0;
  
-  // joints angle based on knuckle, thumb, finger_1, finger_2
+  // joints angle based on knuckle, finger_1, finger_2, thumb
   switch(grasp_type) {
     case cylindrical: 
-    hand_pose.push_back(0);
-    hand_pose.push_back((-30+close_ratio*30)* M_PI/180.0);
-    hand_pose.push_back((30+close_ratio*35)* M_PI/180.0);
-    hand_pose.push_back((-30+close_ratio*30)* M_PI/180.0);
-    hand_pose.push_back((30+close_ratio*35)* M_PI/180.0);
-    hand_pose.push_back((-30+close_ratio*30)* M_PI/180.0);
-    hand_pose.push_back((30+close_ratio*35)* M_PI/180.0);
-    return hand_pose;
+    hand_joints.knuckle = 0;
+    hand_joints.thumb_2 = (-30+close_ratio*30)* M_PI/180.0;
+    hand_joints.thumb_3 = (30+close_ratio*35)* M_PI/180.0;
+    hand_joints.finger_12 = (-30+close_ratio*30)* M_PI/180.0;
+    hand_joints.finger_13 = (30+close_ratio*35)* M_PI/180.0;
+    hand_joints.finger_22 = (-30+close_ratio*30)* M_PI/180.0;
+    hand_joints.finger_23 = (30+close_ratio*35)* M_PI/180.0;
     break;
+
     case parallel: 
-    hand_pose.push_back(0);
-    hand_pose.push_back((-75.+close_ratio*82.)* M_PI/180.0);
-    hand_pose.push_back((75.-close_ratio*82.)* M_PI/180.0);
-    hand_pose.push_back((-75.+close_ratio*82.)* M_PI/180.0);
-    hand_pose.push_back((75.-close_ratio*82.)* M_PI/180.0);
-    hand_pose.push_back((-75.+close_ratio*82.)* M_PI/180.0);
-    hand_pose.push_back((75.-close_ratio*82.)* M_PI/180.0);
-    return hand_pose;
- 
+    hand_joints.knuckle = 0;
+    hand_joints.thumb_2  = (-75.+close_ratio*82.)* M_PI/180.0;
+    hand_joints.thumb_3 = (75.-close_ratio*82.)* M_PI/180.0;
+    hand_joints.finger_12 = (-75.+close_ratio*82.)* M_PI/180.0;
+    hand_joints.finger_13 = (75.-close_ratio*82.)* M_PI/180.0;
+    hand_joints.finger_22 = (-75.+close_ratio*82.)* M_PI/180.0;
+    hand_joints.finger_23 = (75.-close_ratio*82.)* M_PI/180.0;
+    break;
+
     case centrical: 
-    hand_pose.push_back((60)* M_PI/180.0);
-    hand_pose.push_back((-75+close_ratio*82)* M_PI/180.0);
-    hand_pose.push_back((75-close_ratio*82)* M_PI/180.0);
-    hand_pose.push_back((-75+close_ratio*82)* M_PI/180.0);
-    hand_pose.push_back((75-close_ratio*82)* M_PI/180.0);
-    hand_pose.push_back((-75+close_ratio*82)* M_PI/180.0);
-    hand_pose.push_back((75-close_ratio*82)* M_PI/180.0);
-    return hand_pose;
- 
+    hand_joints.knuckle = (60)* M_PI/180.0;
+    hand_joints.thumb_2 = (-75+close_ratio*82)* M_PI/180.0;
+    hand_joints.thumb_3 = (75-close_ratio*82)* M_PI/180.0;
+    hand_joints.finger_12 = (-75+close_ratio*82)* M_PI/180.0;
+    hand_joints.finger_13 = (75-close_ratio*82)* M_PI/180.0;
+    hand_joints.finger_22 = (-75+close_ratio*82)* M_PI/180.0;
+    hand_joints.finger_23 = (75-close_ratio*82)* M_PI/180.0;
+    break;
+
     case spherical: 
-    hand_pose.push_back((60)* M_PI/180.0);
-    hand_pose.push_back((-40+close_ratio*25)* M_PI/180.0);
-    hand_pose.push_back((40+close_ratio*15)* M_PI/180.0);
-    hand_pose.push_back((-40+close_ratio*25)* M_PI/180.0);
-    hand_pose.push_back((40+close_ratio*15)* M_PI/180.0);
-    hand_pose.push_back((-40+close_ratio*25)* M_PI/180.0);
-    hand_pose.push_back((40+close_ratio*15)* M_PI/180.0);
-    return hand_pose;
+    hand_joints.knuckle = (60)* M_PI/180.0;
+    hand_joints.thumb_2 = (-40+close_ratio*25)* M_PI/180.0;
+    hand_joints.thumb_3 = (40+close_ratio*15)* M_PI/180.0;
+    hand_joints.finger_12 = (-40+close_ratio*25)* M_PI/180.0;
+    hand_joints.finger_13 = (40+close_ratio*15)* M_PI/180.0;
+    hand_joints.finger_22 = (-40+close_ratio*25)* M_PI/180.0;
+    hand_joints.finger_23 = (40+close_ratio*15)* M_PI/180.0;
+    break;
 
     case rim_open: 
-    hand_pose.push_back(0.);
-    hand_pose.push_back(-0.8);
-    hand_pose.push_back(0.8);
-    hand_pose.push_back(-0.8);
-    hand_pose.push_back(0.8);
-    hand_pose.push_back(-0.8);
-    hand_pose.push_back(0.8);
-    return hand_pose;
+    hand_joints.knuckle = 0;
+    hand_joints.thumb_2 = -0.8;
+    hand_joints.thumb_3 = 0.8;
+    hand_joints.finger_12 = -0.8;
+    hand_joints.finger_13 = 0.8;
+    hand_joints.finger_22 = -0.8;
+    hand_joints.finger_23 = 0.8;
+    break;
 
     case rim_close: 
-    hand_pose = std::vector<float>(7,0.15);
-    return hand_pose;
+    hand_joints.knuckle = 0.15;
+    hand_joints.thumb_2 = 0.15;
+    hand_joints.thumb_3 = 0.15;
+    hand_joints.finger_12 = 0.15;
+    hand_joints.finger_13 = 0.15;
+    hand_joints.finger_22 = 0.15;
+    hand_joints.finger_23 = 0.15;
+    break;
 
     case rim_pre_grasp:
-    hand_pose.push_back(0.0);
-    hand_pose.push_back(-0.2);
-    hand_pose.push_back(0.1);
-    hand_pose.push_back(-0.25);
-    hand_pose.push_back(0.15);
-    hand_pose.push_back(-0.25);
-    hand_pose.push_back(0.15);
-    return hand_pose;
+    hand_joints.knuckle = 0.0;
+    hand_joints.thumb_2 = -0.2;
+    hand_joints.thumb_3 = 0.1;
+    hand_joints.finger_12 = -0.25;
+    hand_joints.finger_13 = 0.15;
+    hand_joints.finger_22 = -0.25;
+    hand_joints.finger_23 = 0.15;
+    break;
 
     default:
-    hand_pose.push_back(0.);
-    hand_pose.push_back(-0.8); 
-    hand_pose.push_back(0.8);
-    hand_pose.push_back(-0.8);
-    hand_pose.push_back(0.8);
-    hand_pose.push_back(-0.8);
-    hand_pose.push_back(0.8);
-    return hand_pose;
+    hand_joints.knuckle = 0.0;
+    hand_joints.thumb_2 = -0.8;
+    hand_joints.thumb_3 = 0.8;
+    hand_joints.finger_12 = -0.8;
+    hand_joints.finger_13 = 0.8;
+    hand_joints.finger_22 = -0.8;
+    hand_joints.finger_23 = 0.8;
+    break;
   }
+
+   hand_pose[0] = hand_joints.knuckle;
+   hand_pose[1] = hand_joints.finger_12;
+   hand_pose[2] = hand_joints.finger_13;
+   hand_pose[3] = hand_joints.finger_22;
+   hand_pose[4] = hand_joints.finger_23;
+   hand_pose[5] = hand_joints.thumb_2;
+   hand_pose[6] = hand_joints.thumb_3;
+
+  return hand_pose;
 }
 void GraspPlanner::set_arm(string arm)
 {

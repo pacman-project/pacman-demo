@@ -100,107 +100,6 @@ Event mapEvent[TransNum] =
 
 const int max_trial_ = 1;
 using namespace std;
-//Mimicing the hardware grasp_types, replace later by inbuild message
-std::vector<float> getTargetAnglesFromGraspType(std::string grasp_type, float close_ratio) {
- 
-std::vector<float> hand_pose;
-int grasp;
-if(grasp_type=="cylindrical")
-grasp=1;
-else if(grasp_type=="parallel")
-grasp=2;
-else if(grasp_type=="centrical")
-grasp=3;
-else if(grasp_type=="spherical")
-grasp=4;
-else if(grasp_type=="rim_open")
-grasp=5;
-else if(grasp_type=="rim_close")
-grasp=6;
-else if(grasp_type=="rim_pre_grasp")
-grasp=7;
- 
-if (close_ratio > 1.0)
-close_ratio = 1.0;
-else if (close_ratio < 0.0)
-close_ratio = 0.0;
- 
-switch(grasp) {
-case 1: // Cylindrical
-hand_pose.push_back(0);
-hand_pose.push_back((-30+close_ratio*30)* M_PI/180.0);
-hand_pose.push_back((30+close_ratio*35)* M_PI/180.0);
-hand_pose.push_back((-30+close_ratio*30)* M_PI/180.0);
-hand_pose.push_back((30+close_ratio*35)* M_PI/180.0);
-hand_pose.push_back((-30+close_ratio*30)* M_PI/180.0);
-hand_pose.push_back((30+close_ratio*35)* M_PI/180.0);
-return hand_pose;
-break;
-case 2: // Parallel
-hand_pose.push_back(0);
-hand_pose.push_back((-75.+close_ratio*82.)* M_PI/180.0);
-hand_pose.push_back((75.-close_ratio*82.)* M_PI/180.0);
-hand_pose.push_back((-75.+close_ratio*82.)* M_PI/180.0);
-hand_pose.push_back((75.-close_ratio*82.)* M_PI/180.0);
-hand_pose.push_back((-75.+close_ratio*82.)* M_PI/180.0);
-hand_pose.push_back((75.-close_ratio*82.)* M_PI/180.0);
-return hand_pose;
- 
-case 3: // Centrical
-hand_pose.push_back((60)* M_PI/180.0);
-hand_pose.push_back((-75+close_ratio*82)* M_PI/180.0);
-hand_pose.push_back((75-close_ratio*82)* M_PI/180.0);
-hand_pose.push_back((-75+close_ratio*82)* M_PI/180.0);
-hand_pose.push_back((75-close_ratio*82)* M_PI/180.0);
-hand_pose.push_back((-75+close_ratio*82)* M_PI/180.0);
-hand_pose.push_back((75-close_ratio*82)* M_PI/180.0);
-return hand_pose;
- 
-case 4: // Spherical
-hand_pose.push_back((60)* M_PI/180.0);
-hand_pose.push_back((-40+close_ratio*25)* M_PI/180.0);
-hand_pose.push_back((40+close_ratio*15)* M_PI/180.0);
-hand_pose.push_back((-40+close_ratio*25)* M_PI/180.0);
-hand_pose.push_back((40+close_ratio*15)* M_PI/180.0);
-hand_pose.push_back((-40+close_ratio*25)* M_PI/180.0);
-hand_pose.push_back((40+close_ratio*15)* M_PI/180.0);
-return hand_pose;
-
-case 5: //Parallel grasp for rim open
-hand_pose.push_back(0.);
-hand_pose.push_back(-0.8);
-hand_pose.push_back(0.8);
-hand_pose.push_back(-0.8);
-hand_pose.push_back(0.8);
-hand_pose.push_back(-0.8);
-hand_pose.push_back(0.8);
-return hand_pose;
-
-case 6: // parallel grasp for rim close
-hand_pose = std::vector<float>(7,0.15);
-return hand_pose;
-
-case 7: //grasp for pre-grasp
-hand_pose.push_back(0.0);
-hand_pose.push_back(-0.2);
-hand_pose.push_back(0.1);
-hand_pose.push_back(-0.25);
-hand_pose.push_back(0.15);
-hand_pose.push_back(-0.25);
-hand_pose.push_back(0.15);
-return hand_pose;
-
-default:
-hand_pose.push_back(0.);
-hand_pose.push_back(-0.8);
-hand_pose.push_back(0.8);
-hand_pose.push_back(-0.8);
-hand_pose.push_back(0.8);
-hand_pose.push_back(-0.8);
-hand_pose.push_back(0.8);
-return hand_pose;
-}
-}
 
 class DemoSimple
 {
@@ -232,10 +131,6 @@ class DemoSimple
     std::vector<definitions::Grasp> my_calculated_grasp;
     std::vector<definitions::Trajectory> my_calculated_trajectory;
     
-    std::vector<float> my_current_sdh_joints_pregrasp;
-    std::vector<float> my_current_sdh_joints;
-    std::vector<float> my_current_sdh_joints_pre_;
-    
     //Service variables
     definitions::PoseEstimation estimation_srv;
     definitions::GraspPlanning grasp_planning_srv;
@@ -248,7 +143,7 @@ class DemoSimple
     int grasp_id_;
     int object_id_;
     vector<int> object_count_;
-
+    vector<float> hand_pose_start_;
   public:
 
     int curState_[StatesNum];
@@ -268,7 +163,6 @@ class DemoSimple
     
     bool executeMovement(bool pre_grasp,int &grasp_id);    
     
-    void publishSdhJoints(std::vector<float> positions);
     bool post_grasp(int grasp_id);
     void order_grasp();
     // -------------------------------------------------- //
@@ -294,54 +188,24 @@ class DemoSimple
         
         trajectory_execution_client = nh_.serviceClient<definitions::TrajectoryExecution>(trajectory_execution_service_name);
 	
-	if(!nh_.getParam("arm_name",arm_)) 
-	  arm_ = "right";
+	      if(!nh_.getParam("arm_name",arm_)) 
+	        arm_ = "right";
 	
         //Grasp execution
-	if( arm_ == "right" )
-          sdh_joint_angles_pub = nh_.advertise<control_msgs::FollowJointTrajectoryActionGoal>("/real/right_sdh/follow_joint_trajectory/goal", 1);
-	else
-	  sdh_joint_angles_pub = nh_.advertise<control_msgs::FollowJointTrajectoryActionGoal>("/real/left_sdh/follow_joint_trajectory/goal", 1);
-	//sdh_joint_angles_pub = nh_.advertise<control_msgs::FollowJointTrajectoryActionGoal>("/simulation/right_sdh/follow_joint_trajectory/goal", 1);
         reader_client = nh_.serviceClient<definitions::ObjectCloudReader>(object_reader_service_name);
-
-        my_current_sdh_joints.resize(7);
-        my_current_sdh_joints_pregrasp.resize(7);
-	my_current_sdh_joints_pre_.resize(7);
-	
-	my_current_sdh_joints_pregrasp = getTargetAnglesFromGraspType("rim_open", 0.3);//size should be checked       
-      //  my_current_sdh_joints = getTargetAnglesFromGraspType("rim_close", 1.0); 
-	my_current_sdh_joints = getTargetAnglesFromGraspType("cylindrical", 1.0); 
-	my_current_sdh_joints_pre_ = getTargetAnglesFromGraspType("rim_pre_grasp", 1.0); 
-	
-	if( arm_ == "left" )
-	{
-          joint_names_str.push_back("left_sdh_knuckle_joint");
- 	  joint_names_str.push_back("left_sdh_thumb_2_joint");
- 	  joint_names_str.push_back("left_sdh_thumb_3_joint");
- 	  joint_names_str.push_back("left_sdh_finger_12_joint");
- 	  joint_names_str.push_back("left_sdh_finger_13_joint");
- 	  joint_names_str.push_back("left_sdh_finger_22_joint");
- 	  joint_names_str.push_back("left_sdh_finger_23_joint");
-	}
-	else if( arm_ == "right" )
-	{
-   	  joint_names_str.push_back("right_sdh_knuckle_joint");
-   	  joint_names_str.push_back("right_sdh_thumb_2_joint");
-   	  joint_names_str.push_back("right_sdh_thumb_3_joint");
-   	  joint_names_str.push_back("right_sdh_finger_12_joint");
-   	  joint_names_str.push_back("right_sdh_finger_13_joint");
-   	  joint_names_str.push_back("right_sdh_finger_22_joint");
-    	  joint_names_str.push_back("right_sdh_finger_23_joint");
-	}
-	grasp_success_ = false;
+	      grasp_success_ = false;
 	 
-         for( int j = 0; j < StatesNum; j++ )
+      for( int j = 0; j < StatesNum; j++ )
            curState_[j] = Idle;
-	 cout <<"init states:" << endl;
-	  for( int j = 0; j < StatesNum; j++ )
+	      cout <<"init states:" << endl;
+	     for( int j = 0; j < StatesNum; j++ )
            cout << curState_[j] << endl;
-	event_ = Start;
+	     event_ = Start;
+
+      // * open hand at the begining * // 
+       hand_pose_start_.push_back(0.); hand_pose_start_.push_back(-0.8); hand_pose_start_.push_back(0.8);
+       hand_pose_start_.push_back(-0.8); hand_pose_start_.push_back(0.8); hand_pose_start_.push_back(-0.8);
+       hand_pose_start_.push_back(0.8);
     }
     //! Empty stub
     ~DemoSimple() {}
@@ -425,56 +289,11 @@ void DemoSimple::perform_event(Event event)
   }
 }
 
-void DemoSimple::publishSdhJoints(std::vector<float> positions) 
-{        
-        
-                control_msgs::FollowJointTrajectoryActionGoal actionGoal;
-                control_msgs::FollowJointTrajectoryGoal& goal = actionGoal.goal;
-                trajectory_msgs::JointTrajectory& traj = goal.trajectory;
-		
-                traj.joint_names = joint_names_str;
-                trajectory_msgs::JointTrajectoryPoint point;
-                //conversion to double
-		point.positions.resize(positions.size());
-		
-		for (int i=0; i < positions.size(); i++)
-		{
-		  
-                point.positions[i] = positions.at(i);
-		std::cout << "Joint Position  " << i << " "  << positions.at(i) << std::flush;
-		
-		}
-		
-		std::cout << "Joint Position" << point << std::flush;
-		
-		
-		std::vector<trajectory_msgs::JointTrajectoryPoint> pointtrajectory;
-		pointtrajectory.push_back(point);
-                traj.points = pointtrajectory;
-		int nr_trial = 3;
-		for(int i = 0; i < 3; i++ ){
-                sdh_joint_angles_pub.publish(actionGoal);
-                //Secure time for finishing of movement, 2 s
-                usleep(2000*1000);
-		}
-        
-
-        ROS_INFO("FollowJointTrajectoryActionGoals published");
-        usleep(1000*1000);
-        
-}   
-
 bool DemoSimple::goToStartPos(bool beginning)
 {
   curState_[Start_State] = Fail;
 // for testing wo execution
   //curState_[Start_State] = Success;
-  
-  //open the hand before planning in the beginning of the demo
-  if(beginning)
-  {
-   publishSdhJoints(my_current_sdh_joints_pregrasp);
-  }
   
   bool result = false;
   
@@ -521,7 +340,8 @@ bool DemoSimple::goToStartPos(bool beginning)
   trajectory_planning_srv.request.object_id = 0;
   trajectory_planning_srv.request.type = trajectory_planning_srv.request.MOVE_TO_CART_GOAL;
   trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose = current_trajectory.grasp_trajectory[0].wrist_pose;
-  trajectory_planning_srv.request.eddie_goal_state.handRight.joints = current_trajectory.grasp_trajectory[0].joints;
+ // trajectory_planning_srv.request.eddie_goal_state.handRight.joints = current_trajectory.grasp_trajectory[0].joints;
+  trajectory_planning_srv.request.eddie_goal_state.handRight.joints = hand_pose_start_;
   
   if( !trajectory_planner_client.call(trajectory_planning_srv) )
   {
@@ -565,12 +385,6 @@ bool DemoSimple::goToStartPos(bool beginning)
     {
     std::cout << "Trajectory not valid - restart" << std::endl;
     }
-  }
-  
-  //after grasping, open the hand
-  if((!beginning)&&(result))
-  {
-    publishSdhJoints(my_current_sdh_joints_pregrasp);
   }
 
   if( curState_[GraspTraj_State] == Fail )
@@ -665,11 +479,7 @@ bool DemoSimple::planGrasps(string arm)
     my_calculated_grasp.clear();
     std::cout << "grasp planner response size: " << grasp_planning_srv.response.grasp_list.size() << std::endl;
     for( size_t i = 0; i < grasp_planning_srv.response.grasp_list.size(); i++ )
-      my_calculated_grasp.push_back(grasp_planning_srv.response.grasp_list[i]);
-    my_current_sdh_joints_pregrasp = getTargetAnglesFromGraspType("rim_open", 0.3);//size should be checked
-
-    my_current_sdh_joints = getTargetAnglesFromGraspType("rim_close", 1.0);   
-     
+      my_calculated_grasp.push_back(grasp_planning_srv.response.grasp_list[i]);    
    }
    
    else
@@ -878,9 +688,6 @@ bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id)
     
       if (a=='y')
       {    
-       
-      //Hand Pre-grasp
-      //publishSdhJoints(my_current_sdh_joints_pregrasp);
       
       //Arm movement
         std::cout << "Executing arm trajectory" << std::endl;
@@ -899,10 +706,6 @@ bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id)
 	      grasp_success_ = true;
 	      ROS_INFO("trajectory execution call succeeded");
 	      succeed = true;
-	      if( !pre_grasp )
-	        publishSdhJoints(my_current_sdh_joints);
-	      //else // pacman intermediate joints 
-		//publishSdhJoints(my_current_sdh_joints_pre_);
 	      return true;
         }
     
@@ -949,7 +752,6 @@ bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id)
     else if( !pre_grasp )
     {
       std::cout << "No plan found for grasp, therefore open hand " << std::endl;
-     // publishSdhJoints(my_current_sdh_joints_pregrasp);
       return false;
     }
   }
