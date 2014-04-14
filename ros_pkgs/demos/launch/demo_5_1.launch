@@ -1,7 +1,9 @@
 <launch>
 
   <!--TODO before launching:  check chmod dev sdh, check if robot topics are up-->
-  
+  <!-- transformation between world_link and camera_depth_optical_frame is in perception.launch-->
+  <!-- <node name="static_transform_publisher" pkg="tf" type="static_transform_publisher" args="0.645214 0.332272 0.714251 -0.627166 0.654277 -0.323644  -0.271734 /camera_depth_optical_frame /world_link 1"/> -->
+
   <!-- PERCEPTION -->
   <include file="$(find demos)/launch/perception.launch"/>
 

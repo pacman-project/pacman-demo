@@ -283,7 +283,8 @@ class DemoSimple
     {
         pose_estimation_service_name = "/pose_estimation_uibk/estimate_poses";
         grasp_service_name = "/grasp_planner_srv";
-        trajectory_planning_service_name = "/trajectory_planner_srv";
+       // trajectory_planning_service_name = "/trajectory_planner_srv";
+        trajectory_planning_service_name = "/trajectory_planning_srv";
         trajectory_execution_service_name = "/trajectory_execution_srv";
         object_reader_service_name = "/object_reader";
 
@@ -513,14 +514,14 @@ bool DemoSimple::goToStartPos(bool beginning)
   my_calculated_grasp_cur.push_back(current_trajectory);
   
   trajectory_planning_srv.request.ordered_grasp = my_calculated_grasp_cur;
-  trajectory_planning_srv.request.arm = "left";
+  trajectory_planning_srv.request.arm = "right";
   std::vector<definitions::Object> noObject;
   
   trajectory_planning_srv.request.object_list = noObject;
   trajectory_planning_srv.request.object_id = 0;
   trajectory_planning_srv.request.type = trajectory_planning_srv.request.MOVE_TO_CART_GOAL;
-  trajectory_planning_srv.request.goal_state.hand.wrist_pose = current_trajectory.grasp_trajectory[0].wrist_pose;
-  trajectory_planning_srv.request.goal_state.hand.joints = current_trajectory.grasp_trajectory[0].joints;
+  trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose = current_trajectory.grasp_trajectory[0].wrist_pose;
+  trajectory_planning_srv.request.eddie_goal_state.handRight.joints = current_trajectory.grasp_trajectory[0].joints;
   
   if( !trajectory_planner_client.call(trajectory_planning_srv) )
   {
@@ -837,15 +838,18 @@ bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id)
   std::cout << "grasp id is: " << grasp_id << " : " << "grasp size is: " << my_calculated_grasp.size() << std::endl;
   std::vector<definitions::Grasp> my_calculated_grasp_cur;
   my_calculated_grasp_cur.push_back(my_calculated_grasp[grasp_id]);
-  
+
+  std::cout << "my_calculated_grasp[grasp_id]" << my_calculated_grasp[grasp_id] << std::endl;
+
   //trajectory_planning_srv.request.ordered_grasp = my_calculated_grasp;
-  trajectory_planning_srv.request.arm = "left";
+  trajectory_planning_srv.request.arm = "right";
   trajectory_planning_srv.request.type = trajectory_planning_srv.request.MOVE_TO_CART_GOAL;
-  trajectory_planning_srv.request.ordered_grasp = my_calculated_grasp_cur;
+ // trajectory_planning_srv.request.ordered_grasp = my_calculated_grasp_cur;
   trajectory_planning_srv.request.object_list = estimation_srv.response.detected_objects;
   trajectory_planning_srv.request.object_id = 0;
-  trajectory_planning_srv.request.goal_state.hand.wrist_pose = my_calculated_grasp[grasp_id].grasp_trajectory[0].wrist_pose;
-  trajectory_planning_srv.request.goal_state.hand.joints = my_calculated_grasp[grasp_id].grasp_trajectory[0].joints;
+  trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose.header.frame_id =  "world_link";
+  trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose = my_calculated_grasp[grasp_id].grasp_trajectory[0].wrist_pose;
+  trajectory_planning_srv.request.eddie_goal_state.handRight.joints = my_calculated_grasp[grasp_id].grasp_trajectory[0].joints;
   //trajectory_planning_srv.request.object_id = grasp_id;
   
   if( !trajectory_planner_client.call(trajectory_planning_srv) )

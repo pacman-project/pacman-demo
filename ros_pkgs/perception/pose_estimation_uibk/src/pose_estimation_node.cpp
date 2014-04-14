@@ -16,6 +16,7 @@
 #include <definitions/KinectGrabberService.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <tf/transform_listener.h>
 
 #include <pcl/kdtree/kdtree_flann.h>
 
@@ -51,16 +52,11 @@ class PoseEstimator
     ros::ServiceServer srv_estimate_poses_;
     
     ros::ServiceClient srv_kinect;
-    ros::Publisher pub_rec_scene_;
     
     // ** disable this when using object cloud reader ** //
 
-    Eigen::Matrix4f kinectToRobot;
-    
-    double offset_x,offset_y;
-    sensor_msgs::PointCloud2 rec_scene_cloud;
-     string path_to_config,pathToObjDb;
-
+    string path_to_config,pathToObjDb;
+    tf::TransformListener listener;
   public:
 
     // callback functions
@@ -76,27 +72,16 @@ class PoseEstimator
     // constructor
     PoseEstimator(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
     {   
-        pub_rec_scene_ = nh_.advertise<sensor_msgs::PointCloud2>(nh_.resolveName("/pose_estimation_uibk/reconstructed_scene"), 10);
 
         // advertise service
-        srv_estimate_poses_ = nh_.advertiseService(nh_.resolveName("/pose_estimation_uibk/estimate_poses"), &PoseEstimator::estimatePoses, this);
+        srv_estimate_poses_ = nh_.advertiseService(nh_.resolveName("/pose_estimation_uibk/estimate_poses"), &PoseEstimator::estimatePoses, this); 
 
-       kinectToRobot <<
-           -0.065648,  -0.996571 , 0.0503785,   0.645214,
-           -0.644791, 0.00383551,   -0.76435,   0.332272,
-            0.761535, -0.0826616 , -0.642831 ,  0.714251,
-            0,          0 ,         0,          1;        
-
-    
-       rec_scene_cloud.header.frame_id = "/world_link"; 
-       rec_scene_cloud.header.seq = 0;
        nh_.param<std::string>("path_to_config",path_to_config, "");
        nh_.param<std::string>("path_to_object_db",pathToObjDb, "");
     }
 
     //! Empty stub
     ~PoseEstimator() {}
-    void publish_scene();
     vector<int> give_object_ids(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,pcl::PointCloud<pcl::PointXYZ>::Ptr obj_cloud);
 };
   
@@ -134,15 +119,13 @@ bool PoseEstimator::estimatePoses(definitions::PoseEstimation::Request& request,
     if (pcl::io::loadPCDFile<pcl::PointXYZ> (filename_, *xyz_points_) == -1) //* load the file
     {
         cout << "Couldn't read file: " << filename_ << endl;
+        response.result = response.NO_CLOUD_RECEIVED;
         return false;
     }
 
     ROS_INFO("Pose estimation service has been called...");
     
     ROS_INFO("Initializing...");
-     
-    //filename = "/home/pacman/CODE/pacman/poseEstimation/parametersFiles/config.txt";
-    //pathToObjDb ="/home/pacman/CODE/pacman/poseEstimation/data/recognizedObjects";
     
     
     pacman::UIBKPoseEstimation* pose = pacman::UIBKPoseEstimation::create(path_to_config);
@@ -155,24 +138,26 @@ bool PoseEstimator::estimatePoses(definitions::PoseEstimation::Request& request,
     pose->estimate(points_,poses_);
     
     ROS_INFO("Recognizing poses...");
-        
+    
     std::vector<definitions::Object> detected_objects(poses_.size());
     for (int i = 0; i < poses_.size (); i++)
     {    
         Eigen::Matrix4f pose = transformPoseToUIBKPose(poses_[i].pose);
-        Eigen::Matrix4f transform_matrix = kinectToRobot.inverse() * pose;	
-        
-	std::cout <<    poses_[i].id << std::endl;
-        std::cout << pose << std::endl;
-
-        Eigen::Matrix4d md(transform_matrix.cast<double>());
-        Eigen::Affine3d e = Eigen::Affine3d(md);
-
+        Eigen::Matrix4d md(pose.cast<double>());
+        Eigen::Affine3d e = Eigen::Affine3d(md);	
         geometry_msgs::Pose current_pose;
         poseEigenToMsg(e, current_pose);
-	
+
+        geometry_msgs::PoseStamped obj_pose;
+        obj_pose.pose = current_pose;
+        geometry_msgs::PoseStamped obj_pose_trans;
+        obj_pose_trans.header.frame_id = "world_link";
+        obj_pose.header.frame_id = "camera_depth_optical_frame";
+        listener.transformPose("world_link",obj_pose,obj_pose_trans); 
+
         definitions::Object object;
-        object.pose = current_pose;
+        //object.pose = current_pose;
+        object.pose = obj_pose_trans.pose;
         object.name.data = poses_[i].id;
         detected_objects[i] = object;
     }

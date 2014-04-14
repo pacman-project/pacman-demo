@@ -1,10 +1,10 @@
 <launch>
 	
 	<!-- CONFIGURE YOUR PERCEPTION SYSTEM -->
-
+    
 	<!-- SENSORS AND PARAMS -->
 	<include file="$(find openni_launch)/launch/openni.launch"/>
-	
+	<node name="static_transform_publisher" pkg="tf" type="static_transform_publisher" args="0.645214 0.332272 0.714251 -0.627166 0.654277 -0.323644  -0.271734 /camera_depth_optical_frame /world_link 1"/>
 	<!-- METHODS AND PARAMS -->
 	<include file="$(find kinect_grabber)/launch/kinect_grabber.launch"/>
 	<include file="$(find object_cloud_reader)/launch/object_reader.launch"/>
