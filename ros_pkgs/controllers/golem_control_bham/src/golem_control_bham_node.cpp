@@ -136,8 +136,6 @@ bool GolemController::executeTrajectoryFromCode(definitions::TrajectoryExecution
 
   definitions::Trajectory trajectory = req.trajectory;
 
-  std::cout << "trajectory" << trajectory << std::endl;
-
   //convert the trajectory to the command ToDo: double check that the trajectory has velocity and acceleration
   pacman::convert(trajectory, robot_eddie_command_, controller_->time());
 

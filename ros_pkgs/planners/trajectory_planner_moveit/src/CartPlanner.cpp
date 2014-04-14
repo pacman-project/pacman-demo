@@ -30,8 +30,6 @@ void CartPlanner::interpolateHandJoints(const definitions::SDHand &goalState, co
 	if(arm.compare(std::string("left")) == 0)
 		hand_index = left_hand_index;
 
-	std::cout << "startState" << startState << std::endl;
-
 	for (int i = 0; i < NWayPoints; i++)
 	{
 		// trajectory_msgs::JointTrajectoryPoint &point = baseTrajectory.joint_trajectory.points[i];
@@ -41,13 +39,13 @@ void CartPlanner::interpolateHandJoints(const definitions::SDHand &goalState, co
 			baseTrajectory.joint_trajectory.points[i].positions.push_back(startState.position[hand_index + h] + (i+1)*(goalState.joints[h] - startState.position[hand_index + h])/NWayPoints);
         }
 	
-		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
-		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
-		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
-		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
-		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
-		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
-		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
+		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
 
 		baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
 		baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
@@ -171,10 +169,6 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 			trajectory.trajectory_id = 0;
 
 			moveit_msgs::RobotTrajectory robot_trajectory = motion_plan.response.motion_plan_response.trajectory;
-
-			// std::cout << "robot_trajectory" << robot_trajectory << std::endl;
-
-			// std::cout << "startState" << startState << std::endl;
 
 			interpolateHandJoints(goal, startState, robot_trajectory, arm);
 
