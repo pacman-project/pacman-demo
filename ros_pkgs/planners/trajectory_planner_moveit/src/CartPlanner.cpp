@@ -98,8 +98,6 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 		moveit_msgs::RobotState start_state;
 		start_state.joint_state = *current_state_ptr;
 		motion_plan_request.start_state = start_state;
-
-		std::cout <<  "*current_state_ptr" <<  *current_state_ptr << std::endl;
 	}
 
 	// and call the service with the request

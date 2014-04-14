@@ -185,8 +185,6 @@ namespace pacman {
 		// get the points from robot trajector
 		const std::vector<trajectory_msgs::JointTrajectoryPoint> &points = moveitTraj.joint_trajectory.points;
 
-		std::cout << "start_state" << start_state << std::endl;
-
 		// pick each point from the trajectory and create a RobotEddie object
 		for (size_t i = 0; i < points.size(); ++i) 
 		{
