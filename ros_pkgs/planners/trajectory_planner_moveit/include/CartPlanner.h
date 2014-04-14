@@ -19,10 +19,7 @@ class CartPlanner
 
 	// the variable where the plans are stored
 	std::vector<moveit_msgs::MotionPlanResponse> motion_plans_;
-
-    // conversion function
-    void convertFromMRobotTrajectoryToTrajectory(const moveit_msgs::RobotTrajectory &moveitTraj, definitions::Trajectory &trajectory);
-    
+   
   public:
 
   	// planning related parameters
@@ -47,7 +44,7 @@ class CartPlanner
   	bool planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response);
 
   	// the actual planning function
-    bool planTrajectory(std::vector<definitions::Trajectory> &trajectories, geometry_msgs::PoseStamped &goal);
+    bool planTrajectory(std::vector<definitions::Trajectory> &trajectories, geometry_msgs::PoseStamped &goal, std::string &arm);
 
     // constructor
     CartPlanner(ros::NodeHandle nh)
@@ -71,7 +68,7 @@ class CartPlanner
 		topic_ = nh.resolveName("/joint_states");
 
 		// to double the speed of the trajectory
-		speed_ = 2.0;
+		speed_ = 1.0;
     }
 
     //! Empty stub

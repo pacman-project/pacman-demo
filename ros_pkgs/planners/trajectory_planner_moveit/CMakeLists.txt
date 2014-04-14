@@ -9,6 +9,9 @@ find_package(catkin REQUIRED roscpp moveit_msgs sensor_msgs eigen moveit_core ge
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
+# STILL NEED TO SEE HOW TO PASS THE PACMAN ROOT FOLDER, PERHAPS SETTING AN ENV VAR?
+set(PACMAN ../../../../)
+set(CMAKE_CXX_FLAGS "-std=c++0x")
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -89,8 +92,13 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(include
+	${PACMAN}/pacman/include
 	${catkin_INCLUDE_DIRS}
 	/usr/include/eigen3
+	)
+
+link_directories(
+	${PACMAN}/bin
 	)
 
 ## Declare a cpp library
