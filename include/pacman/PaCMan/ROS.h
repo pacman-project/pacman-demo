@@ -79,6 +79,7 @@ namespace pacman {
 
 	void convert(const definitions::Trajectory &trajectory, RobotEddie::Command::Seq &commands, pacman::float_t start_time)
 	{
+		std::cout << "converting"<<std::endl;
 		int NWayPoints = trajectory.eddie_path.size();
 		commands.resize(NWayPoints);
 
@@ -90,7 +91,6 @@ namespace pacman {
 				commands[i].armRight.pos.c[j] = trajectory.eddie_path[i].armRight.joints[j];
 				commands[i].armRight.vel.c[j] = trajectory.eddie_path[i].armRight.velocity[j];
 				commands[i].armRight.acc.c[j] = trajectory.eddie_path[i].armRight.acceleration[j];
-
 				commands[i].armLeft.pos.c[j] = trajectory.eddie_path[i].armLeft.joints[j];
 				commands[i].armLeft.vel.c[j] = trajectory.eddie_path[i].armLeft.velocity[j];
 				commands[i].armLeft.acc.c[j] = trajectory.eddie_path[i].armLeft.acceleration[j];
@@ -180,6 +180,94 @@ namespace pacman {
 		return;
 	}
 
+	void convertLimb(const moveit_msgs::RobotTrajectory &moveitTraj, definitions::Trajectory &trajectory, sensor_msgs::JointState start_state, std::string arm)
+	{
+		// get the points from robot trajector
+		const std::vector<trajectory_msgs::JointTrajectoryPoint> &points = moveitTraj.joint_trajectory.points;
+
+		std::cout << "start_state" << start_state << std::endl;
+
+		// pick each point from the trajectory and create a RobotEddie object
+		for (size_t i = 0; i < points.size(); ++i) 
+		{
+			definitions::RobotEddie robot_point;
+			// robot_point.armRight.joints.resize(KukaLWR::Config::JOINTS);
+			// robot_point.armLeft.joints.resize(KukaLWR::Config::JOINTS);
+			// robot_point.handRight.joints.resize(SchunkDexHand::Config::JOINTS);
+			// robot_point.handLeft.joints.resize(SchunkDexHand::Config::JOINTS);
+			// robot_point.head.joints.resize(KITHead::Config::JOINTS_NECK);
+
+
+			// for testing with arms, later, it should be fixed to obtain eddie's trajectories
+			if(arm.compare(std::string("right")) == 0)
+			{
+				robot_point.armRight.joints.assign(points[i].positions.begin(), points[i].positions.end());
+				robot_point.armRight.velocity.assign(points[i].velocities.begin(), points[i].velocities.end());
+				robot_point.armRight.acceleration.assign(points[i].accelerations.begin(), points[i].accelerations.end());
+
+				for(int j = 0; j < KukaLWR::Config::JOINTS; j++)
+				{
+					robot_point.armLeft.joints.push_back(start_state.position[j]);
+					robot_point.armLeft.velocity.push_back(start_state.velocity[j]);
+					robot_point.armLeft.acceleration.push_back(0.0);
+				}
+			}
+
+			if(arm.compare(std::string("left")) == 0)
+			{
+				robot_point.armLeft.joints.assign(points[i].positions.begin(), points[i].positions.end());
+				robot_point.armLeft.velocity.assign(points[i].velocities.begin(), points[i].velocities.end());
+				robot_point.armLeft.acceleration.assign(points[i].accelerations.begin(), points[i].accelerations.end());
+
+				for(int j = 0; j < KukaLWR::Config::JOINTS; j++)
+				{
+					robot_point.armRight.joints.push_back(start_state.position[j+7]);
+					robot_point.armRight.velocity.push_back(start_state.velocity[j+7]);
+					robot_point.armRight.acceleration.push_back(0.0);
+				}
+			}
+
+			for(int h = 0; h < SchunkDexHand::Config::JOINTS; h++)
+			{
+				robot_point.handLeft.joints.push_back(start_state.position[h+14]);
+				robot_point.handLeft.velocity.push_back(start_state.velocity[h+14]);
+				robot_point.handLeft.acceleration.push_back(0.0);
+
+				robot_point.handRight.joints.push_back(start_state.position[h+21]);
+				robot_point.handRight.velocity.push_back(start_state.velocity[h+21]);
+				robot_point.handRight.acceleration.push_back(0.0);
+
+			}
+
+			for(int k = 0; k < KITHead::Config::JOINTS_NECK; k++)
+			{
+				robot_point.head.joints.push_back(start_state.position[k+28]);
+				robot_point.head.velocity.push_back(start_state.velocity[k+28]);
+				robot_point.head.acceleration.push_back(0.0);
+			}
+
+			robot_point.head.jointsLEye = start_state.position[33];
+			robot_point.head.velocityLEye = start_state.velocity[33];
+			robot_point.head.accelerationLEye = 0.0;
+
+			robot_point.head.jointsREye = start_state.position[34];
+			robot_point.head.velocityREye = start_state.velocity[34];
+			robot_point.head.accelerationREye = 0.0;
+
+			trajectory.eddie_path.push_back(robot_point);
+
+			if (i == 0)
+			{
+				trajectory.time_from_previous.push_back( ros::Duration().fromSec(0.) );	
+			}
+			else
+			{
+				// the RobotTrajectory gives time_from_start, we prefer from previous for easier transformation to pacman commands
+				trajectory.time_from_previous.push_back( points[i].time_from_start - points[i-1].time_from_start );
+			}
+		}
+	}
+
 	// this mapping uses names defined in the urdf of the UIBK robot, so be careful if you change them
 	void mapStates(const RobotUIBK::State &state, std::string name, sensor_msgs::JointState &joint_states, ros::Time stamp) 
 	{
@@ -235,34 +323,34 @@ namespace pacman {
 		joint_states.position.resize(RobotEddie::Config::JOINTS);
 		joint_states.velocity.resize(RobotEddie::Config::JOINTS);
 		joint_states.effort.resize(RobotEddie::Config::JOINTS);
-		joint_states.name[0] = "right_arm_0_joint";
-		joint_states.name[1] = "right_arm_1_joint";
-		joint_states.name[2] = "right_arm_2_joint";
-		joint_states.name[3] = "right_arm_3_joint";
-		joint_states.name[4] = "right_arm_4_joint";
-		joint_states.name[5] = "right_arm_5_joint";
-		joint_states.name[6] = "right_arm_6_joint";
-		joint_states.name[7] = "right_sdh_knuckle_joint";
-		joint_states.name[8] = "right_sdh_finger_12_joint";
-		joint_states.name[9] = "right_sdh_finger_13_joint";
-		joint_states.name[10] = "right_sdh_finger_22_joint";
-		joint_states.name[11] = "right_sdh_finger_23_joint";
-		joint_states.name[12] = "right_sdh_thumb_2_joint";
-		joint_states.name[13] = "right_sdh_thumb_3_joint";
-		joint_states.name[14] = "left_arm_0_joint";
-		joint_states.name[15] = "left_arm_1_joint";
-		joint_states.name[16] = "left_arm_2_joint";
-		joint_states.name[17] = "left_arm_3_joint";
-		joint_states.name[18] = "left_arm_4_joint";
-		joint_states.name[19] = "left_arm_5_joint";
-		joint_states.name[20] = "left_arm_6_joint";
-		joint_states.name[21] = "left_sdh_knuckle_joint";
-		joint_states.name[22] = "left_sdh_finger_12_joint";
-		joint_states.name[23] = "left_sdh_finger_13_joint";
-		joint_states.name[24] = "left_sdh_finger_22_joint";
-		joint_states.name[25] = "left_sdh_finger_23_joint";
-		joint_states.name[26] = "left_sdh_thumb_2_joint";
-		joint_states.name[27] = "left_sdh_thumb_3_joint";
+		joint_states.name[0] = "left_arm_0_joint";
+		joint_states.name[1] = "left_arm_1_joint";
+		joint_states.name[2] = "left_arm_2_joint";
+		joint_states.name[3] = "left_arm_3_joint";
+		joint_states.name[4] = "left_arm_4_joint";
+		joint_states.name[5] = "left_arm_5_joint";
+		joint_states.name[6] = "left_arm_6_joint";
+		joint_states.name[7] = "right_arm_0_joint";
+		joint_states.name[8] = "right_arm_1_joint";
+		joint_states.name[9] = "right_arm_2_joint";
+		joint_states.name[10] = "right_arm_3_joint";
+		joint_states.name[11] = "right_arm_4_joint"; 
+		joint_states.name[12] = "right_arm_5_joint";
+		joint_states.name[13] = "right_arm_6_joint"; 
+		joint_states.name[14] = "left_sdh_knuckle_joint";
+		joint_states.name[16] = "left_sdh_finger_12_joint";
+		joint_states.name[16] = "left_sdh_finger_13_joint";
+		joint_states.name[17] = "left_sdh_finger_22_joint";
+		joint_states.name[18] = "left_sdh_finger_23_joint";
+		joint_states.name[19] = "left_sdh_thumb_2_joint";
+		joint_states.name[20] = "left_sdh_thumb_3_joint";
+		joint_states.name[21] = "right_sdh_knuckle_joint";
+		joint_states.name[22] = "right_sdh_finger_12_joint";
+		joint_states.name[23] = "right_sdh_finger_13_joint";
+		joint_states.name[24] = "right_sdh_finger_22_joint";
+		joint_states.name[25] = "right_sdh_finger_23_joint";
+		joint_states.name[26] = "right_sdh_thumb_2_joint";
+		joint_states.name[27] = "right_sdh_thumb_3_joint";
 
 		joint_states.name[28] = "head_neck_pitch_joint";
 		joint_states.name[29] = "head_neck_yaw_joint";
@@ -279,33 +367,74 @@ namespace pacman {
 		// and let the party begin... first the arm:
 		for (int j = 0; j < KukaLWR::Config::JOINTS; j++)
 		{
-			joint_states.position[j] = state.armRight.pos.c[j];
-			joint_states.position[j+14] = state.armLeft.pos.c[j];
+			joint_states.position[j] = state.armLeft.pos.c[j];
+			joint_states.position[j+7] = state.armRight.pos.c[j];
 		}
 
 		// and continue with the hands:
-		joint_states.position[7] = state.handRight.pos.rotation;
-		joint_states.position[8] = state.handRight.pos.left[0];
-		joint_states.position[9] = state.handRight.pos.left[1];
-		joint_states.position[10] = state.handRight.pos.right[0];
-		joint_states.position[11] = state.handRight.pos.right[1];
-		joint_states.position[12] = state.handRight.pos.middle[0];
-		joint_states.position[13] = state.handRight.pos.middle[1];
-		joint_states.position[21] = state.handLeft.pos.rotation;
-		joint_states.position[22] = state.handLeft.pos.left[0];
-		joint_states.position[23] = state.handLeft.pos.left[1];
-		joint_states.position[24] = state.handLeft.pos.right[0];
-		joint_states.position[25] = state.handLeft.pos.right[1];
-		joint_states.position[26] = state.handLeft.pos.middle[0];
-		joint_states.position[27] = state.handLeft.pos.middle[1];
+		joint_states.position[14] = state.handLeft.pos.rotation;
+		joint_states.position[15] = state.handLeft.pos.left[0];
+		joint_states.position[16] = state.handLeft.pos.left[1];
+		joint_states.position[17] = state.handLeft.pos.right[0];
+		joint_states.position[18] = state.handLeft.pos.right[1];
+		joint_states.position[19] = state.handLeft.pos.middle[0];
+		joint_states.position[20] = state.handLeft.pos.middle[1];
+		joint_states.position[21] = state.handRight.pos.rotation;
+		joint_states.position[22] = state.handRight.pos.left[0];
+		joint_states.position[23] = state.handRight.pos.left[1];
+		joint_states.position[24] = state.handRight.pos.right[0];
+		joint_states.position[25] = state.handRight.pos.right[1];
+		joint_states.position[26] = state.handRight.pos.middle[0];
+		joint_states.position[27] = state.handRight.pos.middle[1];
 
 		joint_states.position[28] = state.head.pos.neck[0];
 		joint_states.position[29] = state.head.pos.neck[1];
 		joint_states.position[30] = state.head.pos.neck[2];
 		joint_states.position[31] = state.head.pos.neck[3];
 		joint_states.position[32] = state.head.pos.neck[4];
-		joint_states.position[33] = state.head.pos.eyeRight;
-		joint_states.position[34] = state.head.pos.eyeLeft;
+		joint_states.position[33] = state.head.pos.eyeLeft;
+		joint_states.position[34] = state.head.pos.eyeRight;
+
+		return;
+	}
+
+	// this mapping uses names defined in the urdf of the UIBK robot, so be careful if you change them
+	void mapStates(const sensor_msgs::JointState &joint_states, RobotEddie::State &state) 
+	{
+
+		// the joint mapping needs to be hardcoded to match Golem.xml and Ros.urdf structures
+		// note that, the names are set in the class constructor for the order convention
+		// and let the party begin... first the arm:
+		for (int j = 0; j < KukaLWR::Config::JOINTS; j++)
+		{
+			state.armLeft.pos.c[j] = joint_states.position[j];
+			state.armRight.pos.c[j] = joint_states.position[j+7];
+		}
+
+		// and continue with the hands:
+		state.handLeft.pos.rotation = joint_states.position[14];
+		state.handLeft.pos.left[0] = joint_states.position[15];
+		state.handLeft.pos.left[1] = joint_states.position[16];
+		state.handLeft.pos.right[0] = joint_states.position[17];
+		state.handLeft.pos.right[1] = joint_states.position[18];
+		state.handLeft.pos.middle[0] = joint_states.position[19];
+		state.handLeft.pos.middle[1] = joint_states.position[20];
+
+		state.handRight.pos.rotation = joint_states.position[21];
+		state.handRight.pos.left[0] = joint_states.position[22];
+		state.handRight.pos.left[1] = joint_states.position[23];
+		state.handRight.pos.right[0] = joint_states.position[24];
+		state.handRight.pos.right[1] = joint_states.position[25];
+		state.handRight.pos.middle[0] = joint_states.position[26]; 
+		state.handRight.pos.middle[1] = joint_states.position[27];
+
+		state.head.pos.neck[0] = joint_states.position[28];
+		state.head.pos.neck[1] = joint_states.position[29];
+		state.head.pos.neck[2] = joint_states.position[30];
+		state.head.pos.neck[3] = joint_states.position[31];
+		state.head.pos.neck[4] = joint_states.position[32];
+		state.head.pos.eyeLeft = joint_states.position[33];
+		state.head.pos.eyeRight = joint_states.position[34];
 
 		return;
 	}

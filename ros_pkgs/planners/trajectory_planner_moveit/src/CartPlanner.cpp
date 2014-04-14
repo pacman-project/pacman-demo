@@ -13,40 +13,9 @@
 //// local headers
 #include "CartPlanner.h"
 
+#include <pacman/PaCMan/ROS.h>
+
 namespace trajectory_planner_moveit {
-
-void CartPlanner::convertFromMRobotTrajectoryToTrajectory(const moveit_msgs::RobotTrajectory &moveitTraj, definitions::Trajectory &trajectory)
-{
-	// get the points from robot trajector
-	const std::vector<trajectory_msgs::JointTrajectoryPoint> &points = moveitTraj.joint_trajectory.points;
-
-	// pick each point from the trajectory and create a UIBKRobot object
-	for (size_t i = 0; i < points.size(); ++i) {
-		definitions::UIBKRobot robot_point;
-		robot_point.arm.joints.assign(points[i].positions.begin(), points[i].positions.end());
-		robot_point.arm.velocity.assign(points[i].velocities.begin(), points[i].velocities.end());
-		robot_point.arm.acceleration.assign(points[i].accelerations.begin(), points[i].accelerations.end());
-		
-		for(int h = 0; h < 6; h++)
-		{
-		 	robot_point.hand.joints.push_back(0.01);
-		 	robot_point.hand.velocity.push_back(0.01);
-		 	robot_point.hand.acceleration.push_back(0.01);
-		}
-
-		trajectory.robot_path.push_back(robot_point);
-
-		if (i == 0)
-		{
-			trajectory.time_from_previous.push_back( ros::Duration().fromSec(0.) );	
-		}
-		else
-		{
-			// the RobotTrajectory gives time_from_start, we prefer from previous for easier transformation to pacman commands
-			trajectory.time_from_previous.push_back( points[i].time_from_start - points[i-1].time_from_start );
-		}
-	}
-}
 
 bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response) 
 {
@@ -59,12 +28,18 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 		motion_plans_.clear();
 		std::vector<definitions::Trajectory> &trajectories = response.trajectory;
 
-		// note that we plan for wrist frame
-		geometry_msgs::PoseStamped &goal = request.goal_state.hand.wrist_pose;
+		geometry_msgs::PoseStamped goal;
+
+		// note that we plan for wrist frame of the requested arm
+		if(request.arm.compare(std::string("right")) == 0)
+			goal = goal = request.eddie_goal_state.handRight.wrist_pose;
+		if(request.arm.compare(std::string("left")) == 0)
+			goal = request.eddie_goal_state.handLeft.wrist_pose;
+
 		plan_for_frame_ = request.arm + "_sdh_palm_link";
 		group_name_ = request.arm + "_arm";
 
-		if( !planTrajectory(trajectories, goal) ) 
+		if( !planTrajectory(trajectories, goal, request.arm) ) 
 		{
 			ROS_WARN("No trajectory found for the required goal state");
 		}
@@ -92,7 +67,7 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 
 }
 
-bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajectories, geometry_msgs::PoseStamped &goal) 
+bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajectories, geometry_msgs::PoseStamped &goal, std::string &arm) 
 {
 	// first state the planning constraint
 	moveit_msgs::Constraints pose_goal = kinematic_constraints::constructGoalConstraints(plan_for_frame_.c_str(), goal, tolerance_in_position_, tolerance_in_orientation_);
@@ -107,7 +82,7 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 	motion_plan_request.goal_constraints.push_back(pose_goal);
 	motion_plan_request.num_planning_attempts = max_planning_attempts_;
 	motion_plan_request.allowed_planning_time = max_planning_time_;
-	motion_plan_request.planner_id = "SBLkConfigDefault";
+	motion_plan_request.planner_id = "PRMstarkConfigDefault";
 
 	// wait for a joint state
 	boost::shared_ptr<const sensor_msgs::JointState> current_state_ptr = ros::topic::waitForMessage<sensor_msgs::JointState>(topic_, ros::Duration(3.0));
@@ -123,6 +98,8 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 		moveit_msgs::RobotState start_state;
 		start_state.joint_state = *current_state_ptr;
 		motion_plan_request.start_state = start_state;
+
+		std::cout <<  "*current_state_ptr" <<  *current_state_ptr << std::endl;
 	}
 
 	// and call the service with the request
@@ -153,7 +130,8 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 			moveit_msgs::RobotTrajectory robot_trajectory = motion_plan.response.motion_plan_response.trajectory;
 
 			// populate trajectory with motion plan data
-			convertFromMRobotTrajectoryToTrajectory(robot_trajectory, trajectory);
+			// the start state is used to copy the data for the joints that are not being used in the planning
+			pacman::convertLimb(robot_trajectory, trajectory, *current_state_ptr, arm);
 			trajectories.push_back(trajectory);
 
 			return true;
