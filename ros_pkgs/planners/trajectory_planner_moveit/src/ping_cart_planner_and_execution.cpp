@@ -76,6 +76,15 @@ int main(int argc, char **argv)
     safe_state.handRight.wrist_pose.pose.orientation.w = 0.267076;
     safe_state.handRight.wrist_pose.header.frame_id = "world_link";
 
+    safe_state.handRight.joints.resize(7);
+    safe_state.handRight.joints[0] = 0.0;
+    safe_state.handRight.joints[1] = -0.8;
+    safe_state.handRight.joints[2] = 0.8;
+    safe_state.handRight.joints[3] = -0.8;
+    safe_state.handRight.joints[4] = 0.8;
+    safe_state.handRight.joints[5] = -0.8;
+    safe_state.handRight.joints[6] = 0.8;
+
     if ( !ros::service::waitForService(planning_service_name, ros::Duration().fromSec(1.0)) )
     { 
       ROS_ERROR("After one second, the service %s hasn't shown up...",  planning_service_name.c_str());
@@ -142,6 +151,7 @@ int main(int argc, char **argv)
     }
 
     definitions::RobotEddie goal_state;
+    goal_state.handRight.joints.resize(7);
 
     // GOAL 1
     goal_state.handRight.wrist_pose.pose.position.x = 0.207500562072;
@@ -152,6 +162,13 @@ int main(int argc, char **argv)
     goal_state.handRight.wrist_pose.pose.orientation.z = -0.0736171901226;
     goal_state.handRight.wrist_pose.pose.orientation.w = 0.0208686068654;
     goal_state.handRight.wrist_pose.header.frame_id = "world_link";
+    goal_state.handRight.joints[0] = 0.0;
+    goal_state.handRight.joints[1] = 0.0;
+    goal_state.handRight.joints[2] = 0.0;
+    goal_state.handRight.joints[3] = 0.0;
+    goal_state.handRight.joints[4] = 0.0;
+    goal_state.handRight.joints[5] = 0.0;
+    goal_state.handRight.joints[6] = 0.0;
     tryGoal(1, goal_state);
     
     // GOAL 2

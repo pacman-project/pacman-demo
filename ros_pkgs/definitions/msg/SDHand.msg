@@ -2,7 +2,7 @@
 
 geometry_msgs/PoseStamped wrist_pose
 
-# order convention for the joints w.r.t. pacman Defs middle[0,1], left[2,3], right[4,5] rotation[6];
+# order convention for the joints w.r.t. pacman Defs rotation[0], left[1,2], right[3,4], thumb[5,6] ;
 float32[] joints
 float32[] velocity
 float32[] acceleration

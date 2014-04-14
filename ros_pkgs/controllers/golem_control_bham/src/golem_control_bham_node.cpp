@@ -136,27 +136,22 @@ bool GolemController::executeTrajectoryFromCode(definitions::TrajectoryExecution
 
   definitions::Trajectory trajectory = req.trajectory;
 
-  // if (req.robot == req.UIBKRobot)
-  // {
-    //convert the trajectory to the command ToDo: double check that the trajectory has velocity and acceleration
-    pacman::convert(trajectory, robot_eddie_command_, controller_->time());
+  std::cout << "trajectory" << trajectory << std::endl;
 
-    // excexute the trajectory
-    if( executeTrajectory(robot_eddie_command_) )
-    {
-      ROS_INFO("Exectution finished cleanly...");
-      res.result = res.SUCCESS;
-    }
-    else
-    {
-      ROS_ERROR("Trajectory could not be executed...");
-      res.result = res.OTHER_ERROR;
-    }
-  // }
-  // if (req.robot == req.RobotEddie)
-  // {
+  //convert the trajectory to the command ToDo: double check that the trajectory has velocity and acceleration
+  pacman::convert(trajectory, robot_eddie_command_, controller_->time());
 
-  // }
+  // excexute the trajectory
+  if( executeTrajectory(robot_eddie_command_) )
+  {
+    ROS_INFO("Exectution finished cleanly...");
+    res.result = res.SUCCESS;
+  }
+  else
+  {
+    ROS_ERROR("Trajectory could not be executed...");
+    res.result = res.OTHER_ERROR;
+  }
 
   return true;
 }

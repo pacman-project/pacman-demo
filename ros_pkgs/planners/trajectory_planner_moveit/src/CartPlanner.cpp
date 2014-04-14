@@ -14,8 +14,52 @@
 #include "CartPlanner.h"
 
 #include <pacman/PaCMan/ROS.h>
+#include <pacman/PaCMan/Defs.h>
 
 namespace trajectory_planner_moveit {
+
+void CartPlanner::interpolateHandJoints(const definitions::SDHand &goalState, const sensor_msgs::JointState &startState, moveit_msgs::RobotTrajectory &baseTrajectory, std::string &arm)
+{
+	int NWayPoints = baseTrajectory.joint_trajectory.points.size();
+	int right_hand_index = 21;
+	int left_hand_index = 14;
+	int hand_index = 0;
+
+	if(arm.compare(std::string("right")) == 0)
+		hand_index = right_hand_index;
+	if(arm.compare(std::string("left")) == 0)
+		hand_index = left_hand_index;
+
+	std::cout << "startState" << startState << std::endl;
+
+	for (int i = 0; i < NWayPoints; i++)
+	{
+		// trajectory_msgs::JointTrajectoryPoint &point = baseTrajectory.joint_trajectory.points[i];
+
+		for(int h = 0; h < pacman::SchunkDexHand::Config::JOINTS; h++)
+		{
+			baseTrajectory.joint_trajectory.points[i].positions.push_back(startState.position[hand_index + h] + (i+1)*(goalState.joints[h] - startState.position[hand_index + h])/NWayPoints);
+        }
+	
+		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
+		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
+		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
+		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
+		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
+		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
+		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
+
+		baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+		baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+		baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+		baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+		baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+		baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+		baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+	}
+}
+
+
 
 bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response) 
 {
@@ -25,21 +69,30 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 		ros::Time now = ros::Time::now();
 
 		// clear all previously cached motion plans
-		motion_plans_.clear();
 		std::vector<definitions::Trajectory> &trajectories = response.trajectory;
 
-		geometry_msgs::PoseStamped goal;
+		// wait for a joint state
+		boost::shared_ptr<const sensor_msgs::JointState> current_state_ptr = ros::topic::waitForMessage<sensor_msgs::JointState>(topic_, ros::Duration(3.0));
+		if (!current_state_ptr)
+		{
+			ROS_WARN("No real start state available, since no joint state recevied in topic: %s", topic_.c_str());
+			ROS_WARN("Did you forget to start a controller?");
+			ROS_WARN("Planning will be done from home position, however this trajectory might not be good for execution!");
+		}
 
+		sensor_msgs::JointState startState = *current_state_ptr;
+
+		definitions::SDHand goal;
 		// note that we plan for wrist frame of the requested arm
 		if(request.arm.compare(std::string("right")) == 0)
-			goal = goal = request.eddie_goal_state.handRight.wrist_pose;
+			goal = request.eddie_goal_state.handRight;
 		if(request.arm.compare(std::string("left")) == 0)
-			goal = request.eddie_goal_state.handLeft.wrist_pose;
+			goal = request.eddie_goal_state.handLeft;
 
 		plan_for_frame_ = request.arm + "_sdh_palm_link";
 		group_name_ = request.arm + "_arm";
 
-		if( !planTrajectory(trajectories, goal, request.arm) ) 
+		if( !planTrajectory(trajectories, goal, request.arm, startState) ) 
 		{
 			ROS_WARN("No trajectory found for the required goal state");
 		}
@@ -67,38 +120,30 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 
 }
 
-bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajectories, geometry_msgs::PoseStamped &goal, std::string &arm) 
+bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajectories, definitions::SDHand &goal, std::string &arm, sensor_msgs::JointState &startState) 
 {
 	// first state the planning constraint
-	moveit_msgs::Constraints pose_goal = kinematic_constraints::constructGoalConstraints(plan_for_frame_.c_str(), goal, tolerance_in_position_, tolerance_in_orientation_);
+	moveit_msgs::Constraints pose_goal = kinematic_constraints::constructGoalConstraints(plan_for_frame_.c_str(), goal.wrist_pose, tolerance_in_position_, tolerance_in_orientation_);
 
-	ROS_INFO("Planning for wrist (px, py, pz, qx, qy, qz, qw):\t%f\t%f\t%f\t%f\t%f\t%f\t%f", goal.pose.position.x, goal.pose.position.y, goal.pose.position.z, goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z, goal.pose.orientation.w);
+	ROS_INFO("Planning for wrist (px, py, pz, qx, qy, qz, qw):\t%f\t%f\t%f\t%f\t%f\t%f\t%f", goal.wrist_pose.pose.position.x, goal.wrist_pose.pose.position.y, goal.wrist_pose.pose.position.z, goal.wrist_pose.pose.orientation.x, goal.wrist_pose.pose.orientation.y, goal.wrist_pose.pose.orientation.z, goal.wrist_pose.pose.orientation.w);
 	
 	// now construct the motion plan request
 	moveit_msgs::GetMotionPlan motion_plan;
 	moveit_msgs::MotionPlanRequest &motion_plan_request = motion_plan.request.motion_plan_request;
 
+	// constraint for the wrist
 	motion_plan_request.group_name = group_name_.c_str();
 	motion_plan_request.goal_constraints.push_back(pose_goal);
+	//motion_plan_request.goal_constraints[0].joint_constraints = handJointsGoal;
+
 	motion_plan_request.num_planning_attempts = max_planning_attempts_;
 	motion_plan_request.allowed_planning_time = max_planning_time_;
 	motion_plan_request.planner_id = "PRMstarkConfigDefault";
 
-	// wait for a joint state
-	boost::shared_ptr<const sensor_msgs::JointState> current_state_ptr = ros::topic::waitForMessage<sensor_msgs::JointState>(topic_, ros::Duration(3.0));
-	if (!current_state_ptr)
-	{
-		ROS_WARN("No real start state available, since no joint state recevied in topic: %s", topic_.c_str());
-		ROS_WARN("Did you forget to start a controller?");
-		ROS_WARN("Planning will be done from home position, however this trajectory might not be good for execution!");
-	}
-	else
-	{
-		// take the current state of the robot as the start state
-		moveit_msgs::RobotState start_state;
-		start_state.joint_state = *current_state_ptr;
-		motion_plan_request.start_state = start_state;
-	}
+	moveit_msgs::RobotState start_state;
+	start_state.joint_state = startState;
+	motion_plan_request.start_state = start_state;
+
 
 	// and call the service with the request
 	ROS_INFO("Calling plannig service...");
@@ -127,9 +172,16 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 
 			moveit_msgs::RobotTrajectory robot_trajectory = motion_plan.response.motion_plan_response.trajectory;
 
+			// std::cout << "robot_trajectory" << robot_trajectory << std::endl;
+
+			// std::cout << "startState" << startState << std::endl;
+
+			interpolateHandJoints(goal, startState, robot_trajectory, arm);
+
 			// populate trajectory with motion plan data
 			// the start state is used to copy the data for the joints that are not being used in the planning
-			pacman::convertLimb(robot_trajectory, trajectory, *current_state_ptr, arm);
+			pacman::convertLimb(robot_trajectory, trajectory, startState, arm);
+
 			trajectories.push_back(trajectory);
 
 			return true;
