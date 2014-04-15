@@ -372,51 +372,51 @@ namespace pacman {
 		}
 	}
 
-	// this mapping uses names defined in the urdf of the UIBK robot, so be careful if you change them
-	void mapStates(const RobotUIBK::State &state, std::string name, sensor_msgs::JointState &joint_states, ros::Time stamp) 
-	{
+	// // this mapping uses names defined in the urdf of the UIBK robot, so be careful if you change them
+	// void mapStates(const RobotUIBK::State &state, std::string name, sensor_msgs::JointState &joint_states, ros::Time stamp) 
+	// {
 
-		// initialize the joint state topic
-		joint_states.name.resize(RobotUIBK::Config::JOINTS);
-		joint_states.position.resize(RobotUIBK::Config::JOINTS);
-		joint_states.velocity.resize(RobotUIBK::Config::JOINTS);
-		joint_states.effort.resize(RobotUIBK::Config::JOINTS);
-		joint_states.name[0] = name + "_arm_0_joint";
-		joint_states.name[1] = name + "_arm_1_joint";
-		joint_states.name[2] = name + "_arm_2_joint";
-		joint_states.name[3] = name + "_arm_3_joint";
-		joint_states.name[4] = name + "_arm_4_joint";
-		joint_states.name[5] = name + "_arm_5_joint";
-		joint_states.name[6] = name + "_arm_6_joint";
-		joint_states.name[7] = name + "_sdh_knuckle_joint";
-		joint_states.name[8] = name + "_sdh_finger_12_joint";
-		joint_states.name[9] = name + "_sdh_finger_13_joint";
-		joint_states.name[10] = name + "_sdh_finger_22_joint";
-		joint_states.name[11] = name + "_sdh_finger_23_joint";
-		joint_states.name[12] = name + "_sdh_thumb_2_joint";
-		joint_states.name[13] = name + "_sdh_thumb_3_joint";
+	// 	// initialize the joint state topic
+	// 	joint_states.name.resize(RobotUIBK::Config::JOINTS);
+	// 	joint_states.position.resize(RobotUIBK::Config::JOINTS);
+	// 	joint_states.velocity.resize(RobotUIBK::Config::JOINTS);
+	// 	joint_states.effort.resize(RobotUIBK::Config::JOINTS);
+	// 	joint_states.name[0] = name + "_arm_0_joint";
+	// 	joint_states.name[1] = name + "_arm_1_joint";
+	// 	joint_states.name[2] = name + "_arm_2_joint";
+	// 	joint_states.name[3] = name + "_arm_3_joint";
+	// 	joint_states.name[4] = name + "_arm_4_joint";
+	// 	joint_states.name[5] = name + "_arm_5_joint";
+	// 	joint_states.name[6] = name + "_arm_6_joint";
+	// 	joint_states.name[7] = name + "_sdh_knuckle_joint";
+	// 	joint_states.name[8] = name + "_sdh_finger_12_joint";
+	// 	joint_states.name[9] = name + "_sdh_finger_13_joint";
+	// 	joint_states.name[10] = name + "_sdh_finger_22_joint";
+	// 	joint_states.name[11] = name + "_sdh_finger_23_joint";
+	// 	joint_states.name[12] = name + "_sdh_thumb_2_joint";
+	// 	joint_states.name[13] = name + "_sdh_thumb_3_joint";
 
-		joint_states.header.stamp = stamp;
+	// 	joint_states.header.stamp = stamp;
 
-		// the joint mapping needs to be hardcoded to match Golem.xml and Ros.urdf structures
-		// note that, the names are set in the class constructor for the order convention
-		// and let the party begin... first the arm:
-		for (int j = 0; j < KukaLWR::Config::JOINTS; j++)
-		{
-			joint_states.position[j] = state.arm.pos.c[j];
-		}
+	// 	// the joint mapping needs to be hardcoded to match Golem.xml and Ros.urdf structures
+	// 	// note that, the names are set in the class constructor for the order convention
+	// 	// and let the party begin... first the arm:
+	// 	for (int j = 0; j < KukaLWR::Config::JOINTS; j++)
+	// 	{
+	// 		joint_states.position[j] = state.arm.pos.c[j];
+	// 	}
 
-		// and continue with the hand:
-		joint_states.position[7] = state.hand.pos.rotation;
-		joint_states.position[8] = state.hand.pos.left[0];
-		joint_states.position[9] = state.hand.pos.left[1];
-		joint_states.position[10] = state.hand.pos.right[0];
-		joint_states.position[11] = state.hand.pos.right[1];
-		joint_states.position[12] = state.hand.pos.middle[0];
-		joint_states.position[13] = state.hand.pos.middle[1];
+	// 	// and continue with the hand:
+	// 	joint_states.position[7] = state.hand.pos.rotation;
+	// 	joint_states.position[8] = state.hand.pos.left[0];
+	// 	joint_states.position[9] = state.hand.pos.left[1];
+	// 	joint_states.position[10] = state.hand.pos.right[0];
+	// 	joint_states.position[11] = state.hand.pos.right[1];
+	// 	joint_states.position[12] = state.hand.pos.middle[0];
+	// 	joint_states.position[13] = state.hand.pos.middle[1];
 
-		return;
-	}
+	// 	return;
+	// }
 
 	// this mapping uses names defined in the urdf of the UIBK robot, so be careful if you change them
 	void mapStates(const RobotEddie::State &state, sensor_msgs::JointState &joint_states, ros::Time stamp) 
@@ -539,6 +539,45 @@ namespace pacman {
 		state.head.pos.eyeRight = joint_states.position[34];
 
 		return;
+	}
+
+	void interpolateHandJoints(const definitions::SDHand &goalState, const sensor_msgs::JointState &startState, moveit_msgs::RobotTrajectory &baseTrajectory, std::string &arm)
+	{
+		int NWayPoints = baseTrajectory.joint_trajectory.points.size();
+		int right_hand_index = 21;
+		int left_hand_index = 14;
+		int hand_index = 0;
+
+		if(arm.compare(std::string("right")) == 0)
+			hand_index = right_hand_index;
+		if(arm.compare(std::string("left")) == 0)
+			hand_index = left_hand_index;
+
+		for (int i = 0; i < NWayPoints; i++)
+		{
+			// trajectory_msgs::JointTrajectoryPoint &point = baseTrajectory.joint_trajectory.points[i];
+
+			for(int h = 0; h < pacman::SchunkDexHand::Config::JOINTS; h++)
+			{
+				baseTrajectory.joint_trajectory.points[i].positions.push_back(startState.position[hand_index + h] + (i+1)*(goalState.joints[h] - startState.position[hand_index + h])/NWayPoints);
+	        }
+		
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+
+			baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+			baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+			baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+			baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+			baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+			baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+			baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+		}
 	}
 
 };

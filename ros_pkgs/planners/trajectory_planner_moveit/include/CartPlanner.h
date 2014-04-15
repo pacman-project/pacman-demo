@@ -40,9 +40,6 @@ class CartPlanner
 	// speed scale for trajectory
 	double speed_;
 
-	// convenient function to generate hand joint goal constraint
-	void interpolateHandJoints(const definitions::SDHand &goalState, const sensor_msgs::JointState &startState, moveit_msgs::RobotTrajectory &baseTrajectory, std::string &arm);
-
   	// the service callback 
   	bool planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response);
 

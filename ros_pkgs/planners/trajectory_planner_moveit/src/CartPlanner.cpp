@@ -18,46 +18,6 @@
 
 namespace trajectory_planner_moveit {
 
-void CartPlanner::interpolateHandJoints(const definitions::SDHand &goalState, const sensor_msgs::JointState &startState, moveit_msgs::RobotTrajectory &baseTrajectory, std::string &arm)
-{
-	int NWayPoints = baseTrajectory.joint_trajectory.points.size();
-	int right_hand_index = 21;
-	int left_hand_index = 14;
-	int hand_index = 0;
-
-	if(arm.compare(std::string("right")) == 0)
-		hand_index = right_hand_index;
-	if(arm.compare(std::string("left")) == 0)
-		hand_index = left_hand_index;
-
-	for (int i = 0; i < NWayPoints; i++)
-	{
-		// trajectory_msgs::JointTrajectoryPoint &point = baseTrajectory.joint_trajectory.points[i];
-
-		for(int h = 0; h < pacman::SchunkDexHand::Config::JOINTS; h++)
-		{
-			baseTrajectory.joint_trajectory.points[i].positions.push_back(startState.position[hand_index + h] + (i+1)*(goalState.joints[h] - startState.position[hand_index + h])/NWayPoints);
-        }
-	
-		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
-		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
-		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
-		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
-		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
-		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
-		baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
-
-		baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
-		baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
-		baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
-		baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
-		baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
-		baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
-		baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
-	}
-}
-
-
 
 bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response) 
 {
@@ -170,7 +130,8 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 
 			moveit_msgs::RobotTrajectory robot_trajectory = motion_plan.response.motion_plan_response.trajectory;
 
-			interpolateHandJoints(goal, startState, robot_trajectory, arm);
+			// fill the robot trajectory with hand values, given the base trajectory of the arm
+			pacman::interpolateHandJoints(goal, startState, robot_trajectory, arm);
 
 			// populate trajectory with motion plan data
 			// the start state is used to copy the data for the joints that are not being used in the planning
