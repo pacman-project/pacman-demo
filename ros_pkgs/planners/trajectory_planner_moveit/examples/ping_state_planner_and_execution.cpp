@@ -8,6 +8,7 @@
 
 //for the messages used in the services
 #include "definitions/TrajectoryPlanning.h"
+#include "definitions/TrajectoryExecution.h"
 
 int main(int argc, char **argv)
 {
@@ -15,8 +16,10 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "ping_path_planner");
     ros::NodeHandle nh;
 
-    // planning service
+    // planning and execution service
     std::string planning_service_name("/trajectory_planning_srv");
+    std::string execution_service_name("/trajectory_execution_srv");
+
     if ( !ros::service::waitForService(planning_service_name, ros::Duration().fromSec(1.0)) )
     { 
       ROS_ERROR("After one second, the service %s hasn't shown up...",  planning_service_name.c_str());
@@ -81,51 +84,27 @@ int main(int argc, char **argv)
 
     ros::Duration(5).sleep();
 
-    // NOW plan for the left arm
-    trajectory_planning_srv.request.type = definitions::TrajectoryPlanning::Request::MOVE_TO_STATE_GOAL;
-    trajectory_planning_srv.request.arm = "left";
+    // create the execution service instance
+    definitions::TrajectoryExecution trajectory_execution_srv;
+    trajectory_execution_srv.request.trajectory = trajectory_planning_srv.response.trajectory[0];
 
-    // first, one simple motion: try to move to the safe position first without checking     goal_state.handAright.joints[0] = 0.90358;
-    goal_state.armLeft.joints[0] = 0.98819;
-    goal_state.armLeft.joints[1] = -1.01639;
-    goal_state.armLeft.joints[2] = 2.00266;
-    goal_state.armLeft.joints[3] = 0.98314;
-    goal_state.armLeft.joints[4] = 0.0;
-    goal_state.armLeft.joints[5] = 0.0;
-    goal_state.armLeft.joints[6] = 1.25715;
-    goal_state.handLeft.joints[0] = 0.0;
-    goal_state.handLeft.joints[1] = -0.8;
-    goal_state.handLeft.joints[2] = 0.8;
-    goal_state.handLeft.joints[3] = -0.8;
-    goal_state.handLeft.joints[4] = 0.8;
-    goal_state.handLeft.joints[5] = -0.8;
-    goal_state.handLeft.joints[6] = 0.8;
-
-    trajectory_planning_srv.request.eddie_goal_state = goal_state;
-
-    // call the planning service with the instance
-    ROS_INFO("Calling the planning service for the %s arm", trajectory_planning_srv.request.arm.c_str());
-    if ( !ros::service::call( planning_service_name, trajectory_planning_srv) )
+    // call the execution service with the instance
+    ROS_INFO("Calling the execution service");
+    if ( !ros::service::call( execution_service_name, trajectory_execution_srv) )
     { 
-        ROS_ERROR("Call to the service %s failed.", planning_service_name.c_str());  
+        ROS_ERROR("Call to the service %s failed.", execution_service_name.c_str());  
         return (-1);
     }   
 
-    if (trajectory_planning_srv.response.result == trajectory_planning_srv.response.OTHER_ERROR)
+    if (trajectory_execution_srv.response.result == trajectory_execution_srv.response.OTHER_ERROR)
     {   
-        ROS_ERROR("Unable to plan a trajectory: OTHER_ERROR");
+        ROS_ERROR("Unable to execute the trajectory: OTHER_ERROR");
         return (-1);
     }
 
-    if (trajectory_planning_srv.response.result == trajectory_planning_srv.response.NO_FEASIBLE_TRAJECTORY_FOUND)
-    {   
-        ROS_ERROR("Unable to plan a trajectory:: NO_FEASIBLE_TRAJECTORY_FOUND");
-        return (-1);
-    }
-
-    if (trajectory_planning_srv.response.result == trajectory_planning_srv.response.SUCCESS)
+    if (trajectory_execution_srv.response.result == trajectory_execution_srv.response.SUCCESS)
     { 
-        ROS_INFO("Trajectory Planning OK...\n");
+        ROS_INFO("Trajectory execution OK... moved to safe position succesfully!\n");
     }
 
     return 0;

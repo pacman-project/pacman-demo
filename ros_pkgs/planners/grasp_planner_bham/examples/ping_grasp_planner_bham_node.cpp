@@ -82,7 +82,7 @@ int main(int argc, char **argv)
     {
       //Filtering heuristic: z value has to be bigger than a certain amount and rotation has to look along a certain direction (top grasp), define maximum angle on quaternion
       std::cout << "Grasp Nr." << i <<  std::endl;
-      std::cout << grasp_planning_srv.response.grasp_list[i].grasp_trajectory[2].wrist_pose <<  std::endl;   
+      std::cout << grasp_planning_srv.response.grasp_list[i] <<  std::endl;   
     }
 
     return 0;

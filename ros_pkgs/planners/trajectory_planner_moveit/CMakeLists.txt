@@ -124,6 +124,9 @@ add_executable(ping_cart_planner_and_execution
 add_executable(ping_state_planner
 	examples/ping_state_planner.cpp
 	)
+add_executable(ping_state_planner_and_execution
+	examples/ping_state_planner_and_execution.cpp
+	)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -151,6 +154,9 @@ add_dependencies(ping_cart_planner_and_execution
 add_dependencies(ping_state_planner
 	definitions_generate_messages_cpp
 	)
+add_dependencies(ping_state_planner_and_execution
+	definitions_generate_messages_cpp
+	)
 
 ## Specify libraries to link a library or executable target against
 # libraries
@@ -175,6 +181,9 @@ target_link_libraries(ping_cart_planner_and_execution
 	${catkin_LIBRARIES}
 	)
 target_link_libraries(ping_state_planner
+	${catkin_LIBRARIES}
+	)
+target_link_libraries(ping_state_planner_and_execution
 	${catkin_LIBRARIES}
 	)
 

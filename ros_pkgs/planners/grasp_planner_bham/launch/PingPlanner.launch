@@ -1,5 +1,0 @@
-<launch>
-	<!-- THE cwd ATRIBUTE IS NECESSARY TO MAKE THE NODE PATH AS THE PATH FOR THE EXECUTION, SUCH THAT THE XML FILES ARE AVAILABLE 
-	(see in the CMakeList.txt that the Robot config files are copied)/-->	
-	<node pkg="grasp_planner_bham" name="ping_grasp_planner" type="ping_grasp_planner_bham_node" respawn="false" output="screen" cwd="node"/>
-</launch>
