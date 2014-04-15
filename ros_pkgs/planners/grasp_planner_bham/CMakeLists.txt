@@ -88,13 +88,25 @@ link_directories(
 # )
 
 ## Declare a cpp executable
-add_executable(grasp_planner_bham_node src/grasp_planner_bham_node.cpp)
-add_executable(ping_grasp_planner_bham_node src/ping_grasp_planner_bham_node.cpp)
+add_executable(grasp_planner_bham_node 
+  src/grasp_planner_bham_node.cpp
+)
+
+#examples
+add_executable(ping_grasp_planner_bham_node 
+  examples/ping_grasp_planner_bham_node.cpp
+)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(grasp_planner_bham_node definitions_generate_messages_cpp)
-add_dependencies(ping_grasp_planner_bham_node definitions_generate_messages_cpp)
+add_dependencies(grasp_planner_bham_node 
+  definitions_generate_messages_cpp
+)
+
+#examples
+add_dependencies(ping_grasp_planner_bham_node 
+  definitions_generate_messages_cpp
+)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(grasp_planner_bham_node
@@ -105,19 +117,13 @@ target_link_libraries(grasp_planner_bham_node
   ${catkin_LIBRARIES}
 )
 
+#examples
 target_link_libraries(ping_grasp_planner_bham_node
   PaCMan
   PaCManBhamGrasp
   ${Boost_LIBRARIES}
   ${catkin_LIBRARIES}
 )
-
-## DIRTY SOLUTION
-## Copy robot config files to node execution path, I didn't find any other way to do it
-# file(COPY config/GolemDeviceKukaLWRSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
-# file(COPY config/GolemDeviceRobotUIBKSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
-# file(COPY config/GolemDeviceSchunkDexHandSim.xml DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
-# file(COPY resources/pacman_mug1.pcd DESTINATION ${CATKIN_DEVEL_PREFIX}/lib/${PROJECT_NAME})
 
 #############
 ## Install ##

@@ -84,7 +84,7 @@ class grabkinect
         std_msgs::String msg;
         msg.data = file_name;
 
-        pcl::io::savePCDFileASCII (file_name,*xyz_points_);
+        pcl::io::savePCDFileBinaryCompressed (file_name,*xyz_points_);
         usleep(500);
         REC_TIMES_KINECT=false;
         }  

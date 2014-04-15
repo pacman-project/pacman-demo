@@ -11,17 +11,16 @@
 #include <definitions/TrajectoryPlanning.h>
 
 //// local headers
-#include "CartPlanner.h"
+#include "StatePlanner.h"
 
 #include <pacman/PaCMan/ROS.h>
 #include <pacman/PaCMan/Defs.h>
 
 namespace trajectory_planner_moveit {
 
-
-bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response) 
+bool StatePlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response) 
 {
-	if( request.type == request.MOVE_TO_CART_GOAL)
+	if( request.type == request.MOVE_TO_STATE_GOAL)
 	{
 		ROS_INFO("Received trajectory planning request");
 		ros::Time now = ros::Time::now();
@@ -40,17 +39,9 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 
 		sensor_msgs::JointState startState = *current_state_ptr;
 
-		definitions::SDHand goal;
-		// note that we plan for wrist frame of the requested arm
-		if(request.arm.compare(std::string("right")) == 0)
-			goal = request.eddie_goal_state.handRight;
-		if(request.arm.compare(std::string("left")) == 0)
-			goal = request.eddie_goal_state.handLeft;
-
-		plan_for_frame_ = request.arm + "_sdh_palm_link";
 		group_name_ = request.arm + "_arm";
 
-		if( !planTrajectory(trajectories, goal, request.arm, startState) ) 
+		if( !planTrajectory(trajectories, request.eddie_goal_state, request.arm, startState) ) 
 		{
 			ROS_WARN("No trajectory found for the required goal state");
 		}
@@ -78,12 +69,24 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 
 }
 
-bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajectories, definitions::SDHand &goal, std::string &arm, sensor_msgs::JointState &startState) 
+bool StatePlanner::planTrajectory(std::vector<definitions::Trajectory> &trajectories, definitions::RobotEddie &goal, std::string &arm, sensor_msgs::JointState &startState) 
 {
 	// first state the planning constraint
-	moveit_msgs::Constraints pose_goal = kinematic_constraints::constructGoalConstraints(plan_for_frame_.c_str(), goal.wrist_pose, tolerance_in_position_, tolerance_in_orientation_);
+	std::vector<moveit_msgs::JointConstraint> joint_constraints;
+	for (int i = 0; i < pacman::KukaLWR::Config::JOINTS; i++)
+	{
+		moveit_msgs::JointConstraint joint_constraint;
 
-	ROS_INFO("Planning for wrist (px, py, pz, qx, qy, qz, qw):\t%f\t%f\t%f\t%f\t%f\t%f\t%f", goal.wrist_pose.pose.position.x, goal.wrist_pose.pose.position.y, goal.wrist_pose.pose.position.z, goal.wrist_pose.pose.orientation.x, goal.wrist_pose.pose.orientation.y, goal.wrist_pose.pose.orientation.z, goal.wrist_pose.pose.orientation.w);
+		std::string joint_name = arm + "_arm_" + std::to_string(i) + "_joint";
+		joint_constraint.joint_name = joint_name;
+
+		if(arm.compare(std::string("right")) == 0)
+			joint_constraint.position = goal.armRight.joints[i];
+		if(arm.compare(std::string("left")) == 0)
+			joint_constraint.position = goal.armLeft.joints[i];
+
+		joint_constraints.push_back(joint_constraint);
+	}
 	
 	// now construct the motion plan request
 	moveit_msgs::GetMotionPlan motion_plan;
@@ -91,8 +94,8 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 
 	// constraint for the wrist
 	motion_plan_request.group_name = group_name_.c_str();
-	motion_plan_request.goal_constraints.push_back(pose_goal);
-	//motion_plan_request.goal_constraints[0].joint_constraints = handJointsGoal;
+	motion_plan_request.goal_constraints.resize(1);
+	motion_plan_request.goal_constraints[0].joint_constraints = joint_constraints;
 
 	motion_plan_request.num_planning_attempts = max_planning_attempts_;
 	motion_plan_request.allowed_planning_time = max_planning_time_;
@@ -130,8 +133,14 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 
 			moveit_msgs::RobotTrajectory robot_trajectory = motion_plan.response.motion_plan_response.trajectory;
 
+			definitions::SDHand my_hand;
+			if(arm.compare(std::string("right")) == 0)
+				my_hand = goal.handRight;
+			if(arm.compare(std::string("left")) == 0)
+				my_hand = goal.handLeft;
+
 			// fill the robot trajectory with hand values, given the base trajectory of the arm
-			pacman::interpolateHandJoints(goal, startState, robot_trajectory, arm);
+			pacman::interpolateHandJoints(my_hand, startState, robot_trajectory, arm);
 
 			// populate trajectory with motion plan data
 			// the start state is used to copy the data for the joints that are not being used in the planning

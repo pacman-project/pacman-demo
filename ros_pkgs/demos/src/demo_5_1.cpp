@@ -61,6 +61,7 @@ enum Event
   PlanGrasp,
   PlanTrajectory,
   Retreat,
+  Restart,
   Stop,
   PickObject,
   PickGrasp
@@ -81,7 +82,7 @@ int transTab[TransNum][StatesNum] =
   {Success,Success,Success,Success,Success,Success,Fail,Success}, // re-start
   {Success,Success,Success,Success,Success,Fail,Fail,Success}, // Retreat
   {Success,Success,Success,Success,Success,Fail,Success,Success}, // Retreat
-  {Idle,Idle,Idle,Idle,Idle,Idle,Idle,Idle}, // re-start
+  {Idle,Idle,Idle,Idle,Idle,Idle,Idle,Idle}, // start
   {Success,Fail,Idle,Idle,Idle,Idle,Idle,Idle}, // Stop
   {Fail,Idle,Idle,Idle,Idle,Idle,Idle,Idle}, // Stop
   {Fail,Success,Success,Success,Success,Fail,Fail,Success}, // Stop
@@ -95,7 +96,7 @@ int transTab[TransNum][StatesNum] =
 Event mapEvent[TransNum] = 
 {
   EstimatePose,PlanGrasp,PlanTrajectory,PlanTrajectory,PlanTrajectory,PlanTrajectory,
-  Start,Start,Retreat,Retreat,Start,Stop,Stop,Stop,Stop,Stop,PickObject,PickGrasp,PickObject
+  Restart,Restart,Retreat,Retreat,Start,Stop,Stop,Stop,Stop,Stop,PickObject,PickGrasp,PickObject
 };
 
 const int max_trial_ = 1;
@@ -139,6 +140,9 @@ class DemoSimple
     definitions::ObjectCloudReader reader_srv;
     geometry_msgs::Pose poseMid;  
     geometry_msgs::Pose robotpose;
+    vector<float> robot_start_joints_;
+    vector<float> robot_place_joints_;
+    
     int objectsNum_;
     int grasp_id_;
     int object_id_;
@@ -153,7 +157,7 @@ class DemoSimple
     bool grasp_success_;
     string arm_;    
     
-    bool goToStartPos(bool beginning);
+    bool goToStartPos();
     
     void reconstruct_scene();
     
@@ -171,6 +175,7 @@ class DemoSimple
     bool plan_trajectory();
     void goToNextObject();
     void goToNextGrasp();
+    bool restart();
     
     // constructor
     DemoSimple(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
@@ -206,6 +211,49 @@ class DemoSimple
        hand_pose_start_.push_back(0.); hand_pose_start_.push_back(-0.8); hand_pose_start_.push_back(0.8);
        hand_pose_start_.push_back(-0.8); hand_pose_start_.push_back(0.8); hand_pose_start_.push_back(-0.8);
        hand_pose_start_.push_back(0.8);
+       
+       robot_start_joints_ = vector<float>(7,0);
+       robot_place_joints_ = vector<float>(7,0);
+       
+       // ** start position ** //
+       if( arm_ == "right")
+       {
+         robotpose.position.x = 0.1624;
+         robotpose.position.y = -0.2599;
+         robotpose.position.z = 0.6642;
+  
+         robotpose.orientation.x = 0.404885;
+         robotpose.orientation.y = 0.86333;
+         robotpose.orientation.z = -0.139283;
+         robotpose.orientation.w = 0.267076;
+	
+	 robot_start_joints_[0] = 0.90358; robot_start_joints_[1] = 1.07305; robot_start_joints_[2] = 1.16986; robot_start_joints_[3] = 0.89418;
+	 robot_start_joints_[4] = 0.74461; robot_start_joints_[5] = 0.01476; robot_start_joints_[6] = -0.48848;
+	 
+	 robot_place_joints_[0] = 0.90358; robot_place_joints_[1] = 1.07305; robot_place_joints_[2] = 1.16986; robot_place_joints_[3] = 0.89418;
+	 robot_place_joints_[4] = 0.74461; robot_place_joints_[5] = 0.01476; robot_place_joints_[6] = -0.48848 + 0.3;	 
+	 
+       }
+  
+      //left arm start position
+      else if( arm_ == "left")
+      {
+        robotpose.position.x = -0.118831;
+        robotpose.position.y = 1.70482;
+        robotpose.position.z = 0.728295;
+
+        robotpose.orientation.x = -0.411059;
+        robotpose.orientation.y = 0.874099;
+        robotpose.orientation.z = 0.0389072;
+        robotpose.orientation.w = 0.255866;
+	
+	robot_start_joints_[0] = 0.98819; robot_start_joints_[1] = -1.01639; robot_start_joints_[2] = 2.00266; robot_start_joints_[3] = 0.98314;
+	robot_start_joints_[4] = 0.0; robot_start_joints_[5] = 0.0; robot_start_joints_[6] = 1.25715;
+
+	robot_place_joints_[0] = 0.98819; robot_place_joints_[1] = -1.01639; robot_place_joints_[2] = 2.00266; robot_place_joints_[3] = 0.98314;
+	robot_place_joints_[4] = 0.0; robot_place_joints_[5] = 0.0; robot_place_joints_[6] = 1.25715 + 0.3;
+      }
+      
     }
     //! Empty stub
     ~DemoSimple() {}
@@ -265,12 +313,26 @@ void DemoSimple::perform_event(Event event)
       break;  
     case Retreat: 
       cout << "event: retreat" << endl;
-      goToStartPos(false);
+      restart();
+      if( curState_[Start_State] == Success )
+      {
+	cout << "start, drop object" << endl;
+        goToStartPos();
+      }
       break;
     case Start:
-      cout << "event: restart" << endl;
-      goToStartPos(false);
+      cout << "event: start" << endl;
+      goToStartPos();
       break;
+    case Restart:
+      cout << "event: restart" << endl;
+      restart();
+      if( curState_[Start_State] == Success )
+      { 
+	cout << "start, drop object" << endl;
+	goToStartPos();
+      }
+      break;      
     case Stop: 
       cout << "event: stop" << endl;
       break;
@@ -289,42 +351,14 @@ void DemoSimple::perform_event(Event event)
   }
 }
 
-bool DemoSimple::goToStartPos(bool beginning)
+bool DemoSimple::goToStartPos()
 {
   curState_[Start_State] = Fail;
-// for testing wo execution
-  //curState_[Start_State] = Success;
   
   bool result = false;
   
   definitions::Grasp current_trajectory;
   current_trajectory.grasp_trajectory.resize(1); 
-
-  //right start position
-  if( arm_ == "right")
-  {
-    robotpose.position.x = 0.1624;
-    robotpose.position.y = -0.2599;
-    robotpose.position.z = 0.6642;
-  
-    robotpose.orientation.x = 0.404885;
-    robotpose.orientation.y = 0.86333;
-    robotpose.orientation.z = -0.139283;
-    robotpose.orientation.w = 0.267076;
-  }
-  
-  //left arm start position
-  else if( arm_ == "left")
-  {
-    robotpose.position.x = -0.118831;
-    robotpose.position.y = 1.70482;
-    robotpose.position.z = 0.728295;
-
-    robotpose.orientation.x = -0.411059;
-    robotpose.orientation.y = 0.874099;
-    robotpose.orientation.z = 0.0389072;
-    robotpose.orientation.w = 0.255866;
-  }
   
   std::cout << "Initial position: " << robotpose << std::endl;
   current_trajectory.grasp_trajectory[0].wrist_pose.pose = robotpose;
@@ -338,10 +372,83 @@ bool DemoSimple::goToStartPos(bool beginning)
   
   trajectory_planning_srv.request.object_list = noObject;
   trajectory_planning_srv.request.object_id = 0;
-  trajectory_planning_srv.request.type = trajectory_planning_srv.request.MOVE_TO_CART_GOAL;
-  trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose = current_trajectory.grasp_trajectory[0].wrist_pose;
- // trajectory_planning_srv.request.eddie_goal_state.handRight.joints = current_trajectory.grasp_trajectory[0].joints;
+  //trajectory_planning_srv.request.type = trajectory_planning_srv.request.MOVE_TO_CART_GOAL;
+  trajectory_planning_srv.request.type = trajectory_planning_srv.request.MOVE_TO_STATE_GOAL;
+  trajectory_planning_srv.request.eddie_goal_state.armRight.joints = robot_start_joints_;
   trajectory_planning_srv.request.eddie_goal_state.handRight.joints = hand_pose_start_;
+  
+  if( !trajectory_planner_client.call(trajectory_planning_srv) )
+  {
+    ROS_INFO("trajectory planner service call failed.");
+  }
+  else	
+  {
+    
+    ROS_INFO("trajectory planner call succeeded");
+    my_calculated_trajectory = trajectory_planning_srv.response.trajectory;
+    ROS_INFO("number of found trajectories are: %d",(int)my_calculated_trajectory.size());
+      
+    
+    ROS_INFO("Executing Trajectory");
+    
+    //User input
+    char a;
+    std::cout << "Check if trajectory is ok (y/n)" << std::endl;
+    std::cin >> a;
+    
+    if (a=='y')
+    {    
+    //Arm movement
+    std::cout << "Executing arm trajectory" << std::endl;
+    std::cout << "#of found trajectories: "  << my_calculated_trajectory.size() << std::endl;
+    my_calculated_trajectory[0].trajectory_id=0;
+    trajectory_execution_srv.request.trajectory = my_calculated_trajectory[0]; 
+      if( !trajectory_execution_client.call(trajectory_execution_srv) )
+      {
+	      ROS_INFO("trajectory planner service call failed.");
+      }
+      else
+      {
+	      ROS_INFO("trajectory execution call succeeded");
+	      curState_[Start_State] = Success;
+	      result = true;
+      }
+        
+    }
+    else
+    {
+    std::cout << "Trajectory not valid - restart" << std::endl;
+    }
+  }
+  return result;
+  
+}
+
+bool DemoSimple::restart()
+{
+  curState_[Start_State] = Fail;
+  
+  bool result = false;
+  
+  definitions::Grasp current_trajectory;
+  current_trajectory.grasp_trajectory.resize(1); 
+  
+  std::cout << "Initial position: " << robotpose << std::endl;
+  current_trajectory.grasp_trajectory[0].wrist_pose.pose = robotpose;
+  current_trajectory.grasp_trajectory[0].wrist_pose.header.frame_id = "world_link";
+  std::vector<definitions::Grasp> my_calculated_grasp_cur;
+  my_calculated_grasp_cur.push_back(current_trajectory);
+  
+  trajectory_planning_srv.request.ordered_grasp = my_calculated_grasp_cur;
+  trajectory_planning_srv.request.arm = "right";
+  std::vector<definitions::Object> noObject;
+  
+  trajectory_planning_srv.request.object_list = noObject;
+  trajectory_planning_srv.request.object_id = 0;
+  trajectory_planning_srv.request.type = trajectory_planning_srv.request.MOVE_TO_STATE_GOAL;
+  trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose = current_trajectory.grasp_trajectory[0].wrist_pose;
+  trajectory_planning_srv.request.eddie_goal_state.armRight.joints = robot_place_joints_;
+  trajectory_planning_srv.request.eddie_goal_state.handRight.joints = my_calculated_grasp[grasp_id_].grasp_trajectory[0].joints;
   
   if( !trajectory_planner_client.call(trajectory_planning_srv) )
   {
@@ -651,13 +758,13 @@ bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id)
 
   std::cout << "my_calculated_grasp[grasp_id]" << my_calculated_grasp[grasp_id] << std::endl;
 
-  //trajectory_planning_srv.request.ordered_grasp = my_calculated_grasp;
+  trajectory_planning_srv.request.ordered_grasp = my_calculated_grasp;
   trajectory_planning_srv.request.arm = "right";
   trajectory_planning_srv.request.type = trajectory_planning_srv.request.MOVE_TO_CART_GOAL;
- // trajectory_planning_srv.request.ordered_grasp = my_calculated_grasp_cur;
+  trajectory_planning_srv.request.ordered_grasp = my_calculated_grasp_cur;
   trajectory_planning_srv.request.object_list = estimation_srv.response.detected_objects;
   trajectory_planning_srv.request.object_id = 0;
-  trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose.header.frame_id =  "world_link";
+ // trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose.header.frame_id =  "world_link";
   trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose = my_calculated_grasp[grasp_id].grasp_trajectory[0].wrist_pose;
   trajectory_planning_srv.request.eddie_goal_state.handRight.joints = my_calculated_grasp[grasp_id].grasp_trajectory[0].joints;
   //trajectory_planning_srv.request.object_id = grasp_id;
@@ -708,13 +815,6 @@ bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id)
 	      succeed = true;
 	      return true;
         }
-    
-    //GraspPlanning
-    
-   
-    
-    //TODO: Move to Place positions, to be done after testing, query trajectory planning service again.
-    
       }
       else if (a=='n')
       {

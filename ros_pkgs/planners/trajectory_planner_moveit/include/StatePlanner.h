@@ -10,7 +10,7 @@
 namespace trajectory_planner_moveit {
 
 // use a name for the node and a verb it is suppose to do, Publisher, Server, etc...
-class CartPlanner
+class StatePlanner
 {
   private:
 
@@ -44,10 +44,10 @@ class CartPlanner
   	bool planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response);
 
   	// the actual planning function
-    bool planTrajectory(std::vector<definitions::Trajectory> &trajectories, definitions::SDHand &goal, std::string &arm, sensor_msgs::JointState &startState);
+    bool planTrajectory(std::vector<definitions::Trajectory> &trajectories, definitions::RobotEddie &goal, std::string &arm, sensor_msgs::JointState &startState);
 
     // constructor
-    CartPlanner(ros::NodeHandle nh)
+    StatePlanner(ros::NodeHandle nh)
     {
 
 		// wait for moveit to load
@@ -72,7 +72,7 @@ class CartPlanner
     }
 
     //! Empty stub
-    ~CartPlanner() {}
+    ~StatePlanner() {}
 
 };
 

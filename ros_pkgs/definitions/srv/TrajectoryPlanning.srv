@@ -3,7 +3,6 @@
 # the goal state for the robot, it can be used for both MOVE_TO_CART_GOAL and for MOVE_TO_STATE_GOAL
 # for the MOVE_TO_CART_GOAL, you need to fill the goal_state.hand.wrist_pose
 # for the MOVE_TO_STATE_GOAL, you need to fill the goal_state.hand.joints and goal_state.arm.joints
-UIBKRobot goal_state
 RobotEddie eddie_goal_state
 
 # the grasp list obtained for one object, which is needed for the PICK planning
@@ -15,7 +14,7 @@ Object[] object_list
 # the id of the object to grasp
 int32 object_id
 
-# name of the arm we are planning for
+# name of the arm we are planning for "right" or "left"
 string arm
 
 # select which type of planning service you need

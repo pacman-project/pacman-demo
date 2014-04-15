@@ -79,7 +79,6 @@ namespace pacman {
 
 	void convert(const definitions::Trajectory &trajectory, RobotEddie::Command::Seq &commands, pacman::float_t start_time)
 	{
-		std::cout << "converting"<<std::endl;
 		int NWayPoints = trajectory.eddie_path.size();
 		commands.resize(NWayPoints);
 
@@ -97,62 +96,62 @@ namespace pacman {
 			}
 
 			// then the hands
-			commands[i].handRight.pos.left[0] = trajectory.eddie_path[i].handRight.joints[0];
-			commands[i].handRight.vel.left[0] = trajectory.eddie_path[i].handRight.velocity[0];
-			commands[i].handRight.acc.left[0] = trajectory.eddie_path[i].handRight.acceleration[0];
+			commands[i].handRight.pos.rotation = trajectory.eddie_path[i].handRight.joints[0];
+			commands[i].handRight.vel.rotation = trajectory.eddie_path[i].handRight.velocity[0];
+			commands[i].handRight.acc.rotation = trajectory.eddie_path[i].handRight.acceleration[0];
 
-			commands[i].handRight.pos.left[1] = trajectory.eddie_path[i].handRight.joints[1];
-			commands[i].handRight.vel.left[1] = trajectory.eddie_path[i].handRight.velocity[1];
-			commands[i].handRight.acc.left[1] = trajectory.eddie_path[i].handRight.acceleration[1];
+			commands[i].handRight.pos.left[0] = trajectory.eddie_path[i].handRight.joints[1];
+			commands[i].handRight.vel.left[0] = trajectory.eddie_path[i].handRight.velocity[1];
+			commands[i].handRight.acc.left[0] = trajectory.eddie_path[i].handRight.acceleration[1];
 
-			commands[i].handRight.pos.middle[0] = trajectory.eddie_path[i].handRight.joints[2];
-			commands[i].handRight.vel.middle[0] = trajectory.eddie_path[i].handRight.velocity[2];
-			commands[i].handRight.acc.middle[0] = trajectory.eddie_path[i].handRight.acceleration[2];
+			commands[i].handRight.pos.left[1] = trajectory.eddie_path[i].handRight.joints[2];
+			commands[i].handRight.vel.left[1] = trajectory.eddie_path[i].handRight.velocity[2];
+			commands[i].handRight.acc.left[1] = trajectory.eddie_path[i].handRight.acceleration[2];
 
-			commands[i].handRight.pos.middle[1] = trajectory.eddie_path[i].handRight.joints[3];
-			commands[i].handRight.vel.middle[1] = trajectory.eddie_path[i].handRight.velocity[3];
-			commands[i].handRight.acc.middle[1] = trajectory.eddie_path[i].handRight.acceleration[3];
+			commands[i].handRight.pos.right[0] = trajectory.eddie_path[i].handRight.joints[3];
+			commands[i].handRight.vel.right[0] = trajectory.eddie_path[i].handRight.velocity[3];
+			commands[i].handRight.acc.right[0] = trajectory.eddie_path[i].handRight.acceleration[3];
 
-			commands[i].handRight.pos.right[0] = trajectory.eddie_path[i].handRight.joints[4];
-			commands[i].handRight.vel.right[0] = trajectory.eddie_path[i].handRight.velocity[4];
-			commands[i].handRight.acc.right[0] = trajectory.eddie_path[i].handRight.acceleration[4];
+			commands[i].handRight.pos.right[1] = trajectory.eddie_path[i].handRight.joints[4];
+			commands[i].handRight.vel.right[1] = trajectory.eddie_path[i].handRight.velocity[4];
+			commands[i].handRight.acc.right[1] = trajectory.eddie_path[i].handRight.acceleration[4];
 
-			commands[i].handRight.pos.right[1] = trajectory.eddie_path[i].handRight.joints[5];
-			commands[i].handRight.vel.right[1] = trajectory.eddie_path[i].handRight.velocity[5];
-			commands[i].handRight.acc.right[1] = trajectory.eddie_path[i].handRight.acceleration[5];
+			commands[i].handRight.pos.middle[0] = trajectory.eddie_path[i].handRight.joints[5];
+			commands[i].handRight.vel.middle[0] = trajectory.eddie_path[i].handRight.velocity[5];
+			commands[i].handRight.acc.middle[0] = trajectory.eddie_path[i].handRight.acceleration[5];
 
-			commands[i].handRight.pos.rotation = trajectory.eddie_path[i].handRight.joints[6];
-			commands[i].handRight.vel.rotation = trajectory.eddie_path[i].handRight.velocity[6];
-			commands[i].handRight.acc.rotation = trajectory.eddie_path[i].handRight.acceleration[6];
+			commands[i].handRight.pos.middle[1] = trajectory.eddie_path[i].handRight.joints[6];
+			commands[i].handRight.vel.middle[1] = trajectory.eddie_path[i].handRight.velocity[6];
+			commands[i].handRight.acc.middle[1] = trajectory.eddie_path[i].handRight.acceleration[6];
 
 
-			commands[i].handLeft.pos.left[0] = trajectory.eddie_path[i].handLeft.joints[0];
-			commands[i].handLeft.vel.left[0] = trajectory.eddie_path[i].handLeft.velocity[0];
-			commands[i].handLeft.acc.left[0] = trajectory.eddie_path[i].handLeft.acceleration[0];
+			commands[i].handLeft.pos.rotation = trajectory.eddie_path[i].handLeft.joints[0];
+			commands[i].handLeft.vel.rotation = trajectory.eddie_path[i].handLeft.velocity[0];
+			commands[i].handLeft.acc.rotation = trajectory.eddie_path[i].handLeft.acceleration[0];
 
-			commands[i].handLeft.pos.left[1] = trajectory.eddie_path[i].handLeft.joints[1];
-			commands[i].handLeft.vel.left[1] = trajectory.eddie_path[i].handLeft.velocity[1];
-			commands[i].handLeft.acc.left[1] = trajectory.eddie_path[i].handLeft.acceleration[1];
+			commands[i].handLeft.pos.left[0] = trajectory.eddie_path[i].handLeft.joints[1];
+			commands[i].handLeft.vel.left[0] = trajectory.eddie_path[i].handLeft.velocity[1];
+			commands[i].handLeft.acc.left[0] = trajectory.eddie_path[i].handLeft.acceleration[1];
 
-			commands[i].handLeft.pos.middle[0] = trajectory.eddie_path[i].handLeft.joints[2];
-			commands[i].handLeft.vel.middle[0] = trajectory.eddie_path[i].handLeft.velocity[2];
-			commands[i].handLeft.acc.middle[0] = trajectory.eddie_path[i].handLeft.acceleration[2];
+			commands[i].handLeft.pos.left[1] = trajectory.eddie_path[i].handLeft.joints[2];
+			commands[i].handLeft.vel.left[1] = trajectory.eddie_path[i].handLeft.velocity[2];
+			commands[i].handLeft.acc.left[1] = trajectory.eddie_path[i].handLeft.acceleration[2];
 
-			commands[i].handLeft.pos.middle[1] = trajectory.eddie_path[i].handLeft.joints[3];
-			commands[i].handLeft.vel.middle[1] = trajectory.eddie_path[i].handLeft.velocity[3];
-			commands[i].handLeft.acc.middle[1] = trajectory.eddie_path[i].handLeft.acceleration[3];
+			commands[i].handLeft.pos.right[0] = trajectory.eddie_path[i].handLeft.joints[3];
+			commands[i].handLeft.vel.right[0] = trajectory.eddie_path[i].handLeft.velocity[3];
+			commands[i].handLeft.acc.right[0] = trajectory.eddie_path[i].handLeft.acceleration[3];
 
-			commands[i].handLeft.pos.right[0] = trajectory.eddie_path[i].handLeft.joints[4];
-			commands[i].handLeft.vel.right[0] = trajectory.eddie_path[i].handLeft.velocity[4];
-			commands[i].handLeft.acc.right[0] = trajectory.eddie_path[i].handLeft.acceleration[4];
+			commands[i].handLeft.pos.right[1] = trajectory.eddie_path[i].handLeft.joints[4];
+			commands[i].handLeft.vel.right[1] = trajectory.eddie_path[i].handLeft.velocity[4];
+			commands[i].handLeft.acc.right[1] = trajectory.eddie_path[i].handLeft.acceleration[4];
 
-			commands[i].handLeft.pos.right[1] = trajectory.eddie_path[i].handLeft.joints[5];
-			commands[i].handLeft.vel.right[1] = trajectory.eddie_path[i].handLeft.velocity[5];
-			commands[i].handLeft.acc.right[1] = trajectory.eddie_path[i].handLeft.acceleration[5];
+			commands[i].handLeft.pos.middle[0] = trajectory.eddie_path[i].handLeft.joints[5];
+			commands[i].handLeft.vel.middle[0] = trajectory.eddie_path[i].handLeft.velocity[5];
+			commands[i].handLeft.acc.middle[0] = trajectory.eddie_path[i].handLeft.acceleration[5];
 
-			commands[i].handLeft.pos.rotation = trajectory.eddie_path[i].handLeft.joints[6];
-			commands[i].handLeft.vel.rotation = trajectory.eddie_path[i].handLeft.velocity[6];
-			commands[i].handLeft.acc.rotation = trajectory.eddie_path[i].handLeft.acceleration[6];
+			commands[i].handLeft.pos.middle[1] = trajectory.eddie_path[i].handLeft.joints[6];
+			commands[i].handLeft.vel.middle[1] = trajectory.eddie_path[i].handLeft.velocity[6];
+			commands[i].handLeft.acc.middle[1] = trajectory.eddie_path[i].handLeft.acceleration[6];
 
 			// then he head
 
@@ -181,6 +180,113 @@ namespace pacman {
 	}
 
 	void convertLimb(const moveit_msgs::RobotTrajectory &moveitTraj, definitions::Trajectory &trajectory, sensor_msgs::JointState start_state, std::string arm)
+	{
+		// get the points from robot trajector
+		const std::vector<trajectory_msgs::JointTrajectoryPoint> &points = moveitTraj.joint_trajectory.points;
+
+		// pick each point from the trajectory and create a RobotEddie object
+		for (size_t i = 0; i < points.size(); ++i) 
+		{
+			definitions::RobotEddie robot_point;
+
+			// for testing with arms, later, it should be fixed to obtain eddie's trajectories
+			if(arm.compare(std::string("right")) == 0)
+			{
+				for(int j = 0; j < KukaLWR::Config::JOINTS; j++)
+				{
+					robot_point.armRight.joints.push_back(points[i].positions.at(j));
+					robot_point.armRight.velocity.push_back(points[i].velocities.at(j));
+					robot_point.armRight.acceleration.push_back(points[i].accelerations.at(j));
+
+					robot_point.armLeft.joints.push_back(start_state.position[j]);
+					robot_point.armLeft.velocity.push_back(start_state.velocity[j]);
+					robot_point.armLeft.acceleration.push_back(0.0);
+				}
+			}
+
+			if(arm.compare(std::string("left")) == 0)
+			{
+				for(int j = 0; j < KukaLWR::Config::JOINTS; j++)
+				{
+					robot_point.armLeft.joints.push_back(points[i].positions.at(j));
+					robot_point.armLeft.velocity.push_back(points[i].velocities.at(j));
+					robot_point.armLeft.acceleration.push_back(points[i].accelerations.at(j));
+
+					robot_point.armRight.joints.push_back(start_state.position[j+7]);
+					robot_point.armRight.velocity.push_back(start_state.velocity[j+7]);
+					robot_point.armRight.acceleration.push_back(0.0);
+				}
+			}
+
+			if(arm.compare(std::string("right")) == 0)
+			{
+				// this order depends on the moveit trajectory planner
+				robot_point.handRight.joints.resize(SchunkDexHand::Config::JOINTS);
+				robot_point.handRight.velocity.resize(SchunkDexHand::Config::JOINTS);
+				robot_point.handRight.acceleration.resize(SchunkDexHand::Config::JOINTS);
+
+				for(int h = 0; h < SchunkDexHand::Config::JOINTS; h++)
+				{
+					robot_point.handRight.joints[h] = points[i].positions[7+h];
+					robot_point.handRight.velocity[h] = points[i].velocities[7+h];
+					robot_point.handRight.acceleration[h] = points[i].accelerations[7+h];
+
+					robot_point.handLeft.joints.push_back(start_state.position[h+14]);
+					robot_point.handLeft.velocity.push_back(start_state.velocity[h+14]);
+					robot_point.handLeft.acceleration.push_back(0.0);
+				}
+			}
+
+			if(arm.compare(std::string("left")) == 0)
+			{
+				// this order depends on the moveit trajectory planner
+				robot_point.handLeft.joints.resize(SchunkDexHand::Config::JOINTS);
+				robot_point.handLeft.velocity.resize(SchunkDexHand::Config::JOINTS);
+				robot_point.handLeft.acceleration.resize(SchunkDexHand::Config::JOINTS);
+
+				for(int h = 0; h < SchunkDexHand::Config::JOINTS; h++)
+				{
+					robot_point.handLeft.joints[h] = points[i].positions[7+h];
+					robot_point.handLeft.velocity[h] = points[i].velocities[7+h];
+					robot_point.handLeft.acceleration[h] = points[i].accelerations[7+h];
+
+					robot_point.handRight.joints.push_back(start_state.position[h+21]);
+					robot_point.handRight.velocity.push_back(start_state.velocity[h+21]);
+					robot_point.handRight.acceleration.push_back(0.0);
+				}
+			}
+
+
+			for(int k = 0; k < KITHead::Config::JOINTS_NECK; k++)
+			{
+				robot_point.head.joints.push_back(start_state.position[k+28]);
+				robot_point.head.velocity.push_back(start_state.velocity[k+28]);
+				robot_point.head.acceleration.push_back(0.0);
+			}
+
+			robot_point.head.jointsLEye = start_state.position[33];
+			robot_point.head.velocityLEye = start_state.velocity[33];
+			robot_point.head.accelerationLEye = 0.0;
+
+			robot_point.head.jointsREye = start_state.position[34];
+			robot_point.head.velocityREye = start_state.velocity[34];
+			robot_point.head.accelerationREye = 0.0;
+
+			trajectory.eddie_path.push_back(robot_point);
+
+			if (i == 0)
+			{
+				trajectory.time_from_previous.push_back( ros::Duration().fromSec(0.) );	
+			}
+			else
+			{
+				// the RobotTrajectory gives time_from_start, we prefer from previous for easier transformation to pacman commands
+				trajectory.time_from_previous.push_back( points[i].time_from_start - points[i-1].time_from_start );
+			}
+		}
+	}
+
+	void convertArm(const moveit_msgs::RobotTrajectory &moveitTraj, definitions::Trajectory &trajectory, sensor_msgs::JointState start_state, std::string arm)
 	{
 		// get the points from robot trajector
 		const std::vector<trajectory_msgs::JointTrajectoryPoint> &points = moveitTraj.joint_trajectory.points;
@@ -266,51 +372,51 @@ namespace pacman {
 		}
 	}
 
-	// this mapping uses names defined in the urdf of the UIBK robot, so be careful if you change them
-	void mapStates(const RobotUIBK::State &state, std::string name, sensor_msgs::JointState &joint_states, ros::Time stamp) 
-	{
+	// // this mapping uses names defined in the urdf of the UIBK robot, so be careful if you change them
+	// void mapStates(const RobotUIBK::State &state, std::string name, sensor_msgs::JointState &joint_states, ros::Time stamp) 
+	// {
 
-		// initialize the joint state topic
-		joint_states.name.resize(RobotUIBK::Config::JOINTS);
-		joint_states.position.resize(RobotUIBK::Config::JOINTS);
-		joint_states.velocity.resize(RobotUIBK::Config::JOINTS);
-		joint_states.effort.resize(RobotUIBK::Config::JOINTS);
-		joint_states.name[0] = name + "_arm_0_joint";
-		joint_states.name[1] = name + "_arm_1_joint";
-		joint_states.name[2] = name + "_arm_2_joint";
-		joint_states.name[3] = name + "_arm_3_joint";
-		joint_states.name[4] = name + "_arm_4_joint";
-		joint_states.name[5] = name + "_arm_5_joint";
-		joint_states.name[6] = name + "_arm_6_joint";
-		joint_states.name[7] = name + "_sdh_knuckle_joint";
-		joint_states.name[8] = name + "_sdh_finger_12_joint";
-		joint_states.name[9] = name + "_sdh_finger_13_joint";
-		joint_states.name[10] = name + "_sdh_finger_22_joint";
-		joint_states.name[11] = name + "_sdh_finger_23_joint";
-		joint_states.name[12] = name + "_sdh_thumb_2_joint";
-		joint_states.name[13] = name + "_sdh_thumb_3_joint";
+	// 	// initialize the joint state topic
+	// 	joint_states.name.resize(RobotUIBK::Config::JOINTS);
+	// 	joint_states.position.resize(RobotUIBK::Config::JOINTS);
+	// 	joint_states.velocity.resize(RobotUIBK::Config::JOINTS);
+	// 	joint_states.effort.resize(RobotUIBK::Config::JOINTS);
+	// 	joint_states.name[0] = name + "_arm_0_joint";
+	// 	joint_states.name[1] = name + "_arm_1_joint";
+	// 	joint_states.name[2] = name + "_arm_2_joint";
+	// 	joint_states.name[3] = name + "_arm_3_joint";
+	// 	joint_states.name[4] = name + "_arm_4_joint";
+	// 	joint_states.name[5] = name + "_arm_5_joint";
+	// 	joint_states.name[6] = name + "_arm_6_joint";
+	// 	joint_states.name[7] = name + "_sdh_knuckle_joint";
+	// 	joint_states.name[8] = name + "_sdh_finger_12_joint";
+	// 	joint_states.name[9] = name + "_sdh_finger_13_joint";
+	// 	joint_states.name[10] = name + "_sdh_finger_22_joint";
+	// 	joint_states.name[11] = name + "_sdh_finger_23_joint";
+	// 	joint_states.name[12] = name + "_sdh_thumb_2_joint";
+	// 	joint_states.name[13] = name + "_sdh_thumb_3_joint";
 
-		joint_states.header.stamp = stamp;
+	// 	joint_states.header.stamp = stamp;
 
-		// the joint mapping needs to be hardcoded to match Golem.xml and Ros.urdf structures
-		// note that, the names are set in the class constructor for the order convention
-		// and let the party begin... first the arm:
-		for (int j = 0; j < KukaLWR::Config::JOINTS; j++)
-		{
-			joint_states.position[j] = state.arm.pos.c[j];
-		}
+	// 	// the joint mapping needs to be hardcoded to match Golem.xml and Ros.urdf structures
+	// 	// note that, the names are set in the class constructor for the order convention
+	// 	// and let the party begin... first the arm:
+	// 	for (int j = 0; j < KukaLWR::Config::JOINTS; j++)
+	// 	{
+	// 		joint_states.position[j] = state.arm.pos.c[j];
+	// 	}
 
-		// and continue with the hand:
-		joint_states.position[7] = state.hand.pos.rotation;
-		joint_states.position[8] = state.hand.pos.left[0];
-		joint_states.position[9] = state.hand.pos.left[1];
-		joint_states.position[10] = state.hand.pos.right[0];
-		joint_states.position[11] = state.hand.pos.right[1];
-		joint_states.position[12] = state.hand.pos.middle[0];
-		joint_states.position[13] = state.hand.pos.middle[1];
+	// 	// and continue with the hand:
+	// 	joint_states.position[7] = state.hand.pos.rotation;
+	// 	joint_states.position[8] = state.hand.pos.left[0];
+	// 	joint_states.position[9] = state.hand.pos.left[1];
+	// 	joint_states.position[10] = state.hand.pos.right[0];
+	// 	joint_states.position[11] = state.hand.pos.right[1];
+	// 	joint_states.position[12] = state.hand.pos.middle[0];
+	// 	joint_states.position[13] = state.hand.pos.middle[1];
 
-		return;
-	}
+	// 	return;
+	// }
 
 	// this mapping uses names defined in the urdf of the UIBK robot, so be careful if you change them
 	void mapStates(const RobotEddie::State &state, sensor_msgs::JointState &joint_states, ros::Time stamp) 
@@ -336,7 +442,7 @@ namespace pacman {
 		joint_states.name[12] = "right_arm_5_joint";
 		joint_states.name[13] = "right_arm_6_joint"; 
 		joint_states.name[14] = "left_sdh_knuckle_joint";
-		joint_states.name[16] = "left_sdh_finger_12_joint";
+		joint_states.name[15] = "left_sdh_finger_12_joint";
 		joint_states.name[16] = "left_sdh_finger_13_joint";
 		joint_states.name[17] = "left_sdh_finger_22_joint";
 		joint_states.name[18] = "left_sdh_finger_23_joint";
@@ -349,7 +455,6 @@ namespace pacman {
 		joint_states.name[25] = "right_sdh_finger_23_joint";
 		joint_states.name[26] = "right_sdh_thumb_2_joint";
 		joint_states.name[27] = "right_sdh_thumb_3_joint";
-
 		joint_states.name[28] = "head_neck_pitch_joint";
 		joint_states.name[29] = "head_neck_yaw_joint";
 		joint_states.name[30] = "head_neck_roll_joint";
@@ -384,7 +489,6 @@ namespace pacman {
 		joint_states.position[25] = state.handRight.pos.right[1];
 		joint_states.position[26] = state.handRight.pos.middle[0];
 		joint_states.position[27] = state.handRight.pos.middle[1];
-
 		joint_states.position[28] = state.head.pos.neck[0];
 		joint_states.position[29] = state.head.pos.neck[1];
 		joint_states.position[30] = state.head.pos.neck[2];
@@ -435,6 +539,45 @@ namespace pacman {
 		state.head.pos.eyeRight = joint_states.position[34];
 
 		return;
+	}
+
+	void interpolateHandJoints(const definitions::SDHand &goalState, const sensor_msgs::JointState &startState, moveit_msgs::RobotTrajectory &baseTrajectory, std::string &arm)
+	{
+		int NWayPoints = baseTrajectory.joint_trajectory.points.size();
+		int right_hand_index = 21;
+		int left_hand_index = 14;
+		int hand_index = 0;
+
+		if(arm.compare(std::string("right")) == 0)
+			hand_index = right_hand_index;
+		if(arm.compare(std::string("left")) == 0)
+			hand_index = left_hand_index;
+
+		for (int i = 0; i < NWayPoints; i++)
+		{
+			// trajectory_msgs::JointTrajectoryPoint &point = baseTrajectory.joint_trajectory.points[i];
+
+			for(int h = 0; h < pacman::SchunkDexHand::Config::JOINTS; h++)
+			{
+				baseTrajectory.joint_trajectory.points[i].positions.push_back(startState.position[hand_index + h] + (i+1)*(goalState.joints[h] - startState.position[hand_index + h])/NWayPoints);
+	        }
+		
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+
+			baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+			baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+			baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+			baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+			baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+			baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+			baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
+		}
 	}
 
 };

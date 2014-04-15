@@ -131,10 +131,10 @@ bool PoseEstimator::estimatePoses(definitions::PoseEstimation::Request& request,
     pacman::UIBKPoseEstimation* pose = pacman::UIBKPoseEstimation::create(path_to_config);
     pacman::UIBKObject* objects = pacman::UIBKObject::create(pathToObjDb);
     pacman::UIBKPoseEstimation::Pose::Seq poses_;
-    cout << "after creating" << endl;
+    //cout << "after creating" << endl;
     pacman::Point3D::Seq points_;
     pose->load_cloud(filename_,points_);   
-    cout << "after conversion" << endl;   
+    //cout << "after conversion" << endl;   
     pose->estimate(points_,poses_);
     
     ROS_INFO("Recognizing poses...");
@@ -152,7 +152,7 @@ bool PoseEstimator::estimatePoses(definitions::PoseEstimation::Request& request,
         obj_pose.pose = current_pose;
         geometry_msgs::PoseStamped obj_pose_trans;
         obj_pose_trans.header.frame_id = "world_link";
-        obj_pose.header.frame_id = "camera_depth_optical_frame";
+        obj_pose.header.frame_id = "camera_rgb_optical_frame";
         listener.transformPose("world_link",obj_pose,obj_pose_trans); 
 
         definitions::Object object;

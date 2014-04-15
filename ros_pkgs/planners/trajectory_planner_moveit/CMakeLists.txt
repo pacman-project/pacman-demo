@@ -102,19 +102,30 @@ link_directories(
 	)
 
 ## Declare a cpp library
+# helper classes
 add_library(CartPlanner
 	src/CartPlanner.cpp
+	)
+add_library(StatePlanner
+	src/StatePlanner.cpp
 	)
 
 ## Declare a cpp executable
 add_executable(trajectory_planner_node 
 	src/trajectory_planner_node.cpp
 	)
+# examples
 add_executable(ping_cart_planner 
-	src/ping_cart_planner.cpp
+	examples/ping_cart_planner.cpp
 	)
 add_executable(ping_cart_planner_and_execution
-	src/ping_cart_planner_and_execution.cpp
+	examples/ping_cart_planner_and_execution.cpp
+	)
+add_executable(ping_state_planner
+	examples/ping_state_planner.cpp
+	)
+add_executable(ping_state_planner_and_execution
+	examples/ping_state_planner_and_execution.cpp
 	)
 
 ## Add cmake target dependencies of the executable/library
@@ -123,15 +134,27 @@ add_executable(ping_cart_planner_and_execution
 add_dependencies(CartPlanner
 	definitions_generate_messages_cpp
 	)
+add_dependencies(StatePlanner
+	definitions_generate_messages_cpp
+	)
 # executables
 add_dependencies(trajectory_planner_node
 	CartPlanner
+	StatePlanner
 	definitions_generate_messages_cpp
 	)
-add_dependencies(ping_cart_planner 
+
+#examples
+add_dependencies(ping_cart_planner
 	definitions_generate_messages_cpp
 	)
-add_dependencies(ping_cart_planner_and_execution 
+add_dependencies(ping_cart_planner_and_execution
+	definitions_generate_messages_cpp
+	)
+add_dependencies(ping_state_planner
+	definitions_generate_messages_cpp
+	)
+add_dependencies(ping_state_planner_and_execution
 	definitions_generate_messages_cpp
 	)
 
@@ -140,15 +163,27 @@ add_dependencies(ping_cart_planner_and_execution
 target_link_libraries(CartPlanner 
 	${catkin_LIBRARIES}
 	)
+target_link_libraries(StatePlanner 
+	${catkin_LIBRARIES}
+	)
 # executables
 target_link_libraries(trajectory_planner_node 
 	CartPlanner
+	StatePlanner
 	${catkin_LIBRARIES}
 	)
+
+# examples
 target_link_libraries(ping_cart_planner
 	${catkin_LIBRARIES}
 	)
 target_link_libraries(ping_cart_planner_and_execution
+	${catkin_LIBRARIES}
+	)
+target_link_libraries(ping_state_planner
+	${catkin_LIBRARIES}
+	)
+target_link_libraries(ping_state_planner_and_execution
 	${catkin_LIBRARIES}
 	)
 

@@ -47,6 +47,9 @@ class GraspPlanner
 	// configuration files
 	std::string config_file_;
 
+	// path to the database
+	std::string path_to_database_;
+
 	// test files
 	std::string trajectory_file_;
 	std::string pcd_file_;
@@ -83,6 +86,8 @@ class GraspPlanner
 
 		nh_.param<std::string>("trajectory_file", trajectory_file_, "");
 		nh_.param<std::string>("pcd_file", pcd_file_, "");
+
+		nh_.param<std::string>("path_to_DB",path_to_database_,"/home/pacman/Code/pacman/poseEstimation/dataFiles/PCD-MODELS-DOWNSAMPLED/");
 
 		// create the grasp object using the config file
 		grasp_ = pacman::BhamGrasp::create(config_file_);
@@ -165,8 +170,8 @@ bool GraspPlanner::planGrasp(definitions::GraspPlanning::Request  &req, definiti
 	definitions::Object object = req.ordered_objects[req.object_id];
 
 	// create the string path to the object
-	std::string path_to_database("/home/pacman/Code/pacman/poseEstimation/dataFiles/PCD-MODELS-DOWNSAMPLED/");
-	std::string path_to_object(path_to_database);
+	
+	std::string path_to_object(path_to_database_);
 	object.name.data.erase(std::remove(object.name.data.begin(), object.name.data.end(),'\n'), object.name.data.end());
 	path_to_object += object.name.data;
 	path_to_object += ".pcd";
@@ -225,7 +230,8 @@ bool GraspPlanner::planGrasp(definitions::GraspPlanning::Request  &req, definiti
 	// loop
 	// index t for trajectories
 	// index w for wrist positions, typical 3 -> pre-grasp, middle point and grasp, but we leave it general for the future
-	// remember for trajectory planning, that the grasps are assumed to be the wrist position, hence the value for the righ_sdh_palm_link
+	// remember for trajectory planning, that the grasps are assumed to be the wrist position, hence the value for the ARM_sdh_palm_link
+	// and the hand joints
 	for (int t = 0; t <  planned_grasps_.size(); t++ )
 	{
 		// resize, this one should be typical to 3 in pacman
@@ -252,15 +258,26 @@ bool GraspPlanner::planGrasp(definitions::GraspPlanning::Request  &req, definiti
 			wrist_pose_mat(3,3) = 1.0;            
 
 			tf::poseEigenToMsg(wrist_pose_mat, pose_tmp.pose);
+
+			// fill the wrist pose
+			grasp.grasp_trajectory[w].wrist_pose.pose = pose_tmp.pose;
+			// for now, we are always planning grasps with respect to the world_link
+			grasp.grasp_trajectory[w].wrist_pose.header.frame_id = "world_link";
+
+			// and fill the hand joints
+			grasp.grasp_trajectory[w].joints.resize(pacman:: SchunkDexHand::Config::JOINTS);
+			grasp.grasp_trajectory[w].joints[0] = planned_grasps_[t].trajectory[w].config.rotation;
+			grasp.grasp_trajectory[w].joints[1] = planned_grasps_[t].trajectory[w].config.left[0];
+			grasp.grasp_trajectory[w].joints[2] = planned_grasps_[t].trajectory[w].config.left[1];
+			grasp.grasp_trajectory[w].joints[3] = planned_grasps_[t].trajectory[w].config.right[0];
+			grasp.grasp_trajectory[w].joints[4] = planned_grasps_[t].trajectory[w].config.right[1];
+			grasp.grasp_trajectory[w].joints[5] = planned_grasps_[t].trajectory[w].config.middle[0];
+			grasp.grasp_trajectory[w].joints[6] = planned_grasps_[t].trajectory[w].config.middle[1];
 			
 			if ( (checkWorkspaceHeuristic(pose_tmp.pose, 90, 0.15) && w<1) )
 			{
 				ROS_INFO("Grasp Nr. %d is inside the workspace, hence added to the list of good grasps !", t);
-
-				grasp.grasp_trajectory[w].wrist_pose.pose = pose_tmp.pose;
-
-				// for now, we are always planning grasps with respect to the world_link
-				grasp.grasp_trajectory[w].wrist_pose.header.frame_id = "world_link";
+				
 				good_grasp = true;
 			}
 			else
@@ -275,7 +292,7 @@ bool GraspPlanner::planGrasp(definitions::GraspPlanning::Request  &req, definiti
 		}
 		if (good_grasp)
 		{
-			// push back the current grasp
+			// push back the current grasp only if it is good
 			estimated_grasps.push_back(grasp);
 		}
 	}
