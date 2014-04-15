@@ -121,15 +121,15 @@ This section describes how to start and use the different robots used in the pro
 
 ### Running Eddie
 
-**Before** starting any software application, first of all make sure that the 2 Kuka LWR, the 2 Schunk hands and the KIT Head are powered up and that no emergency stop is active.
+**Before** starting any software application, first of all make sure that the **2 Kuka LWR**, the **2 Schunk hands** and the **KIT Head** are powered up and that no emergency stop is active.
 The KIT Head should be placed in the "Zero position", before starting the software
 
 
 #### Kuka robot controllers (KRC)
 
-* Configure the tool number if required Configure-->Set tool/base and select the right tool number (Number 1 for the Right arm and Number 2 for the Left Arm, the tool name should be "sdh2")
+* Configure the tool number if required `Configure-->Set tool/base` and select the right tool number (Number 1 for the Right arm and Number 2 for the Left Arm, the tool name should be "sdh2")
 * Press OK to confirm
-* Select the script `golemEddieR` and `golemEddieL` for each robot in the `KRC:\R1\Program\golem` repository
+* Select the scripts `golemEddieR` and `golemEddieL` for each robot in the `KRC:\R1\Program\golem` repository
 * Run the scripts for the 2 arms until you reach the line `wait for ($FriQuality==#PERFECT)`
 
 
@@ -144,8 +144,9 @@ To run the demonstration software
 
 Wait for all the controllers to be initialized e.g, the KIT Head will start moving.
 When the graphical interface appears you should be able to run the configured trajectories.
+* Select the window with the 3D view
 * Press the `SPACE Key` to see the available trajectories
-* Type the trajectory number: 1(Low velocity), 2(Low velocity) or 3(High velocity)
+* Type the trajectory number that you would like to execute: 1(Low velocity), 2(Low velocity) or 3(High velocity)
 * Press the `ENTER Key` to start the trajectory
 
 
@@ -153,7 +154,7 @@ To run the server
 * `./GolemDeviceCtrlPhysServer`
 
 
-#### Ros controller PC
+#### Ros control PC
 `To do ...`
 
 
@@ -169,11 +170,12 @@ If you see the error:
 * Schunk gripper
 
 	>Waiting for Schunk device to be ready (RS232)...
+	
 	>Segmentation fault (core dumped)
 
-	==> Run again the command line
+	==> Execute again the application until the connection is accepted by the Schunk device
 
 * KIT Head
 
-	The Head should be in the "Zero position" **BEFORE** running the demontsration software, especially the Neck roll, pitch and yaw axis, otherwise some axis will not be initialized properly.
+	The Head should be in the "Zero position" **BEFORE** running the demontsration software, especially the Neck roll, Neck pitch and Neck yaw axis, otherwise some axis will not be initialized properly.
 
