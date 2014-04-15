@@ -46,12 +46,13 @@ class GraspPlanner
 
 	// configuration files
 	std::string config_file_;
+	std::string class_file_;
 
 	// path to the database
 	std::string path_to_database_;
 
 	// test files
-	std::string trajectory_file_;
+	// only for testing
 	std::string pcd_file_;
 
 	// services
@@ -83,18 +84,14 @@ class GraspPlanner
 		nh_.param<std::string>("config_file", config_file_, "");
 		
 		// LOAD TEST FILES FROM THE LAUNCH FILE
-
-		nh_.param<std::string>("trajectory_file", trajectory_file_, "");
-		nh_.param<std::string>("pcd_file", pcd_file_, "");
+		nh_.param<std::string>("class_file", class_file_, "");
 
 		nh_.param<std::string>("path_to_DB",path_to_database_,"/home/pacman/Code/pacman/poseEstimation/dataFiles/PCD-MODELS-DOWNSAMPLED/");
 
 		// create the grasp object using the config file
 		grasp_ = pacman::BhamGrasp::create(config_file_);
 
-		pacman::load(pcd_file_, object_);
-		pacman::load(trajectory_file_, trajectory_);
-		grasp_->add("pacman_object", object_, trajectory_);
+		grasp_->load(class_file_);
 
 		// advertise service
 		srv_grasp_planner_ = nh_.advertiseService(nh_.resolveName("/grasp_planner_srv"),&GraspPlanner::planGrasp, this);
@@ -170,7 +167,6 @@ bool GraspPlanner::planGrasp(definitions::GraspPlanning::Request  &req, definiti
 	definitions::Object object = req.ordered_objects[req.object_id];
 
 	// create the string path to the object
-	
 	std::string path_to_object(path_to_database_);
 	object.name.data.erase(std::remove(object.name.data.begin(), object.name.data.end(),'\n'), object.name.data.end());
 	path_to_object += object.name.data;
