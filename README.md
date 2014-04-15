@@ -121,7 +121,7 @@ This section describes how to start and use the different robots used in the pro
 
 ### Running Eddie
 
-Before starting any software application, first of all make sure that the 2 Kuka LWR, the 2 Schunk hands and the KIT Head are powered up and that no emergency stop is active.
+**Before** starting any software application, first of all make sure that the 2 Kuka LWR, the 2 Schunk hands and the KIT Head are powered up and that no emergency stop is active.
 The KIT Head should be placed in the "Zero position", before starting the software
 
 
@@ -142,11 +142,11 @@ Open a new terminal
 To run the demonstration software
 * `./GolemDemoTrajectory GolemDemoTrajectoryRobotEddie.xml`
 
-Wait for all the controllers to be initialized e.g, the KIT Head will start moving
+Wait for all the controllers to be initialized e.g, the KIT Head will start moving.
 When the graphical interface appears you should be able to run the configured trajectories.
-* Press the `SPACE key` to see the available trajectories
+* Press the `SPACE Key` to see the available trajectories
 * Type the trajectory number: 1(Low velocity), 2(Low velocity) or 3(High velocity)
-* Press the `ENTER key` to start the trajectory
+* Press the `ENTER Key` to start the trajectory
 
 
 To run the server
@@ -154,18 +154,26 @@ To run the server
 
 
 #### Ros controller PC
-`To be done ...`
+`To do ...`
 
 
-#### WARNING: they are still minor problems during the initialization of the Schunk grippers and the KIT Head (Control PC section). 
-If you have the error:
+### Running Boris
+`To do ...`
+
+
+#### WARNING: 
+**they are still minor problems during the initialization of the Schunk grippers and the KIT Head (Control PC section).**
+
+If you see the error:
 
 * Schunk gripper
-	Waiting for Schunk device to be ready (RS232)...
-	Segmentation fault (core dumped)
 
-==> Run again the command line
+	>Waiting for Schunk device to be ready (RS232)...
+	>Segmentation fault (core dumped)
+
+	==> Run again the command line
 
 * KIT Head
-	The Head should be in the "Zero position" BEFORE running the demontsration software, especially the Neck roll, pitch and yaw axis, otherwise some axis will not be initialized properly
+
+	The Head should be in the "Zero position" **BEFORE** running the demontsration software, especially the Neck roll, pitch and yaw axis, otherwise some axis will not be initialized properly.
 
