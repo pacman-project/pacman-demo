@@ -8,6 +8,8 @@
 	<node pkg="tf" type="static_transform_publisher" name="camera_rgb_frame" args="0.000 -0.045 0.000 0.000 0.000 0.000 1.000  /camera_link /camera_rgb_frame 100"/>
 	<node pkg="tf" type="static_transform_publisher" name="camera_rgb_optical_frame" args="0.000 -0.045 0.000 -0.500 0.500 -0.500 0.500  /camera_link /camera_rgb_optical_frame 100"/>
 
+	<node name="static_transform_publisher" pkg="tf" type="static_transform_publisher" args="0.645214 0.332272 0.714251 -0.627166 0.654277 -0.323644  -0.271734 /camera_depth_optical_frame /world_link 1"/>
+
 	<include file="$(find kinect_grabber)/launch/kinect_grabber.launch"/>
 	<include file="$(find object_cloud_reader)/launch/object_reader.launch"/>
 	<include file="$(find pose_estimation_uibk)/launch/pose_estimation_uibk.launch"/>

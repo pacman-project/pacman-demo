@@ -1,3 +1,4 @@
 <launch>
+	<param name="path_to_RecObj" value="/home/pacman/Code/pacman/poseEstimation/dataFiles/recognizedObjects/" />
 	<node name="object_cloud_reader" pkg="object_cloud_reader" type="object_cloud_reader_node" output="screen" />
 </launch>

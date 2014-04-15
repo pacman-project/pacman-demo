@@ -99,7 +99,7 @@ class grabkinect
         // advertise service
         srv_estimate_poses_ = nh_.advertiseService(nh_.resolveName("/kinect_grabber/kinect_grab_name"), &grabkinect::advertise_frame, this);
         ROS_INFO("Wait for /camera/depth/points to publish (openni_launch) ");
-	subKinect = nh_.subscribe ("/camera/depth/points", 500, &grabkinect::callback_kinect, this);
+	    subKinect = nh_.subscribe ("/camera/depth/points", 500, &grabkinect::callback_kinect, this);
         pub_object_point_clouds_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZ> >(nh_.resolveName("/kinect_grabber/scene_cloud"), 1);
        
     }

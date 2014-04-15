@@ -41,6 +41,8 @@ class ObjectReader
     //publisher
     ros::Publisher pub_object_point_clouds_;
 
+    std::string path_to_database_;
+
     // it is very useful to have a listener and broadcaster to know where all frames are
     tf::TransformListener tf_listener_;
     //tf::TransformBroadcaster tf_broadcaster_;
@@ -67,6 +69,8 @@ class ObjectReader
         attached_object_publisher = nh_.advertise<moveit_msgs::AttachedCollisionObject>(nh_.resolveName("attached_collision_object"), 1,true);
         // change this at will
         current_scene_ros_.header.frame_id = "world_link";
+
+        nh_.param<std::string>("path_to_RecObj",path_to_database_,"/home/pacman/CODE/pacman/poseEstimation/dataFiles/PCD-MODELS-DOWNSAMPLED/");
     }
 
     //! Empty stub
@@ -101,13 +105,12 @@ bool ObjectReader::processObjects(definitions::ObjectCloudReader::Request& reque
     vector<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > obj_pcds;
     vector<geometry_msgs::Pose> obj_poses;
     // 2. read the pcd files
-    std::string path_to_database("/home/pacman/CODE/pacman/poseEstimation/dataFiles/PCD-MODELS-DOWNSAMPLED/");
     pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr current_scene (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
     for (int i=0;i<objects.size();i++)
     {
         if( i == request.object_id )
             continue;
-        std::string path_to_object(path_to_database);
+        std::string path_to_object(path_to_database_);
         objects[i].name.data.erase(std::remove(objects[i].name.data.begin(), objects[i].name.data.end(),'\n'), objects[i].name.data.end());
         path_to_object += objects[i].name.data;
         path_to_object += ".pcd";
