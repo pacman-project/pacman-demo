@@ -12,6 +12,7 @@
 
 //// local headers
 #include "CartPlanner.h"
+#include "pickupplanner.h"
 
 
 namespace trajectory_planner_moveit {
@@ -32,6 +33,8 @@ class TrajPlanner
 
     // the trajectory planner helper class
     trajectory_planner_moveit::CartPlanner *my_cart_planner_;
+    // the helper class for planning the pickup phase
+    PickupPlannerPtr pickup_planner_;
 
   public:
 
@@ -46,6 +49,9 @@ class TrajPlanner
 	   
        // init class members
        my_cart_planner_ = new trajectory_planner_moveit::CartPlanner(nh_);
+
+       pickup_planner_.reset(new PickupPlanner(nh));
+
     }
 
     //! Empty stub
@@ -71,7 +77,12 @@ bool TrajPlanner::planTrajectory(definitions::TrajectoryPlanning::Request &reque
 			break;
 
 		case definitions::TrajectoryPlanning::Request::PICK:
-			ROS_INFO("Succesfully planned a trajectory to the desired PICK operation");
+            if(pickup_planner_->planPickup(request, response)) {
+                ROS_INFO("Succesfully created a motion plan for the desired PICK operation");
+            } else {
+                ROS_ERROR("Failed to find a valid motion plan for the desired PICK operation");
+            }
+
 			break;
 
 		case definitions::TrajectoryPlanning::Request::PLACE:

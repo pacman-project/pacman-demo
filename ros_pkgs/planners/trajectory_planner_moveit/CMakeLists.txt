@@ -4,7 +4,7 @@ project(trajectory_planner_moveit)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED roscpp moveit_msgs sensor_msgs eigen moveit_core geometry_msgs definitions)
+find_package(catkin REQUIRED roscpp moveit_msgs sensor_msgs eigen moveit_core geometry_msgs definitions actionlib)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -106,6 +106,10 @@ add_library(CartPlanner
 	src/CartPlanner.cpp
 	)
 
+add_library(PickupPlanner
+        src/pickupplanner.cpp
+        )
+
 ## Declare a cpp executable
 add_executable(trajectory_planner_node 
 	src/trajectory_planner_node.cpp
@@ -123,6 +127,9 @@ add_executable(ping_cart_planner_and_execution
 add_dependencies(CartPlanner
 	definitions_generate_messages_cpp
 	)
+add_dependencies(PickupPlanner
+        definitions_generate_messages_cpp
+        )
 # executables
 add_dependencies(trajectory_planner_node
 	CartPlanner
@@ -140,9 +147,13 @@ add_dependencies(ping_cart_planner_and_execution
 target_link_libraries(CartPlanner 
 	${catkin_LIBRARIES}
 	)
+target_link_libraries(PickupPlanner
+        ${catkin_LIBRARIES}
+        )
 # executables
 target_link_libraries(trajectory_planner_node 
 	CartPlanner
+        PickupPlanner
 	${catkin_LIBRARIES}
 	)
 target_link_libraries(ping_cart_planner
