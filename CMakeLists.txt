@@ -408,9 +408,9 @@ INSTALL(FILES ${BHAM_GRASP_FILES} DESTINATION bin)
 if(BUILD_ROS_PKGS)
 SET(BHAM_GRASP_ROS_FILES
 	${PROJECT_ROOT}/resources/Bham/Grasp.xml
+	${PROJECT_ROOT}/resources/Bham/pacman.graspclass
 	${PROJECT_ROOT}/resources/Bham/pacman_container_1.pcd
-	${PROJECT_ROOT}/resources/Bham/pacman_container_2.pcd
-	${PROJECT_ROOT}/resources/Bham/pacman_container_2.trj
+	${PROJECT_ROOT}/resources/Bham/pacman_container_1_curv.pcd
 	${GOLEM_RESOURCES}/GolemDeviceKukaLWRSim.xml
 	${GOLEM_RESOURCES}/GolemDeviceSchunkDexHandSim.xml
 	${GOLEM_RESOURCES}/GolemDeviceRobotUIBKSim.xml

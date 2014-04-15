@@ -43,7 +43,7 @@
     </opengl>
   </scene>
 
-  <shape_planner example_name="example" model_name="model" query_name="query" ext_grasp_class=".graspclass">
+  <shape_planner ext_grasp_class=".graspclass">
     <grasp name="Default">
       <contact_model>
         <joint_contact feature_curv_thr="10000.0" distance_max="20.0" kernels="2000" samples="20000" neighbours="1000" weight="1.0e0">
@@ -66,7 +66,7 @@
         <config_map i1="0" i2="0" i3="0" i4="0" i5="0" i6="0" i7="0" i8="0" i9="0" i10="0" i11="0" i12="0" i13="10" i14="0" i15="0" i16="0" i17="0" i18="0" i19="0" i20="0" i21="0" i22="0" i23="0" i24="0" i25="0" i26="0" i27="0"/>
       </configuration_model>
 
-      <optimisation runs="1000" steps="1000" sa_temp="0.1" sa_delta="1.0" sa_energy="0.1"/>
+      <optimisation runs="500" steps="500" sa_temp="0.1" sa_delta="1.0" sa_energy="0.1"/>
       <collision enabled_last="1" enabled_all="0">
         <waypoint path_dist="0.5" points="1000" depth_stddev="2000.0" likelihood="2000.0"/>
         <waypoint path_dist="3.0" points="1000" depth_stddev="20000.0" likelihood="20000.0"/>
@@ -82,7 +82,7 @@
       <grasp name="Default" type="unknown"/>
     </classifier>/>
 
-    <demo name="Default" data_model_name="" data_query_name="" trj_cluster_size="50" estimate_pose="1" approach_extrapol_fac="0.3"/>
+    <demo name="Default" trj_cluster_size="50" estimate_pose="1" approach_extrapol_fac="0.3"/>
 
     <appearance distrib_samples="100000" distrib_bounds="0" samples_point_size="3.0" path_segments="10" show_frames="0" grip_solid="1" config_distrib_solid="1" contact_distrib_solid="1" wire_width="1.0">
       <!--<joint_features points_show="1" frames_show="1" bounds_frame_show="0">

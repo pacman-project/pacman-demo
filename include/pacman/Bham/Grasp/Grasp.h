@@ -47,22 +47,10 @@ namespace pacman {
 		*/
 		static Ptr create(const std::string& path);
 		
-		/**	Adds a single grasp example
-		 *	@param[in]	id				unique grasp identifier
-		 *	@param[in]	points			point cloud particular to a grasp
-		 *	@param[in]	trajectory		the grasp approach tajectory consists of at least two waypoints with the last waypoint defining a grip
+		/**	Loads grasp data
+		 *	@param[in]	path			grasp data file
 		*/
-		virtual void add(const std::string& id, const Point3D::Seq& points, const RobotUIBK::Config::Seq& trajectory) = 0;
-
-		/** Removes a given grasp example
-		 *	@param[in]	id				grasp to remove
-		*/
-		virtual void remove(const std::string& id) = 0;
-
-		/** Lists all grasp examples
-		 *	@param[out]	idSeq			list of all grasp examples
-		*/
-		virtual void list(std::vector<std::string>& idSeq) const = 0;
+		virtual void load(const std::string& path) = 0;
 
 		/** Estimate possible grasps together with their with approach trajectories from a given point cloud
 		 *	@param[in]	points			query point cloud

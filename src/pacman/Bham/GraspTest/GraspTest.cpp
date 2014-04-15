@@ -1,6 +1,8 @@
 #include <pacman/Bham/Grasp/Grasp.h>
 #include <exception>
 
+#include <pacman/Bham/Grasp/GraspImpl.h> // Fast method
+
 using namespace pacman;
 
 int main(int argc, char *argv[]) {
@@ -13,23 +15,27 @@ int main(int argc, char *argv[]) {
 		// create grasp
 		BhamGrasp::Ptr grasp = BhamGrasp::create(argv[1]);
 		
-		// load and add initial training data
-		Point3D::Seq trainingPoints;
-		load("pacman_container_2.pcd", trainingPoints);
-		//load("pacman_kettle.pcd", trainingPoints);
-		RobotUIBK::Config::Seq trainingTrajectory;
-		load("pacman_container_2.trj", trainingTrajectory);
-		//load("pacman_kettle.trj", trainingTrajectory);
-		grasp->add("pacman_container_2", trainingPoints, trainingTrajectory);
+		// load grasp data
+		grasp->load("pacman.graspclass");
 		
 		// run service here and comment out all the code lines below in this block
 
-		// find grasp on an object
-		Point3D::Seq graspPoints;
-		load("pacman_container_1.pcd", graspPoints);
-		//load("pacman_kettle.pcd", graspPoints);
+		// Slow method: compute curvatures, then compute grasp trajectories
+		//Point3D::Seq graspPoints;
+		//load("pacman_container_1.pcd", graspPoints);
+		//BhamGrasp::Trajectory::Seq graspTrajectories;
+		//grasp->estimate(graspPoints, graspTrajectories);
+
+		// Fast method: load pre-computed point cloud with curvatures, then compute grasp trajectories
+		grasp::Cloud::PointSeq graspPointsWithCurvature;
+		// uncomment to convert
+		//Point3D::Seq graspPoints;
+		//load("pacman_container_1.pcd", graspPoints);
+		//static_cast<BhamGraspImpl*>(grasp.get())->convert(graspPoints, graspPointsWithCurvature);
+		//pcl::PCDWriter().writeBinaryCompressed("pacman_container_1_curv.pcd", graspPointsWithCurvature);
+		pcl::PCDReader().read("pacman_container_1_curv.pcd", graspPointsWithCurvature);
 		BhamGrasp::Trajectory::Seq graspTrajectories;
-		grasp->estimate(graspPoints, graspTrajectories);
+		static_cast<BhamGraspImpl*>(grasp.get())->estimate(graspPointsWithCurvature, graspTrajectories);
 
 		// pass control to the application
 		grasp->spin();
