@@ -24,7 +24,9 @@ int main(int argc, char **argv)
     }
 
     // create a test goal state
-    definitions::UIBKRobot goal_state;
+    definitions::RobotEddie goal_state;
+    goal_state.handRight.joints.resize(7);
+    goal_state.handLeft.joints.resize(7);
     ros::Duration five_seconds(5.0);
 
     // FIRST plan for the right
@@ -33,16 +35,23 @@ int main(int argc, char **argv)
     trajectory_planning_srv.request.arm = "right";
 
     // first, one simple motion: try to move to the safe position first without checking
-    goal_state.hand.wrist_pose.pose.position.x = 0.1624;
-    goal_state.hand.wrist_pose.pose.position.y = -0.2599;
-    goal_state.hand.wrist_pose.pose.position.z = 0.6642;
-    goal_state.hand.wrist_pose.pose.orientation.x = 0.404885;
-    goal_state.hand.wrist_pose.pose.orientation.y = 0.86333;
-    goal_state.hand.wrist_pose.pose.orientation.z = -0.139283;
-    goal_state.hand.wrist_pose.pose.orientation.w = 0.267076;
-    goal_state.hand.wrist_pose.header.frame_id = "world_link";
+    goal_state.handRight.wrist_pose.pose.position.x = 0.1624;
+    goal_state.handRight.wrist_pose.pose.position.y = -0.2599;
+    goal_state.handRight.wrist_pose.pose.position.z = 0.6642;
+    goal_state.handRight.wrist_pose.pose.orientation.x = 0.404885;
+    goal_state.handRight.wrist_pose.pose.orientation.y = 0.86333;
+    goal_state.handRight.wrist_pose.pose.orientation.z = -0.139283;
+    goal_state.handRight.wrist_pose.pose.orientation.w = 0.267076;
+    goal_state.handRight.wrist_pose.header.frame_id = "world_link";
+    goal_state.handRight.joints[0] = 0.0;
+    goal_state.handRight.joints[1] = -0.8;
+    goal_state.handRight.joints[2] = 0.8;
+    goal_state.handRight.joints[3] = -0.8;
+    goal_state.handRight.joints[4] = 0.8;
+    goal_state.handRight.joints[5] = -0.8;
+    goal_state.handRight.joints[6] = 0.8;
 
-    trajectory_planning_srv.request.goal_state = goal_state;
+    trajectory_planning_srv.request.eddie_goal_state = goal_state;
 
     // call the planning service with the instance
     ROS_INFO("Calling the planning service for the %s arm", trajectory_planning_srv.request.arm.c_str());
@@ -76,16 +85,23 @@ int main(int argc, char **argv)
     trajectory_planning_srv.request.arm = "left";
 
     // first, one simple motion: try to move to the safe position first without checking
-    goal_state.hand.wrist_pose.pose.position.x = 0.201;
-    goal_state.hand.wrist_pose.pose.position.y = 1.451;
-    goal_state.hand.wrist_pose.pose.position.z = 0.750;
-    goal_state.hand.wrist_pose.pose.orientation.x = 0.270;
-    goal_state.hand.wrist_pose.pose.orientation.y = 0.051;
-    goal_state.hand.wrist_pose.pose.orientation.z = 0.363;
-    goal_state.hand.wrist_pose.pose.orientation.w = 0.891;
-    goal_state.hand.wrist_pose.header.frame_id = "world_link";
+    goal_state.handLeft.wrist_pose.pose.position.x = 0.201;
+    goal_state.handLeft.wrist_pose.pose.position.y = 1.451;
+    goal_state.handLeft.wrist_pose.pose.position.z = 0.750;
+    goal_state.handLeft.wrist_pose.pose.orientation.x = 0.270;
+    goal_state.handLeft.wrist_pose.pose.orientation.y = 0.051;
+    goal_state.handLeft.wrist_pose.pose.orientation.z = 0.363;
+    goal_state.handLeft.wrist_pose.pose.orientation.w = 0.891;
+    goal_state.handLeft.wrist_pose.header.frame_id = "world_link";
+    goal_state.handLeft.joints[0] = 0.0;
+    goal_state.handLeft.joints[1] = -0.8;
+    goal_state.handLeft.joints[2] = 0.8;
+    goal_state.handLeft.joints[3] = -0.8;
+    goal_state.handLeft.joints[4] = 0.8;
+    goal_state.handLeft.joints[5] = -0.8;
+    goal_state.handLeft.joints[6] = 0.8;
 
-    trajectory_planning_srv.request.goal_state = goal_state;
+    trajectory_planning_srv.request.eddie_goal_state = goal_state;
 
     // call the planning service with the instance
     ROS_INFO("Calling the planning service for the %s arm", trajectory_planning_srv.request.arm.c_str());

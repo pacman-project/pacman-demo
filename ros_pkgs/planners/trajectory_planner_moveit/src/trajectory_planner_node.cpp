@@ -12,7 +12,11 @@
 
 //// local headers
 #include "CartPlanner.h"
+<<<<<<< HEAD
 #include "pickupplanner.h"
+=======
+#include "StatePlanner.h"
+>>>>>>> 5051bb3aeab05516c4be4d29c48990a62b74554e
 
 
 namespace trajectory_planner_moveit {
@@ -33,8 +37,12 @@ class TrajPlanner
 
     // the trajectory planner helper class
     trajectory_planner_moveit::CartPlanner *my_cart_planner_;
+    trajectory_planner_moveit::StatePlanner *my_state_planner_;
+     
     // the helper class for planning the pickup phase
-    PickupPlannerPtr pickup_planner_;
+    trajectory_planner_moveit::PickupPlannerPtr pickup_planner_;
+
+   
 
   public:
 
@@ -49,9 +57,10 @@ class TrajPlanner
 	   
        // init class members
        my_cart_planner_ = new trajectory_planner_moveit::CartPlanner(nh_);
-
+       my_state_planner_ = new trajectory_planner_moveit::StatePlanner(nh_);
+       
        pickup_planner_.reset(new PickupPlanner(nh));
-
+       
     }
 
     //! Empty stub
@@ -90,7 +99,14 @@ bool TrajPlanner::planTrajectory(definitions::TrajectoryPlanning::Request &reque
 			break;
 
 		case definitions::TrajectoryPlanning::Request::MOVE_TO_STATE_GOAL:
-			ROS_INFO("Succesfully planned a trajectory to the desired MOVE_TO_STATE_GOAL operation");
+			if ( my_state_planner_->planTrajectoryFromCode(request, response) )
+            {
+                ROS_INFO("Succesfully planned a trajectory to the desired MOVE_TO_STATE_GOAL");    
+            }
+            else
+            {
+                ROS_ERROR("Could not plan a trajectory to the desired MOVE_TO_STATE_GOAL"); 
+            }
 			break;
 
 	}	
