@@ -22,17 +22,14 @@ namespace pacman {
 			CREATE_FROM_OBJECT_DESC1(BhamGraspImpl, golem::Object::Ptr, golem::Scene&)
 		};
 
-		/**	Adds a single grasp example */
-		virtual void add(const std::string& id, const Point3D::Seq& points, const RobotUIBK::Config::Seq& trajectory);
-
-		/** Removes the given grasp example */
-		virtual void remove(const std::string& id);
-
-		/** Lists all grasp examples */
-		virtual void list(std::vector<std::string>& idSeq) const;
+		/**	Loads grasp data */
+		virtual void load(const std::string& path);
 
 		/** Estimate possible grasps together with their with approach trajectories from a given point cloud */
 		virtual void estimate(const Point3D::Seq& points, Trajectory::Seq& trajectories);
+
+		/** Estimate possible grasps together with their with approach trajectories from a given point cloud (version with curvatures) */
+		void estimate(const ::grasp::Cloud::PointSeq& points, Trajectory::Seq& trajectories);
 
 		/** Process messages */
 		virtual void spin();
