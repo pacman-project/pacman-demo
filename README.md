@@ -114,40 +114,42 @@ Before using poseEstimation node in ROS, OpenNI has to be properly installed fro
 * You need to set the var `POSE_ESTIMATION_EXT` in the `ros_pkgs/perception/pose_estimation_uibk/CMakeLists.txt` to point where the poseEstimation library root folder, and check that the build folder is called `build` in there. And you might need to change the paths in `src/pose_estimation_uibk.cpp` for configuration and database location (ToDo: improve this to avoid compiling everytime, e.g. passing the path as a parameter in the launch file).
 
 
-## Runing PACMAN Software
+## Running PACMAN Software
 
 This section describes how to start and use the different robots used in the project (Eddie, Boris, ...)
+
 
 ### Running Eddie
 
 Before starting any software application, first of all make sure that the 2 Kuka LWR, the 2 Schunk hands and the KIT Head are powered up and that no emergency stop is active.
-
 The KIT Head should be placed in the "Zero position", before starting the software
 
+
 #### Kuka robot controllers (KRC)
-* Configure the tool number if required Configure-->Set tool/base and select the right tool number (Number 1 for the Right arms and Number 2 for the Left Arm, the tool name should be "sdh2")
+
+* Configure the tool number if required Configure-->Set tool/base and select the right tool number (Number 1 for the Right arm and Number 2 for the Left Arm, the tool name should be "sdh2")
 * Press OK to confirm
-* Select the script golemEddieR and golemEddieL for each robot
-* Run the scripts for the 2 arms
+* Select the script `golemEddieR` and `golemEddieL` for each robot in the `KRC:\R1\Program\golem` repository
+* Run the scripts for the 2 arms until you reach the line `wait for ($FriQuality==#PERFECT)`
+
 
 #### Control PC
-* Open a new terminal
+
+Open a new terminal
 * `cd /home/master/Projects/HRController/bin`
 
 
 To run the demonstration software
-
 * `./GolemDemoTrajectory GolemDemoTrajectoryRobotEddie.xml`
 
 Wait for all the controllers to be initialized e.g, the KIT Head will start moving
 When the graphical interface appears you should be able to run the configured trajectories.
 * Press the `SPACE key` to see the available trajectories
-* Type the trajectory number 1(Low velocity), 2(Low velocity) or 3(High velocity)
+* Type the trajectory number: 1(Low velocity), 2(Low velocity) or 3(High velocity)
 * Press the `ENTER key` to start the trajectory
 
 
 To run the server
-
 * `./GolemDeviceCtrlPhysServer`
 
 
@@ -155,15 +157,15 @@ To run the server
 `To be done ...`
 
 
-#### WARNING: they are still minor problems during the initialization of the Schunk grippers and the KIT Head. 
+#### WARNING: they are still minor problems during the initialization of the Schunk grippers and the KIT Head (Control PC section). 
 If you have the error:
 
 * Schunk gripper
 	Waiting for Schunk device to be ready (RS232)...
 	Segmentation fault (core dumped)
 
-Run again the command line 
+==> Run again the command line
 
 * KIT Head
-	The Head should be in the "Zero position" before running the script, especially the Neck roll, pitch and yaw axis, otherwise some axis will not be initialized properly
+	The Head should be in the "Zero position" BEFORE running the demontsration software, especially the Neck roll, pitch and yaw axis, otherwise some axis will not be initialized properly
 
