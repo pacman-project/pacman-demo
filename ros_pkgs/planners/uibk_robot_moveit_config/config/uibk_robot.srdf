@@ -491,8 +491,12 @@
     <disable_collisions link1="left_sdh_finger_11_link" link2="left_sdh_finger_12_link" reason="Adjacent" />
     <disable_collisions link1="left_sdh_finger_11_link" link2="left_sdh_finger_13_link" reason="Never" />
     <disable_collisions link1="left_sdh_finger_11_link" link2="left_sdh_finger_21_link" reason="Never" />
+    <disable_collisions link1="left_sdh_finger_11_link" link2="left_sdh_finger_22_link" reason="User" />
+    <disable_collisions link1="left_sdh_finger_11_link" link2="left_sdh_finger_23_link" reason="User" />
     <disable_collisions link1="left_sdh_finger_11_link" link2="left_sdh_palm_link" reason="Adjacent" />
     <disable_collisions link1="left_sdh_finger_11_link" link2="left_sdh_thumb_1_link" reason="Never" />
+    <disable_collisions link1="left_sdh_finger_11_link" link2="left_sdh_thumb_2_link" reason="User" />
+    <disable_collisions link1="left_sdh_finger_11_link" link2="left_sdh_thumb_3_link" reason="User" />
     <disable_collisions link1="left_sdh_finger_11_link" link2="leg_0_link" reason="Never" />
     <disable_collisions link1="left_sdh_finger_11_link" link2="leg_2_link" reason="Never" />
     <disable_collisions link1="left_sdh_finger_11_link" link2="leg_3_link" reason="Never" />
@@ -507,6 +511,13 @@
     <disable_collisions link1="left_sdh_finger_12_link" link2="leg_3_link" reason="Never" />
     <disable_collisions link1="left_sdh_finger_12_link" link2="right_sdh_connector_link" reason="Never" />
     <disable_collisions link1="left_sdh_finger_12_link" link2="right_sdh_finger_13_link" reason="Never" />
+    <disable_collisions link1="left_sdh_finger_13_link" link2="left_sdh_finger_21_link" reason="User" />
+    <disable_collisions link1="left_sdh_finger_13_link" link2="left_sdh_finger_22_link" reason="User" />
+    <disable_collisions link1="left_sdh_finger_13_link" link2="left_sdh_finger_23_link" reason="User" />
+    <disable_collisions link1="left_sdh_finger_13_link" link2="left_sdh_palm_link" reason="User" />
+    <disable_collisions link1="left_sdh_finger_13_link" link2="left_sdh_thumb_1_link" reason="User" />
+    <disable_collisions link1="left_sdh_finger_13_link" link2="left_sdh_thumb_2_link" reason="User" />
+    <disable_collisions link1="left_sdh_finger_13_link" link2="left_sdh_thumb_3_link" reason="User" />
     <disable_collisions link1="left_sdh_finger_13_link" link2="leg_0_link" reason="Never" />
     <disable_collisions link1="left_sdh_finger_13_link" link2="leg_2_link" reason="Never" />
     <disable_collisions link1="left_sdh_finger_13_link" link2="leg_3_link" reason="Never" />
@@ -515,6 +526,7 @@
     <disable_collisions link1="left_sdh_finger_21_link" link2="left_sdh_finger_23_link" reason="Never" />
     <disable_collisions link1="left_sdh_finger_21_link" link2="left_sdh_palm_link" reason="Adjacent" />
     <disable_collisions link1="left_sdh_finger_21_link" link2="left_sdh_thumb_1_link" reason="Never" />
+    <disable_collisions link1="left_sdh_finger_21_link" link2="left_sdh_thumb_2_link" reason="User" />
     <disable_collisions link1="left_sdh_finger_21_link" link2="left_sdh_thumb_3_link" reason="Never" />
     <disable_collisions link1="left_sdh_finger_21_link" link2="leg_0_link" reason="Never" />
     <disable_collisions link1="left_sdh_finger_21_link" link2="leg_2_link" reason="Never" />
@@ -522,15 +534,23 @@
     <disable_collisions link1="left_sdh_finger_21_link" link2="right_sdh_finger_11_link" reason="Never" />
     <disable_collisions link1="left_sdh_finger_22_link" link2="left_sdh_finger_23_link" reason="Adjacent" />
     <disable_collisions link1="left_sdh_finger_22_link" link2="left_sdh_palm_link" reason="Never" />
+    <disable_collisions link1="left_sdh_finger_22_link" link2="left_sdh_thumb_1_link" reason="User" />
+    <disable_collisions link1="left_sdh_finger_22_link" link2="left_sdh_thumb_2_link" reason="User" />
+    <disable_collisions link1="left_sdh_finger_22_link" link2="left_sdh_thumb_3_link" reason="User" />
     <disable_collisions link1="left_sdh_finger_22_link" link2="leg_0_link" reason="Never" />
     <disable_collisions link1="left_sdh_finger_22_link" link2="leg_2_link" reason="Never" />
     <disable_collisions link1="left_sdh_finger_22_link" link2="leg_3_link" reason="Never" />
+    <disable_collisions link1="left_sdh_finger_23_link" link2="left_sdh_palm_link" reason="User" />
+    <disable_collisions link1="left_sdh_finger_23_link" link2="left_sdh_thumb_1_link" reason="User" />
+    <disable_collisions link1="left_sdh_finger_23_link" link2="left_sdh_thumb_2_link" reason="User" />
+    <disable_collisions link1="left_sdh_finger_23_link" link2="left_sdh_thumb_3_link" reason="User" />
     <disable_collisions link1="left_sdh_finger_23_link" link2="leg_0_link" reason="Never" />
     <disable_collisions link1="left_sdh_finger_23_link" link2="leg_2_link" reason="Never" />
     <disable_collisions link1="left_sdh_finger_23_link" link2="leg_3_link" reason="Never" />
     <disable_collisions link1="left_sdh_finger_23_link" link2="right_sdh_thumb_3_link" reason="Never" />
     <disable_collisions link1="left_sdh_palm_link" link2="left_sdh_thumb_1_link" reason="Adjacent" />
     <disable_collisions link1="left_sdh_palm_link" link2="left_sdh_thumb_2_link" reason="Never" />
+    <disable_collisions link1="left_sdh_palm_link" link2="left_sdh_thumb_3_link" reason="User" />
     <disable_collisions link1="left_sdh_palm_link" link2="leg_0_link" reason="Never" />
     <disable_collisions link1="left_sdh_palm_link" link2="leg_2_link" reason="Never" />
     <disable_collisions link1="left_sdh_palm_link" link2="leg_3_link" reason="Never" />
@@ -729,19 +749,45 @@
     <disable_collisions link1="right_sdh_finger_11_link" link2="right_sdh_finger_12_link" reason="Adjacent" />
     <disable_collisions link1="right_sdh_finger_11_link" link2="right_sdh_finger_13_link" reason="Never" />
     <disable_collisions link1="right_sdh_finger_11_link" link2="right_sdh_finger_21_link" reason="Never" />
+    <disable_collisions link1="right_sdh_finger_11_link" link2="right_sdh_finger_22_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_11_link" link2="right_sdh_finger_23_link" reason="User" />
     <disable_collisions link1="right_sdh_finger_11_link" link2="right_sdh_palm_link" reason="Adjacent" />
     <disable_collisions link1="right_sdh_finger_11_link" link2="right_sdh_thumb_1_link" reason="Never" />
+    <disable_collisions link1="right_sdh_finger_11_link" link2="right_sdh_thumb_2_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_11_link" link2="right_sdh_thumb_3_link" reason="User" />
     <disable_collisions link1="right_sdh_finger_12_link" link2="right_sdh_finger_13_link" reason="Adjacent" />
+    <disable_collisions link1="right_sdh_finger_12_link" link2="right_sdh_finger_21_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_12_link" link2="right_sdh_finger_22_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_12_link" link2="right_sdh_finger_23_link" reason="User" />
     <disable_collisions link1="right_sdh_finger_12_link" link2="right_sdh_palm_link" reason="Never" />
+    <disable_collisions link1="right_sdh_finger_12_link" link2="right_sdh_thumb_1_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_12_link" link2="right_sdh_thumb_2_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_12_link" link2="right_sdh_thumb_3_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_13_link" link2="right_sdh_finger_21_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_13_link" link2="right_sdh_finger_22_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_13_link" link2="right_sdh_finger_23_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_13_link" link2="right_sdh_palm_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_13_link" link2="right_sdh_thumb_1_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_13_link" link2="right_sdh_thumb_2_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_13_link" link2="right_sdh_thumb_3_link" reason="User" />
     <disable_collisions link1="right_sdh_finger_21_link" link2="right_sdh_finger_22_link" reason="Adjacent" />
     <disable_collisions link1="right_sdh_finger_21_link" link2="right_sdh_finger_23_link" reason="Never" />
     <disable_collisions link1="right_sdh_finger_21_link" link2="right_sdh_palm_link" reason="Adjacent" />
     <disable_collisions link1="right_sdh_finger_21_link" link2="right_sdh_thumb_1_link" reason="Never" />
+    <disable_collisions link1="right_sdh_finger_21_link" link2="right_sdh_thumb_2_link" reason="User" />
     <disable_collisions link1="right_sdh_finger_21_link" link2="right_sdh_thumb_3_link" reason="Never" />
     <disable_collisions link1="right_sdh_finger_22_link" link2="right_sdh_finger_23_link" reason="Adjacent" />
     <disable_collisions link1="right_sdh_finger_22_link" link2="right_sdh_palm_link" reason="Never" />
+    <disable_collisions link1="right_sdh_finger_22_link" link2="right_sdh_thumb_1_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_22_link" link2="right_sdh_thumb_2_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_22_link" link2="right_sdh_thumb_3_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_23_link" link2="right_sdh_palm_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_23_link" link2="right_sdh_thumb_1_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_23_link" link2="right_sdh_thumb_2_link" reason="User" />
+    <disable_collisions link1="right_sdh_finger_23_link" link2="right_sdh_thumb_3_link" reason="User" />
     <disable_collisions link1="right_sdh_palm_link" link2="right_sdh_thumb_1_link" reason="Adjacent" />
     <disable_collisions link1="right_sdh_palm_link" link2="right_sdh_thumb_2_link" reason="Never" />
+    <disable_collisions link1="right_sdh_palm_link" link2="right_sdh_thumb_3_link" reason="User" />
     <disable_collisions link1="right_sdh_thumb_1_link" link2="right_sdh_thumb_2_link" reason="Adjacent" />
     <disable_collisions link1="right_sdh_thumb_1_link" link2="right_sdh_thumb_3_link" reason="Never" />
     <disable_collisions link1="right_sdh_thumb_2_link" link2="right_sdh_thumb_3_link" reason="Adjacent" />
