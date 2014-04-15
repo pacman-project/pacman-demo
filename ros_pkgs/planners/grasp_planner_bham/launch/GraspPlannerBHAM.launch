@@ -1,10 +1,8 @@
 <launch>
 	<!-- THE "cwd" ATRIBUTE IS NECESSARY TO MAKE THE NODE PATH AS THE PATH FOR THE EXECUTION, SINCE THE XML FILES ARE COPIED THERE BY THE MAIN CMAKELISTS.TXT, IF YOU NEED TO RECONFIGURE THE CONFIG FILE, DO IT FROM THE PACMAN/BIN FOLDER AND MAKE AGAIN TO MAKE IT AVAILABLE TO THE NODE/-->	
-
-	<node pkg="grasp_planner_bham" name="grasp_planner" type="grasp_planner_bham_node" respawn="false" output="screen" cwd="node">
-		<param name="config_file" value="Grasp.xml" />
-	    <param name="trajectory_file" value="pacman_container_2.trj" />
-	    <param name="pcd_file" value="pacman_container_2.pcd" />
-	    <param name="path_to_DB" value="/home/pacman/Code/pacman/poseEstimation/dataFiles/PCD-MODELS-DOWNSAMPLED/" />
-	</node>
+	<param name="config_file" value="Grasp.xml" />
+    <param name="trajectory_file" value="pacman_container_2.trj" />
+    <param name="pcd_file" value="pacman_container_2.pcd" />
+    <param name="path_to_DB" value="/home/pacman/Code/pacman/poseEstimation/dataFiles/PCD-MODELS-DOWNSAMPLED/" />
+	<node pkg="grasp_planner_bham" name="grasp_planner" type="grasp_planner_bham_node" respawn="false" output="screen" cwd="node"/>
 </launch>
