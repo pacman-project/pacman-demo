@@ -251,7 +251,7 @@ class DemoSimple
 	robot_start_joints_[4] = 0.0; robot_start_joints_[5] = 0.0; robot_start_joints_[6] = 1.25715;
 
 	robot_place_joints_[0] = 0.98819; robot_place_joints_[1] = -1.01639; robot_place_joints_[2] = 2.00266; robot_place_joints_[3] = 0.98314;
-	robot_place_joints_[4] = 0.0; robot_place_joints_[5] = 0.0; robot_place_joints_[6] = 1.25715 + 0.2;
+	robot_place_joints_[4] = 0.0; robot_place_joints_[5] = 0.0; robot_place_joints_[6] = 1.25715 + 0.3;
       }
       
     }
@@ -420,24 +420,6 @@ bool DemoSimple::goToStartPos()
     std::cout << "Trajectory not valid - restart" << std::endl;
     }
   }
-
- /* if( curState_[GraspTraj_State] == Fail )
-  {
-    curState_[PickGrasp_State] = Fail;
-    if( (grasp_id_ + 1) < my_calculated_grasp.size() )
-    {
-      grasp_id_ ++;
-      curState_[PickGrasp_State] = Success;  
-      curState_[PreGraspTraj_State] = Idle;
-      curState_[GraspTraj_State] = Idle;
-      curState_[PostGraspTraj_State] = Idle;
-    }
-  }
-  else
-  {
-    for( int i = 1; i < StatesNum; i++ )
-      curState_[i] = Idle;
-  }*/
   return result;
   
 }
@@ -463,12 +445,10 @@ bool DemoSimple::restart()
   
   trajectory_planning_srv.request.object_list = noObject;
   trajectory_planning_srv.request.object_id = 0;
-  //trajectory_planning_srv.request.type = trajectory_planning_srv.request.MOVE_TO_CART_GOAL;
   trajectory_planning_srv.request.type = trajectory_planning_srv.request.MOVE_TO_STATE_GOAL;
   trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose = current_trajectory.grasp_trajectory[0].wrist_pose;
   trajectory_planning_srv.request.eddie_goal_state.armRight.joints = robot_place_joints_;
   trajectory_planning_srv.request.eddie_goal_state.handRight.joints = my_calculated_grasp[grasp_id_].grasp_trajectory[0].joints;
- // trajectory_planning_srv.request.eddie_goal_state.armRight.joints[6] += 0.2;
   
   if( !trajectory_planner_client.call(trajectory_planning_srv) )
   {
