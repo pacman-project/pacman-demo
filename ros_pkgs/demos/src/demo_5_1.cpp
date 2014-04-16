@@ -100,6 +100,7 @@ Event mapEvent[TransNum] =
 };
 
 const int max_trial_ = 1;
+const int max_trial_start_ = 5;
 using namespace std;
 
 class DemoSimple
@@ -175,7 +176,7 @@ class DemoSimple
     bool plan_trajectory();
     void goToNextObject();
     void goToNextGrasp();
-    bool restart();
+    bool restart(bool place);
     
     // constructor
     DemoSimple(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
@@ -230,8 +231,8 @@ class DemoSimple
 	 robot_start_joints_[0] = 0.90358; robot_start_joints_[1] = 1.07305; robot_start_joints_[2] = 1.16986; robot_start_joints_[3] = 0.89418;
 	 robot_start_joints_[4] = 0.74461; robot_start_joints_[5] = 0.01476; robot_start_joints_[6] = -0.48848;
 	 
-	 robot_place_joints_[0] = 0.90358; robot_place_joints_[1] = 1.07305; robot_place_joints_[2] = 1.16986; robot_place_joints_[3] = 0.89418;
-	 robot_place_joints_[4] = 0.74461; robot_place_joints_[5] = 0.01476; robot_place_joints_[6] = -0.48848 + 0.3;	 
+	 robot_place_joints_[0] = 0.9035800099372864; robot_place_joints_[1] = 1.0730500221252441; robot_place_joints_[2] = 1.1698600053787231; robot_place_joints_[3] = 0.8941799998283386;
+	 robot_place_joints_[4] = 1.8446100115776062; robot_place_joints_[5] = 0.814759999699890614; robot_place_joints_[6] = -0.48848000168800354;	 
 	 
        }
   
@@ -296,7 +297,7 @@ void DemoSimple::perform_event(Event event)
   {
     cout << curState_[j] << endl;
   }
-  
+  int count;
   switch(event_)
   {
     case EstimatePose:
@@ -313,24 +314,36 @@ void DemoSimple::perform_event(Event event)
       break;  
     case Retreat: 
       cout << "event: retreat" << endl;
-      restart();
-      if( curState_[Start_State] == Success )
-      {
-	cout << "start, drop object" << endl;
+      count = 1;
+      goToStartPos();
+      while( ( count < max_trial_start_ ) && ( curState_[Start_State] == Fail ) ){
+	count++;
         goToStartPos();
       }
       break;
     case Start:
       cout << "event: start" << endl;
       goToStartPos();
+      count = 1;
+      while( ( count < max_trial_start_ ) && ( curState_[Start_State] == Fail ) ){
+	count ++;
+	goToStartPos();
+      }
       break;
     case Restart:
       cout << "event: restart" << endl;
-      restart();
+      cout << "go to start pose with grasp joint" << endl;
+      restart(false);
+      count = 1;
+      while( ( count < max_trial_start_ ) && ( curState_[Start_State] == Fail ) )
+      {
+	count ++;
+	restart(false);
+      }
       if( curState_[Start_State] == Success )
-      { 
-	cout << "start, drop object" << endl;
-	goToStartPos();
+      {
+	cout << "drop object!!" << endl;
+        restart(true);
       }
       break;      
     case Stop: 
@@ -372,7 +385,6 @@ bool DemoSimple::goToStartPos()
   
   trajectory_planning_srv.request.object_list = noObject;
   trajectory_planning_srv.request.object_id = 0;
-  //trajectory_planning_srv.request.type = trajectory_planning_srv.request.MOVE_TO_CART_GOAL;
   trajectory_planning_srv.request.type = trajectory_planning_srv.request.MOVE_TO_STATE_GOAL;
   trajectory_planning_srv.request.eddie_goal_state.armRight.joints = robot_start_joints_;
   trajectory_planning_srv.request.eddie_goal_state.handRight.joints = hand_pose_start_;
@@ -387,44 +399,62 @@ bool DemoSimple::goToStartPos()
     ROS_INFO("trajectory planner call succeeded");
     my_calculated_trajectory = trajectory_planning_srv.response.trajectory;
     ROS_INFO("number of found trajectories are: %d",(int)my_calculated_trajectory.size());
-      
     
-    ROS_INFO("Executing Trajectory");
+    if( my_calculated_trajectory.size() > 0 )
+    {
     
-    //User input
-    char a;
-    std::cout << "Check if trajectory is ok (y/n)" << std::endl;
-    std::cin >> a;
+      ROS_INFO("Executing Trajectory");
     
-    if (a=='y')
-    {    
+      //User input
+      char a;
+      std::cout << "Check if trajectory is ok (y/n)" << std::endl;
+      std::cin >> a;
+    
+      if (a=='y')
+      {    
     //Arm movement
-    std::cout << "Executing arm trajectory" << std::endl;
-    std::cout << "#of found trajectories: "  << my_calculated_trajectory.size() << std::endl;
-    my_calculated_trajectory[0].trajectory_id=0;
-    trajectory_execution_srv.request.trajectory = my_calculated_trajectory[0]; 
-      if( !trajectory_execution_client.call(trajectory_execution_srv) )
-      {
-	      ROS_INFO("trajectory planner service call failed.");
-      }
-      else
-      {
+        std::cout << "Executing arm trajectory" << std::endl;
+        std::cout << "#of found trajectories: "  << my_calculated_trajectory.size() << std::endl;
+        my_calculated_trajectory[0].trajectory_id=0;
+        trajectory_execution_srv.request.trajectory = my_calculated_trajectory[0]; 
+        if( !trajectory_execution_client.call(trajectory_execution_srv) )
+        {
+	       ROS_INFO("trajectory planner service call failed.");
+        }
+        else
+        {
 	      ROS_INFO("trajectory execution call succeeded");
 	      curState_[Start_State] = Success;
 	      result = true;
-      }
+        }
         
+      }
+      else
+      {
+      std::cout << "Trajectory not valid - restart" << std::endl;
+      }
     }
     else
-    {
-    std::cout << "Trajectory not valid - restart" << std::endl;
-    }
+      std::cout << "no trajectory found" << std::endl;
   }
+   // ** retreat ** //
+  if( curState_[GraspTraj_State] == Fail ) 
+  {
+    curState_[PickGrasp_State] = Fail;
+    if( (grasp_id_ + 1) < my_calculated_grasp.size() )
+    {
+      grasp_id_ ++;
+      curState_[PickGrasp_State] = Success;  
+      curState_[PreGraspTraj_State] = Idle;
+      curState_[GraspTraj_State] = Idle;
+      curState_[PostGraspTraj_State] = Idle;
+    }
+  }  
   return result;
   
 }
 
-bool DemoSimple::restart()
+bool DemoSimple::restart(bool place)
 {
   curState_[Start_State] = Fail;
   
@@ -446,9 +476,17 @@ bool DemoSimple::restart()
   trajectory_planning_srv.request.object_list = noObject;
   trajectory_planning_srv.request.object_id = 0;
   trajectory_planning_srv.request.type = trajectory_planning_srv.request.MOVE_TO_STATE_GOAL;
-  trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose = current_trajectory.grasp_trajectory[0].wrist_pose;
-  trajectory_planning_srv.request.eddie_goal_state.armRight.joints = robot_place_joints_;
-  trajectory_planning_srv.request.eddie_goal_state.handRight.joints = my_calculated_grasp[grasp_id_].grasp_trajectory[0].joints;
+  if( !place )
+  {
+    trajectory_planning_srv.request.eddie_goal_state.armRight.joints = robot_start_joints_;
+    trajectory_planning_srv.request.eddie_goal_state.handRight.joints = my_calculated_grasp[grasp_id_].grasp_trajectory[0].joints;
+  }
+  else
+  {
+    trajectory_planning_srv.request.eddie_goal_state.armRight.joints = robot_place_joints_;
+    trajectory_planning_srv.request.eddie_goal_state.handRight.joints = hand_pose_start_;
+  }
+  
   
   if( !trajectory_planner_client.call(trajectory_planning_srv) )
   {
@@ -461,40 +499,44 @@ bool DemoSimple::restart()
     my_calculated_trajectory = trajectory_planning_srv.response.trajectory;
     ROS_INFO("number of found trajectories are: %d",(int)my_calculated_trajectory.size());
       
-    
-    ROS_INFO("Executing Trajectory");
+    if( my_calculated_trajectory.size() > 0 ) 
+    {
+      ROS_INFO("Executing Trajectory");
     
     //User input
-    char a;
-    std::cout << "Check if trajectory is ok (y/n)" << std::endl;
-    std::cin >> a;
+      char a;
+      std::cout << "Check if trajectory is ok (y/n)" << std::endl;
+      std::cin >> a;
     
-    if (a=='y')
-    {    
+      if (a=='y')
+      {    
     //Arm movement
-    std::cout << "Executing arm trajectory" << std::endl;
-    std::cout << "#of found trajectories: "  << my_calculated_trajectory.size() << std::endl;
-    my_calculated_trajectory[0].trajectory_id=0;
-    trajectory_execution_srv.request.trajectory = my_calculated_trajectory[0]; 
-      if( !trajectory_execution_client.call(trajectory_execution_srv) )
-      {
+        std::cout << "Executing arm trajectory" << std::endl;
+        std::cout << "#of found trajectories: "  << my_calculated_trajectory.size() << std::endl;
+        my_calculated_trajectory[0].trajectory_id=0;
+        trajectory_execution_srv.request.trajectory = my_calculated_trajectory[0]; 
+        if( !trajectory_execution_client.call(trajectory_execution_srv) )
+        {
 	      ROS_INFO("trajectory planner service call failed.");
-      }
-      else
-      {
+        }
+        else
+        {
 	      ROS_INFO("trajectory execution call succeeded");
 	      curState_[Start_State] = Success;
 	      result = true;
-      }
+        }
         
+      }
+      else
+      {
+      std::cout << "Trajectory not valid - restart" << std::endl;
+      }
     }
     else
-    {
-    std::cout << "Trajectory not valid - restart" << std::endl;
-    }
+      cout << "no trajectory found" << endl;
   }
 
-  if( curState_[GraspTraj_State] == Fail )
+  if( curState_[GraspTraj_State] == Fail ) 
   {
     curState_[PickGrasp_State] = Fail;
     if( (grasp_id_ + 1) < my_calculated_grasp.size() )
@@ -584,8 +626,8 @@ bool DemoSimple::planGrasps(string arm)
     
     //Removing all but the best grasp and only keeping last trajectory
     my_calculated_grasp.clear();
-    std::cout << "grasp planner response size: " << grasp_planning_srv.response.grasp_list.size() << std::endl;
-    for( size_t i = 0; i < grasp_planning_srv.response.grasp_list.size(); i++ )
+   // std::cout << "grasp planner response size: " << grasp_planning_srv.response.grasp_list.size() << std::endl;
+    for( size_t i = 0;i < grasp_planning_srv.response.grasp_list.size(); i++ )
       my_calculated_grasp.push_back(grasp_planning_srv.response.grasp_list[i]);    
    }
    
@@ -647,9 +689,9 @@ void DemoSimple::order_grasp()
 	 continue;
        if( euc_dists[j] == euc_dists_sort[i] )
        {
-	 my_calculated_grasp_sort.push_back(my_calculated_grasp[j]);
-	 seen_ids.insert(j);
-	 break;
+	       my_calculated_grasp_sort.push_back(my_calculated_grasp[j]);
+	       seen_ids.insert(j);
+	       break;
        }
      }
    }
@@ -742,7 +784,7 @@ bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id)
   if( !pre_grasp ) 
   {    
     reader_srv.request.detected_objects = my_detected_objects;
-    reader_srv.request.object_id = 0;
+    reader_srv.request.object_id = object_id_;
     reconstruct_scene();
     my_calculated_grasp[grasp_id].grasp_trajectory[0] = my_calculated_grasp[grasp_id].grasp_trajectory[2];
   }
