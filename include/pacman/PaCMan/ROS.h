@@ -281,7 +281,10 @@ namespace pacman {
 			else
 			{
 				// the RobotTrajectory gives time_from_start, we prefer from previous for easier transformation to pacman commands
-				trajectory.time_from_previous.push_back( points[i].time_from_start - points[i-1].time_from_start );
+				ros::Duration dt( points[i].time_from_start - points[i-1].time_from_start );
+				if ( dt.toSec() < 0.001 )
+					dt = ros::Duration(0.2);
+				trajectory.time_from_previous.push_back( dt );
 			}
 		}
 	}
@@ -366,8 +369,11 @@ namespace pacman {
 			}
 			else
 			{
-				// the RobotTrajectory gives time_from_start, we prefer from previous for easier transformation to pacman commands
-				trajectory.time_from_previous.push_back( points[i].time_from_start - points[i-1].time_from_start );
+				// the RobotTrajectory gives time_from_start, we prefer from previous for easier transformation to pacman commands				
+				ros::Duration dt( points[i].time_from_start - points[i-1].time_from_start );
+				if ( dt.toSec() < 0.001 )
+					dt = ros::Duration(0.2);
+				trajectory.time_from_previous.push_back( dt );
 			}
 		}
 	}
@@ -562,13 +568,13 @@ namespace pacman {
 				baseTrajectory.joint_trajectory.points[i].positions.push_back(startState.position[hand_index + h] + (i+1)*(goalState.joints[h] - startState.position[hand_index + h])/NWayPoints);
 	        }
 		
-			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
-			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
-			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
-			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
-			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
-			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
-			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.01);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
+			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
 
 			baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
 			baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
