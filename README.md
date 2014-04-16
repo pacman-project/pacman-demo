@@ -162,6 +162,46 @@ To run the server
 `To do ...`
 
 
+
+#### TRICK
+
+It is possible to run parts of the real robot and simulate the others without having to recompile the code.
+They are *.xml configuration files in the `/home/master/Projects/HRController/bin` folder which can be modified to specify the desired configuration.
+
+The configuration file for the server is `GolemDeviceCtrlPhysServer.xml` and the one for the demonstration software is `GolemDemoTrajectoryRobotEddie.xml`. In the `GolemDeviceCtrlPhysServer.xml` you will find a line with                     
+`<controller library_path="GolemDeviceMultiCtrl" config_path="GolemDeviceRobotEddie" ... >`
+
+`GolemDeviceMultiCtrl(.so)` - is the library used                                                                      
+`GolemDeviceRobotEddie(.xml)` - is the configuration file for the robot
+
+
+<dl><dt>To simulate the entire robot</dt></dl>
+* Change the **config_path** variable to `GolemDeviceRobotEddieSim`. You can open the `GolemDeviceRobotEddieSim.xml` file to check the configuration
+* Save the file
+
+<dl><dt>To simulate parts of the entire robot</dt></dl>
+* Change the **config_path** variable to `GolemDeviceRobotEddie`. 
+* Open the file `GolemDeviceRobotEddie.xml` file.
+
+
+In the beginning of the file you will see 5 lines with the prototype                                   
+`<controller library_path="MyRobotDynamicLibrary" config_path="MyRobotXmlConfigurationFile" ... >`
+
+* Change the **library_path** to `MyRobotDynamicLibrarySim` to use the simulator instead
+* Save the file
+
+eg. To configure the Left Kuka LWR  and the Left Schunk gripper for simulation update the configuration file with       
+`<controller library_path="GolemDeviceKukaLWRSim" config_path="GolemDeviceKukaLWREddieL" ... >`                        
+`<controller library_path="GolemDeviceSchunkDexHandSim" config_path="GolemDeviceSchunkDexHandEddieL" ... >`
+
+<dl><dt>To change the temperature limits for the Schunk gripper</dt></dl>
+* Open the `GolemDeviceSchunkDexHandEddieL.xml` and `GolemDeviceSchunkDexHandEddieR.xml`
+* In the field `<temp> ... <\temp>` change the values.                                                      
+	`on` - Maximum temperature allowed                                                             
+	`off` - Minimum Hysterisis temperature to restart the gripper after a temperature error
+* Save the files
+
+
 #### WARNING: 
 **they are still minor problems during the initialization of the Schunk grippers and the KIT Head (Control PC section).**
 
