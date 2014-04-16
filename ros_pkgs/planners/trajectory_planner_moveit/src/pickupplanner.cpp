@@ -4,13 +4,12 @@
 
 //// ros headers
 
-
 //// generated headers
 #include <definitions/TrajectoryPlanning.h>
 
 //// local headers
 #include "pickupplanner.h"
-
+#include "conversions.h"
 
 namespace trajectory_planner_moveit {
 
@@ -29,14 +28,22 @@ PickupPlanner::PickupPlanner(ros::NodeHandle &nh)
     string pickup_topic = "pickup";
     pick_action_client_.reset(new actionlib::SimpleActionClient<moveit_msgs::PickupAction>(pickup_topic, true));
     pick_action_client_->waitForServer();
+    // retrieve the (remapped) joint states topic name
+    joint_states_topic_ = nh.resolveName("/joint_states");
 }
 
 bool PickupPlanner::planPickup(TrajectoryPlanning::Request &request, TrajectoryPlanning::Response &response)
 {
-    string arm = "right_arm";
+    string arm = "right";
 
-    ROS_INFO("Received trajectory planning request.");
+    ROS_INFO("Received trajectory planning request");
     ROS_INFO("Validating received request data...");
+
+    if(!request.type == TrajectoryPlanningRequest::PICK) {
+        ROS_ERROR("Invalid request type - pickup planner can only handle pickup requests!");
+        return false;
+    }
+
     // we have to make sure that sufficient data has been provided to be able to compute a plan...
     if(request.arm.empty()) {
         ROS_WARN("No arm name provided - assuming %s", arm.c_str());
@@ -71,9 +78,6 @@ bool PickupPlanner::planPickup(TrajectoryPlanning::Request &request, TrajectoryP
     moveit_msgs::PickupGoal goal_msg;
     constructPickupGoal(arm, object_id, grasp_list, goal_msg);
 
-
-    pick_action_client_->sendGoal(goal_msg);
-
     if (!pick_action_client_) {
         ROS_ERROR("Pick action client not found");
         return false;
@@ -84,14 +88,25 @@ bool PickupPlanner::planPickup(TrajectoryPlanning::Request &request, TrajectoryP
         return false;
     }
 
+    pick_action_client_->sendGoal(goal_msg);
+
+    if (!pick_action_client_->waitForResult()) {
+        ROS_INFO_STREAM("Pickup action returned early");
+    }
+
     moveit_msgs::PickupResultConstPtr result = pick_action_client_->getResult();
 
-    if (pick_action_client_->getState()	== actionlib::SimpleClientGoalState::SUCCEEDED) {
-        ROS_INFO("Call to pick action server succeeded!");
-        // convert the computed motion plan to definitions::trajectory
-        PickupResultToTrajectory(result, response.trajectory);
-        ROS_INFO("Computed trajectory contains %d points", (int)response.trajectory.size());
+    if (pick_action_client_->getState()	== actionlib::SimpleClientGoalState::SUCCEEDED &&
+            result->error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS) {
 
+        ROS_INFO("Call to pick action server succeeded!");
+
+        // fill the computed motion plan into a definitions::trajectory
+        definitions::Trajectory trajectory;
+        PickupResultToTrajectory(arm, result, trajectory);
+        ROS_INFO("Computed trajectory contains %d points", (int)trajectory.eddie_path.size());
+
+        response.trajectory.push_back(trajectory);
         response.result = TrajectoryPlanning::Response::SUCCESS;
     } else {
         ROS_WARN_STREAM("Fail: " << pick_action_client_->getState().toString() << ": " << pick_action_client_->getState().getText());
@@ -126,13 +141,9 @@ void PickupPlanner::fillTrajectory(trajectory_msgs::JointTrajectory &t, const de
     // Position of joints
     trajectory_msgs::JointTrajectoryPoint point;
 
-    point.positions.push_back(hand.joints[0]);
-    point.positions.push_back(hand.joints[1]);
-    point.positions.push_back(hand.joints[2]);
-    point.positions.push_back(hand.joints[3]);
-    point.positions.push_back(hand.joints[4]);
-    point.positions.push_back(hand.joints[5]);
-    point.positions.push_back(hand.joints[6]);
+    point.positions.assign(hand.joints.begin(), hand.joints.end());
+    point.velocities.assign(hand.velocity.begin(), hand.velocity.end());
+    point.accelerations.assign(hand.acceleration.begin(), hand.acceleration.end());
 
     point.time_from_start = ros::Duration(2);
 
@@ -186,13 +197,22 @@ void PickupPlanner::DefGraspToMoveitGrasp(const string &grasp_id, const definiti
 
     geometry_msgs::Pose grasp_pose = d_grasp.grasp_trajectory[2].wrist_pose.pose;
     geometry_msgs::Pose pre_grasp_pose = d_grasp.grasp_trajectory[0].wrist_pose.pose;
+    geometry_msgs::Pose post_grasp_pose;
+    // use post grasp pose if provided, otherwise provide default solution...
+    if(d_grasp.grasp_trajectory.size() > 3) {
+        post_grasp_pose = d_grasp.grasp_trajectory[3].wrist_pose.pose;
+    } else {
+        // default solution is to move the hand up for around 20cm
+        post_grasp_pose = grasp_pose;
+        post_grasp_pose.position.z += 0.2;
+    }
 
     moveit_msgs::GripperTranslation pre_grasp_approach;
     computeTranslation(pre_grasp_pose, grasp_pose, pre_grasp_approach);
 
     moveit_msgs::GripperTranslation post_grasp_retreat;
     // the retreat translation is the opposite of the approach translation.
-    computeTranslation(grasp_pose, pre_grasp_pose, post_grasp_retreat);
+    computeTranslation(grasp_pose, post_grasp_pose, post_grasp_retreat);
 
     m_grasp.id = grasp_id;
     m_grasp.grasp_quality = 1;
@@ -211,19 +231,9 @@ void PickupPlanner::constructPickupGoal(const string &arm,
                                         vector<moveit_msgs::Grasp> &grasps,
                                         moveit_msgs::PickupGoal &goal)
 {
-    // determine the correct end effector name
-    string eef_name = "";
-    if(arm == "right_arm") {
-        eef_name = "right_ee";
-    } else if(arm == "left_arm") {
-        eef_name = "left_ee";
-    } else {
-        ROS_ERROR("Unknown arm '%s'! Unable to determine end effector name.", arm.c_str());
-    }
-
     goal.target_name = object_id;
-    goal.group_name = arm;
-    goal.end_effector = eef_name;
+    goal.group_name = arm + "_arm";
+    goal.end_effector = arm + "_ee";
     goal.allowed_planning_time = planning_time_;
     goal.support_surface_name = support_surface_;
     goal.planner_id = planner_id_;
@@ -243,23 +253,95 @@ void PickupPlanner::constructPickupGoal(const string &arm,
     ROS_INFO("Pickup goal constructed for group '%s' and end effector '%s'", goal.group_name.c_str(), goal.end_effector.c_str());
 
 }
-
-void PickupPlanner::PickupResultToTrajectory(moveit_msgs::PickupResultConstPtr &result, vector<Trajectory> &trajectories)
+/**
+ * Convert given pickup result into a single definitions::Trajectory
+ *
+ * @param result the outcome from the call to the pickup action server
+ * @param the vector, holding all the trajectory points
+ */
+bool PickupPlanner::PickupResultToTrajectory(const string &arm, moveit_msgs::PickupResultConstPtr &result, definitions::Trajectory &trajectory)
 {
-    for(size_t i = 0; i < result->trajectory_stages.size(); ++i) {
+    // wait for a joint state message to retrieve the current configuration of the robot
+    sensor_msgs::JointStateConstPtr start_state = ros::topic::waitForMessage<sensor_msgs::JointState>(joint_states_topic_, ros::Duration(3.0));
 
-        definitions::Trajectory trajectory;
+    if (!start_state)
+    {
+        ROS_WARN("No real start state available, since no joint state recevied in topic: %s", joint_states_topic_.c_str());
+        ROS_WARN("Did you forget to start a controller?");
+        ROS_WARN("The resulting trajectory might be invalid!");
 
-        const vector<trajectory_msgs::JointTrajectoryPoint> &points = result->trajectory_stages[i].joint_trajectory.points;
-        // pick each point from the trajectory and create a UIBKRobot object
-        for (size_t i = 0; i < points.size(); ++i) {
-            definitions::UIBKRobot robot_point;
-            robot_point.arm.joints.assign(points[i].positions.begin(), points[i].positions.end());
-            trajectory.robot_path.push_back(robot_point);
-        }
-
-        trajectories.push_back(trajectory);
+        return false;
     }
+    // ensure that the pickup result contains all necessary trajectory stages
+    if(!result->trajectory_stages.size() >= 5) {
+        ROS_ERROR("Unable to convert pickup result - not enough trajectory stages in pickup result");
+        return false;
+    }
+
+    // move to pregrasp position stage
+    // retrieve the current state of the hand and use that for interpolation
+
+    definitions::SDHand start_hand_config;
+    getSDHandFromJointStatesMsg(arm, *start_state, start_hand_config);
+
+    moveit_msgs::RobotTrajectory move_pre_grasp_traj = result->trajectory_stages[0];
+    // fill the robot trajectory with hand values, given the first trajectory stage of the arm
+    pacman::interpolateHandJoints(start_hand_config, *start_state, move_pre_grasp_traj, arm);
+    // populate trajectory with motion plan data
+    // the start state is used to copy the data for the joints that are not being used in the planning
+    pacman::convertLimb(move_pre_grasp_traj, trajectory, *start_state, arm);
+
+    // open gripper
+    definitions::SDHand pre_grasp;
+    // extract SDHand from OPEN_GRIPPER trajectory stage
+    moveit_msgs::RobotTrajectory pre_grasp_traj = result->trajectory_stages[1];
+    getSDHandFromMoveitTrajectory(pre_grasp_traj, pre_grasp);
+    // now take the last state in the trajectory and modify just the hand position
+    definitions::RobotEddie pre_grasp_state = trajectory.eddie_path.back();
+    if(arm == "right") {
+        pre_grasp_state.handRight = pre_grasp;
+    } else {
+        pre_grasp_state.handLeft = pre_grasp;
+    }
+    // add this new state to trajectory and allow around 2secs for that motion
+    trajectory.eddie_path.push_back(pre_grasp_state);
+    trajectory.time_from_previous.push_back(ros::Duration(2.0));
+
+    // move from pregrasp to grasp position
+    // use pre_grasp configuration for interpolation
+    moveit_msgs::RobotTrajectory move_grasp_traj = result->trajectory_stages[2];
+    // fill the robot trajectory with hand values, using the pre_grasp configuration
+    pacman::interpolateHandJoints(pre_grasp, *start_state, move_grasp_traj, arm);
+    // populate trajectory with motion plan data
+    // the start state is used to copy the data for the joints that are not being used in the planning
+    pacman::convertLimb(move_grasp_traj, trajectory, *start_state, arm);
+
+    // close gripper
+    definitions::SDHand grasp;
+    // extract SDHand from GRASP trajectory stage
+    moveit_msgs::RobotTrajectory grasp_traj = result->trajectory_stages[3];
+    getSDHandFromMoveitTrajectory(grasp_traj, grasp);
+    // now take the last state in the trajectory and modify just the hand position
+    definitions::RobotEddie grasp_state = trajectory.eddie_path.back();
+    if(arm == "right") {
+        grasp_state.handRight = grasp;
+    } else {
+        grasp_state.handLeft = grasp;
+    }
+    // add this new state to trajectory and allow around 2 secs for that motion
+    trajectory.eddie_path.push_back(grasp_state);
+    trajectory.time_from_previous.push_back(ros::Duration(2.0));
+
+    // move from grasp to postgrasp position
+    // use closed configuration for interpolation
+    moveit_msgs::RobotTrajectory move_post_grasp_traj = result->trajectory_stages[4];
+    // fill the robot trajectory with hand values, using the grasp configuration
+    pacman::interpolateHandJoints(grasp, *start_state, move_post_grasp_traj, arm);
+    // populate trajectory with motion plan data
+    // the start state is used to copy the data for the joints that are not being used in the planning
+    pacman::convertLimb(move_post_grasp_traj, trajectory, *start_state, arm);
+
+    return true;
 }
 
 } // namespace trajectory_planner_moveit

@@ -4,7 +4,7 @@ project(trajectory_planner_moveit)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED roscpp moveit_msgs sensor_msgs eigen moveit_core geometry_msgs definitions actionlib)
+find_package(catkin REQUIRED roscpp moveit_msgs sensor_msgs eigen moveit_core moveit_ros_planning_interface geometry_msgs definitions actionlib)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -81,7 +81,7 @@ set(CMAKE_CXX_FLAGS "-std=c++0x")
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES trajectory_planner_moveit
-#  CATKIN_DEPENDS other_catkin_pkg
+#  CATKIN_DEPENDS moveit_core moveit_ros_planning_interface
 #  DEPENDS system_lib
 )
 
@@ -128,7 +128,9 @@ add_executable(ping_cart_planner_and_execution
 add_executable(ping_state_planner
 	examples/ping_state_planner.cpp
 	)
-
+add_executable(test_pickup_planner
+        examples/test_pickup_planner.cpp
+        )
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # libraries
@@ -161,6 +163,9 @@ add_dependencies(ping_cart_planner_and_execution
 add_dependencies(ping_state_planner
 	definitions_generate_messages_cpp
 	)
+add_dependencies(test_pickup_planner
+        definitions_generate_messages_cpp
+        )
 
 ## Specify libraries to link a library or executable target against
 # libraries
@@ -196,6 +201,9 @@ target_link_libraries(ping_cart_planner_and_execution
 target_link_libraries(ping_state_planner
 	${catkin_LIBRARIES}
 	)
+target_link_libraries(test_pickup_planner
+        ${catkin_LIBRARIES}
+        )
 
 #############
 ## Install ##

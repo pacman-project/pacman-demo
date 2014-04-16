@@ -48,6 +48,8 @@ private:
     string planner_id_;
     string support_surface_;
 
+    string joint_states_topic_;
+
     /**
      * Compute gripper translation from given start and goal poses.
      *
@@ -80,10 +82,11 @@ private:
                                 moveit_msgs::PickupGoal &goal);
     /**
      * @brief PickupResultToTrajectory
+     * @param arm
      * @param result
      * @param trajectory
      */
-    void PickupResultToTrajectory(moveit_msgs::PickupResultConstPtr &result, vector<definitions::Trajectory> &trajectories);
+    bool PickupResultToTrajectory(const string &arm, moveit_msgs::PickupResultConstPtr &result, definitions::Trajectory &trajectory);
     /**
      * Convenience method to fill in the trajectory data from the given SDHand into
      * the given Trajectory
@@ -98,7 +101,6 @@ public:
     virtual ~PickupPlanner() {}
 
     bool planPickup(TrajectoryPlanning::Request &request, TrajectoryPlanning::Response &response);
-
 };
 
 

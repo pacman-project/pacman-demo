@@ -12,11 +12,8 @@
 
 //// local headers
 #include "CartPlanner.h"
-<<<<<<< HEAD
-#include "pickupplanner.h"
-=======
 #include "StatePlanner.h"
->>>>>>> 5051bb3aeab05516c4be4d29c48990a62b74554e
+#include "pickupplanner.h"
 
 
 namespace trajectory_planner_moveit {
