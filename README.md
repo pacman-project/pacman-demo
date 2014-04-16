@@ -163,7 +163,7 @@ To run the server
 
 
 
-#### TRICK
+#### TRICKS
 
 It is possible to run parts of the real robot and simulate the others without having to recompile the code.
 They are *.xml configuration files in the `/home/master/Projects/HRController/bin` folder which can be modified to specify the desired configuration.
