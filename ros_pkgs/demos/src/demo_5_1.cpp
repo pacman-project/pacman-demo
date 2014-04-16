@@ -367,7 +367,9 @@ void DemoSimple::perform_event(Event event)
 bool DemoSimple::goToStartPos()
 {
   curState_[Start_State] = Fail;
-  
+  // ** to test wo execution //
+  //curState_[Start_State] = Success;
+
   bool result = false;
   
   definitions::Grasp current_trajectory;
@@ -457,7 +459,8 @@ bool DemoSimple::goToStartPos()
 bool DemoSimple::restart(bool place)
 {
   curState_[Start_State] = Fail;
-  
+  // ** to test wo execution **//
+ // curState_[Start_State] = Success;
   bool result = false;
   
   definitions::Grasp current_trajectory;
@@ -586,12 +589,19 @@ int DemoSimple::doPoseEstimation()
 void DemoSimple::goToNextObject()
 {
   curState_[PickObject_State] = Fail;
+  //curState_[PoseEstimate_State] = Fail; 
   if( ( object_id_ < 0 ) || ( object_id_ >= objectsNum_ ) )
     return;
-  if( ( object_count_[object_id_] >= max_trial_ ) && ( (object_id_ + 1)  < objectsNum_ ) )
+  if( ( object_count_[object_id_] >= max_trial_ ) &&  ( (object_id_ + 1)  < objectsNum_ ) )
     object_id_ ++;
+  else if( ( object_count_[object_id_] >= max_trial_ ) &&  ( (object_id_ + 1)  >= objectsNum_ ) ) 
+    return;
   object_count_[object_id_] ++;
-  curState_[PickObject_State] = Success; 
+  cout << "In next object: I am going for object: " << my_detected_objects[object_id_].name << endl;
+  curState_[PickObject_State] = Success;
+ // curState_[PoseEstimate_State] = Success; 
+  for( int i = (PickObject_State + 1 ); i < StatesNum; i++ )
+    curState_[i] = Idle;
 }
 
 void DemoSimple::reconstruct_scene()
@@ -627,7 +637,7 @@ bool DemoSimple::planGrasps(string arm)
     //Removing all but the best grasp and only keeping last trajectory
     my_calculated_grasp.clear();
    // std::cout << "grasp planner response size: " << grasp_planning_srv.response.grasp_list.size() << std::endl;
-    for( size_t i = 0;i < grasp_planning_srv.response.grasp_list.size(); i++ )
+    for( size_t i = 0;((i < grasp_planning_srv.response.grasp_list.size() )&& ( i < 5 ) ); i++ )
       my_calculated_grasp.push_back(grasp_planning_srv.response.grasp_list[i]);    
    }
    
@@ -671,7 +681,7 @@ void DemoSimple::order_grasp()
    }
    if( my_calculated_grasp.size() - my_calculated_grasp_tmp.size() > 0 )
      
-     cout << "grasps are rejected: " << my_calculated_grasp.size() - my_calculated_grasp_tmp.size() << endl;
+  cout << "grasps are rejected: " << my_calculated_grasp.size() - my_calculated_grasp_tmp.size() << endl;
    my_calculated_grasp.clear();
    my_calculated_grasp = my_calculated_grasp_tmp;
   
@@ -699,22 +709,24 @@ void DemoSimple::order_grasp()
    my_calculated_grasp.clear();
    my_calculated_grasp = my_calculated_grasp_sort;
    
-   for( size_t i = 0; i < my_calculated_grasp.size(); i++ )
+   /*for( size_t i = 0; i < my_calculated_grasp.size(); i++ )
    {
      std::cout << "pre:grasp position:" << my_calculated_grasp[i].grasp_trajectory[0].wrist_pose.pose << std::endl;
      std::cout << "grasp position:" << my_calculated_grasp[i].grasp_trajectory[2].wrist_pose.pose << std::endl;
      cout << "distance to start position: " << euc_dists_sort[i] << endl;
-   }
+   }*/
 }
 
 void DemoSimple::goToNextGrasp()
 {
   curState_[PickGrasp_State] = Fail;
+//  curState_[PlanGrasp_State] = Fail;
   if( (grasp_id_ + 1) < my_calculated_grasp.size() )
   {
     grasp_id_ ++;
     curState_[PickGrasp_State] = Success;  
     curState_[PreGraspTraj_State] = Idle; 
+  //  curState_[PlanGrasp_State] = Success;
   }
 }
 
@@ -726,7 +738,7 @@ bool DemoSimple::plan_trajectory()
     cout << "to do pre grasp" << endl;
     curState_[PreGraspTraj_State] = Fail;
     // for testing wo execution 
-    // curState_[PreGraspTraj_State] = Success;
+   // curState_[PreGraspTraj_State] = Success;
     executeMovement(true,grasp_id_);
     if( grasp_success_ )
       curState_[PreGraspTraj_State] = Success;
@@ -746,7 +758,7 @@ bool DemoSimple::plan_trajectory()
     cout << "to do post-grasp" << endl;
     curState_[PostGraspTraj_State] = Fail;
     // for testing wo execution
-    //curState_[PostGraspTraj_State] = Success;
+   // curState_[PostGraspTraj_State] = Success;
     post_grasp(grasp_id_);
     if( grasp_success_ )
       curState_[PostGraspTraj_State] = Success;    
@@ -798,7 +810,7 @@ bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id)
   std::vector<definitions::Grasp> my_calculated_grasp_cur;
   my_calculated_grasp_cur.push_back(my_calculated_grasp[grasp_id]);
 
-  std::cout << "my_calculated_grasp[grasp_id]" << my_calculated_grasp[grasp_id] << std::endl;
+ // std::cout << "my_calculated_grasp[grasp_id]" << my_calculated_grasp[grasp_id] << std::endl;
 
   trajectory_planning_srv.request.ordered_grasp = my_calculated_grasp;
   trajectory_planning_srv.request.arm = "right";
@@ -806,7 +818,6 @@ bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id)
   trajectory_planning_srv.request.ordered_grasp = my_calculated_grasp_cur;
   trajectory_planning_srv.request.object_list = estimation_srv.response.detected_objects;
   trajectory_planning_srv.request.object_id = 0;
- // trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose.header.frame_id =  "world_link";
   trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose = my_calculated_grasp[grasp_id].grasp_trajectory[0].wrist_pose;
   trajectory_planning_srv.request.eddie_goal_state.handRight.joints = my_calculated_grasp[grasp_id].grasp_trajectory[0].joints;
   //trajectory_planning_srv.request.object_id = grasp_id;
@@ -870,12 +881,6 @@ bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id)
         executeMovement(pre_grasp,grasp_id);
     
       }
-     /* else if( (a=='g') && ( (grasp_id+1) < (my_calculated_grasp.size()) ) && (pre_grasp) )
-      {
-        grasp_id++;
-        std::cout << "user want another grasp, pre-grasp id: " <<grasp_id<< std::endl;
-        executeMovement(pre_grasp,grasp_id);	
-      }*/
       else
         return false;
     }
