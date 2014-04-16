@@ -90,8 +90,6 @@ public:
     
     std::vector<double> euler_to_quaternion(vector<double> vals);
     
-    geometry_msgs::PoseStamped apply_transformation(geometry_msgs::PoseStamped cur_obj,Eigen::Vector3f trans_ref);
-    
     void poseEigenToMsg(const Eigen::Affine3d &e, geometry_msgs::PoseStamped &m);
     
     geometry_msgs::PoseStamped find_transformation(geometry_msgs::Pose ref_obj,geometry_msgs::Pose cur_obj,geometry_msgs::PoseStamped cur_grasp);
@@ -239,6 +237,7 @@ void GraspPlanner::visualize_gripper(geometry_msgs::PoseStamped gripper_pre_pose
   marker.mesh_resource = "package://schunk_description/meshes/sdh/palm.stl";
   markers.markers.push_back(marker);
  
+  cout << "gripper pose is : "  << gripper_pose.pose << endl;
   Eigen::Quaternionf quat(gripper_pose.pose.orientation.w,gripper_pose.pose.orientation.x,gripper_pose.pose.orientation.y,gripper_pose.pose.orientation.z);
   Eigen::Matrix3f rot = quat.toRotationMatrix();
   Eigen::Matrix4f trans_g;
@@ -437,8 +436,8 @@ vector<string> GraspPlanner::giveAllFiles(string obj_id)
       string cur_path = epdf->d_name;
       if( cur_path.find(obj_id) != string::npos )
       {
-	string path = path_to_dir + cur_path;
-	path_to_obj_dir.push_back(path);
+       	string path = path_to_dir + cur_path;
+	      path_to_obj_dir.push_back(path);
       }
    }
   }
@@ -597,7 +596,8 @@ bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, defin
   vector<geometry_msgs::PoseStamped> grasps = searchGraspFile(path_to_obj_dir,false);
   
   vector<definitions::Grasp> grasp_traj;
-  vector<float> pre_grasp_joints = getTargetAnglesFromGraspType(rim_pre_grasp,1.0);
+ // vector<float> pre_grasp_joints = getTargetAnglesFromGraspType(rim_pre_grasp,1.0);
+  vector<float> pre_grasp_joints = getTargetAnglesFromGraspType(rim_open,1.0);
   vector<float> grasp_joints = getTargetAnglesFromGraspType(rim_close,1.0);
   
   int min_id = 0;
@@ -606,18 +606,19 @@ bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, defin
   {
     geometry_msgs::PoseStamped old_pre_grasp = pre_grasps[i];
     geometry_msgs::PoseStamped old_grasp = grasps[i];
-    pre_grasps[i] = find_transformation(obj_ref,obj_pose,pre_grasps[i]);
-    grasps[i] = find_transformation(obj_ref,obj_pose,grasps[i]);
-    if( i == 0)
+    /*pre_grasps[i] = find_transformation(obj_ref,obj_pose,pre_grasps[i]);
+    grasps[i] = find_transformation(obj_ref,obj_pose,grasps[i]);*/
+    if( i == 0 )
       visualize_gripper(pre_grasps[i],grasps[i],i);
-    double gs = (grasp_score_[grasp_score_.size()-1] + grasp_score_[grasp_score_.size()-2]) / 2.;
+   /* double gs = (grasp_score_[grasp_score_.size()-1] + grasp_score_[grasp_score_.size()-2]) / 2.;
     grasp_score_.pop_back();
     grasp_score_[grasp_score_.size()-1] = gs;
     if( gs < min )
     {
       min = gs;
       min_id = i;
-    }
+    }*/
+    cout << "in planner, grasp " << i << " is: " << grasps[i].pose << endl;
     definitions::Grasp cur_traj;
     cur_traj.grasp_trajectory.resize(3);
     pre_grasps[i].header.frame_id = "world_link";
@@ -633,6 +634,7 @@ bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, defin
     cur_traj.grasp_trajectory[2].joints = grasp_joints;
     grasp_traj.push_back(cur_traj);
   }
+
   cout << "after getting all the grasps" << endl;
   if( grasp_traj.size() > 0 ){
     definitions::Grasp min_traj = grasp_traj[min_id];

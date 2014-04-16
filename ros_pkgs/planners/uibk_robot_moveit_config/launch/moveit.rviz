@@ -7,6 +7,7 @@ Panels:
         - /MotionPlanning1
         - /MotionPlanning1/Planned Path1
         - /PointCloud21
+        - /MarkerArray1
       Splitter Ratio: 0.74256
     Tree Height: 448
   - Class: rviz/Help
@@ -339,11 +340,11 @@ Visualization Manager:
             Alpha: 1
             Show Axes: false
             Show Trail: false
-        Loop Animation: false
+        Loop Animation: true
         Robot Alpha: 0.5
         Show Robot Collision: false
         Show Robot Visual: true
-        Show Trail: true
+        Show Trail: false
         State Display Time: 0.05 s
         Trajectory Topic: /move_group/display_planned_path
       Planning Metrics:
@@ -685,7 +686,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: RGB8
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 4096
@@ -701,7 +702,15 @@ Visualization Manager:
       Topic: /camera/depth_registered/points
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
+    - Class: rviz/MarkerArray
+      Enabled: false
+      Marker Topic: /gripper
+      Name: MarkerArray
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -717,7 +726,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 2.9965
+      Distance: 2.86891
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
@@ -729,10 +738,10 @@ Visualization Manager:
         Z: 2.23518e-07
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: -0.105203
+      Pitch: 0.034797
       Target Frame: world_link
       Value: XYOrbit (rviz)
-      Yaw: 0.0467672
+      Yaw: 0.271767
     Saved: ~
 Window Geometry:
   Displays:
@@ -748,5 +757,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1855
-  X: 50
+  X: 42
   Y: 24

@@ -481,10 +481,10 @@ INSTALL(FILES ${BHAM_CONTROL_FILES} DESTINATION bin)
 
 if(BUILD_ROS_PKGS)
 SET(BHAM_CONTROL_ROS_FILES
-	${PROJECT_ROOT}/resources/Bham/ControlRobotUIBK.xml
-	#${PROJECT_ROOT}/resources/Bham/ControlRobotUIBKSim.xml
-	${PROJECT_ROOT}/resources/Bham/ControlRobotEddie.xml
-	#${PROJECT_ROOT}/resources/Bham/ControlRobotEddieSim.xml
+	${PROJECT_PARENT}/bin/ControlRobotUIBK.xml
+	#${PROJECT_PARENT}/bin/ControlRobotUIBKSim.xml
+	${PROJECT_PARENT}/bin/ControlRobotEddie.xml
+	#${PROJECT_PARENT}/bin/ControlRobotEddieSim.xml
 	${GOLEM_RESOURCES}/GolemDeviceKukaLWR.xml
 	${GOLEM_RESOURCES}/GolemDeviceKukaLWREddieL.xml
 	${GOLEM_RESOURCES}/GolemDeviceKukaLWREddieR.xml

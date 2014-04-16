@@ -282,8 +282,9 @@ namespace pacman {
 			{
 				// the RobotTrajectory gives time_from_start, we prefer from previous for easier transformation to pacman commands
 				ros::Duration dt( points[i].time_from_start - points[i-1].time_from_start );
-				if ( dt.toSec() < 0.001 )
-					dt = ros::Duration(0.2);
+				if ( dt.toSec() < 0.1 )
+					dt = ros::Duration(0.5);
+				std::cout << "increment" << dt << std::endl;
 				trajectory.time_from_previous.push_back( dt );
 			}
 		}
@@ -371,8 +372,8 @@ namespace pacman {
 			{
 				// the RobotTrajectory gives time_from_start, we prefer from previous for easier transformation to pacman commands				
 				ros::Duration dt( points[i].time_from_start - points[i-1].time_from_start );
-				if ( dt.toSec() < 0.001 )
-					dt = ros::Duration(0.2);
+				if ( dt.toSec() < 0.1 )
+					dt = ros::Duration(0.5);
 				trajectory.time_from_previous.push_back( dt );
 			}
 		}

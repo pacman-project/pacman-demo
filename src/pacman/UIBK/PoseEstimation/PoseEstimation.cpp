@@ -34,7 +34,7 @@ void UIBKObjectImpl::get(const std::string& id, Point3D::Seq& points) const
  if( obj_id < names.size() )
   {
     pcl::PointCloud<pcl::PointXYZ>::Ptr xyz_points = objects->getPointCloudAt(obj_id);
-    convert(*xyz_points,points);
+   // convert(*xyz_points,points);
    }
 }
 
@@ -101,7 +101,7 @@ void UIBKPoseEstimationImpl::load_cloud(string filename,Point3D::Seq& points)
   xyz_points_->width = xyz_points->width;
   xyz_points_->height = xyz_points->height;
   *xyz_points_ = *xyz_points;   
-  convert(*xyz_points_,points);
+  //convert(*xyz_points_,points);
 }
 
 void UIBKPoseEstimationImpl::estimate(const Point3D::Seq& points, Pose::Seq& poses) 
