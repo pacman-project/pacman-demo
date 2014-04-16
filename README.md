@@ -98,13 +98,14 @@ Again, To make the catkin environment available for all sessions type:
 
 * `echo "source /PATH/TO/PACMAN_ROOT/catkin/devel/setup.bash" >> ~/.bashrc`
 
-### Changing Golem/Grasp configuration files
+### Changing configuration files for Golem/Grasp/PoseEstimation
 
-All required files should be in the /PATH/TO/PACMAN_ROOT/bin folder. If you need to modify any of these, please, do it here, and type
+All configuration files required for the ros packages to run should be in the /PATH/TO/PACMAN_ROOT/bin folder. If you need to modify any of these, please, do it here, and then make the pacman project again
 
 * `cd /PATH/TO/PACMAN_ROOT/pacman/build`
 * `make`
 
+which automatically update the files in the catkin workspace.
 
 ### Configuring poseEstimation module:
 
@@ -160,6 +161,46 @@ To run the server
 
 ### Running Boris
 `To do ...`
+
+
+
+#### TRICKS
+
+It is possible to run parts of the real robot and simulate the others without having to recompile the code.
+They are *.xml configuration files in the `/home/master/Projects/HRController/bin` folder which can be modified to specify the desired configuration.
+
+The configuration file for the server is `GolemDeviceCtrlPhysServer.xml` and the one for the demonstration software is `GolemDemoTrajectoryRobotEddie.xml`. In the `GolemDeviceCtrlPhysServer.xml` you will find a line with                     
+`<controller library_path="GolemDeviceMultiCtrl" config_path="GolemDeviceRobotEddie" ... >`
+
+`GolemDeviceMultiCtrl(.so)` - is the library used                                                                      
+`GolemDeviceRobotEddie(.xml)` - is the configuration file for the robot
+
+
+<dl><dt>To simulate the entire robot</dt></dl>
+* Change the **config_path** variable to `GolemDeviceRobotEddieSim`. You can open the `GolemDeviceRobotEddieSim.xml` file to check the configuration
+* Save the file
+
+<dl><dt>To simulate parts of the entire robot</dt></dl>
+* Change the **config_path** variable to `GolemDeviceRobotEddie`. 
+* Open the file `GolemDeviceRobotEddie.xml` file.
+
+
+In the beginning of the file you will see 5 lines with the prototype                                   
+`<controller library_path="MyRobotDynamicLibrary" config_path="MyRobotXmlConfigurationFile" ... >`
+
+* Change the **library_path** to `MyRobotDynamicLibrarySim` to use the simulator instead
+* Save the file
+
+eg. To configure the Left Kuka LWR  and the Left Schunk gripper for simulation update the configuration file with       
+`<controller library_path="GolemDeviceKukaLWRSim" config_path="GolemDeviceKukaLWREddieL" ... >`                        
+`<controller library_path="GolemDeviceSchunkDexHandSim" config_path="GolemDeviceSchunkDexHandEddieL" ... >`
+
+<dl><dt>To change the temperature limits for the Schunk gripper</dt></dl>
+* Open the `GolemDeviceSchunkDexHandEddieL.xml` and `GolemDeviceSchunkDexHandEddieR.xml`
+* In the field `<temp> ... <\temp>` change the values.                                                      
+	`on` - Maximum temperature allowed                                                             
+	`off` - Minimum Hysterisis temperature to restart the gripper after a temperature error
+* Save the files
 
 
 #### WARNING: 
