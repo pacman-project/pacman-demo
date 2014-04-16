@@ -98,13 +98,14 @@ Again, To make the catkin environment available for all sessions type:
 
 * `echo "source /PATH/TO/PACMAN_ROOT/catkin/devel/setup.bash" >> ~/.bashrc`
 
-### Changing Golem/Grasp configuration files
+### Changing configuration files for Golem/Grasp/PoseEstimation
 
-All required files should be in the /PATH/TO/PACMAN_ROOT/bin folder. If you need to modify any of these, please, do it here, and type
+All configuration files required for the ros packages to run should be in the /PATH/TO/PACMAN_ROOT/bin folder. If you need to modify any of these, please, do it here, and then make the pacman project again
 
 * `cd /PATH/TO/PACMAN_ROOT/pacman/build`
 * `make`
 
+which automatically update the files in the catkin workspace.
 
 ### Configuring poseEstimation module:
 
