@@ -70,7 +70,7 @@ namespace pacman {
 
 			// and finally the time
 			if(i==0)
-				commands[i].t = start_time + pacman::float_t(0.1);
+				commands[i].t = start_time + pacman::float_t(0.5);
 			else
 				commands[i].t = commands[i-1].t + pacman::float_t(trajectory.time_from_previous[i].toSec());
 		}
@@ -172,7 +172,7 @@ namespace pacman {
 
 			// finally the time
 			if(i==0)
-				commands[i].t = start_time + pacman::float_t(0.1);
+				commands[i].t = start_time + pacman::float_t(0.5);
 			else
 				commands[i].t = commands[i-1].t + pacman::float_t(trajectory.time_from_previous[i].toSec());
 		}
@@ -282,98 +282,9 @@ namespace pacman {
 			{
 				// the RobotTrajectory gives time_from_start, we prefer from previous for easier transformation to pacman commands
 				ros::Duration dt( points[i].time_from_start - points[i-1].time_from_start );
-				if ( dt.toSec() < 0.1 )
+				if ( dt.toSec() < 0.05 )
 					dt = ros::Duration(0.5);
 				std::cout << "increment" << dt << std::endl;
-				trajectory.time_from_previous.push_back( dt );
-			}
-		}
-	}
-
-	void convertArm(const moveit_msgs::RobotTrajectory &moveitTraj, definitions::Trajectory &trajectory, sensor_msgs::JointState start_state, std::string arm)
-	{
-		// get the points from robot trajector
-		const std::vector<trajectory_msgs::JointTrajectoryPoint> &points = moveitTraj.joint_trajectory.points;
-
-		// pick each point from the trajectory and create a RobotEddie object
-		for (size_t i = 0; i < points.size(); ++i) 
-		{
-			definitions::RobotEddie robot_point;
-			// robot_point.armRight.joints.resize(KukaLWR::Config::JOINTS);
-			// robot_point.armLeft.joints.resize(KukaLWR::Config::JOINTS);
-			// robot_point.handRight.joints.resize(SchunkDexHand::Config::JOINTS);
-			// robot_point.handLeft.joints.resize(SchunkDexHand::Config::JOINTS);
-			// robot_point.head.joints.resize(KITHead::Config::JOINTS_NECK);
-
-
-			// for testing with arms, later, it should be fixed to obtain eddie's trajectories
-			if(arm.compare(std::string("right")) == 0)
-			{
-				robot_point.armRight.joints.assign(points[i].positions.begin(), points[i].positions.end());
-				robot_point.armRight.velocity.assign(points[i].velocities.begin(), points[i].velocities.end());
-				robot_point.armRight.acceleration.assign(points[i].accelerations.begin(), points[i].accelerations.end());
-
-				for(int j = 0; j < KukaLWR::Config::JOINTS; j++)
-				{
-					robot_point.armLeft.joints.push_back(start_state.position[j]);
-					robot_point.armLeft.velocity.push_back(start_state.velocity[j]);
-					robot_point.armLeft.acceleration.push_back(0.0);
-				}
-			}
-
-			if(arm.compare(std::string("left")) == 0)
-			{
-				robot_point.armLeft.joints.assign(points[i].positions.begin(), points[i].positions.end());
-				robot_point.armLeft.velocity.assign(points[i].velocities.begin(), points[i].velocities.end());
-				robot_point.armLeft.acceleration.assign(points[i].accelerations.begin(), points[i].accelerations.end());
-
-				for(int j = 0; j < KukaLWR::Config::JOINTS; j++)
-				{
-					robot_point.armRight.joints.push_back(start_state.position[j+7]);
-					robot_point.armRight.velocity.push_back(start_state.velocity[j+7]);
-					robot_point.armRight.acceleration.push_back(0.0);
-				}
-			}
-
-			for(int h = 0; h < SchunkDexHand::Config::JOINTS; h++)
-			{
-				robot_point.handLeft.joints.push_back(start_state.position[h+14]);
-				robot_point.handLeft.velocity.push_back(start_state.velocity[h+14]);
-				robot_point.handLeft.acceleration.push_back(0.0);
-
-				robot_point.handRight.joints.push_back(start_state.position[h+21]);
-				robot_point.handRight.velocity.push_back(start_state.velocity[h+21]);
-				robot_point.handRight.acceleration.push_back(0.0);
-
-			}
-
-			for(int k = 0; k < KITHead::Config::JOINTS_NECK; k++)
-			{
-				robot_point.head.joints.push_back(start_state.position[k+28]);
-				robot_point.head.velocity.push_back(start_state.velocity[k+28]);
-				robot_point.head.acceleration.push_back(0.0);
-			}
-
-			robot_point.head.jointsLEye = start_state.position[33];
-			robot_point.head.velocityLEye = start_state.velocity[33];
-			robot_point.head.accelerationLEye = 0.0;
-
-			robot_point.head.jointsREye = start_state.position[34];
-			robot_point.head.velocityREye = start_state.velocity[34];
-			robot_point.head.accelerationREye = 0.0;
-
-			trajectory.eddie_path.push_back(robot_point);
-
-			if (i == 0)
-			{
-				trajectory.time_from_previous.push_back( ros::Duration().fromSec(0.) );	
-			}
-			else
-			{
-				// the RobotTrajectory gives time_from_start, we prefer from previous for easier transformation to pacman commands				
-				ros::Duration dt( points[i].time_from_start - points[i-1].time_from_start );
-				if ( dt.toSec() < 0.1 )
-					dt = ros::Duration(0.5);
 				trajectory.time_from_previous.push_back( dt );
 			}
 		}
@@ -555,18 +466,23 @@ namespace pacman {
 		int left_hand_index = 14;
 		int hand_index = 0;
 
+		//std::cout << "startState NWayPoints" << NWayPoints << std::endl << startState << std::endl;
+
+		//std::cout << goalState << std::endl;
+
 		if(arm.compare(std::string("right")) == 0)
 			hand_index = right_hand_index;
 		if(arm.compare(std::string("left")) == 0)
 			hand_index = left_hand_index;
 
-		for (int i = 0; i < NWayPoints; i++)
+		for (int i = 0; i < NWayPoints ; i++)
 		{
 			// trajectory_msgs::JointTrajectoryPoint &point = baseTrajectory.joint_trajectory.points[i];
 
 			for(int h = 0; h < pacman::SchunkDexHand::Config::JOINTS; h++)
 			{
-				baseTrajectory.joint_trajectory.points[i].positions.push_back(startState.position[hand_index + h] + (i+1)*(goalState.joints[h] - startState.position[hand_index + h])/NWayPoints);
+				baseTrajectory.joint_trajectory.points[i].positions.push_back(startState.position[hand_index + h] + (i)*(goalState.joints[h] - startState.position[hand_index + h])/(NWayPoints-1) );
+				//baseTrajectory.joint_trajectory.points[i].positions.push_back( goalState.joints[h] );
 	        }
 		
 			baseTrajectory.joint_trajectory.points[i].velocities.push_back(0.0);
@@ -585,6 +501,7 @@ namespace pacman {
 			baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
 			baseTrajectory.joint_trajectory.points[i].accelerations.push_back(0.0);
 		}
+		//std::cout << "baseTrajectory" << baseTrajectory << std::endl;
 	}
 
 };

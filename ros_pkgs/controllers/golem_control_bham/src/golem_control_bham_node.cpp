@@ -149,6 +149,7 @@ bool GolemController::executeTrajectoryFromCode(definitions::TrajectoryExecution
   {
     ROS_ERROR("Trajectory could not be executed...");
     res.result = res.OTHER_ERROR;
+    return false;
   }
 
   return true;
