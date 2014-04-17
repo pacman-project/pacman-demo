@@ -64,11 +64,12 @@ private:
      * Convert given definitions::Grasp message into corresponding moveit_msgs::Grasp message with
      * given grasp_id
      *
+     * @param arm Which arm to use
      * @param grasp_id The name of the resulting grasp
      * @param d_grasp The definintions::Grasp message where the data comes from
      * @param m_grasp The moveit_msgs::Grasp message to fill
      */
-    void DefGraspToMoveitGrasp(const string &grasp_id, const definitions::Grasp &d_grasp, moveit_msgs::Grasp &m_grasp);
+    void DefGraspToMoveitGrasp(const string &arm, const string &grasp_id, const definitions::Grasp &d_grasp, moveit_msgs::Grasp &m_grasp);
     /**
      * @brief populatePickupMessage
      * @param arm
@@ -85,8 +86,11 @@ private:
      * @param arm
      * @param result
      * @param trajectory
+     * @return
      */
-    bool PickupResultToTrajectory(const string &arm, moveit_msgs::PickupResultConstPtr &result, definitions::Trajectory &trajectory);
+    bool PickupResultToTrajectory(const string &arm,
+                                  moveit_msgs::PickupResultConstPtr &result,
+                                  definitions::Trajectory &trajectory);
     /**
      * Convenience method to fill in the trajectory data from the given SDHand into
      * the given Trajectory
@@ -94,7 +98,7 @@ private:
      * @param t the trajectory message to fill
      * @param hand the SDHand where the data comes from.
      */
-    void fillTrajectory(trajectory_msgs::JointTrajectory &t, const definitions::SDHand &hand);
+    void fillTrajectory(const string &arm, trajectory_msgs::JointTrajectory &t, const definitions::SDHand &hand);
 
 public:
     PickupPlanner(ros::NodeHandle &nh);

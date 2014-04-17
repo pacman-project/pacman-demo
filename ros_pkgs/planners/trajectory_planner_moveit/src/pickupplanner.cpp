@@ -30,6 +30,7 @@ PickupPlanner::PickupPlanner(ros::NodeHandle &nh)
     pick_action_client_->waitForServer();
     // retrieve the (remapped) joint states topic name
     joint_states_topic_ = nh.resolveName("/joint_states");
+
 }
 
 bool PickupPlanner::planPickup(TrajectoryPlanning::Request &request, TrajectoryPlanning::Response &response)
@@ -46,7 +47,7 @@ bool PickupPlanner::planPickup(TrajectoryPlanning::Request &request, TrajectoryP
 
     // we have to make sure that sufficient data has been provided to be able to compute a plan...
     if(request.arm.empty()) {
-        ROS_WARN("No arm name provided - assuming %s", arm.c_str());
+        ROS_WARN("No arm name provided - assuming '%s'", arm.c_str());
     } else {
         arm = request.arm;
     }
@@ -67,7 +68,7 @@ bool PickupPlanner::planPickup(TrajectoryPlanning::Request &request, TrajectoryP
         ss << "Grasp" << i;
         string id = ss.str();
         // populate moveit_msgs::Grasp at current indes with our grasp data
-        DefGraspToMoveitGrasp(id, request.ordered_grasp[i], grasp_list[i]);
+        DefGraspToMoveitGrasp(arm, id, request.ordered_grasp[i], grasp_list[i]);
     }
     // now we have a vector of grasps and can invoke the planner...
 
@@ -126,18 +127,18 @@ bool PickupPlanner::planPickup(TrajectoryPlanning::Request &request, TrajectoryP
  * @param t the trajectory message to fill
  * @param hand the SDHand where the data comes from.
  */
-void PickupPlanner::fillTrajectory(trajectory_msgs::JointTrajectory &t, const definitions::SDHand &hand) {
+void PickupPlanner::fillTrajectory(const string &arm, trajectory_msgs::JointTrajectory &t, const definitions::SDHand &hand) {
 
     t.header.frame_id = "world_link";
     t.header.stamp = ros::Time::now();
     // Name of joints:
-    t.joint_names.push_back("right_sdh_knuckle_joint");
-    t.joint_names.push_back("right_sdh_finger_12_joint");
-    t.joint_names.push_back("right_sdh_finger_13_joint");
-    t.joint_names.push_back("right_sdh_finger_22_joint");
-    t.joint_names.push_back("right_sdh_finger_23_joint");
-    t.joint_names.push_back("right_sdh_thumb_2_joint");
-    t.joint_names.push_back("right_sdh_thumb_3_joint");
+    t.joint_names.push_back(arm + "_sdh_knuckle_joint");
+    t.joint_names.push_back(arm + "_sdh_finger_12_joint");
+    t.joint_names.push_back(arm + "_sdh_finger_13_joint");
+    t.joint_names.push_back(arm + "_sdh_finger_22_joint");
+    t.joint_names.push_back(arm + "_sdh_finger_23_joint");
+    t.joint_names.push_back(arm + "_sdh_thumb_2_joint");
+    t.joint_names.push_back(arm + "_sdh_thumb_3_joint");
     // Position of joints
     trajectory_msgs::JointTrajectoryPoint point;
 
@@ -187,13 +188,13 @@ void PickupPlanner::computeTranslation(const geometry_msgs::Pose &start,
  * @param d_grasp The definintions::Grasp message where the data comes from
  * @param m_grasp The moveit_msgs::Grasp message to fill
  */
-void PickupPlanner::DefGraspToMoveitGrasp(const string &grasp_id, const definitions::Grasp &d_grasp, moveit_msgs::Grasp &m_grasp) {
+void PickupPlanner::DefGraspToMoveitGrasp(const string &arm, const string &grasp_id, const definitions::Grasp &d_grasp, moveit_msgs::Grasp &m_grasp) {
 
     trajectory_msgs::JointTrajectory pre_grasp_posture;
-    fillTrajectory(pre_grasp_posture, d_grasp.grasp_trajectory[0]);
+    fillTrajectory(arm, pre_grasp_posture, d_grasp.grasp_trajectory[0]);
 
     trajectory_msgs::JointTrajectory grasp_posture;
-    fillTrajectory(grasp_posture, d_grasp.grasp_trajectory[2]);
+    fillTrajectory(arm, grasp_posture, d_grasp.grasp_trajectory[2]);
 
     geometry_msgs::Pose grasp_pose = d_grasp.grasp_trajectory[2].wrist_pose.pose;
     geometry_msgs::Pose pre_grasp_pose = d_grasp.grasp_trajectory[0].wrist_pose.pose;
@@ -259,7 +260,9 @@ void PickupPlanner::constructPickupGoal(const string &arm,
  * @param result the outcome from the call to the pickup action server
  * @param the vector, holding all the trajectory points
  */
-bool PickupPlanner::PickupResultToTrajectory(const string &arm, moveit_msgs::PickupResultConstPtr &result, definitions::Trajectory &trajectory)
+bool PickupPlanner::PickupResultToTrajectory(const string &arm,
+                                             moveit_msgs::PickupResultConstPtr &result,
+                                             definitions::Trajectory &trajectory)
 {
     // wait for a joint state message to retrieve the current configuration of the robot
     sensor_msgs::JointStateConstPtr start_state = ros::topic::waitForMessage<sensor_msgs::JointState>(joint_states_topic_, ros::Duration(3.0));
@@ -278,68 +281,114 @@ bool PickupPlanner::PickupResultToTrajectory(const string &arm, moveit_msgs::Pic
         return false;
     }
 
-    // move to pregrasp position stage
-    // retrieve the current state of the hand and use that for interpolation
+    // get the initial state from our received joint state message
+    definitions::RobotEddie start_config;
+    getEddiePointFromJointStates(*start_state, start_config);
 
-    definitions::SDHand start_hand_config;
-    getSDHandFromJointStatesMsg(arm, *start_state, start_hand_config);
+    // ------ MOVE TO PREGRASP POSITION STAGE ------
+    ros::Duration previous_time(0.0);
+    const vector<trajectory_msgs::JointTrajectoryPoint> &points = result->trajectory_stages[0].joint_trajectory.points;
 
-    moveit_msgs::RobotTrajectory move_pre_grasp_traj = result->trajectory_stages[0];
-    // fill the robot trajectory with hand values, given the first trajectory stage of the arm
-    pacman::interpolateHandJoints(start_hand_config, *start_state, move_pre_grasp_traj, arm);
-    // populate trajectory with motion plan data
-    // the start state is used to copy the data for the joints that are not being used in the planning
-    pacman::convertLimb(move_pre_grasp_traj, trajectory, *start_state, arm);
+    for(size_t i = 0; i < points.size(); ++i) {
+        // initialize current trajectory point with the start state
+        definitions::RobotEddie eddie_point = start_config;
 
-    // open gripper
-    definitions::SDHand pre_grasp;
-    // extract SDHand from OPEN_GRIPPER trajectory stage
-    moveit_msgs::RobotTrajectory pre_grasp_traj = result->trajectory_stages[1];
-    getSDHandFromMoveitTrajectory(pre_grasp_traj, pre_grasp);
-    // now take the last state in the trajectory and modify just the hand position
-    definitions::RobotEddie pre_grasp_state = trajectory.eddie_path.back();
-    if(arm == "right") {
-        pre_grasp_state.handRight = pre_grasp;
-    } else {
-        pre_grasp_state.handLeft = pre_grasp;
+        const trajectory_msgs::JointTrajectoryPoint point = points[i];
+        // generate arm configuration from moveit trajectory point
+        if(arm == "right") {
+            trajectoryPointToKukaLWR(point, eddie_point.armRight);
+        } else {
+            trajectoryPointToKukaLWR(point, eddie_point.armLeft);
+        }
+
+        trajectory.eddie_path.push_back(eddie_point);
+        trajectory.time_from_previous.push_back(point.time_from_start - previous_time);
+
+        previous_time = point.time_from_start;
     }
+
+    // -----OPEN GRIPPER STAGE ------
+    // extract SDHand from PRE_GRASP trajectory stage
+    moveit_msgs::RobotTrajectory pre_grasp_traj = result->trajectory_stages[1];
+    // take the last state in the trajectory and modify just the hand position
+    definitions::RobotEddie pre_grasp_state = trajectory.eddie_path.back();
+
+    if(arm == "right") {
+        getSDHandFromMoveitTrajectory(arm, pre_grasp_traj, pre_grasp_state.handRight);
+    } else {
+        getSDHandFromMoveitTrajectory(arm, pre_grasp_traj, pre_grasp_state.handLeft);
+    }
+
     // add this new state to trajectory and allow around 2secs for that motion
     trajectory.eddie_path.push_back(pre_grasp_state);
     trajectory.time_from_previous.push_back(ros::Duration(2.0));
 
-    // move from pregrasp to grasp position
-    // use pre_grasp configuration for interpolation
-    moveit_msgs::RobotTrajectory move_grasp_traj = result->trajectory_stages[2];
-    // fill the robot trajectory with hand values, using the pre_grasp configuration
-    pacman::interpolateHandJoints(pre_grasp, *start_state, move_grasp_traj, arm);
-    // populate trajectory with motion plan data
-    // the start state is used to copy the data for the joints that are not being used in the planning
-    pacman::convertLimb(move_grasp_traj, trajectory, *start_state, arm);
+    // now set our new start_config to the last point of the last trajectory stage
+    start_config = trajectory.eddie_path.back();
+    previous_time = ros::Duration(-0.1);
 
-    // close gripper
-    definitions::SDHand grasp;
+    // ------ MOVE TO GRASP POSITION STAGE ------
+    const vector<trajectory_msgs::JointTrajectoryPoint> &points2 = result->trajectory_stages[2].joint_trajectory.points;
+
+    for(size_t i = 0; i < points2.size(); ++i) {
+        // initialize current trajectory point with the start state
+        definitions::RobotEddie eddie_point = start_config;
+
+        const trajectory_msgs::JointTrajectoryPoint point = points2[i];
+        // generate arm configuration from moveit trajectory point
+        if(arm == "right") {
+            trajectoryPointToKukaLWR(point, eddie_point.armRight);
+        } else {
+            trajectoryPointToKukaLWR(point, eddie_point.armLeft);
+        }
+
+        trajectory.eddie_path.push_back(eddie_point);
+        trajectory.time_from_previous.push_back(point.time_from_start - previous_time);
+
+        previous_time = point.time_from_start;
+    }
+
+    // -----CLOSE GRIPPER STAGE ------
     // extract SDHand from GRASP trajectory stage
     moveit_msgs::RobotTrajectory grasp_traj = result->trajectory_stages[3];
-    getSDHandFromMoveitTrajectory(grasp_traj, grasp);
+
     // now take the last state in the trajectory and modify just the hand position
     definitions::RobotEddie grasp_state = trajectory.eddie_path.back();
+
     if(arm == "right") {
-        grasp_state.handRight = grasp;
+        getSDHandFromMoveitTrajectory(arm, grasp_traj, grasp_state.handRight);
     } else {
-        grasp_state.handLeft = grasp;
+        getSDHandFromMoveitTrajectory(arm, grasp_traj, grasp_state.handLeft);
     }
+
     // add this new state to trajectory and allow around 2 secs for that motion
     trajectory.eddie_path.push_back(grasp_state);
     trajectory.time_from_previous.push_back(ros::Duration(2.0));
 
-    // move from grasp to postgrasp position
-    // use closed configuration for interpolation
-    moveit_msgs::RobotTrajectory move_post_grasp_traj = result->trajectory_stages[4];
-    // fill the robot trajectory with hand values, using the grasp configuration
-    pacman::interpolateHandJoints(grasp, *start_state, move_post_grasp_traj, arm);
-    // populate trajectory with motion plan data
-    // the start state is used to copy the data for the joints that are not being used in the planning
-    pacman::convertLimb(move_post_grasp_traj, trajectory, *start_state, arm);
+    // now set our new start_config to the last point of the last trajectory stage
+    start_config = trajectory.eddie_path.back();
+    previous_time = ros::Duration(-0.1);
+
+    // ------ MOVE TO POSTGRASP POSITION STAGE ------
+    const vector<trajectory_msgs::JointTrajectoryPoint> &points3 = result->trajectory_stages[4].joint_trajectory.points;
+
+    for(size_t i = 0; i < points3.size(); ++i) {
+        // initialize current trajectory point with the start state
+        definitions::RobotEddie eddie_point = start_config;
+
+        const trajectory_msgs::JointTrajectoryPoint point = points3[i];
+        // generate arm configuration from moveit trajectory point
+        if(arm == "right") {
+            trajectoryPointToKukaLWR(point, eddie_point.armRight);
+        } else {
+            trajectoryPointToKukaLWR(point, eddie_point.armLeft);
+        }
+
+        trajectory.eddie_path.push_back(eddie_point);
+        trajectory.time_from_previous.push_back(point.time_from_start - previous_time);
+
+        previous_time = point.time_from_start;
+    }
 
     return true;
 }

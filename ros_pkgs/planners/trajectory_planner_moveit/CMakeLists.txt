@@ -131,6 +131,9 @@ add_executable(ping_state_planner
 add_executable(test_pickup_planner
         examples/test_pickup_planner.cpp
         )
+add_executable(ping_gripper_only
+        examples/ping_gripper_only.cpp
+        )
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # libraries
@@ -164,6 +167,9 @@ add_dependencies(ping_state_planner
 	definitions_generate_messages_cpp
 	)
 add_dependencies(test_pickup_planner
+        definitions_generate_messages_cpp
+        )
+add_dependencies(ping_gripper_only
         definitions_generate_messages_cpp
         )
 
@@ -202,6 +208,9 @@ target_link_libraries(ping_state_planner
 	${catkin_LIBRARIES}
 	)
 target_link_libraries(test_pickup_planner
+        ${catkin_LIBRARIES}
+        )
+target_link_libraries(ping_gripper_only
         ${catkin_LIBRARIES}
         )
 

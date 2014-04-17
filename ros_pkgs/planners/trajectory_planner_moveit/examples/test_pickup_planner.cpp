@@ -27,10 +27,6 @@ using namespace moveit_msgs;
 namespace trajectory_planner_moveit {
 
 static const string BASE_LINK = "world_link";
-static const string EE_PARENT_LINK = "right_arm_7_link";
-static const string OBJ_ID = "cylinder1";
-static const string OBSTACLE_ID = "obstacle";
-
 static const double SUPPORT_SURFACE_HEIGHT = 0.08;
 
 static const double CYLINDER_HEIGHT = 0.25;
@@ -42,8 +38,6 @@ static const double CYLINDER_RADIUS = 0.04;
 class PickPlace {
 
 public:
-	// our interface with MoveIt
-	boost::shared_ptr<PlanningSceneInterface> planning_scene_interface_;
 
 	ros::ServiceClient planning_service_;
 	ros::ServiceClient execution_service_;
@@ -53,18 +47,13 @@ public:
 
 	ros::Publisher pub_attach_coll_obj_;
 
-	PickPlace(ros::NodeHandle &nh, const string &planner_id) {
-
-		// Create MoveGroup for one of the planning groups
-		planning_scene_interface_.reset(new PlanningSceneInterface());
+    PickPlace(ros::NodeHandle &nh) {
 
         planning_service_ = nh.serviceClient<definitions::TrajectoryPlanning>("/trajectory_planning_srv");
         planning_service_.waitForExistence();
 
 		execution_service_ = nh.serviceClient<definitions::TrajectoryExecution>("trajectory_execution_srv");
-        execution_service_.waitForExistence();
-
-		pub_attach_coll_obj_ = nh.advertise<AttachedCollisionObject>("attached_collision_object", 10);
+        // execution_service_.waitForExistence();
 
 		start_pose_ = getStartPose();
 		goal_pose_ = getGoalPose();
@@ -78,105 +67,55 @@ public:
 	bool start() {
 		// ---------------------------------------------------------------------------------------------
 
-		// create obstacle and object to move...
-		// createEnvironment();
-
 		bool found = false;
 		while (!found && ros::ok()) {
 
-			if (!pick(start_pose_, OBJ_ID)) {
+            if (!pick(start_pose_)) {
 				ROS_ERROR_STREAM_NAMED("pick_place", "Pick failed. Retrying.");
-				//cleanupACO(OBJ_ID);
 			} else {
 				ROS_INFO_STREAM_NAMED("pick_place",	"Done with pick!");
 				found = true;
 			}
 		}
 
-		ROS_INFO_STREAM_NAMED("simple_pick_place", "Waiting to put...");
-		ros::Duration(5.5).sleep();
-
-		bool placed = false;
-		while (!placed && ros::ok()) {
-			if (!place(goal_pose_, OBJ_ID)) {
-				ROS_ERROR_STREAM_NAMED("pick_place", "Place failed.");
-			} else {
-				ROS_INFO_STREAM_NAMED("pick_place", "Done with place");
-				placed = true;
-			}
-		}
-
-		ROS_INFO_STREAM_NAMED("pick_place", "Pick and place cycle complete");
-
 		return true;
 	}
 
-	void createEnvironment() {
-		// Remove arbitrary existing objects
-		vector<string> object_ids;
-		object_ids.push_back(OBSTACLE_ID);
-		object_ids.push_back(OBJ_ID);
-		planning_scene_interface_->removeCollisionObjects(object_ids);
-		
-		// create our collision objects:
-		std::vector<moveit_msgs::CollisionObject> collision_objects;
-		// First, we will define the collision object message for our obstacle.
-		moveit_msgs::CollisionObject obstacle;
-		obstacle.header.frame_id = BASE_LINK;
+    bool pick(geometry_msgs::Pose& start_pose_) {
+        ROS_WARN_STREAM_NAMED("", "picking object");
 
-		/* The id of the object is used to identify it. */
-		obstacle.id = OBSTACLE_ID;
+        definitions::TrajectoryPlanning planning_srv;
+        planning_srv.request.arm = "right";
+        planning_srv.request.type = planning_srv.request.PICK;
 
-		// create an obstacle
-		shape_msgs::SolidPrimitive box;
-		box.type = box.BOX;
-		box.dimensions.resize(3);
-		box.dimensions[0] = 0.3;
-		box.dimensions[1] = 0.2;
-		box.dimensions[2] = 0.2;
+        // Pick grasp
+        generateGrasps(start_pose_, planning_srv.request.ordered_grasp);
 
-		/* A pose for the box (specified relative to frame_id) */
-		geometry_msgs::Pose box_pose;
-		box_pose.orientation.w = 1.0;
-		box_pose.position.x = 0.25;
-		box_pose.position.y = 0.25;
-		box_pose.position.z = 0.1 + SUPPORT_SURFACE_HEIGHT;
+        if(!planning_service_.call(planning_srv)) {
+            ROS_ERROR("Call to planning service failed!");
+            return false;
+        }
 
-		obstacle.primitives.push_back(box);
-		obstacle.primitive_poses.push_back(box_pose);
-		obstacle.operation = obstacle.ADD;
+        definitions::TrajectoryPlanning::Response &response = planning_srv.response;
 
-		collision_objects.push_back(obstacle);
+        if(!response.result == definitions::TrajectoryPlanningResponse::SUCCESS) {
+            ROS_ERROR("Planning pickup phase failed!");
+            return false;
+        } else {
+            ROS_INFO("Planning pickup phase sucessfully completed!");
+        }
 
-		// create the cyliinder to pick
-		moveit_msgs::CollisionObject cylinder_object;
+        ROS_INFO("Executing pickup...");
 
-		cylinder_object.header.frame_id = BASE_LINK;
-		cylinder_object.id = OBJ_ID;
+        definitions::TrajectoryExecution execution_srv;
+        execution_srv.request.trajectory = response.trajectory[0];
+        if(!execution_service_.call(execution_srv)) {
+            ROS_ERROR("Call to execution service failed!");
+            return false;
+        }
 
-		// create an obstacle
-		shape_msgs::SolidPrimitive cylinder;
-		cylinder.type = cylinder.CYLINDER;
-		cylinder.dimensions.resize(3);
-		cylinder.dimensions[0] = CYLINDER_HEIGHT;
-		cylinder.dimensions[1] = CYLINDER_RADIUS;
-
-		/* A pose for the cylinder (specified relative to frame_id) */
-		geometry_msgs::Pose cylinder_pose = getStartPose();
-
-		cylinder_object.primitives.push_back(cylinder);
-		cylinder_object.primitive_poses.push_back(cylinder_pose);
-		cylinder_object.operation = obstacle.ADD;
-
-		collision_objects.push_back(cylinder_object);
-
-		// Now, let's add the collision object into the world
-		ROS_INFO("Add an object into the world");
-		planning_scene_interface_->addCollisionObjects(collision_objects);
-
-		/* Sleep so we have time to see the object in RViz */
-		sleep(2.0);
-	}
+        return execution_srv.response.result == definitions::TrajectoryExecutionResponse::SUCCESS;
+    }
 
 	geometry_msgs::Pose getStartPose() {
 		geometry_msgs::Pose start_pose;
@@ -216,13 +155,21 @@ public:
 
 		definitions::SDHand hand;
 
-		hand.joints.push_back(0.0);
-		hand.joints.push_back(-M_PI / 4);
-		hand.joints.push_back(M_PI / 9);
-		hand.joints.push_back(-M_PI / 4);
-		hand.joints.push_back(M_PI / 9);
-		hand.joints.push_back(-M_PI / 4);
-		hand.joints.push_back(M_PI / 9);
+        hand.joints.push_back(0.0);
+        hand.joints.push_back(-M_PI / 4);
+        hand.joints.push_back(M_PI / 9);
+        hand.joints.push_back(-M_PI / 4);
+        hand.joints.push_back(M_PI / 9);
+        hand.joints.push_back(-M_PI / 4);
+        hand.joints.push_back(M_PI / 9);
+
+        hand.velocity.resize(hand.joints.size());
+        hand.acceleration.resize(hand.joints.size());
+
+        for(size_t i = 0; i < hand.joints.size(); ++i) {
+            hand.velocity[i] = 0.01;
+            hand.acceleration[i] = 0.0;
+        }
 
 		return hand;
 	}
@@ -231,155 +178,23 @@ public:
 
 		definitions::SDHand hand;
 
-		hand.joints.push_back(0.0);
-		hand.joints.push_back(-M_PI / 14);
-		hand.joints.push_back(M_PI / 6);
-		hand.joints.push_back(-M_PI / 14);
-		hand.joints.push_back(M_PI / 6);
-		hand.joints.push_back(-M_PI / 14);
-		hand.joints.push_back(M_PI / 6);
+        hand.joints.push_back(0.0);
+        hand.joints.push_back(-M_PI / 14);
+        hand.joints.push_back(M_PI / 6);
+        hand.joints.push_back(-M_PI / 14);
+        hand.joints.push_back(M_PI / 6);
+        hand.joints.push_back(-M_PI / 14);
+        hand.joints.push_back(M_PI / 6);
+
+        hand.velocity.resize(hand.joints.size());
+        hand.acceleration.resize(hand.joints.size());
+
+        for(size_t i = 0; i < hand.joints.size(); ++i) {
+            hand.velocity[i] = 0.01;
+            hand.acceleration[i] = 0.0;
+        }
 
 		return hand;
-	}
-
-	void cleanupACO(const string &name) {
-		// Clean up old attached collision object
-		moveit_msgs::AttachedCollisionObject aco;
-		aco.object.header.stamp = ros::Time::now();
-		aco.object.header.frame_id = BASE_LINK;
-
-		//aco.object.id = name;
-		aco.object.operation = moveit_msgs::CollisionObject::REMOVE;
-
-		aco.link_name = EE_PARENT_LINK;
-
-		ros::WallDuration(0.1).sleep();
-		pub_attach_coll_obj_.publish(aco);
-	}
-
-	bool pick(geometry_msgs::Pose& start_pose_, std::string name) {
-		ROS_WARN_STREAM_NAMED("", "picking object "<< name);
-
-		definitions::TrajectoryPlanning planning_srv;
-        planning_srv.request.arm = "right";
-        planning_srv.request.type = planning_srv.request.PICK;
-
-		// Pick grasp
-		generateGrasps(start_pose_, planning_srv.request.ordered_grasp);
-
-		if(!planning_service_.call(planning_srv)) {
-			ROS_ERROR("Call to planning service failed!");
-			return false;
-		}
-
-		definitions::TrajectoryPlanning::Response &response = planning_srv.response;
-
-		if(!response.result == definitions::TrajectoryPlanningResponse::SUCCESS) {
-			ROS_ERROR("Planning pickup phase failed!");
-			return false;
-		} else {
-			ROS_INFO("Planning pickup phase sucessfully completed!");
-		}
-
-		ROS_INFO("Executing pickup...");
-
-		definitions::TrajectoryExecution execution_srv;
-        execution_srv.request.trajectory = response.trajectory[0];
-		if(!execution_service_.call(execution_srv)) {
-			ROS_ERROR("Call to execution service failed!");
-			return false;
-		}
-
-		return execution_srv.response.result == definitions::TrajectoryExecutionResponse::SUCCESS;
-	}
-
-	bool place(const geometry_msgs::Pose& goal_pose, std::string name) {
-//		ROS_WARN_STREAM_NAMED("pick_place", "Placing "<< name);
-//
-//		std::vector<PlaceLocation> place_locations;
-//
-//		trajectory_msgs::JointTrajectory post_place_posture = getPreGraspPosture();
-//
-//		// Re-usable datastruct
-//		geometry_msgs::PoseStamped pose_stamped;
-//		pose_stamped.header.frame_id = BASE_LINK;
-//		// pose_stamped.header.stamp = ros::Time::now();
-//
-//		// Create 360 degrees of place location rotated around a center
-//		for (double angle = 0; angle < 2 * M_PI; angle += M_PI / 4) {
-//			pose_stamped.pose = goal_pose;
-//
-//			// Orientation
-//			Eigen::Quaterniond quat(Eigen::AngleAxis<double>(double(angle), Eigen::Vector3d::UnitZ()));
-//			pose_stamped.pose.orientation.x = quat.x();
-//			pose_stamped.pose.orientation.y = quat.y();
-//			pose_stamped.pose.orientation.z = quat.z();
-//			pose_stamped.pose.orientation.w = quat.w();
-//
-//			// Create new place location
-//			PlaceLocation place_loc;
-//
-//			place_loc.place_pose = pose_stamped;
-//
-//			// Approach
-//			GripperTranslation gripper_approach;
-//			// gripper_approach.direction.header.stamp = ros::Time::now();
-//			gripper_approach.desired_distance = 0.2; // The distance the origin of a robot link needs to travel
-//			gripper_approach.min_distance = 0.1;
-//			gripper_approach.direction.header.frame_id = EE_PARENT_LINK;
-//			gripper_approach.direction.vector.x = 1;
-//			gripper_approach.direction.vector.y = 0;
-//			gripper_approach.direction.vector.z = 0;
-//			place_loc.pre_place_approach = gripper_approach;
-//
-//			// Retreat
-//			GripperTranslation gripper_retreat;
-//			// gripper_retreat.direction.header.stamp = ros::Time::now();
-//			gripper_retreat.desired_distance = 0.2; // The distance the origin of a robot link needs to travel
-//			gripper_retreat.min_distance = 0.1;
-//			gripper_retreat.direction.header.frame_id = EE_PARENT_LINK;
-//			gripper_retreat.direction.vector.x = 0;
-//			gripper_retreat.direction.vector.y = 0;
-//			gripper_retreat.direction.vector.z = -1; // Retreat direction (pos z axis)
-//			place_loc.post_place_retreat = gripper_retreat;
-//
-//			// Post place posture - use same as pre-grasp posture (the OPEN command)
-//			place_loc.post_place_posture = post_place_posture;
-//
-//			place_locations.push_back(place_loc);
-//		}
-//
-////		moveit_msgs::OrientationConstraint oc;
-////		oc.header.frame_id = BASE_LINK;
-////		oc.link_name = EE_PARENT_LINK;
-////
-////		oc.orientation.x = 0;
-////		oc.orientation.y = 0;
-////		oc.orientation.z = 0;
-////		oc.orientation.w = 1;
-////
-////		oc.absolute_x_axis_tolerance = 0.3;
-////		oc.absolute_y_axis_tolerance = 0.3;
-////		oc.absolute_z_axis_tolerance = 0.3;
-////
-////		oc.weight = 1;
-////
-////		moveit_msgs::Constraints constraints;
-////		constraints.orientation_constraints.push_back(oc);
-//
-//		PlanningResultPtr plan = plan_execution_->plan_place(name, place_locations);
-//
-//		if(plan->status == PlanningHelper::SUCCESS) {
-//			ROS_INFO("Planning placement phase sucessfully completed!");
-//		} else {
-//			ROS_WARN("Planning placement phase failed!");
-//			return false;
-//		}
-//
-//		ROS_INFO("Executing placement...");
-//
-//		return plan_execution_->execute(plan);
-		return true;
 	}
 
 	bool generateGrasps(geometry_msgs::Pose &pose, vector<definitions::Grasp>& grasps) {
@@ -488,12 +303,7 @@ int main(int argc, char **argv) {
 	ros::AsyncSpinner spinner(1);
 	spinner.start();
 
-	string planner = "LBKPIECEkConfigDefault";
-	if(argc > 1) {
-		planner = argv[1];
-	}
-
-    trajectory_planner_moveit::PickPlace t(nh, planner);
+    trajectory_planner_moveit::PickPlace t(nh);
 	t.start();
 
 	return EXIT_SUCCESS;
