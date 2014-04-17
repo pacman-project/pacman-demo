@@ -181,7 +181,7 @@ namespace pacman {
 
 	void convertLimb(const moveit_msgs::RobotTrajectory &moveitTraj, definitions::Trajectory &trajectory, sensor_msgs::JointState start_state, std::string arm)
 	{
-		// get the points from robot trajector
+        // get the points from robot trajectory
 		const std::vector<trajectory_msgs::JointTrajectoryPoint> &points = moveitTraj.joint_trajectory.points;
 
 		// pick each point from the trajectory and create a RobotEddie object
@@ -459,7 +459,7 @@ namespace pacman {
 		return;
 	}
 
-	void interpolateHandJoints(const definitions::SDHand &goalState, const sensor_msgs::JointState &startState, moveit_msgs::RobotTrajectory &baseTrajectory, std::string &arm)
+    void interpolateHandJoints(const definitions::SDHand &goalState, const sensor_msgs::JointState &startState, moveit_msgs::RobotTrajectory &baseTrajectory, const std::string &arm)
 	{
 		int NWayPoints = baseTrajectory.joint_trajectory.points.size();
 		int right_hand_index = 21;
