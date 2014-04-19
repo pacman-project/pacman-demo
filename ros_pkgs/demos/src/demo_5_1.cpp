@@ -170,13 +170,13 @@ class DemoSimple
     
     bool post_grasp(int grasp_id);
     void order_grasp();
-    // -------------------------------------------------- //
+
     Event evaluate_cur_state();
     void perform_event(Event event);
     bool plan_trajectory();
     void goToNextObject();
     void goToNextGrasp();
-    bool restart(bool place);
+    bool restart(bool place,bool drop);
     
     // constructor
     DemoSimple(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
@@ -228,12 +228,16 @@ class DemoSimple
          robotpose.orientation.z = -0.139283;
          robotpose.orientation.w = 0.267076;
 	
-	 robot_start_joints_[0] = 0.90358; robot_start_joints_[1] = 1.07305; robot_start_joints_[2] = 1.16986; robot_start_joints_[3] = 0.89418;
-	 robot_start_joints_[4] = 0.74461; robot_start_joints_[5] = 0.01476; robot_start_joints_[6] = -0.48848;
+	       robot_start_joints_[0] = 0.90358; robot_start_joints_[1] = 1.07305; robot_start_joints_[2] = 1.16986; robot_start_joints_[3] = 0.89418;
+	       robot_start_joints_[4] = 0.74461; robot_start_joints_[5] = 0.01476; robot_start_joints_[6] = -0.48848;
 	 
-	 robot_place_joints_[0] = 0.9035800099372864; robot_place_joints_[1] = 1.0730500221252441; robot_place_joints_[2] = 1.1698600053787231; robot_place_joints_[3] = 0.8941799998283386;
-	 robot_place_joints_[4] = 1.8446100115776062; robot_place_joints_[5] = 0.814759999699890614; robot_place_joints_[6] = -0.48848000168800354;	 
-	 
+	      // robot_place_joints_[0] = 0.9035800099372864; robot_place_joints_[1] = 1.0730500221252441; robot_place_joints_[2] = 1.1698600053787231; robot_place_joints_[3] = 0.8941799998283386;
+	       //robot_place_joints_[4] = 1.8446100115776062; robot_place_joints_[5] = 0.814759999699890614; robot_place_joints_[6] = -0.48848000168800354;	 
+
+         robot_place_joints_[0] = 0.9035800099372864; robot_place_joints_[1] = 0.4730500221252441; robot_place_joints_[2] = 1.1698600053787231; 
+         robot_place_joints_[3] = 0.3941799998283386; robot_place_joints_[4] = 1.8446100115776062; robot_place_joints_[5] = 1.514759999699890614; 
+         robot_place_joints_[6] = -0.48848000168800354;  
+	
        }
   
       //left arm start position
@@ -248,11 +252,11 @@ class DemoSimple
         robotpose.orientation.z = 0.0389072;
         robotpose.orientation.w = 0.255866;
 	
-	robot_start_joints_[0] = 0.98819; robot_start_joints_[1] = -1.01639; robot_start_joints_[2] = 2.00266; robot_start_joints_[3] = 0.98314;
-	robot_start_joints_[4] = 0.0; robot_start_joints_[5] = 0.0; robot_start_joints_[6] = 1.25715;
+	      robot_start_joints_[0] = 0.98819; robot_start_joints_[1] = -1.01639; robot_start_joints_[2] = 2.00266; robot_start_joints_[3] = 0.98314;
+	      robot_start_joints_[4] = 0.0; robot_start_joints_[5] = 0.0; robot_start_joints_[6] = 1.25715;
 
-	robot_place_joints_[0] = 0.98819; robot_place_joints_[1] = -1.01639; robot_place_joints_[2] = 2.00266; robot_place_joints_[3] = 0.98314;
-	robot_place_joints_[4] = 0.0; robot_place_joints_[5] = 0.0; robot_place_joints_[6] = 1.25715 + 0.3;
+       	robot_place_joints_[0] = 0.98819; robot_place_joints_[1] = -1.01639; robot_place_joints_[2] = 2.00266; robot_place_joints_[3] = 0.98314;
+	      robot_place_joints_[4] = 0.0; robot_place_joints_[5] = 0.0; robot_place_joints_[6] = 1.25715 + 0.3;
       }
       
     }
@@ -317,7 +321,7 @@ void DemoSimple::perform_event(Event event)
       count = 1;
       goToStartPos();
       while( ( count < max_trial_start_ ) && ( curState_[Start_State] == Fail ) ){
-	count++;
+	      count++;
         goToStartPos();
       }
       break;
@@ -326,25 +330,44 @@ void DemoSimple::perform_event(Event event)
       goToStartPos();
       count = 1;
       while( ( count < max_trial_start_ ) && ( curState_[Start_State] == Fail ) ){
-	count ++;
-	goToStartPos();
+	      count ++;
+	      goToStartPos();
       }
       break;
     case Restart:
       cout << "event: restart" << endl;
       cout << "go to start pose with grasp joint" << endl;
-      restart(false);
+      restart(false,false);
       count = 1;
       while( ( count < max_trial_start_ ) && ( curState_[Start_State] == Fail ) )
       {
-	count ++;
-	restart(false);
+	      count ++;
+	      restart(false,false);
+      }
+      count = 1;
+      if( curState_[Start_State] == Success )
+      {
+	      cout << "got to place position!!" << endl;
+        do{
+          restart(true,false);
+          count++;
+        }while( ( count < max_trial_start_ ) && ( curState_[Start_State] == Fail ) );
       }
       if( curState_[Start_State] == Success )
       {
-	cout << "drop object!!" << endl;
-        restart(true);
+        cout << "to drop object!!!" << endl;
+        restart(true,true);
       }
+      count = 1;
+      if( curState_[Start_State] == Success )
+      {
+        cout << "come back to start position after droping!!" << endl;
+        do
+        {
+          goToStartPos();
+          count++;
+        }while( ( count < max_trial_start_ ) && ( curState_[Start_State] == Fail ) );
+      }      
       break;      
     case Stop: 
       cout << "event: stop" << endl;
@@ -451,12 +474,17 @@ bool DemoSimple::goToStartPos()
       curState_[GraspTraj_State] = Idle;
       curState_[PostGraspTraj_State] = Idle;
     }
-  }  
+  } 
+  else
+  {
+    for( int i = 1; i < StatesNum; i++ )
+      curState_[i] = Idle;
+  } 
   return result;
   
 }
 
-bool DemoSimple::restart(bool place)
+bool DemoSimple::restart(bool place,bool drop)
 {
   curState_[Start_State] = Fail;
   // ** to test wo execution **//
@@ -487,7 +515,10 @@ bool DemoSimple::restart(bool place)
   else
   {
     trajectory_planning_srv.request.eddie_goal_state.armRight.joints = robot_place_joints_;
-    trajectory_planning_srv.request.eddie_goal_state.handRight.joints = hand_pose_start_;
+    if( drop )
+      trajectory_planning_srv.request.eddie_goal_state.handRight.joints = hand_pose_start_;
+    else
+      trajectory_planning_srv.request.eddie_goal_state.handRight.joints = my_calculated_grasp[grasp_id_].grasp_trajectory[0].joints;
   }
   
   
