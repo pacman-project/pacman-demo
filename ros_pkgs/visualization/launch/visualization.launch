@@ -1,0 +1,4 @@
+<launch>
+<node name="visualization_node" pkg="visualization" type="visualization_node" output="screen"></node>
+<param name="path_to_object_database" value="/home/pacman/CODE/pacman/poseEstimation/dataFiles/PCD-MODELS-DOWNSAMPLED/"/>
+</launch>
