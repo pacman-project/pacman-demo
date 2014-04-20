@@ -13,6 +13,7 @@
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_datatypes.h>
 #include <definitions/PoseEstimation.h>
+#include <definitions/ObjectList.h>
 #include <definitions/KinectGrabberService.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
@@ -61,6 +62,7 @@ class PoseEstimator
     // ** disable this when using object cloud reader ** //
 
     string path_to_config,pathToObjDb;
+    ros::Publisher pub_object_poses_;
   //  tf::TransformListener listener;
   public:
 
@@ -89,6 +91,7 @@ class PoseEstimator
 
        nh_.param<std::string>("path_to_config",path_to_config, "");
        nh_.param<std::string>("path_to_object_db",pathToObjDb, "");
+       pub_object_poses_ = nh_.advertise<definitions::ObjectList>(nh_.resolveName("/pose_estimation_uibk/object_poses"), 1);
     }
 
     //! Empty stub
@@ -165,6 +168,7 @@ bool PoseEstimator::estimatePoses(definitions::PoseEstimation::Request& request,
     std::vector<definitions::Object> detected_objects(names.size());
     
     int j;
+    definitions::ObjectList object_list;
     //Transform these types to ros message types
     vector<geometry_msgs::Pose> poses;
     for (int i = 0; i < names.size (); i++)
@@ -190,11 +194,13 @@ bool PoseEstimator::estimatePoses(definitions::PoseEstimation::Request& request,
 	
         definitions::Object object;
         
-	object.pose = current_pose;
+	    object.pose = current_pose;
         object.name.data = names.at(j);
         detected_objects[i] = object;
+        object_list.object_list.push_back(object);
     }
-    
+    pub_object_poses_.publish(object_list);
+
     response.detected_objects = detected_objects;
     
     ROS_INFO("Pose estimation service finisihed, and ready for another service requests...");
