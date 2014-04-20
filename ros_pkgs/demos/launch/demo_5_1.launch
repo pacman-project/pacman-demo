@@ -13,4 +13,7 @@
   <!-- CONTROLLERS -->
   <include file="$(find demos)/launch/controllers.launch"/>
 
+  <!-- VISUALIZATION -->
+  <include file="$(find visualization)/launch/visualization.launch"/>
+
 </launch>
