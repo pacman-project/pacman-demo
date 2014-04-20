@@ -14,8 +14,9 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/common/transforms.h>
 
-#include "definitions/PoseEstimation.h"
-#include "definitions/GraspPlanning.h"
+#include <definitions/PoseEstimation.h>
+#include <definitions/GraspPlanning.h>
+#include <definitions/GraspList.h>
 
 using namespace std;
 enum Grasps 
@@ -57,6 +58,7 @@ private:
     double offset_x,offset_y;
     vector<double> grasp_score_;
     string arm_;
+    ros::Publisher pub_grasps_;
   
 public:
     
@@ -68,10 +70,11 @@ public:
     //offset_x = -0.04;
       offset_x = -0.02;
       offset_y = 0.03; 
-      //offset_y = 0.02;
+    
       vis_pub = nh_.advertise<visualization_msgs::MarkerArray>("gripper", 1 );
 
       nh_.param<std::string>("path_to_dir", root, "");
+      pub_grasps_ = nh_.advertise<definitions::GraspList>(nh_.resolveName("/grasp_planner_uibk/grasps"), 1);
     }
     
     ~GraspPlanner()
@@ -313,14 +316,19 @@ std::vector<double> GraspPlanner::euler_to_quaternion(vector<double> vals)
   //express values in mm
   vals[0] /= 1000.; vals[1] /= 1000.; vals[2] /= 1000.;
   
-  //convert angle values to radians  
+  //convert angle values to radians   
   vals[3] = vals[3] * M_PI/180.; vals[4] = vals[4] * M_PI/180.; vals[5] = vals[5] * M_PI/180.;
-  
+
   vector<double> quat_vec;
   Eigen::Matrix3f rot;
   
   rot = Eigen::AngleAxisf(vals[3], Eigen::Vector3f::UnitZ())* Eigen::AngleAxisf(vals[4], Eigen::Vector3f::UnitY())* Eigen::AngleAxisf(vals[5], Eigen::Vector3f::UnitX()); //euler angles
-    
+
+  /*double dx,dy,dz;
+  dx = M_PI / 180.; dy = M_PI / 180.; dz = M_PI/(2 * 180.);
+  Eigen::Matrix3f rot_z;
+  rot_z = Eigen::AngleAxisf(dz, Eigen::Vector3f::UnitZ())* Eigen::AngleAxisf(dy, Eigen::Vector3f::UnitY())* Eigen::AngleAxisf(dx, Eigen::Vector3f::UnitX());
+  Eigen::Matrix3f rot = rot_z * rot_ref;*/
   Eigen::Matrix4f posematrix;
   
   posematrix.col(0) << rot.col(0),0;
@@ -373,13 +381,37 @@ geometry_msgs::PoseStamped GraspPlanner::find_transformation(geometry_msgs::Pose
   ref_grasp_trans.block<3,1>(0,3) = t_grasp;
   ref_grasp_trans(3,0) = 0; ref_grasp_trans(3,1) = 0; ref_grasp_trans(3,2) = 0; ref_grasp_trans(3,3) = 1;
   
+ /* Eigen::Matrix4f t_cur_ref_pose = ref_pose_trans.inverse() * cur_pose_trans;
+  cout << "trans between cur obj and ref: " << endl << t_cur_ref_pose << endl;
+  Eigen::Matrix4f t_obj_grasp = ref_grasp_trans.inverse() * ref_pose_trans;
+  cout << "trans between grasp and object: " << endl << t_obj_grasp << endl;
+  Eigen::Matrix4f trans_obj_grasp = t_cur_ref_pose * t_obj_grasp;
+  cout << "trans between cur obj and grasp: " << endl << trans_obj_grasp << endl;
+  
+ // trans_obj_grasp =  cur_pose_trans.inverse() * trans_obj_grasp;
+ // cout << "current gripper pose: " << endl << trans_obj_grasp << endl;
+  Eigen::Matrix4d md(trans_obj_grasp.cast<double>());
+  Eigen::Affine3d e = Eigen::Affine3d(md);
+  geometry_msgs::PoseStamped trans_obj;
+  poseEigenToMsg(e,trans_obj);
+  grasp_score_.push_back(1);*/
+  
+ // Eigen::Quaternionf dq_obj = q_ref * q_cur.conjugate();
   Eigen::Quaternionf dq_obj = q_cur * q_ref.conjugate();
-
+  /*Eigen::Vector3f dt_obj = t_cur;
+  Eigen::Vector3f dt_obj_inv = -t;
+  Eigen::Vector3f rot_tmp = dq_obj.toRotationMatrix() * dt_obj_inv;
+  Eigen::Matrix3f rel_rot = dt_obj * rot_tmp.transpose();*/
+  
+  //Eigen::Quaternionf dq_grasp = q_cur * (q_grasp * q_ref.conjugate());//.conjugate();
   Eigen::Quaternionf dq_grasp = q_cur * ((q_grasp.conjugate() * q_ref).conjugate());
   Eigen::Vector3f dt_grasp = t_grasp - t;
   Eigen::Quaternionf q_grasp_new = dq_grasp;
-
+  //Eigen::Vector3f t_grasp_new = dq_obj.toRotationMatrix() * dt_grasp;
+  
+ // Eigen::Vector3f t_grasp_new = (q_ref.conjugate().toRotationMatrix() * dt_grasp).transpose() * q_cur.toRotationMatrix();
    Eigen::Vector3f t_grasp_new = q_cur.toRotationMatrix() * (q_ref.conjugate().toRotationMatrix() * dt_grasp);
+ // Eigen::Vector3f t_grasp_new = rel_rot * dt_grasp;
   
   t_grasp_new = t_grasp_new + t_cur;
   
@@ -392,7 +424,29 @@ geometry_msgs::PoseStamped GraspPlanner::find_transformation(geometry_msgs::Pose
   trans_obj.pose.orientation.y = q_grasp_new.y(); 
   trans_obj.pose.orientation.z = q_grasp_new.z(); 
   trans_obj.pose.orientation.w = q_grasp_new.w(); 
+  //grasp_score_.push_back(1);
+  
+  
+  // ** that is the latests tested working version ** //
+ /* Eigen::Quaternionf dq = q_grasp;
+  Eigen::Vector3f dt = t_grasp - t;
+  
+  Eigen::Quaternionf q_grasp_new = q_grasp; 
+  Eigen::Vector3f t_grasp_new = dt + t_cur;
+  
   grasp_score_.push_back(1);
+  
+  geometry_msgs::PoseStamped trans_obj;
+  trans_obj.pose.position.x = t_grasp_new(0); 
+  trans_obj.pose.position.y = t_grasp_new(1); 
+  trans_obj.pose.position.z = t_grasp_new(2);  
+  
+  trans_obj.pose.orientation.x = q_grasp_new.x(); 
+  trans_obj.pose.orientation.y = q_grasp_new.y(); 
+  trans_obj.pose.orientation.z = q_grasp_new.z(); 
+  trans_obj.pose.orientation.w = q_grasp_new.w(); */
+  
+ // cout << "calculated difference in quaternion is: " << dq.x() << " : " << dq.y() << " : " << dq.z() << " : " << dq.w() << endl;
   return trans_obj;
 }
 
@@ -547,7 +601,7 @@ vector<geometry_msgs::PoseStamped> GraspPlanner::searchGraspFile(vector<string> 
      
       pose_cur.pose.position.x = ( vals[0] / 1000. ) + offset_x;
       pose_cur.pose.position.y = ( vals[1] / 1000. )+ offset_y;
-      pose_cur.pose.position.z = vals[2] / 1000.;
+      pose_cur.pose.position.z = ( vals[2] / 1000. );
       
       pose_cur.pose.orientation.x = q[0];
       pose_cur.pose.orientation.y = q[1];
@@ -596,18 +650,19 @@ bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, defin
   vector<geometry_msgs::PoseStamped> grasps = searchGraspFile(path_to_obj_dir,false);
   
   vector<definitions::Grasp> grasp_traj;
- // vector<float> pre_grasp_joints = getTargetAnglesFromGraspType(rim_pre_grasp,1.0);
-  vector<float> pre_grasp_joints = getTargetAnglesFromGraspType(rim_open,1.0);
+  vector<float> pre_grasp_joints = getTargetAnglesFromGraspType(rim_pre_grasp,1.0);
+ // vector<float> pre_grasp_joints = getTargetAnglesFromGraspType(rim_open,1.0);
   vector<float> grasp_joints = getTargetAnglesFromGraspType(rim_close,1.0);
   
   int min_id = 0;
   double min = 1000.;
+  definitions::GraspList grasp_list;
   for( size_t i = 0; i < grasps.size(); i++ )
   {
     geometry_msgs::PoseStamped old_pre_grasp = pre_grasps[i];
     geometry_msgs::PoseStamped old_grasp = grasps[i];
-    /*pre_grasps[i] = find_transformation(obj_ref,obj_pose,pre_grasps[i]);
-    grasps[i] = find_transformation(obj_ref,obj_pose,grasps[i]);*/
+    pre_grasps[i] = find_transformation(obj_ref,obj_pose,pre_grasps[i]);
+    grasps[i] = find_transformation(obj_ref,obj_pose,grasps[i]);
     if( i == 0 )
       visualize_gripper(pre_grasps[i],grasps[i],i);
    /* double gs = (grasp_score_[grasp_score_.size()-1] + grasp_score_[grasp_score_.size()-2]) / 2.;
@@ -632,17 +687,19 @@ bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, defin
     cur_traj.grasp_trajectory[2].wrist_pose.pose = grasps[i].pose;   
     cur_traj.grasp_trajectory[2].wrist_pose.header.frame_id = "world_link";
     cur_traj.grasp_trajectory[2].joints = grasp_joints;
-    grasp_traj.push_back(cur_traj);
+     grasp_traj.push_back(cur_traj);
+    grasp_list.grasp_list.push_back(cur_traj);
   }
 
   cout << "after getting all the grasps" << endl;
-  if( grasp_traj.size() > 0 ){
+ /* if( grasp_traj.size() > 0 ){
     definitions::Grasp min_traj = grasp_traj[min_id];
     definitions::Grasp first_grasp = grasp_traj[0];
     grasp_traj[0] = min_traj;
     grasp_traj[0] = first_grasp;
-  }
-  
+  }*/
+  pub_grasps_.publish(grasp_list);
+
   res.grasp_list = grasp_traj;
   
   if( grasps.size() > 0 )
