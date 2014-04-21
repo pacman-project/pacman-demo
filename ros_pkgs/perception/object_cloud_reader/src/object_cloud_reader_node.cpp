@@ -47,8 +47,6 @@ class ObjectReader
     tf::TransformListener tf_listener_;
     //tf::TransformBroadcaster tf_broadcaster_;
 
-    // reconstructed scene
-    sensor_msgs::PointCloud2 current_scene_ros_;
     ros::Publisher attached_object_publisher;
   public:
 
@@ -56,19 +54,15 @@ class ObjectReader
     bool processObjects(definitions::ObjectCloudReader::Request& request, definitions::ObjectCloudReader::Response& response);
     void poseToMatrix4f(geometry_msgs::Pose &pose,Eigen::Matrix4f &mat); 
 
-    // publishes the reconstructed scene
-    void publishScene();
     void send_occlusion_shape(vector<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > obj_pcds,vector<geometry_msgs::Pose> obj_poses);
     // constructor
     ObjectReader(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
     {
         // advertise service
         srv_object_reader_ = nh_.advertiseService(nh_.resolveName("/object_reader"), &ObjectReader::processObjects, this);
-        // ** point cloud publishing is disabled  use primitives instead
-        //pub_object_point_clouds_ = nh_.advertise<sensor_msgs::PointCloud2>(nh_.resolveName("/reconstructed_scene"), 10);
-        attached_object_publisher = nh_.advertise<moveit_msgs::AttachedCollisionObject>(nh_.resolveName("attached_collision_object"), 1,true);
+
+        attached_object_publisher = nh_.advertise<moveit_msgs::AttachedCollisionObject>(nh_.resolveName("attached_collision_object"), 1,true);    
         // change this at will
-        current_scene_ros_.header.frame_id = "world_link";
 
         nh_.param<std::string>("path_to_RecObj",path_to_database_,"/home/pacman/CODE/pacman/poseEstimation/dataFiles/PCD-MODELS-DOWNSAMPLED/");
     }
@@ -97,10 +91,8 @@ void ObjectReader::poseToMatrix4f(geometry_msgs::Pose &pose,Eigen::Matrix4f &mat
 }
 
 // this function is called when service_name_you_want_to_advertise is advertise
-//bool ObjectReader::processObjects(definitions::PoseEstimation::Request& request, definitions::PoseEstimation::Response& response)
 bool ObjectReader::processObjects(definitions::ObjectCloudReader::Request& request, definitions::ObjectCloudReader::Response& response)
 {
-    //std::vector<definitions::Object> objects = pose_estimation_result.response.detected_objects;
     std::vector<definitions::Object> objects = request.detected_objects;
     vector<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > obj_pcds;
     vector<geometry_msgs::Pose> obj_poses;
@@ -135,8 +127,6 @@ bool ObjectReader::processObjects(definitions::ObjectCloudReader::Request& reque
     }  
     send_occlusion_shape(obj_pcds,obj_poses);
 
-    pcl::toROSMsg(*current_scene, current_scene_ros_);    
-    response.rec_scene = current_scene_ros_;
     response.result = response.SUCCESS;
     return true;
     
@@ -148,6 +138,7 @@ void ObjectReader::send_occlusion_shape(vector<pcl::PointCloud<pcl::PointXYZRGBN
     attached_object.object.header.frame_id = "world_link";
     attached_object.object.id = "box";
     attached_object.link_name = "world_link";
+    double epsilon = 0;
     for( size_t i = 0; i < obj_pcds.size(); i++ )
     { 
       double min_x = 1000; double min_y = 1000;  double min_z = 1000;
@@ -169,23 +160,24 @@ void ObjectReader::send_occlusion_shape(vector<pcl::PointCloud<pcl::PointXYZRGBN
         if( obj_pcds[i]->points[j].z > max_z )
             max_z = obj_pcds[i]->points[j].z;                              
       }
+      Eigen::Vector4f obj_center;
+      pcl::compute3DCentroid(*obj_pcds[i],obj_center);
       shape_msgs::SolidPrimitive primitive;
       primitive.type = primitive.BOX;  
       primitive.dimensions.resize(3);
-      primitive.dimensions[0] = (max_x - min_x);
-      primitive.dimensions[1] = (max_y - min_y);   
-      primitive.dimensions[2] = (max_z - min_z);
-   //   cout << "box size: " <<  primitive.dimensions[0] << " "<< primitive.dimensions[1] << " "<< primitive.dimensions[2] <<  endl;
+      primitive.dimensions[0] = (max_x - min_x + epsilon);
+      primitive.dimensions[1] = (max_y - min_y + epsilon);   
+      primitive.dimensions[2] = (max_z - min_z + epsilon);
+     
+      geometry_msgs::Pose center; 
+      center.position.x = obj_center(0); center.position.y = obj_center(1); center.position.z = obj_center(2);
+      center.orientation.x = 0; center.orientation.y = 0; center.orientation.z = 0; center.orientation.w = 1;
+      cout << "box size: " <<  primitive.dimensions[0] << " "<< primitive.dimensions[1] << " "<< primitive.dimensions[2] <<  endl;
       attached_object.object.primitives.push_back(primitive);
-      attached_object.object.primitive_poses.push_back(obj_poses[i]);
+      attached_object.object.primitive_poses.push_back(center);
       attached_object.object.operation = attached_object.object.ADD;
     }
-    attached_object_publisher.publish(attached_object);
-}
-
-void ObjectReader::publishScene()
-{
-    pub_object_point_clouds_.publish(current_scene_ros_);
+    attached_object_publisher.publish(attached_object);     
 }
 
 } // namespace object_cloud_reader
@@ -200,7 +192,6 @@ int main(int argc, char **argv)
     while(ros::ok())
     {
         ros::spinOnce();
-        //node.publishScene();
     }
 
     return 0;

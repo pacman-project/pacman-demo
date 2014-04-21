@@ -824,7 +824,7 @@ bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id)
 {
   bool succeed = false;
   grasp_success_ = false;
-  pub_cur_grasp_.publish(my_calculated_grasp[grasp_id]);
+
   if( grasp_id >= my_calculated_grasp.size() )   
   {
     return succeed;
@@ -838,6 +838,7 @@ bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id)
   }
   else
   {    
+    pub_cur_grasp_.publish(my_calculated_grasp[grasp_id]);
     reader_srv.request.detected_objects = my_detected_objects;
     reader_srv.request.object_id = -1;
     reconstruct_scene(); 
