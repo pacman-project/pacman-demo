@@ -28,6 +28,7 @@ namespace visualization
     ros::NodeHandle priv_nh_;
     ros::Subscriber sub_object_poses_;
     ros::Subscriber sub_grasps_;
+    ros::Subscriber sub_cur_grasp_;
     ros::Publisher pub_objects_cloud_;
     ros::Publisher pub_gripper_;
 
@@ -38,7 +39,8 @@ namespace visualization
     Visualization(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
     {
        sub_object_poses_ = nh_.subscribe ("/pose_estimation_uibk/object_poses", 500, &Visualization::callback_pose_estimate, this);
-       sub_grasps_ = nh_.subscribe ("/grasp_planner_uibk/grasps", 500, &Visualization::callback_grasps, this);
+       //sub_grasps_ = nh_.subscribe ("/grasp_planner_uibk/grasps", 500, &Visualization::callback_grasps, this);
+       sub_cur_grasp_ = nh_.subscribe ("/grasp_planner/cur_grasp", 500, &Visualization::callback_cur_grasp, this);
        pub_objects_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>(nh_.resolveName("/recognized_objects"), 10);
        pub_gripper_ = nh_.advertise<visualization_msgs::MarkerArray>("/gripper_pose", 1 );
 
@@ -49,10 +51,11 @@ namespace visualization
 
    	void callback_pose_estimate(const definitions::ObjectList &objects);
    	void callback_grasps(const definitions::GraspList &grasps);
+   	void callback_cur_grasp(const definitions::Grasp &grasp);
    	void poseToMatrix4f(geometry_msgs::Pose pose,Eigen::Matrix4f &mat);
    	pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr read_pcd_object(string obj_name,Eigen::Vector3f color);
    	pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr merge_obj_clouds(vector<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > obj_pcds);
-   	void visualize_gripper(geometry_msgs::PoseStamped gripper_pose,int &id,visualization_msgs::MarkerArray &markers);
+   	void visualize_gripper(geometry_msgs::PoseStamped gripper_pose,int &id,visualization_msgs::MarkerArray &markers,Eigen::Vector4f color);
  };
 
  void Visualization::callback_pose_estimate(const definitions::ObjectList &objects)
@@ -141,12 +144,27 @@ namespace visualization
     visualization_msgs::MarkerArray markers;
     int id = 0;
     geometry_msgs::PoseStamped gripper_pose = grasps.grasp_list[0].grasp_trajectory[2].wrist_pose; 
-    visualize_gripper(gripper_pose,id,markers);    
+    Eigen::Vector4f color;
+    // RGBA //
+    color(0) = 0.8; color(1) = 1; color(2) = 0; color(3) = 0.5;    
+    visualize_gripper(gripper_pose,id,markers,color);    
     pub_gripper_.publish( markers ); 
  }
 
+void Visualization::callback_cur_grasp(const definitions::Grasp &grasp)
+{
+  ROS_INFO("current grasp message received!");
+  visualization_msgs::MarkerArray markers;
+  int id = 0;
+  geometry_msgs::PoseStamped gripper_pose = grasp.grasp_trajectory[2].wrist_pose; 
+  Eigen::Vector4f color;
+  // RGBA //
+  color(0) = 0.8; color(1) = 0; color(2) = 0.6; color(3) = 0.6;  
+  visualize_gripper(gripper_pose,id,markers,color);    
+  pub_gripper_.publish( markers );    
+}
 
-void Visualization::visualize_gripper(geometry_msgs::PoseStamped gripper_pose,int &id,visualization_msgs::MarkerArray &markers)
+void Visualization::visualize_gripper(geometry_msgs::PoseStamped gripper_pose,int &id,visualization_msgs::MarkerArray &markers,Eigen::Vector4f color)
 {  
   visualization_msgs::Marker marker;
   marker.header.frame_id = "world_link";
@@ -161,10 +179,10 @@ void Visualization::visualize_gripper(geometry_msgs::PoseStamped gripper_pose,in
   marker.id = id;
   marker.pose.position = gripper_pose.pose.position;
   marker.pose.orientation = gripper_pose.pose.orientation;
-  marker.color.a = 0.5;
-  marker.color.r = 0.8;
-  marker.color.g = 1;
-  marker.color.b = 0;
+  marker.color.a = color(3);
+  marker.color.r = color(0);
+  marker.color.g = color(1);
+  marker.color.b = color(2);
   marker.mesh_resource = "package://schunk_description/meshes/sdh/palm.stl";
   markers.markers.push_back(marker);
  

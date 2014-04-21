@@ -27,6 +27,7 @@
 #include "definitions/TrajectoryPlanning.h"
 #include "definitions/TrajectoryExecution.h"
 #include "definitions/ObjectCloudReader.h"
+#include <definitions/Grasp.h>
 
 //hand trajectory sdh messages
 
@@ -139,6 +140,7 @@ class DemoSimple
     definitions::TrajectoryPlanning trajectory_planning_srv;
     definitions::TrajectoryExecution trajectory_execution_srv;
     definitions::ObjectCloudReader reader_srv;
+    ros::Publisher pub_cur_grasp_;
     geometry_msgs::Pose poseMid;  
     geometry_msgs::Pose robotpose;
     vector<float> robot_start_joints_;
@@ -200,6 +202,8 @@ class DemoSimple
         //Grasp execution
         reader_client = nh_.serviceClient<definitions::ObjectCloudReader>(object_reader_service_name);
 	      grasp_success_ = false;
+
+        pub_cur_grasp_ = nh_.advertise<definitions::Grasp>(nh_.resolveName("/grasp_planner/cur_grasp"), 1);
 	 
       for( int j = 0; j < StatesNum; j++ )
            curState_[j] = Idle;
@@ -347,7 +351,7 @@ void DemoSimple::perform_event(Event event)
       count = 1;
       if( curState_[Start_State] == Success )
       {
-	      cout << "got to place position!!" << endl;
+	      cout << "go to place position!!" << endl;
         do{
           restart(true,false);
           count++;
@@ -727,7 +731,7 @@ void DemoSimple::order_grasp()
      for( size_t j = 0; j < euc_dists.size(); j++ )
      {
        if( seen_ids.find(j) != seen_ids.end() )
-	 continue;
+	       continue;
        if( euc_dists[j] == euc_dists_sort[i] )
        {
 	       my_calculated_grasp_sort.push_back(my_calculated_grasp[j]);
@@ -820,6 +824,7 @@ bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id)
 {
   bool succeed = false;
   grasp_success_ = false;
+  pub_cur_grasp_.publish(my_calculated_grasp[grasp_id]);
   if( grasp_id >= my_calculated_grasp.size() )   
   {
     return succeed;
