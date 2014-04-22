@@ -195,11 +195,11 @@ void Visualization::visualize_gripper(geometry_msgs::PoseStamped gripper_pose,in
     
   Eigen::Matrix4f trans_1;
   trans_1 << 
-    1,0,0,-0.05,
+    1,0,0,-0.02,
     0,1,0,-0.02,
     0,0,1,-0.12,
     0,0,0,1;
-  
+
   marker.type = visualization_msgs::Marker::CYLINDER;
   marker.id = ++id; 
   Eigen::Matrix4f trans = trans_g * trans_1.inverse();
@@ -221,7 +221,7 @@ void Visualization::visualize_gripper(geometry_msgs::PoseStamped gripper_pose,in
     1,0,0,-0.03,
     0,1,0,0.04,
     0,0,1,-0.12,
-    0,0,0,1;  
+    0,0,0,1;        
   Eigen::Matrix4f trans_2_ = trans_g * trans_2.inverse();
   Eigen::Matrix3f rot_mat_2 = trans_2_.block<3,3>(0,0);
   Eigen::Quaternionf quat_2(rot_mat_2);
@@ -239,9 +239,9 @@ void Visualization::visualize_gripper(geometry_msgs::PoseStamped gripper_pose,in
   Eigen::Matrix4f trans_3;
   trans_3 << 
     1,0,0,0.04,
-    0,1,0,-0.02,
+    0,1,0,0,
     0,0,1,-0.12,
-    0,0,0,1;   
+    0,0,0,1;     
   Eigen::Matrix4f trans_3_ = trans_g * trans_3.inverse();
   Eigen::Matrix3f rot_mat_3 = trans_3_.block<3,3>(0,0);
   Eigen::Quaternionf quat_3(rot_mat_3);
