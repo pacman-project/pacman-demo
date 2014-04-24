@@ -48,6 +48,7 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 			goal = request.eddie_goal_state.handLeft;
 
 		plan_for_frame_ = request.arm + "_sdh_palm_link";
+		//plan_for_frame_ = request.arm + "_arm_7_link";
 		group_name_ = request.arm + "_arm";
 
 		if( !planTrajectory(trajectories, goal, request.arm, startState) ) 
@@ -78,6 +79,12 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 
 }
 
+void CartPlanner::callback_collision_object(const moveit_msgs::AttachedCollisionObject &object)
+{
+  collision_objects_.clear();
+  collision_objects_.push_back(object);   
+}
+
 bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajectories, definitions::SDHand &goal, std::string &arm, sensor_msgs::JointState &startState) 
 {
 	// first state the planning constraint
@@ -100,6 +107,8 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 
 	moveit_msgs::RobotState start_state;
 	start_state.joint_state = startState;
+	start_state.attached_collision_objects = collision_objects_;
+	collision_objects_.clear();
 	motion_plan_request.start_state = start_state;
 
 
@@ -132,7 +141,6 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 
 			// fill the robot trajectory with hand values, given the base trajectory of the arm
 			pacman::interpolateHandJoints(goal, startState, robot_trajectory, arm);
-
 			// populate trajectory with motion plan data
 			// the start state is used to copy the data for the joints that are not being used in the planning
 			pacman::convertLimb(robot_trajectory, trajectory, startState, arm);

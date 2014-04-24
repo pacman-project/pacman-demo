@@ -2,6 +2,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <moveit_msgs/GetMotionPlan.h>
+#include <moveit_msgs/AttachedCollisionObject.h>
 #include <moveit/kinematic_constraints/utils.h>
 
 //// local headers
@@ -19,6 +20,8 @@ class CartPlanner
 
 	// the variable where the plans are stored
 	std::vector<moveit_msgs::MotionPlanResponse> motion_plans_;
+	ros::Subscriber sub_collision_objects_;
+	std::vector<moveit_msgs::AttachedCollisionObject> collision_objects_;
    
   public:
 
@@ -45,6 +48,7 @@ class CartPlanner
 
   	// the actual planning function
     bool planTrajectory(std::vector<definitions::Trajectory> &trajectories, definitions::SDHand &goal, std::string &arm, sensor_msgs::JointState &startState);
+    void callback_collision_object(const moveit_msgs::AttachedCollisionObject &object);
 
     // constructor
     CartPlanner(ros::NodeHandle nh)
@@ -69,6 +73,7 @@ class CartPlanner
 
 		// to double the speed of the trajectory
 		speed_ = 1.0;
+		sub_collision_objects_ = nh.subscribe ("/attached_collision_object", 500, &CartPlanner::callback_collision_object, this);
     }
 
     //! Empty stub
