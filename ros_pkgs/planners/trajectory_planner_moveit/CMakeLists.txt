@@ -111,8 +111,8 @@ add_library(StatePlanner
 	)
 
 add_library(PickupPlanner
-        src/pickupplanner.cpp
-        )
+    src/pickupplanner.cpp
+    )
 
 ## Declare a cpp executable
 add_executable(trajectory_planner_node 
@@ -132,11 +132,11 @@ add_executable(ping_state_planner_and_execution
 	examples/ping_state_planner_and_execution.cpp
 	)
 add_executable(test_pickup_planner
-        examples/test_pickup_planner.cpp
-        )
+    examples/test_pickup_planner.cpp
+    )
 add_executable(ping_gripper_only
-        examples/ping_gripper_only.cpp
-        )
+    examples/ping_gripper_only.cpp
+    )
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # libraries
@@ -145,8 +145,8 @@ add_dependencies(CartPlanner
 	)
 	
 add_dependencies(PickupPlanner
-        definitions_generate_messages_cpp
-        )
+    definitions_generate_messages_cpp
+    )
         
 add_dependencies(StatePlanner
 	definitions_generate_messages_cpp
@@ -156,6 +156,7 @@ add_dependencies(StatePlanner
 add_dependencies(trajectory_planner_node
 	CartPlanner
 	StatePlanner
+	PickupPlanner
 	definitions_generate_messages_cpp
 	)
 
@@ -173,31 +174,26 @@ add_dependencies(ping_state_planner_and_execution
 	definitions_generate_messages_cpp
 	)
 add_dependencies(test_pickup_planner
-        definitions_generate_messages_cpp
-        )
+    definitions_generate_messages_cpp
+    )
 add_dependencies(ping_gripper_only
-        definitions_generate_messages_cpp
-        )
+    definitions_generate_messages_cpp
+    )
 ## Specify libraries to link a library or executable target against
 # libraries
 target_link_libraries(CartPlanner 
 	${catkin_LIBRARIES}
 	)
-
 target_link_libraries(PickupPlanner
-        ${catkin_LIBRARIES}
-        )
-# executables
-target_link_libraries(trajectory_planner_node 
-	CartPlanner
-        PickupPlanner
-	)
+    ${catkin_LIBRARIES}
+    )
 target_link_libraries(StatePlanner 
 	${catkin_LIBRARIES}
 	)
 # executables
 target_link_libraries(trajectory_planner_node 
 	CartPlanner
+	PickupPlanner
 	StatePlanner
 	${catkin_LIBRARIES}
 	)

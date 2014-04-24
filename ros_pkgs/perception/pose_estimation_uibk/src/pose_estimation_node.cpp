@@ -13,20 +13,16 @@
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_datatypes.h>
 #include <definitions/PoseEstimation.h>
-#include <definitions/ObjectList.h>
 #include <definitions/KinectGrabberService.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
-//#include <tf/transform_listener.h>
+#include <tf/transform_listener.h>
 
 #include <pcl/kdtree/kdtree_flann.h>
 
-/*#include "pacman/UIBK/PoseEstimation/PoseEstimation.h"
+#include "pacman/UIBK/PoseEstimation/PoseEstimation.h"
 #include <pacman/PaCMan/Defs.h>
-#include <pacman/PaCMan/PCL.h>*/
-
-#include "I_SegmentedObjects.h"
-#include "ParametersPoseEstimation.h"
+#include <pacman/PaCMan/PCL.h>
 
 // ROS generated headers
 // typically these ones are generated at compilation time, 
@@ -55,15 +51,12 @@ class PoseEstimator
     // services
     ros::ServiceServer srv_estimate_poses_;
     
-     Eigen::Matrix4f kinectToRobot;
-     
     ros::ServiceClient srv_kinect;
     
     // ** disable this when using object cloud reader ** //
 
     string path_to_config,pathToObjDb;
-    ros::Publisher pub_object_poses_;
-  //  tf::TransformListener listener;
+    tf::TransformListener listener;
   public:
 
     // callback functions
@@ -74,24 +67,17 @@ class PoseEstimator
 
     void callback_kinect(const sensor_msgs::PointCloud2ConstPtr & input);
     void send_occlusion_shape(vector<pcl::PointCloud<pcl::PointXYZ>::Ptr > obj_pcds,vector<geometry_msgs::Pose> obj_poses);
-  //  Eigen::Matrix4f transformPoseToUIBKPose(pacman::Mat34 pose_);
+    Eigen::Matrix4f transformPoseToUIBKPose(pacman::Mat34 pose_);
     
     // constructor
     PoseEstimator(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
     {   
-
-         kinectToRobot <<
-           -0.065648,  -0.996571 , 0.0503785,   0.645214,
-           -0.644791, 0.00383551,   -0.76435,   0.332272,
-            0.761535, -0.0826616 , -0.642831 ,  0.714251,
-            0,          0 ,         0,          1;        
 
         // advertise service
         srv_estimate_poses_ = nh_.advertiseService(nh_.resolveName("/pose_estimation_uibk/estimate_poses"), &PoseEstimator::estimatePoses, this); 
 
        nh_.param<std::string>("path_to_config",path_to_config, "");
        nh_.param<std::string>("path_to_object_db",pathToObjDb, "");
-       pub_object_poses_ = nh_.advertise<definitions::ObjectList>(nh_.resolveName("/pose_estimation_uibk/object_poses"), 1);
     }
 
     //! Empty stub
@@ -100,7 +86,7 @@ class PoseEstimator
 };
   
 
-/*Eigen::Matrix4f PoseEstimator::transformPoseToUIBKPose(pacman::Mat34 pose_)
+Eigen::Matrix4f PoseEstimator::transformPoseToUIBKPose(pacman::Mat34 pose_)
 {
   Eigen::Matrix4f pose;
   pose <<
@@ -109,7 +95,7 @@ class PoseEstimator
     pose_.R.m31,pose_.R.m32,pose_.R.m33,pose_.p.z,
     0,0,0,1;
   return pose;
-}*/
+}
 
 
 bool PoseEstimator::estimatePoses(definitions::PoseEstimation::Request& request, definitions::PoseEstimation::Response& response)
@@ -140,74 +126,9 @@ bool PoseEstimator::estimatePoses(definitions::PoseEstimation::Request& request,
     ROS_INFO("Pose estimation service has been called...");
     
     ROS_INFO("Initializing...");
-
- 
-     ROS_INFO("Pose estimation service has been called...");
-    
-    ROS_INFO("Initializing...");
-    string filename; 
-    
-    filename = "/home/pacman/poseEstimation/parametersFiles/config.txt";
-        
-    ParametersPoseEstimation params(filename);
-    
-    I_SegmentedObjects objects;
-
-    ROS_INFO("Recognizing poses...");
-    
-    params.recognizePose(objects,xyz_points_);
-        
-    // getting the result of pose estimation
-
-    std::vector<string> names = objects.getObjects();
-    
-    std::vector<int> orderedList = objects.getIdsObjects(objects.getHeightList());
-    
-    boost::shared_ptr<vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > > transforms = objects.getTransforms ();
-    
-    std::vector<definitions::Object> detected_objects(names.size());
-    
-    int j;
-    definitions::ObjectList object_list;
-    //Transform these types to ros message types
-    vector<geometry_msgs::Pose> poses;
-    for (int i = 0; i < names.size (); i++)
-    {     
-        j = orderedList[i]; 
-        std::cout << j << std::endl;
-
-        Eigen::Matrix4f transform_matrix = kinectToRobot.inverse()*transforms->at(j);
-	//Eigen::Matrix4f transform_matrix = kinectToRobot*transforms->at(j);
-//	std::cout << "transformation matrix: " << kinectToRobot.inverse() << std::endl;
-
-        std::cout <<    names.at(j) << std::endl;
-        std::cout << transform_matrix << std::endl;
-
-        Eigen::Matrix4d md(transform_matrix.cast<double>());
-        Eigen::Affine3d e = Eigen::Affine3d(md);
-
-        geometry_msgs::Pose current_pose;
-        poseEigenToMsg(e, current_pose);
-	// ** add offset ** //
-	/*current_pose.position.x += offset_x;
-	current_pose.position.y += offset_y;*/
-	
-        definitions::Object object;
-        
-	    object.pose = current_pose;
-        object.name.data = names.at(j);
-        detected_objects[i] = object;
-        object_list.object_list.push_back(object);
-    }
-    pub_object_poses_.publish(object_list);
-
-    response.detected_objects = detected_objects;
-    
-    ROS_INFO("Pose estimation service finisihed, and ready for another service requests...");
-    return true;
     
     
- /*   pacman::UIBKPoseEstimation* pose = pacman::UIBKPoseEstimation::create(path_to_config);
+    pacman::UIBKPoseEstimation* pose = pacman::UIBKPoseEstimation::create(path_to_config);
     pacman::UIBKObject* objects = pacman::UIBKObject::create(pathToObjDb);
     pacman::UIBKPoseEstimation::Pose::Seq poses_;
     //cout << "after creating" << endl;
@@ -245,7 +166,7 @@ bool PoseEstimator::estimatePoses(definitions::PoseEstimation::Request& request,
     response.result = response.SUCCESS;
     
     ROS_INFO("Pose estimation service finisihed, and ready for another service requests...");
-    return true;*/
+    return true;
 }
 
 vector<int> PoseEstimator::give_object_ids(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,pcl::PointCloud<pcl::PointXYZ>::Ptr obj_cloud)
