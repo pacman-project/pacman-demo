@@ -48,6 +48,7 @@ class ObjectReader
     //tf::TransformBroadcaster tf_broadcaster_;
 
     ros::Publisher attached_object_publisher;
+
   public:
 
     // callback functions
@@ -100,7 +101,7 @@ bool ObjectReader::processObjects(definitions::ObjectCloudReader::Request& reque
     pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr current_scene (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
     for (int i=0;i<objects.size();i++)
     {
-        if( i == request.object_id )
+        if( i == request.object_id ) 
             continue;
         std::string path_to_object(path_to_database_);
         objects[i].name.data.erase(std::remove(objects[i].name.data.begin(), objects[i].name.data.end(),'\n'), objects[i].name.data.end());
@@ -169,10 +170,10 @@ void ObjectReader::send_occlusion_shape(vector<pcl::PointCloud<pcl::PointXYZRGBN
       primitive.dimensions[1] = (max_y - min_y + epsilon);   
       primitive.dimensions[2] = (max_z - min_z + epsilon);
      
-      geometry_msgs::Pose center; 
+      geometry_msgs::Pose center = obj_poses[i]; 
       center.position.x = obj_center(0); center.position.y = obj_center(1); center.position.z = obj_center(2);
-      center.orientation.x = 0; center.orientation.y = 0; center.orientation.z = 0; center.orientation.w = 1;
-      cout << "box size: " <<  primitive.dimensions[0] << " "<< primitive.dimensions[1] << " "<< primitive.dimensions[2] <<  endl;
+      //center.orientation.x = 0; center.orientation.y = 0; center.orientation.z = 0; center.orientation.w = 1;
+    //  cout << "box size: " <<  primitive.dimensions[0] << " "<< primitive.dimensions[1] << " "<< primitive.dimensions[2] <<  endl;
       attached_object.object.primitives.push_back(primitive);
       attached_object.object.primitive_poses.push_back(center);
       attached_object.object.operation = attached_object.object.ADD;

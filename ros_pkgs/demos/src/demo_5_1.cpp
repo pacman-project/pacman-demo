@@ -177,7 +177,7 @@ class DemoSimple
     
     bool planGrasps(string arm);    
     
-    bool executeMovement(bool pre_grasp,int &grasp_id);    
+    bool executeMovement(bool pre_grasp,int &grasp_id,int traj_id=2);    
     
     bool post_grasp(int grasp_id);
     void order_grasp();
@@ -239,14 +239,23 @@ class DemoSimple
        if( ( available_arm_ == "right") || (available_arm_ == "both") )
        {
         cout << "to initialize right arm" << endl;
-         robotpose_right.position.x = 0.1624;
+     /*    robotpose_right.position.x = 0.1624;
          robotpose_right.position.y = -0.2599;
          robotpose_right.position.z = 0.6642;
   
          robotpose_right.orientation.x = 0.404885;
          robotpose_right.orientation.y = 0.86333;
          robotpose_right.orientation.z = -0.139283;
-         robotpose_right.orientation.w = 0.267076;
+         robotpose_right.orientation.w = 0.267076;*/
+
+         robotpose_right.position.x = 0.064062;
+         robotpose_right.position.y = -0.17281;
+         robotpose_right.position.z = 0.9236;
+  
+         robotpose_right.orientation.x = 0.43361;
+         robotpose_right.orientation.y = 0.40981;
+         robotpose_right.orientation.z = 0.26315;
+         robotpose_right.orientation.w = 0.75815;         
 
 	       robot_start_joints_right[0] = 0.90358; robot_start_joints_right[1] = 1.07305; robot_start_joints_right[2] = 1.16986; robot_start_joints_right[3] = 0.89418;
 	       robot_start_joints_right[4] = 0.74461; robot_start_joints_right[5] = 0.01476; robot_start_joints_right[6] = -0.48848;
@@ -264,14 +273,23 @@ class DemoSimple
       if( ( available_arm_ == "left") || ( available_arm_ == "both" ) )
       {	
         cout << "to initialize left arm" << endl;
-        robotpose_left.position.x = -0.118831;
+        /*robotpose_left.position.x = -0.118831;
         robotpose_left.position.y = 1.70482;
         robotpose_left.position.z = 0.728295;
 
         robotpose_left.orientation.x = -0.411059;
         robotpose_left.orientation.y = 0.874099;
         robotpose_left.orientation.z = 0.0389072;
-        robotpose_left.orientation.w = 0.255866;  
+        robotpose_left.orientation.w = 0.255866;  */
+
+        robotpose_left.position.x = 0.0043042;
+        robotpose_left.position.y = 1.5781;
+        robotpose_left.position.z = 0.87247;
+
+        robotpose_left.orientation.x = -0.092165;
+        robotpose_left.orientation.y = 0.59065;
+        robotpose_left.orientation.z = 0.28223;
+        robotpose_left.orientation.w = 0.75032;          
 
 	      robot_start_joints_left[0] = 0.98819; robot_start_joints_left[1] = -1.01639; robot_start_joints_left[2] = 2.00266; robot_start_joints_left[3] = 0.98314;
 	      robot_start_joints_left[4] = 0.0; robot_start_joints_left[5] = 0.0; robot_start_joints_left[6] = 1.25715;
@@ -712,7 +730,7 @@ int DemoSimple::doPoseEstimation()
      std::cout << "I am going for object: " << my_detected_objects[0].name << std::endl;
    }
    objectsNum_ = my_detected_objects.size();
-   if( estimation_srv.response.result == estimation_srv.response.SUCCESS )
+   if( ( estimation_srv.response.result == estimation_srv.response.SUCCESS ) && ( my_detected_objects.size() > 0 ) )
      curState_[PoseEstimate_State] = Success;  
   
    if( available_arm_ == "both" )
@@ -909,9 +927,17 @@ bool DemoSimple::plan_trajectory()
     curState_[GraspTraj_State] = Fail;
     // for testing wo execution
     //curState_[GraspTraj_State] = Success;
-    executeMovement(false,grasp_id_);
+
+    executeMovement(false,grasp_id_,1);
     if( grasp_success_ )
-      curState_[GraspTraj_State] = Success;
+    {
+      executeMovement(false,grasp_id_);
+      if( grasp_success_ )
+        curState_[GraspTraj_State] = Success;
+    }
+    /*executeMovement(false,grasp_id_);
+    if( grasp_success_ )
+      curState_[GraspTraj_State] = Success;*/
   }
   else if( ( curState_[PreGraspTraj_State] == Success ) && ( curState_[GraspTraj_State] != Idle ) )
   {
@@ -945,7 +971,7 @@ bool DemoSimple::post_grasp(int grasp_id)
   return success;
 }
 
-bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id)
+bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id,int traj_id)
 {
   bool succeed = false;
   grasp_success_ = false;
@@ -960,7 +986,8 @@ bool DemoSimple::executeMovement(bool pre_grasp,int &grasp_id)
     reader_srv.request.object_id = object_id_;
     reconstruct_scene();
     usleep(1000*1000);
-    my_calculated_grasp[grasp_id].grasp_trajectory[0] = my_calculated_grasp[grasp_id].grasp_trajectory[2];
+   // my_calculated_grasp[grasp_id].grasp_trajectory[0] = my_calculated_grasp[grasp_id].grasp_trajectory[2];
+    my_calculated_grasp[grasp_id].grasp_trajectory[0] = my_calculated_grasp[grasp_id].grasp_trajectory[traj_id];
   }
   else
   {    
