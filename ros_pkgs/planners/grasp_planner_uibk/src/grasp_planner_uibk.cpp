@@ -100,7 +100,8 @@ public:
     geometry_msgs::PoseStamped find_transformation(geometry_msgs::Pose ref_obj,geometry_msgs::Pose cur_obj,geometry_msgs::PoseStamped cur_grasp);
     void visualize_gripper(geometry_msgs::PoseStamped gripper_pre_pose,geometry_msgs::PoseStamped gripper_pose,int id);
     void set_arm(string arm);
-    vector<float> getTargetAnglesFromGraspType(Grasps grasp_type, float close_ratio) ;
+    vector<float> getTargetAnglesFromGraspType(Grasps grasp_type, float close_ratio);
+    geometry_msgs::PoseStamped transform_frame(geometry_msgs::PoseStamped pose);
 };
 
 vector<float> GraspPlanner::getTargetAnglesFromGraspType(Grasps grasp_type, float close_ratio) 
@@ -638,6 +639,42 @@ vector<geometry_msgs::PoseStamped> GraspPlanner::searchGraspFile(vector<string> 
   return grasps;
 }
 
+geometry_msgs::PoseStamped  GraspPlanner::transform_frame(geometry_msgs::PoseStamped pose)
+{
+    geometry_msgs::PoseStamped pose_trans;
+
+    Eigen::Vector3f trans_to_palm;
+    trans_to_palm(0) = 0; trans_to_palm(1) = 0; trans_to_palm(2) = 0.017;
+    Eigen::Quaternionf quat_to_palm(0.707,0,0,0.707);
+    Eigen::Matrix3f rot_palm = quat_to_palm.toRotationMatrix();
+    Eigen::Matrix4f mat_palm;
+    mat_palm.block<3,3>(0,0) = rot_palm;
+    mat_palm(0,3) = trans_to_palm(0); mat_palm(1,3) = trans_to_palm(1); mat_palm(2,3) = trans_to_palm(2);
+    mat_palm(3,0) = 0; mat_palm(3,1) = 0; mat_palm(3,2) = 0; mat_palm(3,3) = 1;
+
+    Eigen::Vector3f pose_transl;
+    pose_transl(0) = pose.pose.position.x; pose_transl(1) = pose.pose.position.y; pose_transl(2) = pose.pose.position.z;
+    Eigen::Quaternionf quat_pose(pose.pose.orientation.w,pose.pose.orientation.x,pose.pose.orientation.y,pose.pose.orientation.z);  
+    Eigen::Matrix3f rot_pose = quat_pose.toRotationMatrix();
+    Eigen::Matrix4f mat_pose;
+    mat_pose.block<3,3>(0,0) = rot_pose;
+    mat_pose(0,3) = pose_transl(0); mat_pose(1,3) = pose_transl(1); mat_pose(2,3) = pose_transl(2);
+    mat_pose(3,0) = 0; mat_pose(3,1) = 0; mat_pose(3,2) = 0; mat_pose(3,3) = 1;    
+    
+    Eigen::Matrix4f transformed_pose;
+    transformed_pose = mat_pose * mat_palm;
+
+    Eigen::Quaternionf quat(transformed_pose.block<3,3>(0,0));
+    pose_trans.pose.orientation.x = quat.x(); pose_trans.pose.orientation.y = quat.y();
+    pose_trans.pose.orientation.z = quat.z(); pose_trans.pose.orientation.w = quat.w();
+
+    pose_trans.pose.position.x = transformed_pose(0,3);
+    pose_trans.pose.position.y = transformed_pose(1,3);
+    pose_trans.pose.position.z = transformed_pose(2,3);
+
+    return pose_trans;   
+}
+
 bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, definitions::GraspPlanning::Response &res)
 { 
   grasp_score_.clear();
@@ -684,6 +721,11 @@ bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, defin
     geometry_msgs::PoseStamped old_grasp = grasps[i];
     pre_grasps[i] = find_transformation(obj_ref,obj_pose,pre_grasps[i]);
     grasps[i] = find_transformation(obj_ref,obj_pose,grasps[i]);
+     
+  // ** since by default planning is on palm ** // 
+    pre_grasps[i] = transform_frame(pre_grasps[i]);
+    grasps[i] = transform_frame(grasps[i]);
+
     if( i == 0 )
       visualize_gripper(pre_grasps[i],grasps[i],i);
    /* double gs = (grasp_score_[grasp_score_.size()-1] + grasp_score_[grasp_score_.size()-2]) / 2.;
