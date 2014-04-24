@@ -69,8 +69,10 @@ public:
       
     //offset_x = -0.04;
       offset_x = -0.02;
-      offset_y = 0.03; 
-    
+      offset_y = 0.03;
+       
+      offset_x = 0;
+      offset_y = 0;
       vis_pub = nh_.advertise<visualization_msgs::MarkerArray>("gripper", 1 );
 
       nh_.param<std::string>("path_to_dir", root, "");
@@ -155,12 +157,12 @@ vector<float> GraspPlanner::getTargetAnglesFromGraspType(Grasps grasp_type, floa
 
     case rim_open: 
     hand_joints.knuckle = 0;
-    hand_joints.thumb_2 = -0.8;
-    hand_joints.thumb_3 = 0.8;
-    hand_joints.finger_12 = -0.8;
-    hand_joints.finger_13 = 0.8;
-    hand_joints.finger_22 = -0.8;
-    hand_joints.finger_23 = 0.8;
+    hand_joints.thumb_2 = -0.5;
+    hand_joints.thumb_3 = 0.5;
+    hand_joints.finger_12 = -0.5;
+    hand_joints.finger_13 = 0.5;
+    hand_joints.finger_22 = -0.5;
+    hand_joints.finger_23 = 0.5;
     break;
 
     case rim_close: 
@@ -210,6 +212,8 @@ void GraspPlanner::set_arm(string arm)
     path_to_dir = root + "/grasps-models-multi-grasps_right/";
   else if(arm == "left")
     path_to_dir = root + "/grasps-models-multi-grasps_left/";
+  arm_ = arm;
+  //path_to_dir = root + "/grasps-models-multi-grasps_right/";
   cout << "path to directory is: " << path_to_dir << endl;
 }
 
@@ -573,40 +577,57 @@ vector<geometry_msgs::PoseStamped> GraspPlanner::searchGraspFile(vector<string> 
       vector<double> vals;
       while( ( ifs.good() ) && ( count < 2 ) )
       {
-	getline(ifs,line);
-	//cout << "current line: " << line << endl;
-	while( line.length() > 1 )
-	{
-	  double val;
-	  string val_str;
-	  if( line.find(" ") == string::npos )
-	  {
-	    val_str = line;
-	    line = "";
-	  }
-	  else
-	  {
-	    val_str = line.substr(0,line.find(" "));
-	    line = line.substr(line.find(" ")+1);
-	  }
-	  stringstream ss(val_str);
-	  ss  >> val;
-	  vals.push_back(val);	  
-	}
-	count++;
+       	getline(ifs,line);
+      	//cout << "current line: " << line << endl;
+	     while( line.length() > 1 )
+	     {
+	      double val;
+	      string val_str;
+	      if( line.find(" ") == string::npos )
+	      {
+	       val_str = line;
+	       line = "";
+	     }
+	     else
+	     {
+	       val_str = line.substr(0,line.find(" "));
+	       line = line.substr(line.find(" ")+1);
+	     }
+	     stringstream ss(val_str);
+	     ss  >> val;
+	     vals.push_back(val);	  
+	   }
+	   count++;
+    }
+ 
+      geometry_msgs::PoseStamped pose_cur;
+
+      if( arm_ == "right" )
+      {
+        vector<double> q = euler_to_quaternion(vals);
+
+     
+        pose_cur.pose.position.x = ( vals[0] / 1000. ) + offset_x;
+        pose_cur.pose.position.y = ( vals[1] / 1000. )+ offset_y;
+        pose_cur.pose.position.z = ( vals[2] / 1000. );
+      
+        pose_cur.pose.orientation.x = q[0];
+        pose_cur.pose.orientation.y = q[1];
+        pose_cur.pose.orientation.z = q[2];
+        pose_cur.pose.orientation.w = q[3];
+      }
+      else if( arm_ == "left" )
+      {
+        pose_cur.pose.position.x = vals[0];
+        pose_cur.pose.position.y = vals[1];
+        pose_cur.pose.position.z = vals[2];
+      
+        pose_cur.pose.orientation.x = vals[3];
+        pose_cur.pose.orientation.y = vals[4];
+        pose_cur.pose.orientation.z = vals[5];
+        pose_cur.pose.orientation.w = vals[6];
       }
 
-      vector<double> q = euler_to_quaternion(vals);
-      geometry_msgs::PoseStamped pose_cur;
-     
-      pose_cur.pose.position.x = ( vals[0] / 1000. ) + offset_x;
-      pose_cur.pose.position.y = ( vals[1] / 1000. )+ offset_y;
-      pose_cur.pose.position.z = ( vals[2] / 1000. );
-      
-      pose_cur.pose.orientation.x = q[0];
-      pose_cur.pose.orientation.y = q[1];
-      pose_cur.pose.orientation.z = q[2];
-      pose_cur.pose.orientation.w = q[3];
       
       grasps.push_back(pose_cur);
     }
@@ -631,8 +652,8 @@ bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, defin
   obj_name = obj_name.substr(0,obj_name.find("\n"));
   
   cout << "object name is: " << obj_name << "."<< endl;
-  if( obj_name.find("container_2") != string::npos )
-    offset_y = 0.02;
+  /*if( obj_name.find("container_2") != string::npos )
+    offset_y = 0.02;*/
   
   vector<string> path_to_obj_dir = giveAllFiles(obj_name);
   
@@ -681,9 +702,13 @@ bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, defin
     cur_traj.grasp_trajectory[0].wrist_pose.pose = pre_grasps[i].pose;
     cur_traj.grasp_trajectory[0].wrist_pose.header.frame_id = "world_link";
     cur_traj.grasp_trajectory[0].joints = pre_grasp_joints;
+
     cur_traj.grasp_trajectory[1].wrist_pose.pose = grasps[i].pose;
     cur_traj.grasp_trajectory[1].wrist_pose.header.frame_id = "world_link";
-    cur_traj.grasp_trajectory[1].joints = grasp_joints;
+//    cur_traj.grasp_trajectory[1].joints = grasp_joints;
+    cur_traj.grasp_trajectory[1].joints = pre_grasp_joints;
+
+
     cur_traj.grasp_trajectory[2].wrist_pose.pose = grasps[i].pose;   
     cur_traj.grasp_trajectory[2].wrist_pose.header.frame_id = "world_link";
     cur_traj.grasp_trajectory[2].joints = grasp_joints;
