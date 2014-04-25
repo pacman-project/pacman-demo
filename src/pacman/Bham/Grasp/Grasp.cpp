@@ -105,7 +105,7 @@ void BhamGraspImpl::estimate(const ::grasp::Cloud::PointSeq& points, Trajectory:
 			trajectory.trajectory.push_back(pose);
 		}
 		convert(i, trajectory.trajectory.back().config); // overwrite grip configuration (the last waypoint)
-		trajectory.likelihood = (float_t)i.likelihood.product;
+		trajectory.likelihood = (float_t)i.likelihood.value;
 
 		trajectories.push_back(trajectory);
 	}
