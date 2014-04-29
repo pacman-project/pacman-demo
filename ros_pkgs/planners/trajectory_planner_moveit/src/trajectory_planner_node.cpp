@@ -113,7 +113,6 @@ bool TrajPlanner::planTrajectory(definitions::TrajectoryPlanning::Request &reque
 
 } // namespace trajectory_planner_moveit
 
-
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "trajectory_planner_node");

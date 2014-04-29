@@ -1,5 +1,5 @@
 <launch>
     <!-- path to object database for downsampled cloud change it based on your setup -->
-	<param name="path_to_RecObj" value="/home/pacman/CODE/pacman/poseEstimation/dataFiles/PCD-MODELS-DOWNSAMPLED/" />
+	<param name="path_to_RecObj" value="/home/crosales/Code/pacman/poseEstimation/dataFiles/PCD-MODELS-DOWNSAMPLED/" />
 	<node name="object_cloud_reader" pkg="object_cloud_reader" type="object_cloud_reader_node" output="screen" />
 </launch>

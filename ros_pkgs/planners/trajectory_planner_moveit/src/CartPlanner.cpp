@@ -6,6 +6,10 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <moveit_msgs/GetMotionPlan.h>
 #include <moveit/kinematic_constraints/utils.h>
+#include <moveit/move_group_interface/move_group.h>
+#include <moveit/trajectory_processing/trajectory_tools.h>
+#include <moveit/trajectory_processing/iterative_time_parameterization.h>
+#include <moveit/robot_trajectory/robot_trajectory.h>
 
 //// generated headers
 #include <definitions/TrajectoryPlanning.h>
@@ -23,58 +27,125 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 {
 	if( request.type == request.MOVE_TO_CART_GOAL)
 	{
-		ROS_INFO("Received trajectory planning request");
+		ROS_INFO("Received cartesian planning request");
 		ros::Time now = ros::Time::now();
 
-		// clear all previously cached motion plans
+		// this is were the response will be filled
 		std::vector<definitions::Trajectory> &trajectories = response.trajectory;
 
-		// wait for a joint state
+		// wait for a joint state to read the current state
 		boost::shared_ptr<const sensor_msgs::JointState> current_state_ptr = ros::topic::waitForMessage<sensor_msgs::JointState>(topic_, ros::Duration(3.0));
 		if (!current_state_ptr)
 		{
-			ROS_WARN("No real start state available, since no joint state recevied in topic: %s", topic_.c_str());
-			ROS_WARN("Did you forget to start a controller?");
-			ROS_WARN("Planning will be done from home position, however this trajectory might not be good for execution!");
+			ROS_ERROR("No real start state available, since no joint state recevied in topic: %s", topic_.c_str());
+			ROS_ERROR("Did you forget to start a controller?");
+			ROS_ERROR("Planning will be done from home position, however this trajectory might not be good for execution!");
 		}
+		sensor_msgs::JointState startJointState = *current_state_ptr;
+		moveit_msgs::RobotState start_state;
+		start_state.joint_state = startJointState;
 
-		sensor_msgs::JointState startState = *current_state_ptr;
+		// plan for the given wrist goal
+		definitions::SDHand goal_hand;
 
-		definitions::SDHand goal;
 		// note that we plan for wrist frame of the requested arm
 		if(request.arm.compare(std::string("right")) == 0)
-			goal = request.eddie_goal_state.handRight;
+			goal_hand = request.eddie_goal_state.handRight;
 		if(request.arm.compare(std::string("left")) == 0)
-			goal = request.eddie_goal_state.handLeft;
+			goal_hand = request.eddie_goal_state.handLeft;
 
-		plan_for_frame_ = request.arm + "_sdh_palm_link";
-		//plan_for_frame_ = request.arm + "_arm_7_link";
+		// set the group
 		group_name_ = request.arm + "_arm";
+		plan_for_frame_ = request.arm + "_sdh_palm_link";
+		move_group_interface::MoveGroup arm_group( group_name_.c_str() );
 
-		if( !planTrajectory(trajectories, goal, request.arm, startState) ) 
-		{
-			ROS_WARN("No trajectory found for the required goal state");
-		}
 
-		ROS_INFO("trajectories.size() %lu",trajectories.size());
-		if(trajectories.size() > 0)
-		{
-			response.result = response.SUCCESS;
-			ros::Duration duration = ros::Time::now() - now;
+		// set the goal
+		arm_group.setEndEffectorLink( plan_for_frame_ );
 
-			ROS_INFO("Trajectory planning request completed");
-			ROS_INFO_STREAM("Total trajectory calculation took " << duration);
-			return true;
-		} 
-		else 
-		{
-			response.result = response.NO_FEASIBLE_TRAJECTORY_FOUND;
-			return false;
-		}
+
+		/// PATH APPROACH; IT MISSES THE TRAJECTORY COMPUTATION
+		// now we plan move to the goal pose
+		std::vector<geometry_msgs::Pose> waypoints;
+		waypoints.push_back(goal_hand.wrist_pose.pose);
+
+		moveit_msgs::RobotTrajectory moveit_trajectory;
+		bool avoid_collisions = true;
+
+		// and compute the cartesian path!
+		arm_group.computeCartesianPath(waypoints, eef_step_, jump_threshold_, moveit_trajectory, avoid_collisions);
+
+		// setting the planner and general parameters
+		arm_group.setPlannerId("PRMstarkConfigDefault");
+		arm_group.setGoalPositionTolerance(tolerance_in_position_);
+		arm_group.setGoalOrientationTolerance(tolerance_in_orientation_);
+		arm_group.setPlanningTime(max_planning_time_);
+
+		// set the current state
+		arm_group.setStartState(start_state);
+
+
+  		if(trajectory_processing::isTrajectoryEmpty(moveit_trajectory))
+  		{
+  			ROS_ERROR("Couldn't find a nice goal position for the MOVE_TO_CART_GOAL");
+  			return false;
+  		}
+  		else
+  		{
+  			ROS_INFO("Sucessfully found a good goal position for the MOVE_TO_CART_GOAL");
+
+			//display the path to check that the found goal position is good
+			moveit_msgs::DisplayTrajectory display_trajectory;
+			display_trajectory.trajectory_start = start_state;
+	  		display_trajectory.trajectory.push_back(moveit_trajectory);
+	  		display_publisher_.publish(display_trajectory);
+		
+			trajectory_msgs::JointTrajectoryPoint goal_point;
+
+			goal_point = moveit_trajectory.joint_trajectory.points[moveit_trajectory.joint_trajectory.points.size()-1];
+
+			std::cout << "goal_point" << goal_point << std::endl;
+
+			// build the joint constraint out of the goal point
+			moveit_msgs::Constraints goal_state;
+			moveit_msgs::JointConstraint joint_constraint;
+			for (int i=0; i<goal_point.positions.size(); i++ )
+			{
+				joint_constraint.joint_name = moveit_trajectory.joint_trajectory.joint_names[i];
+				joint_constraint.position = goal_point.positions[i];
+				joint_constraint.weight = 1.0;
+				goal_state.joint_constraints.push_back(joint_constraint);
+			}
+
+			std::cout << "goal_state" << goal_state << std::endl;
+			
+			if( !planTrajectory(trajectories, goal_state, request.arm, startJointState, goal_hand) ) 
+			{
+				ROS_WARN("No trajectory found for the required goal state");
+			}
+
+			ROS_INFO("trajectories.size() %lu",trajectories.size());
+			if(trajectories.size() > 0)
+			{
+				response.result = response.SUCCESS;
+				ros::Duration duration = ros::Time::now() - now;
+
+				ROS_INFO("Trajectory planning request completed");
+				ROS_INFO_STREAM("Total trajectory calculation took " << duration);
+				return true;
+			} 
+			else 
+			{
+				response.result = response.NO_FEASIBLE_TRAJECTORY_FOUND;
+				return false;
+			}
+  		}
+
 	}
 	else
 	{
 		ROS_INFO("I can't process this request! Check the request type");
+		return false;
 	}
 
 }
@@ -85,12 +156,12 @@ void CartPlanner::callback_collision_object(const moveit_msgs::AttachedCollision
   collision_objects_.push_back(object);   
 }
 
-bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajectories, definitions::SDHand &goal, std::string &arm, sensor_msgs::JointState &startState) 
+bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajectories, moveit_msgs::Constraints &goal, std::string &arm, sensor_msgs::JointState &startState, definitions::SDHand &goal_hand) 
 {
 	// first state the planning constraint
-	moveit_msgs::Constraints pose_goal = kinematic_constraints::constructGoalConstraints(plan_for_frame_.c_str(), goal.wrist_pose, tolerance_in_position_, tolerance_in_orientation_);
+	//moveit_msgs::Constraints pose_goal = kinematic_constraints::constructGoalConstraints(plan_for_frame_.c_str(), goal.wrist_pose, tolerance_in_position_, tolerance_in_orientation_);
 
-	ROS_INFO("Planning for wrist (px, py, pz, qx, qy, qz, qw):\t%f\t%f\t%f\t%f\t%f\t%f\t%f", goal.wrist_pose.pose.position.x, goal.wrist_pose.pose.position.y, goal.wrist_pose.pose.position.z, goal.wrist_pose.pose.orientation.x, goal.wrist_pose.pose.orientation.y, goal.wrist_pose.pose.orientation.z, goal.wrist_pose.pose.orientation.w);
+	//ROS_INFO("Planning for wrist (px, py, pz, qx, qy, qz, qw):\t%f\t%f\t%f\t%f\t%f\t%f\t%f", goal.wrist_pose.pose.position.x, goal.wrist_pose.pose.position.y, goal.wrist_pose.pose.position.z, goal.wrist_pose.pose.orientation.x, goal.wrist_pose.pose.orientation.y, goal.wrist_pose.pose.orientation.z, goal.wrist_pose.pose.orientation.w);
 	
 	// now construct the motion plan request
 	moveit_msgs::GetMotionPlan motion_plan;
@@ -98,7 +169,7 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 
 	// constraint for the wrist
 	motion_plan_request.group_name = group_name_.c_str();
-	motion_plan_request.goal_constraints.push_back(pose_goal);
+	motion_plan_request.goal_constraints.push_back(goal);
 	//motion_plan_request.goal_constraints[0].joint_constraints = handJointsGoal;
 
 	motion_plan_request.num_planning_attempts = max_planning_attempts_;
@@ -140,7 +211,7 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 			moveit_msgs::RobotTrajectory robot_trajectory = motion_plan.response.motion_plan_response.trajectory;
 
 			// fill the robot trajectory with hand values, given the base trajectory of the arm
-			pacman::interpolateHandJoints(goal, startState, robot_trajectory, arm);
+			pacman::interpolateHandJoints(goal_hand, startState, robot_trajectory, arm);
 			// populate trajectory with motion plan data
 			// the start state is used to copy the data for the joints that are not being used in the planning
 			pacman::convertLimb(robot_trajectory, trajectory, startState, arm);

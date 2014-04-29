@@ -284,7 +284,7 @@ namespace pacman {
 				ros::Duration dt( points[i].time_from_start - points[i-1].time_from_start );
 				if ( dt.toSec() < 0.05 )
 					dt = ros::Duration(0.5);
-				std::cout << "increment" << dt << std::endl;
+				std::cout << "dt - increment" << dt << std::endl;
 				trajectory.time_from_previous.push_back( dt );
 			}
 		}
