@@ -206,8 +206,8 @@ target_link_libraries(StatePlanner
 	)
 # executables
 target_link_libraries(trajectory_planner_node 
-	#CartPlanner
-	CartPlanner_uibk
+	CartPlanner
+	#CartPlanner_uibk
 	PickupPlanner
 	StatePlanner
 	${catkin_LIBRARIES}

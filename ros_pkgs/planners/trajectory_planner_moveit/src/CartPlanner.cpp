@@ -72,8 +72,18 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 		moveit_msgs::RobotTrajectory moveit_trajectory;
 		bool avoid_collisions = true;
 
-		// and compute the cartesian path!
-		arm_group.computeCartesianPath(waypoints, eef_step_, jump_threshold_, moveit_trajectory, avoid_collisions);
+		// and compute the cartesian path
+		// fraction means the fraction of the path covered
+		// since we have only one waypoint, the fraction must be on or very close to one
+		// if not, it means it couldn't find a safe goal position
+		double fraction = arm_group.computeCartesianPath(waypoints, eef_step_, jump_threshold_, moveit_trajectory, avoid_collisions);
+
+		if (fraction < 0.98)
+		{
+			ROS_ERROR("The goal configuration can not be reached: no IK solution");
+			return false;
+		}
+
 
 		// setting the planner and general parameters
 		arm_group.setPlannerId("PRMstarkConfigDefault");
