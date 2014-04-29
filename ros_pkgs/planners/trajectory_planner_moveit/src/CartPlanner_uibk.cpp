@@ -173,7 +173,11 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 			moveit_msgs::RobotTrajectory robot_trajectory = motion_plan.response.motion_plan_response.trajectory;
 
 			// fill the robot trajectory with hand values, given the base trajectory of the arm
-			pacman::interpolateHandJoints(goal, startState, robot_trajectory, arm);		
+			//pacman::interpolateHandJoints(goal, startState, robot_trajectory, arm);	
+			if( trajSize <= min_traj_size_ )
+			  pacman::interpolateHandJoints(goal, startState, robot_trajectory, arm,false);
+            else
+              pacman::interpolateHandJoints(goal, startState, robot_trajectory, arm);					
 			// populate trajectory with motion plan data
 			// the start state is used to copy the data for the joints that are not being used in the planning
 			pacman::convertLimb(robot_trajectory, trajectory, startState, arm);

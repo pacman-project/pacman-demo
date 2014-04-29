@@ -33,6 +33,7 @@ class StatePlanner
     std::string group_name_;
     std::string base_frame_for_goal_;
 	std::string plan_for_frame_;
+	int min_traj_size_;
 
 	// joint state topic
 	std::string topic_;
@@ -63,6 +64,7 @@ class StatePlanner
 		max_planning_time_ = 10;
 		tolerance_in_position_ = 0.01;
 		tolerance_in_orientation_ = 0.01;
+		min_traj_size_ = 10;
 
 		// joint state topic
 		topic_ = nh.resolveName("/joint_states");

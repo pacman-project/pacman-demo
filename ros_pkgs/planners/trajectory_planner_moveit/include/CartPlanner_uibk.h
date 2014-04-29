@@ -38,6 +38,7 @@ class CartPlanner
     std::string group_name_;
     std::string base_frame_for_goal_;
 	std::string plan_for_frame_;
+	int min_traj_size_;
 
 	// joint state topic
 	std::string topic_;
@@ -76,6 +77,7 @@ class CartPlanner
 		// to double the speed of the trajectory
 		speed_ = 1.0;
 		sub_collision_objects_ = nh.subscribe ("/attached_collision_object", 500, &CartPlanner::callback_collision_object, this);
+		min_traj_size_ = 10;
     }
 
     //! Empty stub

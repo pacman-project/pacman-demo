@@ -34,6 +34,7 @@ class CartPlanner
 	double tolerance_in_orientation_;
 	double eef_step_;
 	double jump_threshold_;
+	int min_traj_size_;
 
     // define the names passed in the urdf files corresponding to the current move group for planning
     std::string group_name_;
@@ -75,6 +76,7 @@ class CartPlanner
 		tolerance_in_position_ = 0.01;
 		tolerance_in_orientation_ = 0.01;
 		eef_step_ = 0.1; // to avoid jumps in the cartesian interpolation
+		//eef_step_ = 0.01;
 		jump_threshold_ = 5.0; // to avoid jumps in the ik solution
 
 		// joint state topic
@@ -85,6 +87,7 @@ class CartPlanner
 		sub_collision_objects_ = nh.subscribe ("/attached_collision_object", 500, &CartPlanner::callback_collision_object, this);
 
 		display_publisher_ = nh.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
+		min_traj_size_ = 10;
     }
 
     //! Empty stub
