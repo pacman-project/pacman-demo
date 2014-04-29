@@ -6,6 +6,8 @@
 
   <param name="arm_name" value="right"/>
 
+  <param name="log_path" value="/tmp/"/>
+
   <!-- PERCEPTION -->
   <include file="$(find demos)/launch/perception.launch"/>
 
