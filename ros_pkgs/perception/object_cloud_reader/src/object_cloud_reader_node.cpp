@@ -99,7 +99,8 @@ bool ObjectReader::processObjects(definitions::ObjectCloudReader::Request& reque
     vector<geometry_msgs::Pose> obj_poses;
     // 2. read the pcd files
     pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr current_scene (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
-    for (int i=0;i<objects.size();i++)
+
+    for (int i=0;( (i<objects.size()) && ( (request.retreat < 0 ) || (request.object_id < 0 ) ) );i++)    
     {
         if( i == request.object_id ) 
             continue;

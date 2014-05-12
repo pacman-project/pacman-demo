@@ -4,6 +4,7 @@ Object[] detected_objects
 
 # id of the object to grasp
 int32 object_id
+bool retreat
 
 ---
 
