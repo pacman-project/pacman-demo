@@ -48,6 +48,7 @@ class ObjectReader
     //tf::TransformBroadcaster tf_broadcaster_;
 
     ros::Publisher attached_object_publisher;
+    string path_to_mesh_;
 
   public:
 
@@ -56,6 +57,7 @@ class ObjectReader
     void poseToMatrix4f(geometry_msgs::Pose &pose,Eigen::Matrix4f &mat); 
 
     void send_occlusion_shape(vector<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > obj_pcds,vector<geometry_msgs::Pose> obj_poses);
+    void send_occlusion_mesh(vector<string> obj_ids,vector<geometry_msgs::Pose> obj_poses);
     // constructor
     ObjectReader(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
     {
@@ -104,6 +106,7 @@ bool ObjectReader::processObjects(definitions::ObjectCloudReader::Request& reque
     {
         if( i == request.object_id ) 
             continue;
+
         std::string path_to_object(path_to_database_);
         objects[i].name.data.erase(std::remove(objects[i].name.data.begin(), objects[i].name.data.end(),'\n'), objects[i].name.data.end());
         path_to_object += objects[i].name.data;

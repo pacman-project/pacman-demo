@@ -1,12 +1,7 @@
 joint_limits:
-  right_arm_0_joint:
+  right_sdh_finger_22_joint:
     has_velocity_limits: true
-    max_velocity: 0.191986217719
-    has_acceleration_limits: false
-    max_acceleration: 0
-  left_arm_6_joint:
-    has_velocity_limits: true
-    max_velocity: 0.314159265359
+    max_velocity: 5
     has_acceleration_limits: false
     max_acceleration: 0
   head_neck_pitch_joint:
@@ -14,22 +9,42 @@ joint_limits:
     max_velocity: 3.14159265359
     has_acceleration_limits: false
     max_acceleration: 0
+  right_arm_4_joint:
+    has_velocity_limits: true
+    max_velocity: 0.680678408278
+    has_acceleration_limits: false
+    max_acceleration: 0
+  left_arm_3_joint:
+    has_velocity_limits: true
+    max_velocity: 0.680678408278
+    has_acceleration_limits: false
+    max_acceleration: 0
+  left_arm_4_joint:
+    has_velocity_limits: true
+    max_velocity: 0.680678408278
+    has_acceleration_limits: false
+    max_acceleration: 0
+  left_arm_5_joint:
+    has_velocity_limits: true
+    max_velocity: 0.942477796077
+    has_acceleration_limits: false
+    max_acceleration: 0
+  right_arm_0_joint:
+    has_velocity_limits: true
+    max_velocity: 0.575958653158
+    has_acceleration_limits: false
+    max_acceleration: 0
+  right_sdh_thumb_3_joint:
+    has_velocity_limits: true
+    max_velocity: 5
+    has_acceleration_limits: false
+    max_acceleration: 0
+  right_arm_6_joint:
+    has_velocity_limits: true
+    max_velocity: 0.942477796077
+    has_acceleration_limits: false
+    max_acceleration: 0
   head_neck_roll_joint:
-    has_velocity_limits: true
-    max_velocity: 3.14159265359
-    has_acceleration_limits: false
-    max_acceleration: 0
-  head_neck_yaw_joint:
-    has_velocity_limits: true
-    max_velocity: 3.14159265359
-    has_acceleration_limits: false
-    max_acceleration: 0
-  head_head_tilt_joint:
-    has_velocity_limits: true
-    max_velocity: 3.14159265359
-    has_acceleration_limits: false
-    max_acceleration: 0
-  head_eyes_tilt_joint:
     has_velocity_limits: true
     max_velocity: 3.14159265359
     has_acceleration_limits: false
@@ -46,67 +61,22 @@ joint_limits:
     max_acceleration: 0
   left_arm_0_joint:
     has_velocity_limits: true
-    max_velocity: 0.191986217719
+    max_velocity: 0.575958653158
     has_acceleration_limits: false
     max_acceleration: 0
   left_arm_1_joint:
     has_velocity_limits: true
-    max_velocity: 0.191986217719
+    max_velocity: 0.575958653158
     has_acceleration_limits: false
     max_acceleration: 0
   left_arm_2_joint:
     has_velocity_limits: true
-    max_velocity: 0.226892802759
-    has_acceleration_limits: false
-    max_acceleration: 0
-  left_arm_3_joint:
-    has_velocity_limits: true
-    max_velocity: 0.226892802759
-    has_acceleration_limits: false
-    max_acceleration: 0
-  left_arm_4_joint:
-    has_velocity_limits: true
-    max_velocity: 0.226892802759
-    has_acceleration_limits: false
-    max_acceleration: 0
-  left_arm_5_joint:
-    has_velocity_limits: true
-    max_velocity: 0.314159265359
-    has_acceleration_limits: false
-    max_acceleration: 0
-  left_sdh_finger_23_joint:
-    has_velocity_limits: true
-    max_velocity: 5
+    max_velocity: 0.680678408278
     has_acceleration_limits: false
     max_acceleration: 0
   right_arm_1_joint:
     has_velocity_limits: true
-    max_velocity: 0.191986217719
-    has_acceleration_limits: false
-    max_acceleration: 0
-  right_arm_2_joint:
-    has_velocity_limits: true
-    max_velocity: 0.226892802759
-    has_acceleration_limits: false
-    max_acceleration: 0
-  right_arm_3_joint:
-    has_velocity_limits: true
-    max_velocity: 0.226892802759
-    has_acceleration_limits: false
-    max_acceleration: 0
-  right_arm_4_joint:
-    has_velocity_limits: true
-    max_velocity: 0.226892802759
-    has_acceleration_limits: false
-    max_acceleration: 0
-  left_sdh_finger_22_joint:
-    has_velocity_limits: true
-    max_velocity: 5
-    has_acceleration_limits: false
-    max_acceleration: 0
-  right_arm_5_joint:
-    has_velocity_limits: true
-    max_velocity: 0.314159265359
+    max_velocity: 0.575958653158
     has_acceleration_limits: false
     max_acceleration: 0
   right_sdh_knuckle_joint:
@@ -119,17 +89,27 @@ joint_limits:
     max_velocity: 5
     has_acceleration_limits: false
     max_acceleration: 0
-  left_sdh_thumb_3_joint:
+  left_arm_6_joint:
+    has_velocity_limits: true
+    max_velocity: 0.942477796077
+    has_acceleration_limits: false
+    max_acceleration: 0
+  left_sdh_finger_22_joint:
     has_velocity_limits: true
     max_velocity: 5
     has_acceleration_limits: false
     max_acceleration: 0
-  left_sdh_knuckle_joint:
+  right_arm_2_joint:
     has_velocity_limits: true
-    max_velocity: 5
+    max_velocity: 0.680678408278
     has_acceleration_limits: false
     max_acceleration: 0
-  left_sdh_finger_12_joint:
+  right_arm_3_joint:
+    has_velocity_limits: true
+    max_velocity: 0.680678408278
+    has_acceleration_limits: false
+    max_acceleration: 0
+  left_sdh_finger_23_joint:
     has_velocity_limits: true
     max_velocity: 5
     has_acceleration_limits: false
@@ -139,22 +119,12 @@ joint_limits:
     max_velocity: 5
     has_acceleration_limits: false
     max_acceleration: 0
-  right_arm_6_joint:
-    has_velocity_limits: true
-    max_velocity: 0.314159265359
-    has_acceleration_limits: false
-    max_acceleration: 0
-  left_sdh_thumb_2_joint:
+  left_sdh_thumb_3_joint:
     has_velocity_limits: true
     max_velocity: 5
     has_acceleration_limits: false
     max_acceleration: 0
-  right_sdh_finger_22_joint:
-    has_velocity_limits: true
-    max_velocity: 5
-    has_acceleration_limits: false
-    max_acceleration: 0
-  right_sdh_finger_23_joint:
+  left_sdh_finger_12_joint:
     has_velocity_limits: true
     max_velocity: 5
     has_acceleration_limits: false
@@ -164,13 +134,43 @@ joint_limits:
     max_velocity: 5
     has_acceleration_limits: false
     max_acceleration: 0
+  right_arm_5_joint:
+    has_velocity_limits: true
+    max_velocity: 0.942477796077
+    has_acceleration_limits: false
+    max_acceleration: 0
+  head_head_tilt_joint:
+    has_velocity_limits: true
+    max_velocity: 3.14159265359
+    has_acceleration_limits: false
+    max_acceleration: 0
+  left_sdh_knuckle_joint:
+    has_velocity_limits: true
+    max_velocity: 5
+    has_acceleration_limits: false
+    max_acceleration: 0
+  head_eyes_tilt_joint:
+    has_velocity_limits: true
+    max_velocity: 3.14159265359
+    has_acceleration_limits: false
+    max_acceleration: 0
+  right_sdh_finger_23_joint:
+    has_velocity_limits: true
+    max_velocity: 5
+    has_acceleration_limits: false
+    max_acceleration: 0
+  left_sdh_thumb_2_joint:
+    has_velocity_limits: true
+    max_velocity: 5
+    has_acceleration_limits: false
+    max_acceleration: 0
   right_sdh_thumb_2_joint:
     has_velocity_limits: true
     max_velocity: 5
     has_acceleration_limits: false
     max_acceleration: 0
-  right_sdh_thumb_3_joint:
+  head_neck_yaw_joint:
     has_velocity_limits: true
-    max_velocity: 5
+    max_velocity: 3.14159265359
     has_acceleration_limits: false
     max_acceleration: 0

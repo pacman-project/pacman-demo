@@ -2,7 +2,7 @@
 	<node name="pose_estimation_node" pkg="pose_estimation_uibk" type="pose_estimation_node" output="screen" cwd="node" />
 	<param name="path_to_config" value="config.txt" />
 	<!-- path to object directory, change it based on your setup -->
-	<param name="path_to_object_db" value="/home/crosales/Code/pacman/poseEstimation/dataFiles/recognizedObjects" />
+	<param name="path_to_object_db" value="/home/pacman/CODE/pacman/poseEstimation/dataFiles/recognizedObjects" />
 </launch>
                                                                                                                       
 

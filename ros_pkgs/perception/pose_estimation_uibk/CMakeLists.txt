@@ -4,17 +4,15 @@ project(pose_estimation_uibk)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED roscpp tf genmsg definitions)
+find_package(catkin REQUIRED roscpp genmsg definitions)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS filesystem system)
 find_package(Eigen REQUIRED)
 find_package(PCL 1.7 REQUIRED)
 
-set(CMAKE_CXX_FLAGS "-std=c++0x")
-
-set(PACMAN ../../../../)
-
+#set(POSE_ESTIMATION_EXT /home/pacman/CODE/pacman/poseEstimation)
+set(POSE_ESTIMATION_EXT /home/pacman/CODE/pacman/poseEstimation)
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
@@ -67,11 +65,17 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(include
-    ${PACMAN}/pacman/include
-    ${catkin_INCLUDE_DIRS}
-    ${PCL_INCLUDE_DIRS}
-    )
+include_directories(
+  include
+  ${PCL_INCLUDE_DIRS}
+
+  #/home/krzysztof/Dokumenty/Birmingham_research/pacman_poseEstimation/include
+   ${POSE_ESTIMATION_EXT}/include
+
+
+
+
+)
 
 add_definitions(
   ${PCL_DEFINITIONS}
@@ -79,8 +83,8 @@ add_definitions(
 
 link_directories(
   ${PCL_LIBRARY_DIRS}
-  ${PACMAN}/bin
-  #${POSE_ESTIMATION_EXT}/build
+ # /home/crosales/Code/poseEstimation/build
+  ${POSE_ESTIMATION_EXT}/build
 )
 
 ## Declare a cpp library
@@ -90,9 +94,7 @@ link_directories(
 #)
 
 ## Declare a cpp executable
-add_executable(pose_estimation_node 
-    src/pose_estimation_node.cpp
-    )
+add_executable(pose_estimation_node src/pose_estimation_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -100,12 +102,7 @@ add_dependencies(pose_estimation_node definitions_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(pose_estimation_node
-   PaCMan   
-   PaCManUIBKPoseEstimation
-   ${catkin_LIBRARIES} 
-   ${boost_LIBRARIES} 
-   ${PCL_LIBRARIES} 
-   pcl_3d_rec_framework # find_package does not find it
+   ${catkin_LIBRARIES} ${boost_LIBRARIES} ${PCL_LIBRARIES} pose_estimation  pcl_3d_rec_framework
 )
 
 

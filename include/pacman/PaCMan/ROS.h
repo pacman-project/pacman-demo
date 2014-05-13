@@ -198,7 +198,7 @@ namespace pacman {
                if( fabs(points[i].positions[j] - points[i-1].positions[j] ) > epsilon  )
                {
                	  found = true;
-               	  std::cout << "joint " << j << " are different " << points[i].positions[j]  << " : " << points[i-1].positions[j] << std::endl;
+               	  //std::cout << "joint " << j << " are different " << points[i].positions[j]  << " : " << points[i-1].positions[j] << std::endl;
                	  break;
                }
 			}
@@ -331,8 +331,8 @@ namespace pacman {
             }
         }*/
 
-		for( size_t i = 0; i < trajectory.time_from_previous.size(); i++ )
-			std::cout << "increment is: " << trajectory.time_from_previous[i] << std::endl;	
+		/*for( size_t i = 0; i < trajectory.time_from_previous.size(); i++ )
+			std::cout << "increment is: " << trajectory.time_from_previous[i] << std::endl;	*/
 	}
 
 	// // this mapping uses names defined in the urdf of the UIBK robot, so be careful if you change them
