@@ -1,20 +1,4 @@
-// The structure is more or less the following:
-//
-// 1) Start the main loop
-// 2) Calls the pose_estimation service
-// Input: point cloud of the scene
-// Output: ordered list of detected objects
-// 3) Calls the grasp_planning service
-// Input: ordered list of detected objects
-// Output: list of grasps for the first object of the scene
-// 4) Calls the trajectory_planning service
-// Input: ordered list of detected objects
-// lists of detected grasps for the first object of the scene
-// Output: trajectory for both the arm and the hand
-// 5) Calls the trajectory_execution service
-// Input: trajectory for both the arm and the hand
-// Output: success/failure//
-
+// system headers
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <log4cxx/logger.h>
@@ -23,21 +7,19 @@
 #include <std_msgs/String.h>
 #include <fstream>
 #include <vector>
-#include <algorithm>  
-// for the messages used in the services
+#include <algorithm> 
+
+#include <eigen_conversions/eigen_msg.h>
+#include <Eigen/Geometry>
+
+// generated headers from the definitions package
 #include "definitions/PoseEstimation.h"
 #include "definitions/GraspPlanning.h"
 #include "definitions/TrajectoryPlanning.h"
 #include "definitions/TrajectoryExecution.h"
 #include "definitions/ObjectCloudReader.h"
-#include <definitions/Grasp.h>
-
-//hand trajectory sdh messages
-
-#include <control_msgs/FollowJointTrajectoryGoal.h>
-#include <control_msgs/FollowJointTrajectoryActionGoal.h>
-#include <trajectory_msgs/JointTrajectory.h>
-#include <trajectory_msgs/JointTrajectoryPoint.h>
+#include "definitions/Grasp.h"
+#include "definitions/StateMachineList.h"
 
 enum stateEval
 {
@@ -98,13 +80,6 @@ int transTab[TransNum][StatesNum] =
   {Success,Success,Success,Success,Fail,Idle,Idle,Success}, // PickNextGrasp
   {Success,Success,Success,Success,Fail,Idle,Idle,Fail}, // PickNextObject
 };
-
-/*Event mapEvent[TransNum] = 
-{
-  EstimatePose,PlanGrasp,PlanTrajectory,PlanTrajectory,PlanTrajectory,PlanTrajectory,
-  Restart,Restart,Retreat,Retreat,Start,Stop,Stop,Stop,Stop,Stop,PickObject,PickObject,PickGrasp,PickObject
-};
-*/
 
 Event mapEvent[TransNum] = 
 {
@@ -177,6 +152,9 @@ class DemoSimple
     log4cxx::LoggerPtr my_logger;
     ofstream ofs;
     string log_path_;
+    ros::Publisher pub_states_;
+    ros::Publisher pub_events_;
+    map<int,string> event_map_;
   public:
 
     int curState_[StatesNum];
@@ -223,7 +201,6 @@ class DemoSimple
 
         pose_estimation_service_name = "/pose_estimation_uibk/estimate_poses";
         grasp_service_name = "/grasp_planner_srv";
-       // trajectory_planning_service_name = "/trajectory_planner_srv";
         trajectory_planning_service_name = "/trajectory_planning_srv";
         trajectory_execution_service_name = "/trajectory_execution_srv";
         object_reader_service_name = "/object_reader";
@@ -231,7 +208,6 @@ class DemoSimple
         pose_client = nh_.serviceClient<definitions::PoseEstimation>(pose_estimation_service_name);
         grasp_client = nh_.serviceClient<definitions::GraspPlanning>(grasp_service_name);
         trajectory_planner_client = nh_.serviceClient<definitions::TrajectoryPlanning>(trajectory_planning_service_name);
-        
         trajectory_execution_client = nh_.serviceClient<definitions::TrajectoryExecution>(trajectory_execution_service_name);
 	
 	      if(!nh_.getParam("arm_name",arm_)) 
@@ -242,13 +218,25 @@ class DemoSimple
 	      grasp_success_ = false;
 
         pub_cur_grasp_ = nh_.advertise<definitions::Grasp>(nh_.resolveName("/grasp_planner/cur_grasp"), 1);
-	 
+        pub_states_ = nh_.advertise<std_msgs::String>(nh_.resolveName("/pacman_visualisation/html_info"),1);
+        pub_events_ = nh_.advertise<std_msgs::String>(nh_.resolveName("/pacman_visualisation/toast_info"),1,true);
+
       for( int j = 0; j < StatesNum; j++ )
            curState_[j] = Idle;
 	      cout <<"init states:" << endl;
 	     for( int j = 0; j < StatesNum; j++ )
            cout << curState_[j] << endl;
 	     event_ = Start;
+
+      event_map_[Start] = "Start";
+      event_map_[EstimatePose] = "Estimate Pose";
+      event_map_[PlanGrasp] = "Plan Grasp";
+      event_map_[PlanTrajectory] = "Plan Trajectory";
+      event_map_[Retreat] = "Retreat";
+      event_map_[Restart] = "Restart";
+      event_map_[Stop] = "Stop";
+      event_map_[PickObject] = "Select Object";
+      event_map_[PickGrasp] = "Select Grasp";
 
       // * open hand at the begining * // 
        hand_pose_start_.push_back(0.); hand_pose_start_.push_back(-0.5); hand_pose_start_.push_back(0.5);
@@ -328,8 +316,8 @@ Event DemoSimple::evaluate_cur_state()
     {
       if( transTab[i][j] != curState_[j] )
       {
-	found = false;
-	break;
+	      found = false;
+	      break;
       }
     }
     if( found )
@@ -338,15 +326,31 @@ Event DemoSimple::evaluate_cur_state()
       break;
     }
   }
-  
+
   if( id >= 0 )
     event = mapEvent[id];
   event_ = event;
+
+  if( id >= 0 )
+  {
+    std_msgs::String msg;
+    stringstream ss;
+    ss << "state_" ;
+    if( id < 10 )
+      ss << 0;
+    ss << id;
+    msg.data = ss.str();
+    pub_states_.publish(msg);
+
+    msg.data = event_map_[event_];
+    pub_events_.publish(msg);
+  }
+
   return event;
 }
 
 void DemoSimple::perform_event(Event event)
-{
+{  
   cout << "current state:" << endl;
   for( int j = 0; j < StatesNum; j++ )
   {
@@ -822,7 +826,7 @@ int DemoSimple::doPoseEstimation()
    else
     ofs << ros::Time::now() << " pose estimation failed" << endl;
   
-   if( ( available_arm_ == "both" ) && ( curState_[PoseEstimate_State] == Success ) )
+    if( ( available_arm_ == "both" ) && ( curState_[PoseEstimate_State] == Success ) )
      select_arm(); 
 
    return my_detected_objects.size();
@@ -852,6 +856,13 @@ void DemoSimple::goToNextObject()
 void DemoSimple::select_arm()
 {
   geometry_msgs::Pose obj_pose = my_detected_objects[object_id_].pose;
+
+  Eigen::Quaternionf q_obj(obj_pose.orientation.w,obj_pose.orientation.x,obj_pose.orientation.y,obj_pose.orientation.z);
+  Eigen::Matrix3f m;
+  m = q_obj.toRotationMatrix();
+
+  std::cout << m << std::endl;
+
   double dist_right = sqrt(pow((obj_pose.position.x - robotpose_right.position.x),2)+
                       pow((obj_pose.position.y - robotpose_right.position.y),2)+
                       pow((obj_pose.position.z - robotpose_right.position.z),2));
@@ -920,6 +931,9 @@ bool DemoSimple::planGrasps(string arm)
       curState_[PlanGrasp_State] = Success;
       curState_[PickGrasp_State] = Success; 
    }
+
+  if( ( available_arm_ == "both" ) && ( curState_[PlanGrasp_State] == Success ) )
+  select_arm(); 
   return success;
 }
 

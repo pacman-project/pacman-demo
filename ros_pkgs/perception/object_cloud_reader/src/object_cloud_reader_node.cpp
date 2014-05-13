@@ -48,6 +48,7 @@ class ObjectReader
     //tf::TransformBroadcaster tf_broadcaster_;
 
     ros::Publisher attached_object_publisher;
+    string path_to_mesh_;
 
   public:
 
@@ -56,6 +57,8 @@ class ObjectReader
     void poseToMatrix4f(geometry_msgs::Pose &pose,Eigen::Matrix4f &mat); 
 
     void send_occlusion_shape(vector<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > obj_pcds,vector<geometry_msgs::Pose> obj_poses);
+    void send_occlusion_mesh(vector<string> obj_ids,vector<geometry_msgs::Pose> obj_poses);
+    void attach_object(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr obj_pcd,geometry_msgs::Pose obj_pose);
     // constructor
     ObjectReader(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
     {
@@ -97,13 +100,18 @@ bool ObjectReader::processObjects(definitions::ObjectCloudReader::Request& reque
     std::vector<definitions::Object> objects = request.detected_objects;
     vector<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > obj_pcds;
     vector<geometry_msgs::Pose> obj_poses;
+
+    geometry_msgs::Pose req_obj_pose;
+    pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr req_obj_pcd;
+
     // 2. read the pcd files
     pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr current_scene (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
 
-    for (int i=0;( (i<objects.size()) && ( (request.retreat < 0 ) || (request.object_id < 0 ) ) );i++)    
+    for (int i=0;( (i<objects.size()) && ( (request.retreat > 0 ) || (request.object_id < 0 ) ) );i++)    
     {
-        if( i == request.object_id ) 
-            continue;
+        /*if( i == request.object_id ) 
+            continue;*/
+
         std::string path_to_object(path_to_database_);
         objects[i].name.data.erase(std::remove(objects[i].name.data.begin(), objects[i].name.data.end(),'\n'), objects[i].name.data.end());
         path_to_object += objects[i].name.data;
@@ -121,12 +129,23 @@ bool ObjectReader::processObjects(definitions::ObjectCloudReader::Request& reque
         poseToMatrix4f(objects[i].pose, transform_pose);
         pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr transform_cloud(new pcl::PointCloud<pcl::PointXYZRGBNormal>);
         transformPointCloudWithNormals(*cloud, *transform_cloud, transform_pose); 
-        obj_pcds.push_back(transform_cloud);
-        obj_poses.push_back(objects[i].pose);
+
+        if( i != request.object_id )
+        {
+          obj_pcds.push_back(transform_cloud);
+          obj_poses.push_back(objects[i].pose);
+        }
+
+        if( i == request.object_id )
+        {
+          req_obj_pose = objects[i].pose;
+          req_obj_pcd = transform_cloud;
+        }
         
         for( size_t id = 0; id < transform_cloud->points.size(); id++ )
             current_scene->points.push_back(transform_cloud->points[id]);
     }  
+   // attach_object(obj_pcd,obj_pose);
     send_occlusion_shape(obj_pcds,obj_poses);
 
     response.result = response.SUCCESS;
