@@ -17,6 +17,7 @@
         <joint name="right_arm_4_joint" />
         <joint name="right_arm_5_joint" />
         <joint name="right_arm_6_joint" />
+        <chain base_link="world_link" tip_link="right_sdh_palm_link" />
     </group>
     <group name="left_arm">
         <joint name="left_arm_0_joint" />
@@ -26,6 +27,7 @@
         <joint name="left_arm_4_joint" />
         <joint name="left_arm_5_joint" />
         <joint name="left_arm_6_joint" />
+        <chain base_link="world_link" tip_link="left_sdh_palm_link" />
     </group>
     <group name="left_sdh">
         <joint name="left_sdh_finger_22_joint" />

@@ -175,6 +175,9 @@ namespace pacman {
 				commands[i].t = start_time + pacman::float_t(0.5);
 			else
 				commands[i].t = commands[i-1].t + pacman::float_t(trajectory.time_from_previous[i].toSec());
+
+			std::cout << "time command " << commands[i].t << std::endl;
+
 		}
 		return;
 	}
@@ -183,7 +186,7 @@ namespace pacman {
 	{
         // get the points from robot trajectory
 		const std::vector<trajectory_msgs::JointTrajectoryPoint> &points = moveitTraj.joint_trajectory.points;
-		double epsilon = 0.009;
+	    double epsilon = 0.009;
 
 		// pick each point from the trajectory and create a RobotEddie object
 		for (size_t i = 0; i < points.size(); ++i) 
@@ -195,7 +198,7 @@ namespace pacman {
                if( fabs(points[i].positions[j] - points[i-1].positions[j] ) > epsilon  )
                {
                	  found = true;
-               	  std::cout << "joint " << j << " are different " << points[i].positions[j]  << " : " << points[i-1].positions[j] << std::endl;
+               	  //std::cout << "joint " << j << " are different " << points[i].positions[j]  << " : " << points[i-1].positions[j] << std::endl;
                	  break;
                }
 			}
@@ -295,15 +298,11 @@ namespace pacman {
 			{
 				// the RobotTrajectory gives time_from_start, we prefer from previous for easier transformation to pacman commands
 				ros::Duration dt( points[i].time_from_start - points[i-1].time_from_start );
-				//if ( dt.toSec() < 0.05 )
-			    if ( dt.toSec() < 0.01 )
-					dt = ros::Duration(0.5);
-				//std::cout << "dt - increment" << dt << std::endl;
 				trajectory.time_from_previous.push_back( dt );
 			}
 		}
 
-        double max_diff = 0;
+       /* double max_diff = 0;
         int best_id = -1;
 
         for( size_t i = 1; i < trajectory.time_from_previous.size(); i++ )
@@ -326,14 +325,14 @@ namespace pacman {
             {
               trajectory.time_from_previous[i] = ros::Duration(0.1);
             }
-            else if( ( max_diff > 0.4 ) && (trajectory.time_from_previous[i].toSec() < 0.1 ) )
+            else if( ( max_diff > 0.3 ) && (trajectory.time_from_previous[i].toSec() < 0.1 ) )
             {
               trajectory.time_from_previous[i] = ros::Duration(0.5);
             }
-        }
+        }*/
 
-		for( size_t i = 0; i < trajectory.time_from_previous.size(); i++ )
-			std::cout << "increment is: " << trajectory.time_from_previous[i] << std::endl;	
+		/*for( size_t i = 0; i < trajectory.time_from_previous.size(); i++ )
+			std::cout << "increment is: " << trajectory.time_from_previous[i] << std::endl;	*/
 	}
 
 	// // this mapping uses names defined in the urdf of the UIBK robot, so be careful if you change them
@@ -528,7 +527,7 @@ namespace pacman {
 			for(int h = 0; h < pacman::SchunkDexHand::Config::JOINTS; h++)
 			{
 				if( is_cart )
-				  baseTrajectory.joint_trajectory.points[i].positions.push_back(startState.position[hand_index + h] + (i)*(goalState.joints[h] - startState.position[hand_index + h])/(NWayPoints-1) );
+				  baseTrajectory.joint_trajectory.points[i].positions.push_back(startState.position[hand_index + h] + (i)*( (goalState.joints[h] - startState.position[hand_index + h])/(NWayPoints-1) ) );
 				else
 				  baseTrajectory.joint_trajectory.points[i].positions.push_back( goalState.joints[h] );
 				//baseTrajectory.joint_trajectory.points[i].positions.push_back( goalState.joints[h] );

@@ -48,6 +48,7 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 		if(request.arm.compare(std::string("left")) == 0)
 			goal = request.eddie_goal_state.handLeft;
 
+		//plan_for_frame_ = request.arm + "_sdh_palm_link";
 		plan_for_frame_ = request.arm + "_sdh_palm_link";
 		group_name_ = request.arm + "_arm";
 

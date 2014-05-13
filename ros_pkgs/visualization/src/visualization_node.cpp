@@ -14,6 +14,7 @@
 
 #include <definitions/GraspList.h>
 #include <definitions/ObjectList.h>
+#include <definitions/StateMachineList.h>
 
 using namespace std;
 
@@ -30,9 +31,11 @@ namespace visualization
     ros::Subscriber sub_grasps_;
     ros::Subscriber sub_cur_grasp_;
     ros::Publisher pub_objects_cloud_;
+    ros::Publisher pub_scene_cloud_;
     ros::Publisher pub_gripper_;
 
     string path_to_object_db_;
+    string path_to_seg_scene_;
 
    public:
 
@@ -42,9 +45,11 @@ namespace visualization
        //sub_grasps_ = nh_.subscribe ("/grasp_planner_uibk/grasps", 500, &Visualization::callback_grasps, this);
        sub_cur_grasp_ = nh_.subscribe ("/grasp_planner/cur_grasp", 500, &Visualization::callback_cur_grasp, this);
        pub_objects_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>(nh_.resolveName("/recognized_objects"), 10);
+       pub_scene_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>(nh_.resolveName("/segmented_scene"), 10);
        pub_gripper_ = nh_.advertise<visualization_msgs::MarkerArray>("/gripper_pose", 1 );
 
        nh_.param<std::string>("path_to_object_database",path_to_object_db_, "");
+       nh_.param<std::string>("path_to_segmented_scene",path_to_seg_scene_, "");
     }
 
    	~Visualization() {};
@@ -56,6 +61,8 @@ namespace visualization
    	pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr read_pcd_object(string obj_name,Eigen::Vector3f color);
    	pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr merge_obj_clouds(vector<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > obj_pcds);
    	void visualize_gripper(geometry_msgs::PoseStamped gripper_pose,int &id,visualization_msgs::MarkerArray &markers,Eigen::Vector4f color);
+   // void callback_state_machine(const definitions::StateMachineList &states);
+    void visualize_segmented_scene();
  };
 
  void Visualization::callback_pose_estimate(const definitions::ObjectList &objects)
@@ -84,7 +91,34 @@ namespace visualization
    pcl::toROSMsg(*merged_cloud,merged_cloud_ros);
    merged_cloud_ros.header.frame_id = "world_link";
    pub_objects_cloud_.publish(merged_cloud_ros);
+
+   visualize_segmented_scene();
  }
+
+void Visualization::visualize_segmented_scene()
+{
+   pcl::PointCloud<pcl::PointXYZ>::Ptr obj_cloud (new pcl::PointCloud<pcl::PointXYZ>);
+   if (pcl::io::loadPCDFile<pcl::PointXYZ> (path_to_seg_scene_.c_str(), *obj_cloud) == -1) //* load the file
+   {
+     ROS_ERROR("Error at reading point cloud  %s... ", path_to_seg_scene_.c_str());      
+     return;
+   }   
+   pcl::PointCloud<pcl::PointXYZRGB>::Ptr obj_cloud_deb (new pcl::PointCloud<pcl::PointXYZRGB>);
+   double r,g,b;
+   r = 0; g = 255; b = 0;
+   for( size_t i = 0; i < obj_cloud->points.size(); i++ )
+   {
+     pcl::PointXYZRGB p;
+     p.x = obj_cloud->points[i].x; p.y = obj_cloud->points[i].y; p.z = obj_cloud->points[i].z;  
+     p.r = r; p.g = g; p.b = b; 
+     obj_cloud_deb->points.push_back(p);
+   }
+
+   sensor_msgs::PointCloud2 scene_cloud;
+   pcl::toROSMsg(*obj_cloud_deb,scene_cloud);
+   scene_cloud.header.frame_id = "camera_depth_optical_frame";
+   pub_scene_cloud_.publish(scene_cloud);
+}
 
  pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr Visualization::merge_obj_clouds(vector<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > obj_pcds)
  {

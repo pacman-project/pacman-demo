@@ -66,6 +66,7 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 		group_name_ = request.arm + "_arm";
 		plan_for_frame_ = request.arm + "_sdh_palm_link";
 		move_group_interface::MoveGroup arm_group( group_name_.c_str() );
+<<<<<<< HEAD
 		
 // 		// set the goal - THESE HAVE NO EFFECT!!!!!
 // 		plan_for_frame_ = request.arm + "_arm_5_link";
@@ -81,6 +82,8 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 // 			std::cout << arm_group.getJoints().at(i) << " ";
 // 		}
 // 		std::cout << std::endl;
+=======
+
 
 		/// PATH APPROACH; IT MISSES THE TRAJECTORY COMPUTATION
 		// now we plan move to the goal pose
@@ -105,8 +108,9 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 		// if not, it means it couldn't find a safe goal position
 		double fraction = arm_group.computeCartesianPath(waypoints, eef_step_, jump_threshold_, moveit_trajectory, avoid_collisions);
 
-		if (fraction < 0.98)
+		if (fraction < 1.0)
 		{
+			ROS_ERROR("Only %f part of the path was computed.", fraction);
 			ROS_ERROR("The goal configuration can not be reached: no IK solution");
 			return false;
 		}
@@ -130,8 +134,6 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 
 			goal_point = moveit_trajectory.joint_trajectory.points[moveit_trajectory.joint_trajectory.points.size()-1];
 
-			std::cout << "goal_point" << std::endl << goal_point << std::endl;
-
 			// build the joint constraint out of the goal point
 			moveit_msgs::Constraints goal_state;
 			moveit_msgs::JointConstraint joint_constraint;
@@ -145,9 +147,8 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 // 				joint_constraint.tolerance_below = 0.0;
 				goal_state.joint_constraints.push_back(joint_constraint);
 			}
+<<<<<<< HEAD
 
-			std::cout << "goal_state" << std::endl << goal_state << std::endl;
-			
 			if( !planTrajectory(trajectories, goal_state, request.arm, startJointState, goal_hand) || trajectories.size() < 1 ) 
 			{
 				ROS_WARN("No trajectory found for the required goal state");
@@ -238,7 +239,6 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 			moveit_msgs::RobotTrajectory robot_trajectory = motion_plan.response.motion_plan_response.trajectory;
 
 			// fill the robot trajectory with hand values, given the base trajectory of the arm
-		//	pacman::interpolateHandJoints(goal_hand, startState, robot_trajectory, arm);
 			if( trajSize <= min_traj_size_ )
 				pacman::interpolateHandJoints(goal_hand, startState, robot_trajectory, arm,false);
 			else
