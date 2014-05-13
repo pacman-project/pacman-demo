@@ -22,7 +22,6 @@
 
 namespace trajectory_planner_moveit {
 
-
 bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response) 
 {
 	if( request.type == request.MOVE_TO_CART_GOAL)
@@ -66,24 +65,6 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 		group_name_ = request.arm + "_arm";
 		plan_for_frame_ = request.arm + "_sdh_palm_link";
 		move_group_interface::MoveGroup arm_group( group_name_.c_str() );
-<<<<<<< HEAD
-		
-// 		// set the goal - THESE HAVE NO EFFECT!!!!!
-// 		plan_for_frame_ = request.arm + "_arm_5_link";
-// 		arm_group.setEndEffectorLink( plan_for_frame_ );
-// 		arm_group.setEndEffector( plan_for_frame_ );
-// 		// check for correctness of the end-effector frame
-// 		ROS_INFO("End-effector currently set: %s", arm_group.getEndEffectorLink().c_str());
-// 		ROS_INFO("It was supposed to be: %s", plan_for_frame_.c_str());
-// 		// show joints' list
-// 		std::cout << std::endl << "Full robot joints' list: " << std::endl;
-// 		for(int i=0; i<arm_group.getJoints().size(); ++i)
-// 		{
-// 			std::cout << arm_group.getJoints().at(i) << " ";
-// 		}
-// 		std::cout << std::endl;
-=======
-
 
 		/// PATH APPROACH; IT MISSES THE TRAJECTORY COMPUTATION
 		// now we plan move to the goal pose
@@ -106,12 +87,23 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 		// fraction means the fraction of the path covered
 		// since we have only one waypoint, the fraction must be on or very close to one
 		// if not, it means it couldn't find a safe goal position
-		double fraction = arm_group.computeCartesianPath(waypoints, eef_step_, jump_threshold_, moveit_trajectory, avoid_collisions);
-
+		double fraction = 0.0;
+		while( (fraction < 0.99) && (jump_threshold_ < 100) )
+		{
+			fraction = arm_group.computeCartesianPath(waypoints, eef_step_, jump_threshold_, moveit_trajectory, avoid_collisions);
+			jump_threshold_ = jump_threshold_*1.1;
+			if (fraction < 1.00)
+			{
+				ROS_INFO("Only %f part of the path could be computed", fraction);
+				ROS_INFO("Increasing 10 percent the jump threshold in computeCartesianPath");
+			}
+		}
+		// initialize jump threshold again for future requests
+		jump_threshold_ = 5.0;
+		
 		if (fraction < 1.0)
 		{
-			ROS_ERROR("Only %f part of the path was computed.", fraction);
-			ROS_ERROR("The goal configuration can not be reached: no IK solution");
+			ROS_ERROR("The goal configuration can not be reached, it might not exist an IK solution");
 			return false;
 		}
 
@@ -142,12 +134,11 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 				joint_constraint.joint_name = moveit_trajectory.joint_trajectory.joint_names[i];
 				joint_constraint.position = goal_point.positions[i];
 				joint_constraint.weight = 1.0;
-// 				// tolerances of 0.0 above and below are the default anyway
-// 				joint_constraint.tolerance_above = 0.0;
-// 				joint_constraint.tolerance_below = 0.0;
+				// tolerances of 0.0 above and below are the default anyway
+				// joint_constraint.tolerance_above = 0.0;
+				// joint_constraint.tolerance_below = 0.0;
 				goal_state.joint_constraints.push_back(joint_constraint);
 			}
-<<<<<<< HEAD
 
 			if( !planTrajectory(trajectories, goal_state, request.arm, startJointState, goal_hand) || trajectories.size() < 1 ) 
 			{
@@ -157,8 +148,8 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 			}
 			else
 			{
-				ROS_INFO("trajectories.size() %lu",trajectories.size());
-				ROS_INFO("trajectories.at(trajectories.size()-1).eddie_path.size() %lu",trajectories.at(trajectories.size()-1).eddie_path.size());
+				//ROS_INFO("trajectories.size() %lu",trajectories.size());
+				//ROS_INFO("trajectories.at(trajectories.size()-1).eddie_path.size() %lu",trajectories.at(trajectories.size()-1).eddie_path.size());
 				
 				response.result = response.SUCCESS;
 				ros::Duration duration = ros::Time::now() - now;
@@ -186,11 +177,6 @@ void CartPlanner::callback_collision_object(const moveit_msgs::AttachedCollision
 
 bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajectories, moveit_msgs::Constraints &goal, std::string &arm, sensor_msgs::JointState &startState, definitions::SDHand &goal_hand) 
 {
-	// first state the planning constraint
-	//moveit_msgs::Constraints pose_goal = kinematic_constraints::constructGoalConstraints(plan_for_frame_.c_str(), goal.wrist_pose, tolerance_in_position_, tolerance_in_orientation_);
-
-	//ROS_INFO("Planning for wrist (px, py, pz, qx, qy, qz, qw):\t%f\t%f\t%f\t%f\t%f\t%f\t%f", goal.wrist_pose.pose.position.x, goal.wrist_pose.pose.position.y, goal.wrist_pose.pose.position.z, goal.wrist_pose.pose.orientation.x, goal.wrist_pose.pose.orientation.y, goal.wrist_pose.pose.orientation.z, goal.wrist_pose.pose.orientation.w);
-	
 	// now construct the motion plan request
 	moveit_msgs::GetMotionPlan motion_plan;
 	moveit_msgs::MotionPlanRequest &motion_plan_request = motion_plan.request.motion_plan_request;
@@ -240,9 +226,14 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 
 			// fill the robot trajectory with hand values, given the base trajectory of the arm
 			if( trajSize <= min_traj_size_ )
-				pacman::interpolateHandJoints(goal_hand, startState, robot_trajectory, arm,false);
+			{
+				ROS_WARN("Trajectory size is less than the minimium.");
+				pacman::interpolateHandJoints(goal_hand, startState, robot_trajectory, arm, false);
+			}
 			else
+			{
 				pacman::interpolateHandJoints(goal_hand, startState, robot_trajectory, arm);			
+			}
 			// populate trajectory with motion plan data
 			// the start state is used to copy the data for the joints that are not being used in the planning
 			pacman::convertLimb(robot_trajectory, trajectory, startState, arm);
