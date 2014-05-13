@@ -39,7 +39,9 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 		{
 			ROS_ERROR("No real start state available, since no joint state recevied in topic: %s", topic_.c_str());
 			ROS_ERROR("Did you forget to start a controller?");
-			ROS_ERROR("Planning will be done from home position, however this trajectory might not be good for execution!");
+			response.result = response.OTHER_ERROR;
+			return false;
+			// ROS_ERROR("Planning will be done from home position, however this trajectory might not be good for execution!");
 		}
 		sensor_msgs::JointState startJointState = *current_state_ptr;
 		moveit_msgs::RobotState start_state;
@@ -51,18 +53,34 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 		// note that we plan for wrist frame of the requested arm
 		if(request.arm.compare(std::string("right")) == 0)
 			goal_hand = request.eddie_goal_state.handRight;
-		if(request.arm.compare(std::string("left")) == 0)
+		else if(request.arm.compare(std::string("left")) == 0)
 			goal_hand = request.eddie_goal_state.handLeft;
+		else
+		{
+			ROS_ERROR("The request.arm string should either be \"right\" or \"left\", while it is now \"%s\"", request.arm.c_str());
+			response.result = response.OTHER_ERROR;
+			return false;
+		}
 
 		// set the group
 		group_name_ = request.arm + "_arm";
 		plan_for_frame_ = request.arm + "_sdh_palm_link";
 		move_group_interface::MoveGroup arm_group( group_name_.c_str() );
-
-
-		// set the goal
-		arm_group.setEndEffectorLink( plan_for_frame_ );
-
+		
+// 		// set the goal - THESE HAVE NO EFFECT!!!!!
+// 		plan_for_frame_ = request.arm + "_arm_5_link";
+// 		arm_group.setEndEffectorLink( plan_for_frame_ );
+// 		arm_group.setEndEffector( plan_for_frame_ );
+// 		// check for correctness of the end-effector frame
+// 		ROS_INFO("End-effector currently set: %s", arm_group.getEndEffectorLink().c_str());
+// 		ROS_INFO("It was supposed to be: %s", plan_for_frame_.c_str());
+// 		// show joints' list
+// 		std::cout << std::endl << "Full robot joints' list: " << std::endl;
+// 		for(int i=0; i<arm_group.getJoints().size(); ++i)
+// 		{
+// 			std::cout << arm_group.getJoints().at(i) << " ";
+// 		}
+// 		std::cout << std::endl;
 
 		/// PATH APPROACH; IT MISSES THE TRAJECTORY COMPUTATION
 		// now we plan move to the goal pose
@@ -72,6 +90,15 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 		moveit_msgs::RobotTrajectory moveit_trajectory;
 		bool avoid_collisions = true;
 
+		// setting the planner and general parameters
+		arm_group.setPlannerId("PRMstarkConfigDefault");
+		arm_group.setGoalPositionTolerance(tolerance_in_position_);
+		arm_group.setGoalOrientationTolerance(tolerance_in_orientation_);
+		arm_group.setPlanningTime(max_planning_time_);
+
+		// set the current state
+		arm_group.setStartState(start_state);
+		
 		// and compute the cartesian path
 		// fraction means the fraction of the path covered
 		// since we have only one waypoint, the fraction must be on or very close to one
@@ -83,17 +110,6 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 			ROS_ERROR("The goal configuration can not be reached: no IK solution");
 			return false;
 		}
-
-
-		// setting the planner and general parameters
-		arm_group.setPlannerId("PRMstarkConfigDefault");
-		arm_group.setGoalPositionTolerance(tolerance_in_position_);
-		arm_group.setGoalOrientationTolerance(tolerance_in_orientation_);
-		arm_group.setPlanningTime(max_planning_time_);
-
-		// set the current state
-		arm_group.setStartState(start_state);
-
 
   		if(trajectory_processing::isTrajectoryEmpty(moveit_trajectory))
   		{
@@ -114,7 +130,7 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 
 			goal_point = moveit_trajectory.joint_trajectory.points[moveit_trajectory.joint_trajectory.points.size()-1];
 
-			std::cout << "goal_point" << goal_point << std::endl;
+			std::cout << "goal_point" << std::endl << goal_point << std::endl;
 
 			// build the joint constraint out of the goal point
 			moveit_msgs::Constraints goal_state;
@@ -124,30 +140,31 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 				joint_constraint.joint_name = moveit_trajectory.joint_trajectory.joint_names[i];
 				joint_constraint.position = goal_point.positions[i];
 				joint_constraint.weight = 1.0;
+// 				// tolerances of 0.0 above and below are the default anyway
+// 				joint_constraint.tolerance_above = 0.0;
+// 				joint_constraint.tolerance_below = 0.0;
 				goal_state.joint_constraints.push_back(joint_constraint);
 			}
 
-			std::cout << "goal_state" << goal_state << std::endl;
+			std::cout << "goal_state" << std::endl << goal_state << std::endl;
 			
-			if( !planTrajectory(trajectories, goal_state, request.arm, startJointState, goal_hand) ) 
+			if( !planTrajectory(trajectories, goal_state, request.arm, startJointState, goal_hand) || trajectories.size() < 1 ) 
 			{
 				ROS_WARN("No trajectory found for the required goal state");
+				response.result = response.NO_FEASIBLE_TRAJECTORY_FOUND;
+				return false;
 			}
-
-			ROS_INFO("trajectories.size() %lu",trajectories.size());
-			if(trajectories.size() > 0)
+			else
 			{
+				ROS_INFO("trajectories.size() %lu",trajectories.size());
+				ROS_INFO("trajectories.at(trajectories.size()-1).eddie_path.size() %lu",trajectories.at(trajectories.size()-1).eddie_path.size());
+				
 				response.result = response.SUCCESS;
 				ros::Duration duration = ros::Time::now() - now;
 
 				ROS_INFO("Trajectory planning request completed");
 				ROS_INFO_STREAM("Total trajectory calculation took " << duration);
 				return true;
-			} 
-			else 
-			{
-				response.result = response.NO_FEASIBLE_TRAJECTORY_FOUND;
-				return false;
 			}
   		}
 
@@ -223,9 +240,9 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 			// fill the robot trajectory with hand values, given the base trajectory of the arm
 		//	pacman::interpolateHandJoints(goal_hand, startState, robot_trajectory, arm);
 			if( trajSize <= min_traj_size_ )
-			  pacman::interpolateHandJoints(goal_hand, startState, robot_trajectory, arm,false);
-            else
-              pacman::interpolateHandJoints(goal_hand, startState, robot_trajectory, arm);			
+				pacman::interpolateHandJoints(goal_hand, startState, robot_trajectory, arm,false);
+			else
+				pacman::interpolateHandJoints(goal_hand, startState, robot_trajectory, arm);			
 			// populate trajectory with motion plan data
 			// the start state is used to copy the data for the joints that are not being used in the planning
 			pacman::convertLimb(robot_trajectory, trajectory, startState, arm);
