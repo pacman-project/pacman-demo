@@ -617,7 +617,7 @@ if(BUILD_ROS_PKGS)
 				EXECUTE_PROCESS(COMMAND ln -s ${PROJECT_PARENT}/pacman/ros_pkgs ${CATKIN_DIRECTORY}/src)
 			endif()
 			# build and rebuild re-build the packages after all desired targets are built
-			ADD_CUSTOM_TARGET(ROSPkgs ALL catkin_make -C ${CATKIN_DIRECTORY}
+			ADD_CUSTOM_TARGET(ROSPkgs ALL catkin_make --force-cmake -C ${CATKIN_DIRECTORY}
 				COMMENT "Built target ROSPkgs"
 				DEPENDS PaCManBhamControl PaCManBhamGrasp PaCManUIBKPoseEstimationTest PaCManUIBKPoseEstimation
 			)

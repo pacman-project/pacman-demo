@@ -217,4 +217,3 @@ If you see the error:
 * KIT Head
 
 	The Head should be in the "Zero position" **BEFORE** running the demontsration software, especially the Neck roll, Neck pitch and Neck yaw axis, otherwise some axis will not be initialized properly.
-
