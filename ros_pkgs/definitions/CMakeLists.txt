@@ -34,8 +34,6 @@ add_message_files(
   KinectGrabber.msg
   RobotEddie.msg
   KITHead.msg
-  StateMachine.msg
-  StateMachineList.msg
 )
 
 ## Generate services in the 'srv' folder
