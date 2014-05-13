@@ -113,7 +113,6 @@ Before using poseEstimation node in ROS, OpenNI has to be properly installed fro
 
 * `sudo apt-get install ros-hydro-openni-launch` this will install, appropriate for ROS, OpenNI drivers and the whole PCL 1.7 from ROS-hydro repositories
 
-
 ## Running PACMAN Software
 
 This section describes how to start and use the different robots used in the project (Eddie, Boris, ...)
