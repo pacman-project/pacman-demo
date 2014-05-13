@@ -76,8 +76,7 @@ class CartPlanner
 		tolerance_in_position_ = 0.01;
 		tolerance_in_orientation_ = 0.01;
 		eef_step_ = 0.1; // to avoid jumps in the cartesian interpolation
-		//eef_step_ = 0.01;
-		jump_threshold_ = 5.0; // to avoid jumps in the ik solution
+		jump_threshold_ = 100.0; // to avoid jumps in the ik solution
 
 		// joint state topic
 		topic_ = nh.resolveName("/joint_states");
