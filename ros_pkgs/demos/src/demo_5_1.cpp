@@ -155,6 +155,7 @@ class DemoSimple
     ros::Publisher pub_states_;
     ros::Publisher pub_events_;
     map<int,string> event_map_;
+    States cur_state_;
   public:
 
     int curState_[StatesNum];
@@ -227,6 +228,7 @@ class DemoSimple
 	     for( int j = 0; j < StatesNum; j++ )
            cout << curState_[j] << endl;
 	     event_ = Start;
+       cur_state_ = Start_State;
 
       event_map_[Start] = "Start";
       event_map_[EstimatePose] = "Estimate Pose";
@@ -372,13 +374,21 @@ void DemoSimple::perform_event(Event event)
       plan_trajectory();
       break;  
     case Retreat: 
+      cur_state_ = Start_State;
       ROS_DEBUG("event: retreat");
+      // ** detach object for safety ** //
+     /* reader_srv.request.object_id = object_id_;
+      reader_srv.request.retreat = false;
+      reader_srv.request.arm_name = arm_;
+      usleep(1000*1000);
+      reconstruct_scene();*/
+
       count = 1;
       goToStartPos();
       while( ( count < max_trial_start_ ) && ( curState_[Start_State] == Fail ) ){
 	      count++;
         goToStartPos();
-      }
+      }     
       break;
     case Start:
       ROS_DEBUG("event: start");
@@ -429,11 +439,17 @@ void DemoSimple::perform_event(Event event)
           count++;
         }while( ( count < max_trial_start_ ) && ( curState_[Start_State] == Fail ) );
       }
+     /* reader_srv.request.object_id = 0;
+      reader_srv.request.retreat = false;
+      reader_srv.request.arm_name = arm_;
+      reconstruct_scene();   
+      usleep(1000*1000); */  
+
       if( curState_[Start_State] == Success )
       {
         ROS_DEBUG("to drop object!!!");
         //restart(true,true);
-        restart(true,true,false);
+        restart(true,true,false);    
       }
       count = 1;
       if( curState_[Start_State] == Success )
@@ -444,7 +460,7 @@ void DemoSimple::perform_event(Event event)
           goToStartPos();
           count++;
         }while( ( count < max_trial_start_ ) && ( curState_[Start_State] == Fail ) );
-      }      
+      }                  
       break;      
     case Stop: 
       ROS_DEBUG("event: stop");
@@ -799,6 +815,7 @@ bool DemoSimple::restart(bool place,bool drop,bool user_debug)
 int DemoSimple::doPoseEstimation()
 {
    object_id_ = -1;
+   cur_state_ = PoseEstimate_State;
    curState_[PoseEstimate_State] = Fail; 
    curState_[PickObject_State] = Fail;
    if( !pose_client.call(estimation_srv))
@@ -834,6 +851,7 @@ int DemoSimple::doPoseEstimation()
 
 void DemoSimple::goToNextObject()
 {
+  cur_state_ = PickObject_State;
   curState_[PickObject_State] = Fail;
   //curState_[PoseEstimate_State] = Fail; 
   if( ( object_id_ < 0 ) || ( object_id_ >= objectsNum_ ) )
@@ -891,6 +909,7 @@ void DemoSimple::reconstruct_scene()
 bool DemoSimple::planGrasps(string arm)
 {
   grasp_id_ = 0;
+  cur_state_ = PlanGrasp_State;
   curState_[PlanGrasp_State] = Fail;
   curState_[PickGrasp_State] = Fail;
   bool success = false;
@@ -1004,6 +1023,7 @@ void DemoSimple::order_grasp()
 
 void DemoSimple::goToNextGrasp()
 {
+  cur_state_ = PickGrasp_State;
   curState_[PickGrasp_State] = Fail;
 //  curState_[PlanGrasp_State] = Fail;
   if( (grasp_id_ + 1) < my_calculated_grasp.size() )
@@ -1020,6 +1040,7 @@ bool DemoSimple::plan_trajectory()
   bool result = false;
   if( curState_[PreGraspTraj_State] == Idle )
   {
+    cur_state_ = PreGraspTraj_State;
     ROS_DEBUG("to do pre grasp");
     curState_[PreGraspTraj_State] = Fail;
     // for testing wo execution 
@@ -1030,6 +1051,7 @@ bool DemoSimple::plan_trajectory()
   }
   else if( ( curState_[PreGraspTraj_State] == Success ) && ( curState_[GraspTraj_State] == Idle ) )
   {
+    cur_state_ = GraspTraj_State;
     ROS_DEBUG("to do grasp");
     curState_[GraspTraj_State] = Fail;
     // for testing wo execution
@@ -1049,6 +1071,7 @@ bool DemoSimple::plan_trajectory()
   }
   else if( ( curState_[PreGraspTraj_State] == Success ) && ( curState_[GraspTraj_State] != Idle ) )
   {
+    cur_state_ = PostGraspTraj_State;
     ROS_DEBUG("to do post-grasp");
     curState_[PostGraspTraj_State] = Fail;
     // for testing wo execution
@@ -1093,6 +1116,7 @@ bool DemoSimple::executeMovement(bool pre_grasp,bool post_grasp,int &grasp_id,in
     reader_srv.request.detected_objects = my_detected_objects;
     reader_srv.request.object_id = object_id_;
     reader_srv.request.retreat = post_grasp;
+    reader_srv.request.arm_name = arm_;
     reconstruct_scene();
     usleep(1000*1000);
    // my_calculated_grasp[grasp_id].grasp_trajectory[0] = my_calculated_grasp[grasp_id].grasp_trajectory[2];
@@ -1103,6 +1127,7 @@ bool DemoSimple::executeMovement(bool pre_grasp,bool post_grasp,int &grasp_id,in
     pub_cur_grasp_.publish(my_calculated_grasp[grasp_id]);
     reader_srv.request.detected_objects = my_detected_objects;
     reader_srv.request.object_id = -1;
+    reader_srv.request.arm_name = arm_;
     reconstruct_scene();
     usleep(1000*1000); 
   }
