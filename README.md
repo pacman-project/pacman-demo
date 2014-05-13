@@ -114,7 +114,6 @@ Before using poseEstimation node in ROS, OpenNI has to be properly installed fro
 * `sudo apt-get install ros-hydro-openni-launch` this will install, appropriate for ROS, OpenNI drivers and the whole PCL 1.7 from ROS-hydro repositories
 * You need to set the var `POSE_ESTIMATION_EXT` in the `ros_pkgs/perception/pose_estimation_uibk/CMakeLists.txt` to point where the poseEstimation library root folder, and check that the build folder is called `build` in there. And you might need to change the paths in `src/pose_estimation_uibk.cpp` for configuration and database location (ToDo: improve this to avoid compiling everytime, e.g. passing the path as a parameter in the launch file).
 
-
 ## Running PACMAN Software
 
 This section describes how to start and use the different robots used in the project (Eddie, Boris, ...)
@@ -219,4 +218,3 @@ If you see the error:
 * KIT Head
 
 	The Head should be in the "Zero position" **BEFORE** running the demontsration software, especially the Neck roll, Neck pitch and Neck yaw axis, otherwise some axis will not be initialized properly.
-

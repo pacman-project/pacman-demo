@@ -19,7 +19,7 @@
 #include "definitions/TrajectoryExecution.h"
 #include "definitions/ObjectCloudReader.h"
 #include "definitions/Grasp.h"
-#include "definitions/StateMachineList.h"
+//#include "definitions/StateMachineList.h"
 
 enum stateEval
 {
@@ -256,7 +256,7 @@ class DemoSimple
        // ** start position ** //
        if( ( available_arm_ == "right") || (available_arm_ == "both") )
        {
-        cout << "to initialize right arm" << endl;
+          cout << "to initialize right arm" << endl;
 
          robotpose_right.position.x = 0.064062;
          robotpose_right.position.y = -0.17281;
@@ -843,8 +843,8 @@ int DemoSimple::doPoseEstimation()
    else
     ofs << ros::Time::now() << " pose estimation failed" << endl;
   
-    if( ( available_arm_ == "both" ) && ( curState_[PoseEstimate_State] == Success ) )
-     select_arm(); 
+    // if( ( available_arm_ == "both" ) && ( curState_[PoseEstimate_State] == Success ) )
+    //  select_arm(); 
 
    return my_detected_objects.size();
 }
@@ -867,20 +867,24 @@ void DemoSimple::goToNextObject()
   for( int i = (PickObject_State + 1 ); i < StatesNum; i++ )
     curState_[i] = Idle;
 
-  if( available_arm_ == "both" )
-    select_arm();
+  // if( available_arm_ == "both" )
+  //   select_arm();
 }
 
 void DemoSimple::select_arm()
 {
-  geometry_msgs::Pose obj_pose = my_detected_objects[object_id_].pose;
+  //geometry_msgs::Pose obj_pose = my_detected_objects[object_id_].pose;
+  geometry_msgs::Pose obj_pose = my_calculated_grasp[grasp_id_].grasp_trajectory[0].wrist_pose.pose;
 
   Eigen::Quaternionf q_obj(obj_pose.orientation.w,obj_pose.orientation.x,obj_pose.orientation.y,obj_pose.orientation.z);
   Eigen::Matrix3f m;
   m = q_obj.toRotationMatrix();
 
-  std::cout << m << std::endl;
+  // the projection of the z-axis of the grasp pose on the y-axis of the world boils down to see the y-component of the z-axis of the grasp pose
+  // if it is positive, it means we better try with the right arm, and negative with the left arm
+  // m(2,3)
 
+  // the distance is self-explanatory, the arm is chose accoding to the euclidean distance
   double dist_right = sqrt(pow((obj_pose.position.x - robotpose_right.position.x),2)+
                       pow((obj_pose.position.y - robotpose_right.position.y),2)+
                       pow((obj_pose.position.z - robotpose_right.position.z),2));
@@ -889,11 +893,20 @@ void DemoSimple::select_arm()
   double dist_left = sqrt(pow((obj_pose.position.x - robotpose_left.position.x),2)+
                       pow((obj_pose.position.y - robotpose_left.position.y),2)+
                       pow((obj_pose.position.z - robotpose_left.position.z),2));
-  if( dist_left < dist_right )
+
+  // so in the end, we have a weighted sum to select the arm giving slightly more weight to the orientation
+  double w_orien = 0.6;
+  double w_trans = 1 - w_orien;
+  
+  double sum = w_orien*(m(1,2)) + w_trans*(dist_left - dist_right);
+
+  if( sum < 0 )
     arm_ = "left";
   else 
     arm_ = "right";
-  cout << "distance to right: " << dist_right << " , distance to left: " << dist_left << " , selected " << arm_ << endl; 
+  cout << "distance to right: " << dist_right << " , distance to left: " << dist_left << "difference is " << dist_left - dist_right << endl; 
+  cout << "z-proyection on y-axis: " << m(1,2) << endl;
+  cout << "weigthed sum: " << sum << ", hence selected arm " << arm_ << endl; 
 }
 
 void DemoSimple::reconstruct_scene()
@@ -951,8 +964,6 @@ bool DemoSimple::planGrasps(string arm)
       curState_[PickGrasp_State] = Success; 
    }
 
-  if( ( available_arm_ == "both" ) && ( curState_[PlanGrasp_State] == Success ) )
-  select_arm(); 
   return success;
 }
 
@@ -1012,6 +1023,9 @@ void DemoSimple::order_grasp()
    
    my_calculated_grasp.clear();
    my_calculated_grasp = my_calculated_grasp_sort;
+
+    if( available_arm_ == "both" ) 
+      select_arm(); 
    
    /*for( size_t i = 0; i < my_calculated_grasp.size(); i++ )
    {
@@ -1025,13 +1039,16 @@ void DemoSimple::goToNextGrasp()
 {
   cur_state_ = PickGrasp_State;
   curState_[PickGrasp_State] = Fail;
-//  curState_[PlanGrasp_State] = Fail;
+  // curState_[PlanGrasp_State] = Fail;
   if( (grasp_id_ + 1) < my_calculated_grasp.size() )
   {
     grasp_id_ ++;
     curState_[PickGrasp_State] = Success;  
     curState_[PreGraspTraj_State] = Idle; 
-  //  curState_[PlanGrasp_State] = Success;
+    // curState_[PlanGrasp_State] = Success;
+
+    if( available_arm_ == "both" )
+      select_arm(); 
   }
 }
 
