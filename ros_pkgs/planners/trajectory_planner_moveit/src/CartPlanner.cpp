@@ -117,10 +117,10 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
   			ROS_INFO("Sucessfully found a good goal position for the MOVE_TO_CART_GOAL");
 
 			//display the path to check that the found goal position is good
-			moveit_msgs::DisplayTrajectory display_trajectory;
-			display_trajectory.trajectory_start = start_state;
-	  		display_trajectory.trajectory.push_back(moveit_trajectory);
-	  		display_publisher_.publish(display_trajectory);
+			// moveit_msgs::DisplayTrajectory display_trajectory;
+			// display_trajectory.trajectory_start = start_state;
+			// display_trajectory.trajectory.push_back(moveit_trajectory);
+			// display_publisher_.publish(display_trajectory);
 		
 			trajectory_msgs::JointTrajectoryPoint goal_point;
 
