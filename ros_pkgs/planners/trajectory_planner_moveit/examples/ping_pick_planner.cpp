@@ -8,6 +8,7 @@
 
 //for the messages used in the services
 #include "definitions/TrajectoryPlanning.h"
+#include "definitions/TrajectoryExecution.h"
 
 // utility function to simplify grasp trajectory generation without too many complications
 void initializeGraspTrajectory(definitions::SDHand &traj, double posx, double posy, double posz, double qx, double qy, double qz, double qw, std::string frame_id, double j0, double j1, double j2, double j3, double j4, double j5, double j6)
@@ -40,6 +41,7 @@ int main(int argc, char **argv)
 
     // planning and execution service
     std::string planning_service_name("/trajectory_planning_srv");
+	std::string execution_service_name("/trajectory_execution_srv");
 
     if ( !ros::service::waitForService(planning_service_name, ros::Duration().fromSec(1.0)) )
     { 
@@ -54,9 +56,9 @@ int main(int argc, char **argv)
 
     initializeGraspTrajectory(single_grasp,0.1624,-0.2599,0.6642,0.404885,0.86333,-0.139283,0.267076,"world_link",0.0,0.0,0.0,0.0,0.0,0.0,0.0);
     test_grasp.grasp_trajectory.push_back(single_grasp);
-    initializeGraspTrajectory(single_grasp,0.1624,-0.2599,0.5642,0.404885,0.86333,-0.139283,0.267076,"world_link",0.0,0.0,0.0,0.0,0.0,0.0,0.0);
+    initializeGraspTrajectory(single_grasp,0.1624,-0.2599,0.5642,0.404885,0.86333,-0.139283,0.267076,"world_link",0.0,-0.8,0.8,-0.8,0.8,-0.8,0.8);
     test_grasp.grasp_trajectory.push_back(single_grasp);
-    initializeGraspTrajectory(single_grasp,0.1624,-0.2599,0.4642,0.404885,0.86333,-0.139283,0.267076,"world_link",0.0,0.0,0.0,0.0,0.0,0.0,0.0);
+    initializeGraspTrajectory(single_grasp,0.1624,-0.2599,0.4642,0.404885,0.86333,-0.139283,0.267076,"world_link",0.0,-0.8,0.8,-0.8,0.8,-0.8,0.8);
     test_grasp.grasp_trajectory.push_back(single_grasp);
     initializeGraspTrajectory(single_grasp,0.1624,-0.2599,0.3642,0.404885,0.86333,-0.139283,0.267076,"world_link",0.0,0.0,0.0,0.0,0.0,0.0,0.0);
     test_grasp.grasp_trajectory.push_back(single_grasp);
@@ -96,6 +98,33 @@ int main(int argc, char **argv)
     { 
         ROS_INFO("Trajectory Planning OK...\n");
     }
+    
+    // print the whole trajectory
+    std::cout << "trajectory[0]:" << std::endl << trajectory_planning_srv.response.trajectory[0] << std::endl;
+    
+    // create the execution service instance
+    definitions::TrajectoryExecution trajectory_execution_srv;
+	trajectory_execution_srv.request.trajectory = trajectory_planning_srv.response.trajectory[0];
+
+    // call the execution service with the instance
+    ROS_INFO("Calling the execution service");
+    if ( !ros::service::call( execution_service_name, trajectory_execution_srv) )
+    { 
+        ROS_ERROR("Call to the service %s failed.", execution_service_name.c_str());  
+        return (-1);
+    }   
+
+    if (trajectory_execution_srv.response.result == trajectory_execution_srv.response.OTHER_ERROR)
+    {   
+        ROS_ERROR("Unable to execute the trajectory: OTHER_ERROR");
+        return (-1);
+    }
+
+    if (trajectory_execution_srv.response.result == trajectory_execution_srv.response.SUCCESS)
+    { 
+        ROS_INFO("Trajectory execution OK... moved to pick position succesfully!\n");
+    }
+
 
     return 0;
 }
