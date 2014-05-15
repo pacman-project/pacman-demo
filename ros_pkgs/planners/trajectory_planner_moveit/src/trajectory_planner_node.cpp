@@ -88,7 +88,7 @@ bool TrajPlanner::planTrajectory(definitions::TrajectoryPlanning::Request &reque
 		case definitions::TrajectoryPlanning::Request::PICK:
 //             if(pickup_planner_->planPickup(request, response)) {
             if ( my_pick_planner_->planTrajectoryFromCode(request, response) )
-	    {
+            {
                 ROS_INFO("Succesfully created a motion plan for the desired PICK operation");
             } else {
                 ROS_ERROR("Failed to find a valid motion plan for the desired PICK operation");
@@ -97,7 +97,7 @@ bool TrajPlanner::planTrajectory(definitions::TrajectoryPlanning::Request &reque
 			break;
 
 		case definitions::TrajectoryPlanning::Request::PLACE:
-			ROS_INFO("Succesfully planned a trajectory to the desired PLACE operation");
+			ROS_INFO("definitions::TrajectoryPlanning::Request::PLACE not implemented yet, sorry");
 			break;
 
 		case definitions::TrajectoryPlanning::Request::MOVE_TO_STATE_GOAL:

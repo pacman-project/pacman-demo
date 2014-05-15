@@ -1231,6 +1231,17 @@ bool DemoSimple::plan_trajectory()
     curState_[PreGraspTraj_State] = Fail;
     // for testing wo execution 
    // curState_[PreGraspTraj_State] = Success;
+
+    if( arm_ == "right" )
+    {
+      trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose = my_calculated_grasp[grasp_id_].grasp_trajectory[0].wrist_pose;
+      trajectory_planning_srv.request.eddie_goal_state.handRight.joints = my_calculated_grasp[grasp_id_].grasp_trajectory[0].joints;
+    }
+    else if( arm_ == "left" )
+    {
+      trajectory_planning_srv.request.eddie_goal_state.handLeft.wrist_pose = my_calculated_grasp[grasp_id_].grasp_trajectory[0].wrist_pose;
+      trajectory_planning_srv.request.eddie_goal_state.handLeft.joints = my_calculated_grasp[grasp_id_].grasp_trajectory[0].joints;    
+    }
     executeMovement(true,false,grasp_id_);
     if( grasp_success_ )
       curState_[PreGraspTraj_State] = Success;
@@ -1244,17 +1255,15 @@ bool DemoSimple::plan_trajectory()
     // for testing wo execution
     //curState_[GraspTraj_State] = Success;
 
-    executeMovement(false,false,grasp_id_,1);
-    if( grasp_success_ )
+    
+    if( executeMovement(false,false,grasp_id_,1) )
     {
       //executeMovement(false,grasp_id_);
-      executeMovement(false,false,grasp_id_,2,false);
-      if( grasp_success_ )
+      //executeMovement(false,false,grasp_id_,2,false);
+      //if( grasp_success_ )
         curState_[GraspTraj_State] = Success;
     }
-    /*executeMovement(false,grasp_id_);
-    if( grasp_success_ )
-      curState_[GraspTraj_State] = Success;*/
+
   }
   else if( ( curState_[PreGraspTraj_State] == Success ) && ( curState_[GraspTraj_State] != Idle ) )
   {
@@ -1281,10 +1290,21 @@ bool DemoSimple::post_grasp(int grasp_id)
     offset_z  = 0.2; // 0.15
   else
     offset_z  = 0.25;
+
+  size_t N = my_calculated_grasp[grasp_id_].grasp_trajectory.size()-1;
   
-  my_calculated_grasp[grasp_id].grasp_trajectory[0].wrist_pose.pose.position.z += offset_z; 
-  my_calculated_grasp[grasp_id].grasp_trajectory[1] = my_calculated_grasp[grasp_id].grasp_trajectory[0];
-  my_calculated_grasp[grasp_id].grasp_trajectory[2] = my_calculated_grasp[grasp_id].grasp_trajectory[0];
+  if( arm_ == "right" )
+  {
+    trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose = my_calculated_grasp[grasp_id].grasp_trajectory[N].wrist_pose;
+    trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose.pose.position.z += offset_z;
+    trajectory_planning_srv.request.eddie_goal_state.handRight.joints = my_calculated_grasp[grasp_id].grasp_trajectory[N].joints;
+  }
+  else if( arm_ == "left" )
+  {
+    trajectory_planning_srv.request.eddie_goal_state.handLeft.wrist_pose = my_calculated_grasp[grasp_id].grasp_trajectory[N].wrist_pose;
+    trajectory_planning_srv.request.eddie_goal_state.handLeft.wrist_pose.pose.position.z += offset_z;
+    trajectory_planning_srv.request.eddie_goal_state.handLeft.joints = my_calculated_grasp[grasp_id].grasp_trajectory[N].joints;    
+  }
   success = executeMovement(false,true,grasp_id);
   
   return success;
@@ -1299,7 +1319,7 @@ bool DemoSimple::executeMovement(bool pre_grasp, bool post_grasp, int &grasp_id,
   {
     return succeed;
   }
-  if( !pre_grasp ) 
+  if( !pre_grasp && !post_grasp) 
   {    
     reader_srv.request.detected_objects = my_detected_objects;
     reader_srv.request.object_id = object_id_;
@@ -1307,17 +1327,26 @@ bool DemoSimple::executeMovement(bool pre_grasp, bool post_grasp, int &grasp_id,
     reader_srv.request.arm_name = arm_;
     reconstruct_scene();
     usleep(1000*1000);
-   // my_calculated_grasp[grasp_id].grasp_trajectory[0] = my_calculated_grasp[grasp_id].grasp_trajectory[2];
-    my_calculated_grasp[grasp_id].grasp_trajectory[0] = my_calculated_grasp[grasp_id].grasp_trajectory[traj_id];
+    // my_calculated_grasp[grasp_id].grasp_trajectory[0] = my_calculated_grasp[grasp_id].grasp_trajectory[traj_id];
+    trajectory_planning_srv.request.type = trajectory_planning_srv.request.PICK;
   }
   else
   {    
     pub_cur_grasp_.publish(my_calculated_grasp[grasp_id]);
     reader_srv.request.detected_objects = my_detected_objects;
-    reader_srv.request.object_id = -1;
+    reader_srv.request.retreat = post_grasp;
+    if (post_grasp)
+    {
+      reader_srv.request.object_id = object_id_;
+    }
+    else
+    {
+      reader_srv.request.object_id = -1;
+    }
     reader_srv.request.arm_name = arm_;
     reconstruct_scene();
     usleep(1000*1000); 
+    trajectory_planning_srv.request.type = trajectory_planning_srv.request.MOVE_TO_CART_GOAL;
   }
   //std::cout << "grasp id is: " << grasp_id << " : " << "grasp size is: " << my_calculated_grasp.size() << std::endl;
   std::vector<definitions::Grasp> my_calculated_grasp_cur;
@@ -1325,23 +1354,12 @@ bool DemoSimple::executeMovement(bool pre_grasp, bool post_grasp, int &grasp_id,
 
  // std::cout << "my_calculated_grasp[grasp_id]" << my_calculated_grasp[grasp_id] << std::endl;
 
-  trajectory_planning_srv.request.ordered_grasp = my_calculated_grasp;
-  //trajectory_planning_srv.request.arm = "right";
+  //trajectory_planning_srv.request.ordered_grasp = my_calculated_grasp;
   trajectory_planning_srv.request.arm = arm_;
-  trajectory_planning_srv.request.type = trajectory_planning_srv.request.MOVE_TO_CART_GOAL;
   trajectory_planning_srv.request.ordered_grasp = my_calculated_grasp_cur;
   trajectory_planning_srv.request.object_list = estimation_srv.response.detected_objects;
   trajectory_planning_srv.request.object_id = 0;
-  if( arm_ == "right" )
-  {
-    trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose = my_calculated_grasp[grasp_id].grasp_trajectory[0].wrist_pose;
-    trajectory_planning_srv.request.eddie_goal_state.handRight.joints = my_calculated_grasp[grasp_id].grasp_trajectory[0].joints;
-  }
-  else if( arm_ == "left" )
-  {
-    trajectory_planning_srv.request.eddie_goal_state.handLeft.wrist_pose = my_calculated_grasp[grasp_id].grasp_trajectory[0].wrist_pose;
-    trajectory_planning_srv.request.eddie_goal_state.handLeft.joints = my_calculated_grasp[grasp_id].grasp_trajectory[0].joints;    
-  }
+
   //trajectory_planning_srv.request.object_id = grasp_id;
   
   if( !trajectory_planner_client_.call(trajectory_planning_srv) )

@@ -85,6 +85,8 @@ bool StatePlanner::planTrajectory(std::vector<definitions::Trajectory> &trajecto
 		if(arm.compare(std::string("left")) == 0)
 			joint_constraint.position = goal.armLeft.joints[i];
 
+		joint_constraint.weight = 1.0;
+		
 		joint_constraints.push_back(joint_constraint);
 	}
 	
