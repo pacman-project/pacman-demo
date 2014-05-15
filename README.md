@@ -112,7 +112,6 @@ which automatically update the files in the catkin workspace.
 Before using poseEstimation node in ROS, OpenNI has to be properly installed from ROS repositories. In order to do so the default installation of PCL 1.7 from repositories has to be completely removed from the system. Then run: 
 
 * `sudo apt-get install ros-hydro-openni-launch` this will install, appropriate for ROS, OpenNI drivers and the whole PCL 1.7 from ROS-hydro repositories
-* You need to set the var `POSE_ESTIMATION_EXT` in the `ros_pkgs/perception/pose_estimation_uibk/CMakeLists.txt` to point where the poseEstimation library root folder, and check that the build folder is called `build` in there. And you might need to change the paths in `src/pose_estimation_uibk.cpp` for configuration and database location (ToDo: improve this to avoid compiling everytime, e.g. passing the path as a parameter in the launch file).
 
 ## Running PACMAN Software
 
