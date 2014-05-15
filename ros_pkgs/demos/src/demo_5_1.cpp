@@ -21,6 +21,7 @@
 #include "definitions/Grasp.h"
 //#include "definitions/StateMachineList.h"
 
+// STATE MACHINE
 enum stateEval
 {
   Fail,
@@ -37,7 +38,8 @@ enum States
   PreGraspTraj_State,
   GraspTraj_State,
   PostGraspTraj_State,
-  PickGrasp_State
+  PickGrasp_State,
+  N_STATES
 };
 
 enum Event
@@ -50,10 +52,11 @@ enum Event
   Restart,
   Stop,
   PickObject,
-  PickGrasp
+  PickGrasp,
+  N_EVENTS
 };
 
-const int StatesNum = 8;
+const int StatesNum = N_STATES;
 const int TransNum = 20;
 
 int transTab[TransNum][StatesNum] = 
@@ -63,7 +66,6 @@ int transTab[TransNum][StatesNum] =
   {Success,Success,Success,Success,Idle,Idle,Idle,Success}, // PlanTrajectory- pre-grasp
   {Success,Success,Success,Success,Success,Idle,Idle,Success}, // PlanTrajectory- grasp
   {Success,Success,Success,Success,Success,Success,Idle,Success}, // PlanTrajectory- post-grasp
-  //{Success,Success,Success,Success,Success,Fail,Idle,Success}, // PlanTrajectory- post-grasp
   {Success,Success,Success,Success,Success,Fail,Idle,Success}, // Retreat
   {Success,Success,Success,Success,Success,Success,Success,Success}, // re-start
   {Success,Success,Success,Success,Success,Success,Fail,Success}, // re-start
@@ -83,9 +85,28 @@ int transTab[TransNum][StatesNum] =
 
 Event mapEvent[TransNum] = 
 {
-  EstimatePose,PlanGrasp,PlanTrajectory,PlanTrajectory,PlanTrajectory,Retreat,
-  Restart,Restart,Retreat,Retreat,Start,Stop,Stop,Stop,Stop,Stop,PickObject,PickObject,PickGrasp,PickObject
+  EstimatePose,
+  PlanGrasp,
+  PlanTrajectory,
+  PlanTrajectory,
+  PlanTrajectory,
+  Retreat,
+  Restart,
+  Restart,
+  Retreat,
+  Retreat,
+  Start,
+  Stop,
+  Stop,
+  Stop,
+  Stop,
+  Stop,
+  PickObject,
+  PickObject,
+  PickGrasp,
+  PickObject
 };
+// STATE MACHINE
 
 const int max_trial_ = 1;
 const int max_trial_start_ = 5;
@@ -99,65 +120,68 @@ class DemoSimple
     // the node handle
     ros::NodeHandle nh_;
     ros::NodeHandle priv_nh_;
-    ros::ServiceClient pose_client;
-    ros::ServiceClient grasp_client;
-    ros::ServiceClient trajectory_planner_client;
-    ros::ServiceClient trajectory_execution_client;
-    ros::Publisher sdh_joint_angles_pub;
-    ros::ServiceClient reader_client;
     
-    //Stuff
+    // Service clients
+    ros::ServiceClient pose_client_;
+    ros::ServiceClient grasp_client_;
+    ros::ServiceClient trajectory_planner_client_;
+    ros::ServiceClient trajectory_execution_client_;
+    ros::ServiceClient reader_client_;
+    
+    // Service names
     std::string pose_estimation_service_name;
     std::string grasp_service_name;
     std::string trajectory_planning_service_name;
     std::string trajectory_execution_service_name;
     std::string object_reader_service_name;
     
-    //Variables messages
-    bool status_robot, status_ros;
-    
-    std::vector<std::string> joint_names_str;
-    
-    std::vector<definitions::Object> my_detected_objects;
-    std::vector<definitions::Grasp> my_calculated_grasp;
-    std::vector<definitions::Trajectory> my_calculated_trajectory;
-    
-    //Service variables
+    // Service variables
     definitions::PoseEstimation estimation_srv;
     definitions::GraspPlanning grasp_planning_srv;
     definitions::TrajectoryPlanning trajectory_planning_srv;
     definitions::TrajectoryExecution trajectory_execution_srv;
     definitions::ObjectCloudReader reader_srv;
-    ros::Publisher pub_cur_grasp_;
-    geometry_msgs::Pose poseMid;  
-    geometry_msgs::Pose robotpose;
 
-    geometry_msgs::Pose robotpose_right;
-    geometry_msgs::Pose robotpose_left;
+    // Vector of results of states
+    std::vector<definitions::Object> my_detected_objects;
+    std::vector<definitions::Grasp> my_calculated_grasp;
+    std::vector<definitions::Trajectory> my_calculated_trajectory;
+   
+    // Predefined poses for the demo
+    string available_arm_;
+    geometry_msgs::Pose robotpose;
+    geometry_msgs::Pose robotpose_right_;
+    geometry_msgs::Pose robotpose_left_;
     vector<float> robot_start_joints_right;
     vector<float> robot_place_joints_right;
     vector<float> robot_start_joints_left;
     vector<float> robot_place_joints_left;    
-
     vector<float> robot_start_joints_;
     vector<float> robot_place_joints_;
+    vector<float> hand_pose_start_;
     
+    // Misc
+    ros::Publisher pub_cur_grasp_; 
+    ros::Publisher pub_clear_;
     int objectsNum_;
     int grasp_id_;
     int object_id_;
     vector<int> object_count_;
-    vector<float> hand_pose_start_;
-    string available_arm_;
 
+    // Logging variables
     log4cxx::LoggerPtr my_logger;
     ofstream ofs;
     string log_path_;
+
+    // State machine variables
     ros::Publisher pub_states_;
     ros::Publisher pub_events_;
     map<int,string> event_map_;
     States cur_state_;
+
   public:
 
+    // State machine
     int curState_[StatesNum];
     Event event_; 
     stateEval eval_;
@@ -165,70 +189,76 @@ class DemoSimple
     bool grasp_success_;
     string arm_;    
     
+    // State functions
     bool goToStartPos();
-    
-    void reconstruct_scene();
-    
     int doPoseEstimation();
-    
-    bool planGrasps(string arm);    
-    
-    bool executeMovement(bool pre_grasp,bool post_grasp,int &grasp_id,int traj_id=2,bool user_debug=true);    
-    
-    bool post_grasp(int grasp_id);
+    void reconstruct_scene();
+    void goToNextObject();
+    bool planGrasps(string arm);
     void order_grasp();
+    bool post_grasp(int grasp_id);
+    void goToNextGrasp();
+    bool plan_trajectory();
+    bool executeMovement(bool pre_grasp,bool post_grasp,int &grasp_id,int traj_id=2,bool user_debug=true);    
+    bool restart(bool place,bool drop,bool user_debug=true);
 
+    // State Machine evaluations
     Event evaluate_cur_state();
     void perform_event(Event event);
-    bool plan_trajectory();
-    void goToNextObject();
-    void goToNextGrasp();
-    bool restart(bool place,bool drop,bool user_debug=true);
+
+    // helper functions
+    // arm selection
     void select_arm();
-    
+
     // constructor
     DemoSimple(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
     {
-        ROS_DEBUG("demo Started!");
-        if(!nh_.getParam("log_path",log_path_)) 
-          log_path_ = "/tmp/";
-        stringstream ss_log;
-        ss_log << log_path_ << "demo_" << ros::Time::now() << ".log";
-        string log_path_str = ss_log.str();
-        ofs.open(log_path_str.c_str());
+      ROS_DEBUG("DEMO Started!");
 
-        my_logger = log4cxx::Logger::getLogger(ROSCONSOLE_DEFAULT_NAME);
-        my_logger->setLevel(ros::console::g_level_lookup[ros::console::levels::Debug]);
+      // logging init
+      if(!nh_.getParam("log_path",log_path_)) 
+        log_path_ = "/tmp/";
+      stringstream ss_log;
+      ss_log << log_path_ << "demo_" << ros::Time::now() << ".log";
+      string log_path_str = ss_log.str();
+      ofs.open(log_path_str.c_str());
+      my_logger = log4cxx::Logger::getLogger(ROSCONSOLE_DEFAULT_NAME);
+      my_logger->setLevel(ros::console::g_level_lookup[ros::console::levels::Debug]);
 
-        pose_estimation_service_name = "/pose_estimation_uibk/estimate_poses";
-        grasp_service_name = "/grasp_planner_srv";
-        trajectory_planning_service_name = "/trajectory_planning_srv";
-        trajectory_execution_service_name = "/trajectory_execution_srv";
-        object_reader_service_name = "/object_reader";
+      // service names init
+      pose_estimation_service_name = "/pose_estimation_uibk/estimate_poses";
+      grasp_service_name = "/grasp_planner_srv";
+      trajectory_planning_service_name = "/trajectory_planning_srv";
+      trajectory_execution_service_name = "/trajectory_execution_srv";
+      object_reader_service_name = "/object_reader";
 
-        pose_client = nh_.serviceClient<definitions::PoseEstimation>(pose_estimation_service_name);
-        grasp_client = nh_.serviceClient<definitions::GraspPlanning>(grasp_service_name);
-        trajectory_planner_client = nh_.serviceClient<definitions::TrajectoryPlanning>(trajectory_planning_service_name);
-        trajectory_execution_client = nh_.serviceClient<definitions::TrajectoryExecution>(trajectory_execution_service_name);
-	
-	      if(!nh_.getParam("arm_name",arm_)) 
-	        arm_ = "right";
-	      available_arm_ = arm_;
-        //Grasp execution
-        reader_client = nh_.serviceClient<definitions::ObjectCloudReader>(object_reader_service_name);
-	      grasp_success_ = false;
+      // service client init
+      pose_client_ = nh_.serviceClient<definitions::PoseEstimation>(pose_estimation_service_name);
+      grasp_client_ = nh_.serviceClient<definitions::GraspPlanning>(grasp_service_name);
+      trajectory_planner_client_ = nh_.serviceClient<definitions::TrajectoryPlanning>(trajectory_planning_service_name);
+      trajectory_execution_client_ = nh_.serviceClient<definitions::TrajectoryExecution>(trajectory_execution_service_name);
+      reader_client_ = nh_.serviceClient<definitions::ObjectCloudReader>(object_reader_service_name);
 
-        pub_cur_grasp_ = nh_.advertise<definitions::Grasp>(nh_.resolveName("/grasp_planner/cur_grasp"), 1);
-        pub_states_ = nh_.advertise<std_msgs::String>(nh_.resolveName("/pacman_visualisation/html_info"),1);
-        pub_events_ = nh_.advertise<std_msgs::String>(nh_.resolveName("/pacman_visualisation/toast_info"),1,true);
+      if(!nh_.getParam("arm_name",arm_)) 
+        arm_ = "right";
+      available_arm_ = arm_;
+      //Grasp execution
+      grasp_success_ = false;
+
+      // publisher init
+      pub_cur_grasp_ = nh_.advertise<definitions::Grasp>(nh_.resolveName("/grasp_planner/cur_grasp"), 1);
+      pub_clear_ = nh_.advertise<std_msgs::String>(nh_.resolveName("/visualization/clear_all"), 1);
+      pub_states_ = nh_.advertise<std_msgs::String>(nh_.resolveName("/pacman_visualisation/html_info"),1);
+      pub_events_ = nh_.advertise<std_msgs::String>(nh_.resolveName("/pacman_visualisation/toast_info"),1,true);
 
       for( int j = 0; j < StatesNum; j++ )
-           curState_[j] = Idle;
-	      cout <<"init states:" << endl;
-	     for( int j = 0; j < StatesNum; j++ )
-           cout << curState_[j] << endl;
-	     event_ = Start;
-       cur_state_ = Start_State;
+        curState_[j] = Idle;
+        //cout <<"init states:" << endl;
+      for( int j = 0; j < StatesNum; j++ )
+        //cout << curState_[j] << endl;
+
+      event_ = Start;
+      cur_state_ = Start_State;
 
       event_map_[Start] = "Start";
       event_map_[EstimatePose] = "Estimate Pose";
@@ -240,64 +270,74 @@ class DemoSimple
       event_map_[PickObject] = "Select Object";
       event_map_[PickGrasp] = "Select Grasp";
 
+      // predefined poses init //
       // * open hand at the begining * // 
-       hand_pose_start_.push_back(0.); hand_pose_start_.push_back(-0.5); hand_pose_start_.push_back(0.5);
-       hand_pose_start_.push_back(-0.5); hand_pose_start_.push_back(0.5); hand_pose_start_.push_back(-0.5);
-       hand_pose_start_.push_back(0.5);
-       
-       robot_start_joints_ = vector<float>(7,0);
-       robot_place_joints_ = vector<float>(7,0);
+      hand_pose_start_.push_back(0.); hand_pose_start_.push_back(-0.5); hand_pose_start_.push_back(0.5);
+      hand_pose_start_.push_back(-0.5); hand_pose_start_.push_back(0.5); hand_pose_start_.push_back(-0.5);
+      hand_pose_start_.push_back(0.5);
 
-       robot_start_joints_right = vector<float>(7,0);
-       robot_place_joints_right = vector<float>(7,0);
-       robot_start_joints_left = vector<float>(7,0);
-       robot_place_joints_left = vector<float>(7,0);              
-       cout << "arm name is: " << available_arm_ << endl;
-       // ** start position ** //
-       if( ( available_arm_ == "right") || (available_arm_ == "both") )
-       {
-          cout << "to initialize right arm" << endl;
+      robot_start_joints_ = vector<float>(7,0);
+      robot_place_joints_ = vector<float>(7,0);
 
-         robotpose_right.position.x = 0.064062;
-         robotpose_right.position.y = -0.17281;
-         robotpose_right.position.z = 0.9236;
+      robot_start_joints_right = vector<float>(7,0);
+      robot_place_joints_right = vector<float>(7,0);
+      robot_start_joints_left = vector<float>(7,0);
+      robot_place_joints_left = vector<float>(7,0);
+
+      cout << "Arm to be used: " << available_arm_ << endl;
+      // right arm start position
+      if( ( available_arm_ == "right") || (available_arm_ == "both") )
+      {
+       cout << "Setting up the right arm..." << endl;
+
+       robotpose_right_.position.x = 0.064062;
+       robotpose_right_.position.y = -0.17281;
+       robotpose_right_.position.z = 0.9236;
+
+       robotpose_right_.orientation.x = 0.43361;
+       robotpose_right_.orientation.y = 0.40981;
+       robotpose_right_.orientation.z = 0.26315;
+       robotpose_right_.orientation.w = 0.75815;         
+
+       robot_start_joints_right[0] = 0.90358; robot_start_joints_right[1] = 1.07305; robot_start_joints_right[2] = 1.16986; robot_start_joints_right[3] = 0.89418;
+       robot_start_joints_right[4] = 0.74461; robot_start_joints_right[5] = 0.01476; robot_start_joints_right[6] = -0.48848;
+
+       robot_place_joints_right[0] = 0.9035800099372864; robot_place_joints_right[1] = 0.4730500221252441; robot_place_joints_right[2] = 1.1698600053787231; 
+       robot_place_joints_right[3] = 0.3941799998283386; robot_place_joints_right[4] = 1.8446100115776062; robot_place_joints_right[5] = 1.514759999699890614; 
+       robot_place_joints_right[6] = -0.48848000168800354;  
+
+      }
   
-         robotpose_right.orientation.x = 0.43361;
-         robotpose_right.orientation.y = 0.40981;
-         robotpose_right.orientation.z = 0.26315;
-         robotpose_right.orientation.w = 0.75815;         
-
-	       robot_start_joints_right[0] = 0.90358; robot_start_joints_right[1] = 1.07305; robot_start_joints_right[2] = 1.16986; robot_start_joints_right[3] = 0.89418;
-	       robot_start_joints_right[4] = 0.74461; robot_start_joints_right[5] = 0.01476; robot_start_joints_right[6] = -0.48848;
-
-         robot_place_joints_right[0] = 0.9035800099372864; robot_place_joints_right[1] = 0.4730500221252441; robot_place_joints_right[2] = 1.1698600053787231; 
-         robot_place_joints_right[3] = 0.3941799998283386; robot_place_joints_right[4] = 1.8446100115776062; robot_place_joints_right[5] = 1.514759999699890614; 
-         robot_place_joints_right[6] = -0.48848000168800354;  
-	
-       }
-  
-      //left arm start position
+      // left arm start position
       if( ( available_arm_ == "left") || ( available_arm_ == "both" ) )
       {	
-        cout << "to initialize left arm" << endl;
+        cout << "Setting up the left arm..." << endl;
 
-        robotpose_left.position.x = 0.0043042;
-        robotpose_left.position.y = 1.5781;
-        robotpose_left.position.z = 0.87247;
+        robotpose_left_.position.x = 0.0043042;
+        robotpose_left_.position.y = 1.5781;
+        robotpose_left_.position.z = 0.87247;
 
-        robotpose_left.orientation.x = -0.092165;
-        robotpose_left.orientation.y = 0.59065;
-        robotpose_left.orientation.z = 0.28223;
-        robotpose_left.orientation.w = 0.75032;          
+        robotpose_left_.orientation.x = -0.092165;
+        robotpose_left_.orientation.y = 0.59065;
+        robotpose_left_.orientation.z = 0.28223;
+        robotpose_left_.orientation.w = 0.75032;          
 
-	      robot_start_joints_left[0] = 0.98819; robot_start_joints_left[1] = -1.01639; robot_start_joints_left[2] = 2.00266; robot_start_joints_left[3] = 0.98314;
-	      robot_start_joints_left[4] = 0.0; robot_start_joints_left[5] = 0.0; robot_start_joints_left[6] = 1.25715;
+        robot_start_joints_left[0] = 0.98819; robot_start_joints_left[1] = -1.01639; robot_start_joints_left[2] = 2.00266; robot_start_joints_left[3] = 0.98314;
+        robot_start_joints_left[4] = 0.0; robot_start_joints_left[5] = 0.0; robot_start_joints_left[6] = 1.25715;
 
         robot_place_joints_left[0] = 0.98819; robot_place_joints_left[1] = -0.4730500221252441; robot_place_joints_left[2] = 2.00266; 
         robot_place_joints_left[3] = 0.3941799998283386; robot_place_joints_left[4] = 1.5; robot_place_joints_left[5] = -1.1; 
         robot_place_joints_left[6] = 1.25715; 
       }
-      
+      std_msgs::String msg;
+      msg.data = "state_machine";
+      pub_states_.publish(msg);
+      usleep(1000*1000);
+
+      msg.data = "clear_screen";
+      pub_states_.publish(msg);
+      usleep(1000*1000);
+
     }
     //! Empty stub
     ~DemoSimple() 
@@ -335,17 +375,18 @@ Event DemoSimple::evaluate_cur_state()
 
   if( id >= 0 )
   {
-    std_msgs::String msg;
-    stringstream ss;
-    ss << "state_" ;
-    if( id < 10 )
-      ss << 0;
-    ss << id;
-    msg.data = ss.str();
-    pub_states_.publish(msg);
-
-    msg.data = event_map_[event_];
-    pub_events_.publish(msg);
+     if( curState_[cur_state_] == Success )
+     {
+        std_msgs::String msg;
+        msg.data = "green_light";
+        pub_states_.publish(msg);
+     } 
+     else if( curState_[cur_state_] == Fail )
+     {
+        std_msgs::String msg;
+        msg.data = "red_light";
+        pub_states_.publish(msg);
+     }      
   }
 
   return event;
@@ -353,31 +394,82 @@ Event DemoSimple::evaluate_cur_state()
 
 void DemoSimple::perform_event(Event event)
 {  
-  cout << "current state:" << endl;
-  for( int j = 0; j < StatesNum; j++ )
-  {
-    cout << curState_[j] << endl;
-  }
   int count;
+  std_msgs::String msg;
+  stringstream ss;
+
   switch(event_)
   {
     case EstimatePose:
-      ROS_DEBUG("event: pose estimation");
+      msg.data = "clear_screen";
+      pub_states_.publish(msg);
+      usleep(1000*1000);
+
+      ROS_DEBUG("Event: pose estimation");
       doPoseEstimation();
       break;
     case PlanGrasp:
-      ROS_DEBUG("event: plan grasps");
+      cur_state_ = PlanGrasp_State;
+      ss << "state_" << cur_state_;
+      msg.data = ss.str();
+      pub_states_.publish(msg);  
+      usleep(1000*1000);
+
+      ROS_DEBUG("Event: plan grasps");
       planGrasps(arm_);
       break;
     case PlanTrajectory:
-      ROS_DEBUG("event: plan trajectory");
+
+  
+    if( curState_[PreGraspTraj_State] == Idle )
+    {
+      cur_state_ = PreGraspTraj_State;
+      stringstream ss;
+      std_msgs::String msg;
+      ss << "state_" << cur_state_;
+      msg.data = ss.str();
+      pub_states_.publish(msg);
+      usleep(1000*1000);
+    }
+    else if( ( curState_[PreGraspTraj_State] == Success ) && ( curState_[GraspTraj_State] == Idle ) )
+    {
+      cur_state_ = GraspTraj_State;
+      stringstream ss;
+      std_msgs::String msg;
+      ss << "state_" << cur_state_;
+      msg.data = ss.str();
+      pub_states_.publish(msg);  
+      usleep(1000*1000);
+    }
+    else if( ( curState_[PreGraspTraj_State] == Success ) && ( curState_[GraspTraj_State] != Idle ) )
+    {
+      cur_state_ = PostGraspTraj_State;
+      stringstream ss;
+      std_msgs::String msg;
+      ss << "state_" << cur_state_;
+      msg.data = ss.str();
+      pub_states_.publish(msg);
+      usleep(1000*1000);   
+    }
+
+      ROS_DEBUG("Event: plan trajectory");
       plan_trajectory();
       break;  
     case Retreat: 
       cur_state_ = Start_State;
-      ROS_DEBUG("event: retreat");
+
+      ss << "state_" << cur_state_;
+      msg.data = ss.str();
+      pub_states_.publish(msg);  
+      usleep(1000*1000);
+
+      ROS_DEBUG("Event: retreat");
+      
+    /*  msg.data = "clear_all";
+      pub_clear_.publish(msg);  */
+
       // ** detach object for safety ** //
-     /* reader_srv.request.object_id = object_id_;
+      /*reader_srv.request.object_id = object_id_;
       reader_srv.request.retreat = false;
       reader_srv.request.arm_name = arm_;
       usleep(1000*1000);
@@ -391,7 +483,17 @@ void DemoSimple::perform_event(Event event)
       }     
       break;
     case Start:
-      ROS_DEBUG("event: start");
+      msg.data = "clear_screen";
+      pub_states_.publish(msg);
+      usleep(1000*1000);
+
+      cur_state_ = Start_State;
+      ss << "state_" << cur_state_;
+      msg.data = ss.str();
+      pub_states_.publish(msg);  
+      usleep(1000*1000);
+
+      ROS_DEBUG("Event: start");
       if( available_arm_ == "both" )
       {
         arm_ = "right";
@@ -421,8 +523,23 @@ void DemoSimple::perform_event(Event event)
       }
       break;
     case Restart:
-      ROS_DEBUG("event: restart");
-      ROS_DEBUG("go to start pose with grasp joint");
+      msg.data = "clear_screen";
+      pub_states_.publish(msg);
+      usleep(1000*1000);
+
+      cur_state_ = Start_State;
+      cur_state_ = Start_State;
+      ss << "state_" << cur_state_;
+      msg.data = ss.str();
+      pub_states_.publish(msg); 
+      usleep(1000*1000);
+
+      ROS_DEBUG("Event: restart");
+      
+      msg.data = "clear_all";
+      pub_clear_.publish(msg);
+
+      //ROS_INFO("go to start pose with grasp joint");
       restart(false,false);
       count = 1;
       while( ( count < max_trial_start_ ) && ( curState_[Start_State] == Fail ) )
@@ -433,28 +550,28 @@ void DemoSimple::perform_event(Event event)
       count = 1;
       if( curState_[Start_State] == Success )
       {
-	      ROS_DEBUG("go to place position!!");
+	      ROS_INFO("go to place position!!");
         do{
           restart(true,false);
           count++;
         }while( ( count < max_trial_start_ ) && ( curState_[Start_State] == Fail ) );
       }
-     /* reader_srv.request.object_id = 0;
+      /*reader_srv.request.object_id = 0;
       reader_srv.request.retreat = false;
       reader_srv.request.arm_name = arm_;
       reconstruct_scene();   
-      usleep(1000*1000); */  
+      usleep(1000*1000);*/
 
       if( curState_[Start_State] == Success )
       {
-        ROS_DEBUG("to drop object!!!");
+        ROS_INFO("to drop object!!!");
         //restart(true,true);
         restart(true,true,false);    
       }
       count = 1;
       if( curState_[Start_State] == Success )
       {
-        ROS_DEBUG("come back to start position after droping!!");
+        ROS_INFO("come back to start position after droping!!");
         do
         {
           goToStartPos();
@@ -463,18 +580,38 @@ void DemoSimple::perform_event(Event event)
       }                  
       break;      
     case Stop: 
-      ROS_DEBUG("event: stop");
+      msg.data = "clear_screen";
+      pub_states_.publish(msg);
+      usleep(1000*1000);
+
+      msg.data = "state_stop";
+      pub_states_.publish(msg); 
+      usleep(1000*1000);
+
+      ROS_DEBUG("Event: stop");
       break;
     case PickObject:
-      ROS_DEBUG("event: next object");
+      cur_state_ = PickObject_State;
+      ss << "state_" << cur_state_;
+      msg.data = ss.str();
+      pub_states_.publish(msg);  
+      usleep(1000*1000);
+
+      ROS_DEBUG("Event: next object");
       goToNextObject();
       break;   
     case PickGrasp:
-      ROS_DEBUG("event: next grasp");
+      cur_state_ = PickGrasp_State;
+      ss << "state_" << cur_state_;
+      msg.data = ss.str();
+      pub_states_.publish(msg);  
+      usleep(1000*1000);
+
+      ROS_DEBUG("Event: next grasp");
       goToNextGrasp();
       break;
     default:
-      ROS_DEBUG("event: stop");
+      ROS_DEBUG("Event: stop");
       event_ = Stop;
       break;
   }
@@ -487,12 +624,12 @@ bool DemoSimple::goToStartPos()
   //curState_[Start_State] = Success;
 
   if( arm_ == "right" ){
-    robotpose = robotpose_right;
+    robotpose = robotpose_right_;
     robot_start_joints_ = robot_start_joints_right;
   }
   else if( arm_ == "left" )
   {
-    robotpose = robotpose_left;
+    robotpose = robotpose_left_;
     robot_start_joints_ = robot_start_joints_left;    
   }
 
@@ -501,7 +638,7 @@ bool DemoSimple::goToStartPos()
   definitions::Grasp current_trajectory;
   current_trajectory.grasp_trajectory.resize(1); 
   
-  std::cout << "Initial position: " << robotpose << std::endl;
+  //std::cout << "Initial position: " << robotpose << std::endl;
   current_trajectory.grasp_trajectory[0].wrist_pose.pose = robotpose;
   current_trajectory.grasp_trajectory[0].wrist_pose.header.frame_id = "world_link";
   std::vector<definitions::Grasp> my_calculated_grasp_cur;
@@ -526,7 +663,7 @@ bool DemoSimple::goToStartPos()
     trajectory_planning_srv.request.eddie_goal_state.handLeft.joints = hand_pose_start_;
   }
   
-  if( !trajectory_planner_client.call(trajectory_planning_srv) )
+  if( !trajectory_planner_client_.call(trajectory_planning_srv) )
   {
     ROS_ERROR("trajectory planner service call failed.");
     ofs << ros::Time::now() << " trajectory planner service call failed." << endl;     
@@ -534,17 +671,17 @@ bool DemoSimple::goToStartPos()
   else	
   {
     
-    ROS_DEBUG("trajectory planner call succeeded");
+    //ROS_INFO("trajectory planner call succeeded");
     ofs << ros::Time::now() << " trajectory planner service call succeeded for joint: " <<           
               robot_start_joints_[0]  << " " << robot_start_joints_[1] << " " << robot_start_joints_[2]  << " " << 
               robot_start_joints_[3] << " " << robot_start_joints_[4]  << " " << robot_start_joints_[5] << " " << robot_start_joints_[6] << endl;    
     my_calculated_trajectory = trajectory_planning_srv.response.trajectory;
-    ROS_INFO("number of found trajectories are: %d",(int)my_calculated_trajectory.size());
+    ROS_INFO("No. of found trajectories: %d",(int)my_calculated_trajectory.size());
     
     if( my_calculated_trajectory.size() > 0 )
     {
     
-      ROS_INFO("Executing Trajectory");
+      //ROS_INFO("Executing Trajectory");
     
       //User input
       string answer;
@@ -553,19 +690,19 @@ bool DemoSimple::goToStartPos()
     
       if (answer == "y")
       {    
-    //Arm movement
-        std::cout << "Executing arm trajectory" << std::endl;
-        std::cout << "#of found trajectories: "  << my_calculated_trajectory.size() << std::endl;
+        //Arm movement
+        //std::cout << "Executing arm trajectory" << std::endl;
+        //std::cout << "#of found trajectories: "  << my_calculated_trajectory.size() << std::endl;
         my_calculated_trajectory[0].trajectory_id=0;
         trajectory_execution_srv.request.trajectory = my_calculated_trajectory[0]; 
-        if( !trajectory_execution_client.call(trajectory_execution_srv) )
+        if( !trajectory_execution_client_.call(trajectory_execution_srv) )
         {
 	        ROS_ERROR("trajectory execution service call failed.");
           ofs << ros::Time::now() << " trajectory execution service call failed." << endl;
         }
         else
         {
-	        ROS_DEBUG("trajectory execution call succeeded");
+	        ROS_INFO("Succesfully executed the trajectory");
           ofs << ros::Time::now() << " trajectory execution call succeeded for joint: " <<           
               robot_start_joints_[0]  << " " << robot_start_joints_[1] << " " << robot_start_joints_[2]  << " " << 
               robot_start_joints_[3] << " " << robot_start_joints_[4]  << " " << robot_start_joints_[5] << " " << robot_start_joints_[6] << endl;
@@ -576,8 +713,7 @@ bool DemoSimple::goToStartPos()
       }
       else
       {
-        ROS_WARN("Trajectory not valid - restart");
-        ROS_DEBUG("Trajectory not valid - restart");
+        ROS_WARN("Trajectory discarded by the user - restart");
         ofs << ros::Time::now() << " Trajectory not valid by user -restart: joint: " << 
               robot_start_joints_[0]  << " " << robot_start_joints_[1] << " " << robot_start_joints_[2]  << " " << 
               robot_start_joints_[3] << " " << robot_start_joints_[4]  << " " << robot_start_joints_[5] << " " << robot_start_joints_[6] << endl;        
@@ -585,7 +721,7 @@ bool DemoSimple::goToStartPos()
     }
     else
     {
-      ROS_ERROR("no trajectory found");
+      ROS_ERROR("No trajectory found");
       ofs << ros::Time::now() << " no trajectory found for joint: " << 
           robot_start_joints_[0]  << " " << robot_start_joints_[1] << " " << robot_start_joints_[2]  << " " << robot_start_joints_[3] <<
           " " << robot_start_joints_[4]  << " " << robot_start_joints_[5] << " " << robot_start_joints_[6] << endl;
@@ -621,13 +757,13 @@ bool DemoSimple::restart(bool place,bool drop,bool user_debug)
  // curState_[Start_State] = Success;
 
   if( arm_ == "right" ){
-    robotpose = robotpose_right;
+    robotpose = robotpose_right_;
     robot_start_joints_ = robot_start_joints_right;
     robot_place_joints_ = robot_place_joints_right;
   }
   else if( arm_ == "left" )
   {
-    robotpose = robotpose_left;
+    robotpose = robotpose_left_;
     robot_start_joints_ = robot_start_joints_left;  
     robot_place_joints_ = robot_place_joints_left;  
   }
@@ -637,7 +773,7 @@ bool DemoSimple::restart(bool place,bool drop,bool user_debug)
   definitions::Grasp current_trajectory;
   current_trajectory.grasp_trajectory.resize(1); 
   
-  std::cout << "Initial position: " << robotpose << std::endl;
+  //std::cout << "Initial position: " << robotpose << std::endl;
   current_trajectory.grasp_trajectory[0].wrist_pose.pose = robotpose;
   current_trajectory.grasp_trajectory[0].wrist_pose.header.frame_id = "world_link";
   std::vector<definitions::Grasp> my_calculated_grasp_cur;
@@ -688,7 +824,7 @@ bool DemoSimple::restart(bool place,bool drop,bool user_debug)
   }
   
   
-  if( !trajectory_planner_client.call(trajectory_planning_srv) )
+  if( !trajectory_planner_client_.call(trajectory_planning_srv) )
   {
     ROS_ERROR("trajectory planner service call failed.");
     ofs << ros::Time::now() << " trajectory planner service call failed." << endl;
@@ -696,7 +832,7 @@ bool DemoSimple::restart(bool place,bool drop,bool user_debug)
   else	
   {
     
-    ROS_DEBUG("trajectory planner call succeeded");
+    ROS_INFO("trajectory planner call succeeded");
     my_calculated_trajectory = trajectory_planning_srv.response.trajectory;
     ROS_INFO("number of found trajectories are: %d",(int)my_calculated_trajectory.size());   
     if( !place )
@@ -716,7 +852,7 @@ bool DemoSimple::restart(bool place,bool drop,bool user_debug)
     {
       ROS_INFO("Executing Trajectory");
     
-    //User input
+      //User input
       string answer;
       if( user_debug )
       {
@@ -726,19 +862,19 @@ bool DemoSimple::restart(bool place,bool drop,bool user_debug)
     
       if ( (answer == "y") || ( !user_debug ) )
       {    
-    //Arm movement
-        std::cout << "Executing arm trajectory" << std::endl;
-        std::cout << "#of found trajectories: "  << my_calculated_trajectory.size() << std::endl;
+        //Arm movement
+        //std::cout << "Executing arm trajectory" << std::endl;
+        //std::cout << "#of found trajectories: "  << my_calculated_trajectory.size() << std::endl;
         my_calculated_trajectory[0].trajectory_id=0;
         trajectory_execution_srv.request.trajectory = my_calculated_trajectory[0]; 
-        if( !trajectory_execution_client.call(trajectory_execution_srv) )
+        if( !trajectory_execution_client_.call(trajectory_execution_srv) )
         {
 	        ROS_ERROR("trajectory execution service call failed.");
           ofs << ros::Time::now() << " trajectory execution service call failed." << endl;
         }
         else
         {
-	        ROS_DEBUG("trajectory execution call succeeded");
+	        ROS_INFO("trajectory execution call succeeded");
           if( !place )
           {
             ofs << ros::Time::now() << " trajectory execution call succeeded for joint: " <<           
@@ -814,33 +950,46 @@ bool DemoSimple::restart(bool place,bool drop,bool user_debug)
 
 int DemoSimple::doPoseEstimation()
 {
-   object_id_ = -1;
-   cur_state_ = PoseEstimate_State;
-   curState_[PoseEstimate_State] = Fail; 
-   curState_[PickObject_State] = Fail;
-   if( !pose_client.call(estimation_srv))
-   {
-     ROS_ERROR("pose estimation service failed. wait...");
-     ofs << ros::Time::now() << " pose estimation service failed. wait..." << endl;
-     ros::Duration(0.5).sleep();
-   }
-   my_detected_objects = estimation_srv.response.detected_objects;
-   
-   ROS_INFO("nr of objects: %d",(int)my_detected_objects.size());
-   if( my_detected_objects.size() > 0 ){
-     curState_[PickObject_State] = Success;
-     object_count_ = vector<int>(my_detected_objects.size(),0);
-     object_id_ = 0;
-     ROS_DEBUG_STREAM("I am going for object: " << my_detected_objects[0].name);
-   }
-   objectsNum_ = my_detected_objects.size();
+  object_id_ = -1;
+  cur_state_ = PoseEstimate_State;
+  stringstream ss;
+  std_msgs::String msg;
+  ss << "state_" << cur_state_;
+  msg.data = ss.str();
+  pub_states_.publish(msg);
+
+  curState_[PoseEstimate_State] = Fail; 
+  curState_[PickObject_State] = Fail;
+
+  if( !pose_client_.call(estimation_srv))
+  {
+   ROS_ERROR("pose estimation service failed. wait...");
+   ofs << ros::Time::now() << " pose estimation service failed. wait..." << endl;
+   ros::Duration(0.5).sleep();
+  }
+  my_detected_objects = estimation_srv.response.detected_objects;
+
+  ROS_INFO("No. of found objects: %d",(int)my_detected_objects.size());
+
+  ss << "<font size=" << "20"<<  " color=red>" <<"No. of found objects: " << my_detected_objects.size() << "</font>" << "<br>";
+  msg.data = ss.str();
+  pub_states_.publish(msg); 
+
+  if( my_detected_objects.size() > 0 ){
+   curState_[PickObject_State] = Success;
+   object_count_ = vector<int>(my_detected_objects.size(),0);
+   object_id_ = 0;
+   ROS_INFO_STREAM("I am going for object: " << my_detected_objects[0].name.data << endl);
+
+  }
+  objectsNum_ = my_detected_objects.size();
   if( ( estimation_srv.response.result == estimation_srv.response.SUCCESS ) && ( my_detected_objects.size() > 0 ) )
   // if( estimation_srv.response.result == estimation_srv.response.SUCCESS )
-   {
-     curState_[PoseEstimate_State] = Success;  
-     ofs << ros::Time::now() << " pose estimation succeded" << endl;
-   }
-   else
+  {
+    curState_[PoseEstimate_State] = Success;  
+    ofs << ros::Time::now() << " pose estimation succeded" << endl;
+  }
+  else
     ofs << ros::Time::now() << " pose estimation failed" << endl;
   
     // if( ( available_arm_ == "both" ) && ( curState_[PoseEstimate_State] == Success ) )
@@ -851,7 +1000,6 @@ int DemoSimple::doPoseEstimation()
 
 void DemoSimple::goToNextObject()
 {
-  cur_state_ = PickObject_State;
   curState_[PickObject_State] = Fail;
   //curState_[PoseEstimate_State] = Fail; 
   if( ( object_id_ < 0 ) || ( object_id_ >= objectsNum_ ) )
@@ -861,7 +1009,8 @@ void DemoSimple::goToNextObject()
   else if( ( object_count_[object_id_] >= max_trial_ ) &&  ( (object_id_ + 1)  >= objectsNum_ ) ) 
     return;
   object_count_[object_id_] ++;
-  ROS_DEBUG_STREAM("In next object: I am going for object: " << my_detected_objects[object_id_].name);
+  ROS_INFO_STREAM("In next object: I am going for object: " << my_detected_objects[object_id_].name);
+
   curState_[PickObject_State] = Success;
  // curState_[PoseEstimate_State] = Success; 
   for( int i = (PickObject_State + 1 ); i < StatesNum; i++ )
@@ -879,50 +1028,51 @@ void DemoSimple::select_arm()
   Eigen::Quaternionf q_obj(obj_pose.orientation.w,obj_pose.orientation.x,obj_pose.orientation.y,obj_pose.orientation.z);
   Eigen::Matrix3f m;
   m = q_obj.toRotationMatrix();
-
-  // the projection of the z-axis of the grasp pose on the y-axis of the world boils down to see the y-component of the z-axis of the grasp pose
+  // the projection of the z-axis of the grasp pose on the y-axis of the world boils down to check 
+  // the y-component of the z-axis of the grasp pose
   // if it is positive, it means we better try with the right arm, and negative with the left arm
-  // m(2,3)
+  // the y-component is m(1,2)
 
   // the distance is self-explanatory, the arm is chose accoding to the euclidean distance
-  double dist_right = sqrt(pow((obj_pose.position.x - robotpose_right.position.x),2)+
-                      pow((obj_pose.position.y - robotpose_right.position.y),2)+
-                      pow((obj_pose.position.z - robotpose_right.position.z),2));
+  double dist_right = sqrt(pow((obj_pose.position.x - robotpose_right_.position.x),2)+
+                      pow((obj_pose.position.y - robotpose_right_.position.y),2)+
+                      pow((obj_pose.position.z - robotpose_right_.position.z),2));
 
 
-  double dist_left = sqrt(pow((obj_pose.position.x - robotpose_left.position.x),2)+
-                      pow((obj_pose.position.y - robotpose_left.position.y),2)+
-                      pow((obj_pose.position.z - robotpose_left.position.z),2));
+  double dist_left = sqrt(pow((obj_pose.position.x - robotpose_left_.position.x),2)+
+                      pow((obj_pose.position.y - robotpose_left_.position.y),2)+
+                      pow((obj_pose.position.z - robotpose_left_.position.z),2));
 
   // so in the end, we have a weighted sum to select the arm giving slightly more weight to the orientation
   double w_orien = 0.6;
   double w_trans = 1 - w_orien;
-  
   double sum = w_orien*(m(1,2)) + w_trans*(dist_left - dist_right);
 
   if( sum < 0 )
     arm_ = "left";
   else 
     arm_ = "right";
-  cout << "distance to right: " << dist_right << " , distance to left: " << dist_left << "difference is " << dist_left - dist_right << endl; 
-  cout << "z-proyection on y-axis: " << m(1,2) << endl;
-  cout << "weigthed sum: " << sum << ", hence selected arm " << arm_ << endl; 
+
+  //cout << "distance to right: " << dist_right << " , distance to left: " << dist_left << " ; difference is " << dist_left - dist_right << endl; 
+  //cout << "z-proyection on y-axis: " << m(1,2) << endl;
+  //cout << "weigthed sum: " << sum << ", hence selected arm " << arm_ << endl; 
+  ROS_INFO("Using arm: %s", arm_.c_str() ); 
 }
 
 void DemoSimple::reconstruct_scene()
 { 
-   if( !reader_client.call(reader_srv) ) 
+   if( !reader_client_.call(reader_srv) ) 
    {
      ROS_ERROR("object reader service failed. wait...");
      ros::Duration(0.5).sleep();     
    }
-   ROS_DEBUG("object reader done");
+   //ROS_INFO("object reader done");
 }
 
 bool DemoSimple::planGrasps(string arm)
 {
   grasp_id_ = 0;
-  cur_state_ = PlanGrasp_State;
+
   curState_[PlanGrasp_State] = Fail;
   curState_[PickGrasp_State] = Fail;
   bool success = false;
@@ -930,7 +1080,7 @@ bool DemoSimple::planGrasps(string arm)
   grasp_planning_srv.request.arm = arm;
   //grasp_planning_srv.request.object_id = 0;
   grasp_planning_srv.request.object_id = object_id_;
-  if( !grasp_client.call(grasp_planning_srv) )
+  if( !grasp_client_.call(grasp_planning_srv) )
   {
     ROS_ERROR("grasp_planner service call failed. wait...");
     ros::Duration(0.5).sleep();
@@ -938,7 +1088,7 @@ bool DemoSimple::planGrasps(string arm)
   if( ( grasp_planning_srv.response.result == grasp_planning_srv.response.SUCCESS) && ( grasp_planning_srv.response.grasp_list.size() > 0 ) )
   {
     success = true;
-    ROS_DEBUG("Grasp Planning OK - assigning last wrist pose for arm trajectory planning");
+    ROS_INFO("Grasp Planning OK - assigning last wrist pose for arm trajectory planning");
     ofs << ros::Time::now() << " grasp_planner succeed" << endl;
     
     //Removing all but the best grasp and only keeping last trajectory
@@ -950,8 +1100,9 @@ bool DemoSimple::planGrasps(string arm)
    
    else
    {
-     ROS_ERROR("grasp_planner did not succeed.");
+     ROS_ERROR("Grasp_planner did not succeed.");
      ofs << ros::Time::now() << " grasp_planner did not succeed." << endl;
+     return success;
    }
    order_grasp();
    if(my_calculated_grasp.size() == 0 )
@@ -961,7 +1112,7 @@ bool DemoSimple::planGrasps(string arm)
    else
    {
       curState_[PlanGrasp_State] = Success;
-      curState_[PickGrasp_State] = Success; 
+      curState_[PickGrasp_State] = Success;         
    }
 
   return success;
@@ -970,11 +1121,11 @@ bool DemoSimple::planGrasps(string arm)
 void DemoSimple::order_grasp()
 {
   if( arm_ == "right" )
-    robotpose = robotpose_right;
+    robotpose = robotpose_right_;
   else if( arm_ == "left" )
-    robotpose = robotpose_left;   
+    robotpose = robotpose_left_;   
 
-   cout << "to order the grasps" << endl;
+   ROS_INFO("Ordering grasp list");
    std::vector<definitions::Grasp> my_calculated_grasp_tmp;
    //double threshold = 0.2;
    double threshold = 0.15;
@@ -996,7 +1147,17 @@ void DemoSimple::order_grasp()
    }
    if( my_calculated_grasp.size() - my_calculated_grasp_tmp.size() > 0 )
      
-   ROS_DEBUG_STREAM("grasps are rejected: " << my_calculated_grasp.size() - my_calculated_grasp_tmp.size());
+   ROS_INFO_STREAM("No. of Grasps rejected: " << my_calculated_grasp.size() - my_calculated_grasp_tmp.size());
+   if(my_calculated_grasp.size() - my_calculated_grasp_tmp.size() > 0)
+   {
+      std_msgs::String msg;
+      stringstream ss; 
+      ss << "<font size=" << "20" << " color=red>" << "No. of Grasps rejected: " << my_calculated_grasp.size() - my_calculated_grasp_tmp.size() 
+         << "</font>" << "<br>";
+      msg.data = ss.str();
+      pub_states_.publish(msg);
+   }
+
    my_calculated_grasp.clear();
    my_calculated_grasp = my_calculated_grasp_tmp;
   
@@ -1024,6 +1185,13 @@ void DemoSimple::order_grasp()
    my_calculated_grasp.clear();
    my_calculated_grasp = my_calculated_grasp_sort;
 
+   std_msgs::String msg;
+   stringstream ss; 
+   ss << "<font size=" << "20" << " color=red>" << "No. of Grasps: " << my_calculated_grasp.size() << "</font>" << "<br>";
+   msg.data = ss.str();
+   pub_states_.publish(msg);
+
+
     if( available_arm_ == "both" ) 
       select_arm(); 
    
@@ -1037,7 +1205,6 @@ void DemoSimple::order_grasp()
 
 void DemoSimple::goToNextGrasp()
 {
-  cur_state_ = PickGrasp_State;
   curState_[PickGrasp_State] = Fail;
   // curState_[PlanGrasp_State] = Fail;
   if( (grasp_id_ + 1) < my_calculated_grasp.size() )
@@ -1045,6 +1212,7 @@ void DemoSimple::goToNextGrasp()
     grasp_id_ ++;
     curState_[PickGrasp_State] = Success;  
     curState_[PreGraspTraj_State] = Idle; 
+
     // curState_[PlanGrasp_State] = Success;
 
     if( available_arm_ == "both" )
@@ -1058,7 +1226,8 @@ bool DemoSimple::plan_trajectory()
   if( curState_[PreGraspTraj_State] == Idle )
   {
     cur_state_ = PreGraspTraj_State;
-    ROS_DEBUG("to do pre grasp");
+
+    ROS_INFO_STREAM("Plan for pre-grasp id: " << grasp_id_);
     curState_[PreGraspTraj_State] = Fail;
     // for testing wo execution 
    // curState_[PreGraspTraj_State] = Success;
@@ -1069,7 +1238,8 @@ bool DemoSimple::plan_trajectory()
   else if( ( curState_[PreGraspTraj_State] == Success ) && ( curState_[GraspTraj_State] == Idle ) )
   {
     cur_state_ = GraspTraj_State;
-    ROS_DEBUG("to do grasp");
+
+    ROS_INFO("Plan for the grasp");
     curState_[GraspTraj_State] = Fail;
     // for testing wo execution
     //curState_[GraspTraj_State] = Success;
@@ -1089,7 +1259,8 @@ bool DemoSimple::plan_trajectory()
   else if( ( curState_[PreGraspTraj_State] == Success ) && ( curState_[GraspTraj_State] != Idle ) )
   {
     cur_state_ = PostGraspTraj_State;
-    ROS_DEBUG("to do post-grasp");
+
+    ROS_INFO("Plan for the post-grasp");
     curState_[PostGraspTraj_State] = Fail;
     // for testing wo execution
    // curState_[PostGraspTraj_State] = Success;
@@ -1119,7 +1290,7 @@ bool DemoSimple::post_grasp(int grasp_id)
   return success;
 }
 
-bool DemoSimple::executeMovement(bool pre_grasp,bool post_grasp,int &grasp_id,int traj_id,bool user_debug)
+bool DemoSimple::executeMovement(bool pre_grasp, bool post_grasp, int &grasp_id, int traj_id, bool user_debug)
 {
   bool succeed = false;
   grasp_success_ = false;
@@ -1148,7 +1319,7 @@ bool DemoSimple::executeMovement(bool pre_grasp,bool post_grasp,int &grasp_id,in
     reconstruct_scene();
     usleep(1000*1000); 
   }
-  std::cout << "grasp id is: " << grasp_id << " : " << "grasp size is: " << my_calculated_grasp.size() << std::endl;
+  //std::cout << "grasp id is: " << grasp_id << " : " << "grasp size is: " << my_calculated_grasp.size() << std::endl;
   std::vector<definitions::Grasp> my_calculated_grasp_cur;
   my_calculated_grasp_cur.push_back(my_calculated_grasp[grasp_id]);
 
@@ -1173,7 +1344,7 @@ bool DemoSimple::executeMovement(bool pre_grasp,bool post_grasp,int &grasp_id,in
   }
   //trajectory_planning_srv.request.object_id = grasp_id;
   
-  if( !trajectory_planner_client.call(trajectory_planning_srv) )
+  if( !trajectory_planner_client_.call(trajectory_planning_srv) )
   {
     ROS_ERROR("trajectory planner service call failed.");
     ofs << ros::Time::now() << " trajectory planner service call failed." << endl;
@@ -1181,19 +1352,20 @@ bool DemoSimple::executeMovement(bool pre_grasp,bool post_grasp,int &grasp_id,in
   }
   else	
   {
-    ROS_DEBUG("trajectory planner call succeeded");
+    //ROS_INFO("trajectory planner call succeeded");
     ofs << ros::Time::now() << " trajectory planner call succeeded for cart position: " << 
          my_calculated_grasp[grasp_id].grasp_trajectory[0].wrist_pose << endl;
     
     my_calculated_trajectory = trajectory_planning_srv.response.trajectory;
     
-    ROS_INFO("number of found trajectories are: %d",(int)my_calculated_trajectory.size());
+    
     
     int nr_found_trajectories = my_calculated_trajectory.size();
     
     if(nr_found_trajectories > 0) 
     {
-       ROS_INFO("Executing Pick and place");
+      ROS_INFO("No. of found trajectories: %d",(int)my_calculated_trajectory.size());
+      ROS_INFO("Executing Pick and place");
     
        //User input
       string answer;
@@ -1213,7 +1385,7 @@ bool DemoSimple::executeMovement(bool pre_grasp,bool post_grasp,int &grasp_id,in
        // trajectory_execution_srv.request.trajectory = my_calculated_trajectory; //execute 0 trajectory id
         trajectory_execution_srv.request.trajectory = my_calculated_trajectory[0];
 	
-        if( !trajectory_execution_client.call(trajectory_execution_srv) )
+        if( !trajectory_execution_client_.call(trajectory_execution_srv) )
         {
 	        ROS_ERROR("trajectory planner service call failed.");
           ofs << ros::Time::now() << " trajectory planner service call failed. for cart position: " << 
@@ -1222,7 +1394,7 @@ bool DemoSimple::executeMovement(bool pre_grasp,bool post_grasp,int &grasp_id,in
         else
         {
 	        grasp_success_ = true;
-	        ROS_DEBUG("trajectory execution call succeeded");
+	        ROS_INFO("trajectory execution call succeeded");
           ofs << ros::Time::now() << " trajectory execution call succeeded for cart position: " << 
                my_calculated_grasp[grasp_id].grasp_trajectory[0].wrist_pose << endl;
 	        succeed = true;
@@ -1254,13 +1426,13 @@ bool DemoSimple::executeMovement(bool pre_grasp,bool post_grasp,int &grasp_id,in
     { 
       
       grasp_id++;
-      ROS_INFO_STREAM("Plan another pre-grasp id: " <<grasp_id);
+      ROS_INFO_STREAM("Could not find a plan, so try another pre-grasp id: " << grasp_id);
       ofs << ros::Time::now() << " plan another grasp id: " << grasp_id << endl;
       executeMovement(pre_grasp,post_grasp,grasp_id);
     }
     else if( ( (grasp_id+1) >= (my_calculated_grasp.size()) ) && (pre_grasp) )
     {
-      ROS_WARN_STREAM("No plan found for pre-grasp id: " <<grasp_id);
+      ROS_WARN_STREAM("No plan found for pre-grasp id: " << grasp_id);
       ofs << ros::Time::now() << " No plan found for pre-grasp: " << 
          my_calculated_grasp[grasp_id].grasp_trajectory[0].wrist_pose << endl;
       return false;
@@ -1289,8 +1461,6 @@ int main(int argc, char **argv)
   ros::Timer delay();
   
   DemoSimple demo(nh);
-  
-  cout << "arm name is: " << demo.arm_ << "." << endl;
 
   while( demo.event_ != Stop )
   {

@@ -175,9 +175,6 @@ namespace pacman {
 				commands[i].t = start_time + pacman::float_t(0.5);
 			else
 				commands[i].t = commands[i-1].t + pacman::float_t(trajectory.time_from_previous[i].toSec());
-
-			std::cout << "time command " << commands[i].t << std::endl;
-
 		}
 		return;
 	}
@@ -208,6 +205,7 @@ namespace pacman {
 			// for testing with arms, later, it should be fixed to obtain eddie's trajectories
 			if(arm.compare(std::string("right")) == 0)
 			{
+				// arm mapping
 				for(int j = 0; j < KukaLWR::Config::JOINTS; j++)
 				{
 					robot_point.armRight.joints.push_back(points[i].positions.at(j));
@@ -218,24 +216,8 @@ namespace pacman {
 					robot_point.armLeft.velocity.push_back(start_state.velocity[j]);
 					robot_point.armLeft.acceleration.push_back(0.0);
 				}
-			}
 
-			if(arm.compare(std::string("left")) == 0)
-			{
-				for(int j = 0; j < KukaLWR::Config::JOINTS; j++)
-				{
-					robot_point.armLeft.joints.push_back(points[i].positions.at(j));
-					robot_point.armLeft.velocity.push_back(points[i].velocities.at(j));
-					robot_point.armLeft.acceleration.push_back(points[i].accelerations.at(j));
-
-					robot_point.armRight.joints.push_back(start_state.position[j+7]);
-					robot_point.armRight.velocity.push_back(start_state.velocity[j+7]);
-					robot_point.armRight.acceleration.push_back(0.0);
-				}
-			}
-
-			if(arm.compare(std::string("right")) == 0)
-			{
+				// hand mapping
 				// this order depends on the moveit trajectory planner
 				robot_point.handRight.joints.resize(SchunkDexHand::Config::JOINTS);
 				robot_point.handRight.velocity.resize(SchunkDexHand::Config::JOINTS);
@@ -255,6 +237,18 @@ namespace pacman {
 
 			if(arm.compare(std::string("left")) == 0)
 			{
+				for(int j = 0; j < KukaLWR::Config::JOINTS; j++)
+				{
+					robot_point.armLeft.joints.push_back(points[i].positions.at(j));
+					robot_point.armLeft.velocity.push_back(points[i].velocities.at(j));
+					robot_point.armLeft.acceleration.push_back(points[i].accelerations.at(j));
+
+					robot_point.armRight.joints.push_back(start_state.position[j+7]);
+					robot_point.armRight.velocity.push_back(start_state.velocity[j+7]);
+					robot_point.armRight.acceleration.push_back(0.0);
+				}
+
+				// hand mapping
 				// this order depends on the moveit trajectory planner
 				robot_point.handLeft.joints.resize(SchunkDexHand::Config::JOINTS);
 				robot_point.handLeft.velocity.resize(SchunkDexHand::Config::JOINTS);
@@ -271,7 +265,6 @@ namespace pacman {
 					robot_point.handRight.acceleration.push_back(0.0);
 				}
 			}
-
 
 			for(int k = 0; k < KITHead::Config::JOINTS_NECK; k++)
 			{
