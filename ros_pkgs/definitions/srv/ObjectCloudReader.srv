@@ -4,6 +4,8 @@ Object[] detected_objects
 
 # id of the object to grasp
 int32 object_id
+string arm_name
+# can be thought as attach/detach message
 bool retreat
 
 ---

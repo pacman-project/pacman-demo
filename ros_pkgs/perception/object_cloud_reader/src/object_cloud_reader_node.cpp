@@ -58,14 +58,14 @@ class ObjectReader
 
     void send_occlusion_shape(vector<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > obj_pcds,vector<geometry_msgs::Pose> obj_poses);
     void send_occlusion_mesh(vector<string> obj_ids,vector<geometry_msgs::Pose> obj_poses);
-    void attach_object(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr obj_pcd,geometry_msgs::Pose obj_pose);
+    void attach_object(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr obj_pcd,geometry_msgs::Pose obj_pose,string arm_name);
     // constructor
     ObjectReader(ros::NodeHandle nh) : nh_(nh), priv_nh_("~")
     {
         // advertise service
         srv_object_reader_ = nh_.advertiseService(nh_.resolveName("/object_reader"), &ObjectReader::processObjects, this);
 
-        attached_object_publisher = nh_.advertise<moveit_msgs::AttachedCollisionObject>(nh_.resolveName("attached_collision_object"), 1,true);    
+        attached_object_publisher = nh_.advertise<moveit_msgs::AttachedCollisionObject>(nh_.resolveName("/attached_collision_object"), 1,true);
         // change this at will
 
         nh_.param<std::string>("path_to_RecObj",path_to_database_,"/home/pacman/CODE/pacman/poseEstimation/dataFiles/PCD-MODELS-DOWNSAMPLED/");
@@ -145,12 +145,99 @@ bool ObjectReader::processObjects(definitions::ObjectCloudReader::Request& reque
         for( size_t id = 0; id < transform_cloud->points.size(); id++ )
             current_scene->points.push_back(transform_cloud->points[id]);
     }  
-   // attach_object(obj_pcd,obj_pose);
-    send_occlusion_shape(obj_pcds,obj_poses);
+   // if( request.retreat )
+    //  attach_object(req_obj_pcd, req_obj_pose, request.arm_name);
+    //else
+      send_occlusion_shape(obj_pcds,obj_poses);
 
     response.result = response.SUCCESS;
     return true;
     
+}
+
+void ObjectReader::attach_object(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr obj_pcd,geometry_msgs::Pose obj_pose,string req_arm)
+{
+  moveit_msgs::AttachedCollisionObject attached_object;
+  string attached_frame = req_arm;
+  attached_frame = attached_frame + "_arm_7_link";
+  attached_object.link_name = attached_frame;
+  attached_object.object.id = "box";
+  attached_object.object.header.frame_id = "world_link";
+
+  string touch_frame = req_arm;
+  touch_frame = touch_frame + "_arm_7_link";
+  attached_object.touch_links.push_back(touch_frame);
+  touch_frame = req_arm;
+  touch_frame = touch_frame + "_sdh_palm_link";
+  attached_object.touch_links.push_back(touch_frame); 
+  touch_frame = req_arm;
+  touch_frame = touch_frame + "_sdh_finger_11_link";
+  attached_object.touch_links.push_back(touch_frame);   
+  touch_frame = req_arm;
+  touch_frame = touch_frame + "_sdh_finger_12_link";
+  attached_object.touch_links.push_back(touch_frame);
+  touch_frame = req_arm;
+  touch_frame = touch_frame + "_sdh_finger_13_link";
+  attached_object.touch_links.push_back(touch_frame);  
+  touch_frame = req_arm;
+  touch_frame = touch_frame + "_sdh_finger_21_link";
+  attached_object.touch_links.push_back(touch_frame);   
+  touch_frame = req_arm;
+  touch_frame = touch_frame + "_sdh_finger_22_link";
+  attached_object.touch_links.push_back(touch_frame);
+  touch_frame = req_arm;
+  touch_frame = touch_frame + "_sdh_finger_23_link";
+  attached_object.touch_links.push_back(touch_frame); 
+  touch_frame = req_arm;
+  touch_frame = touch_frame + "_sdh_thumb_1_link";
+  attached_object.touch_links.push_back(touch_frame);   
+  touch_frame = req_arm;
+  touch_frame = touch_frame + "_sdh_thumb_2_link";
+  attached_object.touch_links.push_back(touch_frame);
+  touch_frame = req_arm;
+  touch_frame = touch_frame + "_sdh_thumb_3_link";
+  attached_object.touch_links.push_back(touch_frame);    
+  touch_frame = req_arm;
+  touch_frame = touch_frame + "_sdh_tip_link";
+  attached_object.touch_links.push_back(touch_frame);     
+
+  double min_x = 1000; double min_y = 1000;  double min_z = 1000;
+      double max_x = 0; double max_y = 0; double max_z = 0;
+      for( size_t j = 0; j < obj_pcd->points.size(); j++ )
+      {
+        if( obj_pcd->points[j].x < min_x )
+            min_x = obj_pcd->points[j].x;
+        if( obj_pcd->points[j].x > max_x )
+            max_x = obj_pcd->points[j].x;
+
+        if( obj_pcd->points[j].y < min_y )
+            min_y = obj_pcd->points[j].y;  
+        if( obj_pcd->points[j].y > max_y )
+            max_y = obj_pcd->points[j].y; 
+
+        if( obj_pcd->points[j].z < min_z )
+            min_z = obj_pcd->points[j].z;  
+        if( obj_pcd->points[j].z > max_z )
+            max_z = obj_pcd->points[j].z;                              
+      }
+      Eigen::Vector4f obj_center;
+      pcl::compute3DCentroid(*obj_pcd,obj_center);
+      shape_msgs::SolidPrimitive primitive;
+      primitive.type = primitive.BOX;  
+      primitive.dimensions.resize(3);
+      primitive.dimensions[0] = (max_x - min_x);
+      primitive.dimensions[1] = (max_y - min_y);   
+      primitive.dimensions[2] = (max_z - min_z);
+     
+      geometry_msgs::Pose center = obj_pose; 
+      center.position.x = obj_center(0); center.position.y = obj_center(1); center.position.z = obj_center(2);
+      //center.orientation.x = 0; center.orientation.y = 0; center.orientation.z = 0; center.orientation.w = 1;
+    //  cout << "box size: " <<  primitive.dimensions[0] << " "<< primitive.dimensions[1] << " "<< primitive.dimensions[2] <<  endl;
+      attached_object.object.primitives.push_back(primitive);
+      attached_object.object.primitive_poses.push_back(center);
+      attached_object.object.operation = attached_object.object.ADD; 
+      //attached_object.object.operation = attached_object.object.REMOVE;
+      attached_object_publisher.publish(attached_object);
 }
 
 void ObjectReader::send_occlusion_shape(vector<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > obj_pcds,vector<geometry_msgs::Pose> obj_poses)
