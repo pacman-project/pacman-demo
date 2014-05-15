@@ -190,7 +190,7 @@ class DemoSimple
     string arm_;    
     
     // State functions
-    bool goToStartPos();
+    bool goToStartPos(bool user_debug=false);
     int doPoseEstimation();
     void reconstruct_scene();
     void goToNextObject();
@@ -199,8 +199,8 @@ class DemoSimple
     bool post_grasp(int grasp_id);
     void goToNextGrasp();
     bool plan_trajectory();
-    bool executeMovement(bool pre_grasp,bool post_grasp,int &grasp_id,int traj_id=2,bool user_debug=true);    
-    bool restart(bool place,bool drop,bool user_debug=true);
+    bool executeMovement(bool pre_grasp,bool post_grasp,int &grasp_id,int traj_id=2,bool user_debug=false);    
+    bool restart(bool place,bool drop,bool user_debug=false);
 
     // State Machine evaluations
     Event evaluate_cur_state();
@@ -539,7 +539,7 @@ void DemoSimple::perform_event(Event event)
       msg.data = "clear_all";
       pub_clear_.publish(msg);
 
-      //ROS_INFO("go to start pose with grasp joint");
+      ROS_INFO("go to start pose with grasp joint");
       restart(false,false);
       count = 1;
       while( ( count < max_trial_start_ ) && ( curState_[Start_State] == Fail ) )
@@ -617,7 +617,7 @@ void DemoSimple::perform_event(Event event)
   }
 }
 
-bool DemoSimple::goToStartPos()
+bool DemoSimple::goToStartPos(bool user_debug)
 {
   curState_[Start_State] = Fail;
   // ** to test wo execution //
@@ -685,10 +685,13 @@ bool DemoSimple::goToStartPos()
     
       //User input
       string answer;
-      std::cout << "Check if trajectory is ok (y/n)" << std::endl;
-      std::cin >> answer;
+      if( user_debug )
+      {
+        std::cout << "Check if trajectory is ok (y/n)" << std::endl;
+        std::cin >> answer;        
+      }
     
-      if (answer == "y")
+      if ((answer == "y") || ( !user_debug) )
       {    
         //Arm movement
         //std::cout << "Executing arm trajectory" << std::endl;
@@ -711,7 +714,7 @@ bool DemoSimple::goToStartPos()
         }
         
       }
-      else
+      else if ((answer != "y") && ( user_debug) )
       {
         ROS_WARN("Trajectory discarded by the user - restart");
         ofs << ros::Time::now() << " Trajectory not valid by user -restart: joint: " << 
@@ -787,17 +790,19 @@ bool DemoSimple::restart(bool place,bool drop,bool user_debug)
   trajectory_planning_srv.request.object_list = noObject;
   trajectory_planning_srv.request.object_id = 0;
   trajectory_planning_srv.request.type = trajectory_planning_srv.request.MOVE_TO_STATE_GOAL;
+
+  size_t N = my_calculated_grasp[grasp_id_].grasp_trajectory.size() - 1;
   if( !place )
   {
     if( arm_ == "right" )
     {
       trajectory_planning_srv.request.eddie_goal_state.armRight.joints = robot_start_joints_;
-      trajectory_planning_srv.request.eddie_goal_state.handRight.joints = my_calculated_grasp[grasp_id_].grasp_trajectory[0].joints;
+      trajectory_planning_srv.request.eddie_goal_state.handRight.joints = my_calculated_grasp[grasp_id_].grasp_trajectory[N].joints;
     }
     else if( arm_ == "left" )
     {
       trajectory_planning_srv.request.eddie_goal_state.armLeft.joints = robot_start_joints_;
-      trajectory_planning_srv.request.eddie_goal_state.handLeft.joints = my_calculated_grasp[grasp_id_].grasp_trajectory[0].joints;
+      trajectory_planning_srv.request.eddie_goal_state.handLeft.joints = my_calculated_grasp[grasp_id_].grasp_trajectory[N].joints;
     }  
   }
   else
@@ -817,9 +822,9 @@ bool DemoSimple::restart(bool place,bool drop,bool user_debug)
     else
     {
       if( arm_ == "right" )
-        trajectory_planning_srv.request.eddie_goal_state.handRight.joints = my_calculated_grasp[grasp_id_].grasp_trajectory[0].joints;
+        trajectory_planning_srv.request.eddie_goal_state.handRight.joints = my_calculated_grasp[grasp_id_].grasp_trajectory[N].joints;
       else if( arm_ == "left" )
-        trajectory_planning_srv.request.eddie_goal_state.handLeft.joints = my_calculated_grasp[grasp_id_].grasp_trajectory[0].joints;      
+        trajectory_planning_srv.request.eddie_goal_state.handLeft.joints = my_calculated_grasp[grasp_id_].grasp_trajectory[N].joints;      
     }
   }
   

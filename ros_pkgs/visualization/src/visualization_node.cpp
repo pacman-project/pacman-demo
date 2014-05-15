@@ -2,6 +2,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud_conversion.h>
 #include <geometry_msgs/PoseArray.h>
+#include <std_msgs/String.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
@@ -30,12 +31,16 @@ namespace visualization
     ros::Subscriber sub_object_poses_;
     ros::Subscriber sub_grasps_;
     ros::Subscriber sub_cur_grasp_;
+    ros::Subscriber sub_clear_;
     ros::Publisher pub_objects_cloud_;
     ros::Publisher pub_scene_cloud_;
     ros::Publisher pub_gripper_;
 
     string path_to_object_db_;
     string path_to_seg_scene_;
+
+    visualization_msgs::MarkerArray last_markers_;
+    int num_pts_;
 
    public:
 
@@ -47,9 +52,12 @@ namespace visualization
        pub_objects_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>(nh_.resolveName("/recognized_objects"), 10);
        pub_scene_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>(nh_.resolveName("/segmented_scene"), 10);
        pub_gripper_ = nh_.advertise<visualization_msgs::MarkerArray>("/gripper_pose", 1 );
+       sub_clear_ = nh_.subscribe ("/visualization/clear_all", 500, &Visualization::callback_clear_all, this);
 
        nh_.param<std::string>("path_to_object_database",path_to_object_db_, "");
        nh_.param<std::string>("path_to_segmented_scene",path_to_seg_scene_, "");
+
+       num_pts_ = 1;
     }
 
    	~Visualization() {};
@@ -61,9 +69,31 @@ namespace visualization
    	pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr read_pcd_object(string obj_name,Eigen::Vector3f color);
    	pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr merge_obj_clouds(vector<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr > obj_pcds);
    	void visualize_gripper(geometry_msgs::PoseStamped gripper_pose,int &id,visualization_msgs::MarkerArray &markers,Eigen::Vector4f color);
-   // void callback_state_machine(const definitions::StateMachineList &states);
     void visualize_segmented_scene();
+    void callback_clear_all(const std_msgs::String &msg);
  };
+
+ void Visualization::callback_clear_all(const std_msgs::String &msg)
+ {
+   cout << "message clear received" << endl;
+
+   pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr merged_cloud (new pcl::PointCloud<pcl::PointXYZRGBNormal>);
+   merged_cloud->points.resize(num_pts_);
+   sensor_msgs::PointCloud2 merged_cloud_ros;
+   pcl::toROSMsg(*merged_cloud,merged_cloud_ros);   
+   merged_cloud_ros.header.frame_id = "world_link";
+   pub_objects_cloud_.publish(merged_cloud_ros);
+
+   visualization_msgs::MarkerArray markers;
+   for( size_t i = 0; i < last_markers_.markers.size(); i++ )
+   {
+      visualization_msgs::Marker marker = last_markers_.markers[i];
+      marker.action = visualization_msgs::Marker::DELETE;
+      markers.markers.push_back(marker);
+   }
+   pub_gripper_.publish(markers);
+
+ }
 
  void Visualization::callback_pose_estimate(const definitions::ObjectList &objects)
  {
@@ -87,6 +117,7 @@ namespace visualization
    }
 
    pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr merged_cloud = merge_obj_clouds(obj_pcds);
+   num_pts_ = merged_cloud->points.size();
    sensor_msgs::PointCloud2 merged_cloud_ros;
    pcl::toROSMsg(*merged_cloud,merged_cloud_ros);
    merged_cloud_ros.header.frame_id = "world_link";
@@ -190,7 +221,7 @@ void Visualization::callback_cur_grasp(const definitions::Grasp &grasp)
   ROS_INFO("current grasp message received!");
   visualization_msgs::MarkerArray markers;
   int id = 0;
-  geometry_msgs::PoseStamped gripper_pose = grasp.grasp_trajectory[2].wrist_pose; 
+  geometry_msgs::PoseStamped gripper_pose = grasp.grasp_trajectory[grasp.grasp_trajectory.size()-1].wrist_pose;
   Eigen::Vector4f color;
   // RGBA //
   color(0) = 0.8; color(1) = 0; color(2) = 0.6; color(3) = 0.6;  
@@ -287,6 +318,7 @@ void Visualization::visualize_gripper(geometry_msgs::PoseStamped gripper_pose,in
   marker.scale.y = 0.01;
   marker.scale.z = 0.1;
   markers.markers.push_back(marker); 
+  last_markers_ = markers;
 }
 
 }
