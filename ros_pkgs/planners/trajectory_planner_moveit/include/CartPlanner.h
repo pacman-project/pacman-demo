@@ -61,7 +61,7 @@ class CartPlanner
   	// implements carlos' configuration of moveit
   	bool planTrajectory(std::vector<definitions::Trajectory> &trajectories, moveit_msgs::Constraints &goal, std::string &arm, sensor_msgs::JointState &startState, definitions::SDHand &goal_hand);
   	// implements martin's configuration of moveit
-  	bool planTrajectoryUIBK(std::vector<definitions::Trajectory> &trajectories, definitions::SDHand &goal, std::string &arm, sensor_msgs::JointState &startState);
+  	bool planTrajectoryUIBK(std::vector<definitions::Trajectory> &trajectories, definitions::SDHand &goal, std::string &arm, sensor_msgs::JointState &startState, definitions::TrajectoryPlanning::Response &response);
 
   	// helper to attach collision objects
     void callback_collision_object(const moveit_msgs::AttachedCollisionObject &object);
