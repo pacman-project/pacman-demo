@@ -114,9 +114,6 @@ add_library(PickupPlanner
     src/PickPlanner.cpp
 #     src/pickupplanner.cpp
     )
-add_library(CartPlanner_uibk
-	src/CartPlanner_uibk.cpp
-     )
 add_library(KinematicsHelper
 	src/KinematicsHelper.cpp
 	)     
@@ -150,13 +147,9 @@ add_executable(ping_gripper_only
 ## as an example, message headers may need to be generated before nodes
 # libraries
 add_dependencies(CartPlanner
-	definitions_generate_messages_cpp
-	)
-add_dependencies(CartPlanner_uibk
 	KinematicsHelper
 	definitions_generate_messages_cpp
 	)
-	
 add_dependencies(PickupPlanner
     definitions_generate_messages_cpp
     )
@@ -168,7 +161,6 @@ add_dependencies(StatePlanner
 # executables
 add_dependencies(trajectory_planner_node
 	CartPlanner
-	CartPlanner_uibk
 	StatePlanner
 	PickupPlanner
 	definitions_generate_messages_cpp
@@ -198,11 +190,8 @@ add_dependencies(ping_gripper_only
     )
 ## Specify libraries to link a library or executable target against
 # libraries
-target_link_libraries(CartPlanner_uibk 
-	KinematicsHelper
-	${catkin_LIBRARIES}
-	)
 target_link_libraries(CartPlanner 
+	KinematicsHelper
 	${catkin_LIBRARIES}
 	)
 target_link_libraries(PickupPlanner
@@ -215,7 +204,6 @@ target_link_libraries(StatePlanner
 # executables
 target_link_libraries(trajectory_planner_node 
 	CartPlanner
-	#CartPlanner_uibk
 	PickupPlanner
 	StatePlanner
 	${catkin_LIBRARIES}
