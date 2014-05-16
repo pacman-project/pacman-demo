@@ -85,6 +85,8 @@ bool StatePlanner::planTrajectory(std::vector<definitions::Trajectory> &trajecto
 		if(arm.compare(std::string("left")) == 0)
 			joint_constraint.position = goal.armLeft.joints[i];
 
+		joint_constraint.weight = 1.0;
+		
 		joint_constraints.push_back(joint_constraint);
 	}
 	
@@ -140,8 +142,10 @@ bool StatePlanner::planTrajectory(std::vector<definitions::Trajectory> &trajecto
 				my_hand = goal.handLeft;
 
 			// fill the robot trajectory with hand values, given the base trajectory of the arm
-			pacman::interpolateHandJoints(my_hand, startState, robot_trajectory, arm);
-
+			if( trajSize <= min_traj_size_ )
+			  pacman::interpolateHandJoints(my_hand, startState, robot_trajectory, arm,false);
+            else
+              pacman::interpolateHandJoints(my_hand, startState, robot_trajectory, arm);
 			// populate trajectory with motion plan data
 			// the start state is used to copy the data for the joints that are not being used in the planning
 			pacman::convertLimb(robot_trajectory, trajectory, startState, arm);

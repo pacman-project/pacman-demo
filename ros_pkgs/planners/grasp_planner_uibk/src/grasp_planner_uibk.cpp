@@ -102,7 +102,32 @@ public:
     void set_arm(string arm);
     vector<float> getTargetAnglesFromGraspType(Grasps grasp_type, float close_ratio);
     geometry_msgs::PoseStamped transform_frame(geometry_msgs::PoseStamped pose);
+
+    geometry_msgs::PoseStamped find_mid_point(geometry_msgs::PoseStamped pre_grasp,geometry_msgs::PoseStamped grasp,vector<float> &mid_grasp_joint,double ratio,double hand_ratio);
 };
+
+geometry_msgs::PoseStamped GraspPlanner::find_mid_point(geometry_msgs::PoseStamped pre_grasp,geometry_msgs::PoseStamped grasp,vector<float> &mid_grasp_joint,double ratio,double hand_ratio)
+{
+ geometry_msgs::PoseStamped mid_point;
+ //double ratio = 0.8;
+ double mid_x = pre_grasp.pose.position.x + ( grasp.pose.position.x - pre_grasp.pose.position.x ) * ( ratio - 0.);
+ double mid_y = pre_grasp.pose.position.y + ( grasp.pose.position.y - pre_grasp.pose.position.y ) * ( ratio - 0.);
+ double mid_z = pre_grasp.pose.position.z + ( grasp.pose.position.z - pre_grasp.pose.position.z ) * ( ratio - 0.);
+ mid_point.pose.position.x = mid_x;
+ mid_point.pose.position.y = mid_y;
+ mid_point.pose.position.z = mid_z;
+ mid_point.pose.orientation = grasp.pose.orientation;
+
+ vector<float> pre_grasp_joints = getTargetAnglesFromGraspType(rim_pre_grasp,1.0);
+ vector<float> grasp_joints = getTargetAnglesFromGraspType(rim_close,1.0); 
+
+ mid_grasp_joint.resize(pre_grasp_joints.size(),0);
+ //double hand_ratio = 0.2;
+ for( size_t i = 0; i < mid_grasp_joint.size(); i++ )
+   mid_grasp_joint[i] = pre_grasp_joints[i] + ( grasp_joints[i] - pre_grasp_joints[i] ) * ( hand_ratio - 0.); 
+
+  return mid_point;
+}
 
 vector<float> GraspPlanner::getTargetAnglesFromGraspType(Grasps grasp_type, float close_ratio) 
 {
@@ -710,7 +735,7 @@ bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, defin
   vector<definitions::Grasp> grasp_traj;
   vector<float> pre_grasp_joints = getTargetAnglesFromGraspType(rim_pre_grasp,1.0);
  // vector<float> pre_grasp_joints = getTargetAnglesFromGraspType(rim_open,1.0);
-  vector<float> grasp_joints = getTargetAnglesFromGraspType(rim_close,1.0);
+  vector<float> grasp_joints = getTargetAnglesFromGraspType(rim_close,1.0); 
   
   int min_id = 0;
   double min = 1000.;
@@ -725,6 +750,16 @@ bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, defin
   // ** since by default planning is on palm ** // 
     pre_grasps[i] = transform_frame(pre_grasps[i]);
     grasps[i] = transform_frame(grasps[i]);
+ 
+    vector<float> mid_grasp_joint; 
+    double ratio = 0.8;
+    double hand_ratio = 0.2;
+    geometry_msgs::PoseStamped mid_grasp = find_mid_point(pre_grasps[i],grasps[i],mid_grasp_joint,ratio,hand_ratio);
+
+    vector<float> mid_grasp_joint2; 
+    ratio = 0.9;
+    hand_ratio = 0.6;
+    geometry_msgs::PoseStamped mid_grasp2 = find_mid_point(pre_grasps[i],grasps[i],mid_grasp_joint2,ratio,hand_ratio);
 
     if( i == 0 )
       visualize_gripper(pre_grasps[i],grasps[i],i);
@@ -738,23 +773,30 @@ bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, defin
     }*/
     cout << "in planner, grasp " << i << " is: " << grasps[i].pose << endl;
     definitions::Grasp cur_traj;
-    cur_traj.grasp_trajectory.resize(3);
+    cur_traj.grasp_trajectory.resize(4);
     pre_grasps[i].header.frame_id = "world_link";
     grasps[i].header.frame_id = "world_link";
     cur_traj.grasp_trajectory[0].wrist_pose.pose = pre_grasps[i].pose;
     cur_traj.grasp_trajectory[0].wrist_pose.header.frame_id = "world_link";
     cur_traj.grasp_trajectory[0].joints = pre_grasp_joints;
 
-    cur_traj.grasp_trajectory[1].wrist_pose.pose = grasps[i].pose;
+    /*cur_traj.grasp_trajectory[1].wrist_pose.pose = grasps[i].pose;
     cur_traj.grasp_trajectory[1].wrist_pose.header.frame_id = "world_link";
 //    cur_traj.grasp_trajectory[1].joints = grasp_joints;
-    cur_traj.grasp_trajectory[1].joints = pre_grasp_joints;
+    cur_traj.grasp_trajectory[1].joints = pre_grasp_joints;*/
 
+    cur_traj.grasp_trajectory[1].wrist_pose.pose = mid_grasp.pose;
+    cur_traj.grasp_trajectory[1].wrist_pose.header.frame_id = "world_link";
+    cur_traj.grasp_trajectory[1].joints = mid_grasp_joint; 
 
-    cur_traj.grasp_trajectory[2].wrist_pose.pose = grasps[i].pose;   
+    cur_traj.grasp_trajectory[2].wrist_pose.pose = mid_grasp2.pose;
     cur_traj.grasp_trajectory[2].wrist_pose.header.frame_id = "world_link";
-    cur_traj.grasp_trajectory[2].joints = grasp_joints;
-     grasp_traj.push_back(cur_traj);
+    cur_traj.grasp_trajectory[2].joints = mid_grasp_joint2; 
+
+    cur_traj.grasp_trajectory[3].wrist_pose.pose = grasps[i].pose;   
+    cur_traj.grasp_trajectory[3].wrist_pose.header.frame_id = "world_link";
+    cur_traj.grasp_trajectory[3].joints = grasp_joints;
+    grasp_traj.push_back(cur_traj);
     grasp_list.grasp_list.push_back(cur_traj);
   }
 

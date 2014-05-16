@@ -12,8 +12,10 @@
 
 //// local headers
 #include "CartPlanner.h"
+//#include "CartPlanner_uibk.h"
 #include "StatePlanner.h"
-#include "pickupplanner.h"
+// #include "pickupplanner.h"
+#include "PickPlanner.h"
 
 
 namespace trajectory_planner_moveit {
@@ -35,9 +37,10 @@ class TrajPlanner
     // the trajectory planner helper class
     trajectory_planner_moveit::CartPlanner *my_cart_planner_;
     trajectory_planner_moveit::StatePlanner *my_state_planner_;
+    trajectory_planner_moveit::PickPlanner *my_pick_planner_;
      
     // the helper class for planning the pickup phase
-    trajectory_planner_moveit::PickupPlannerPtr pickup_planner_;
+//     trajectory_planner_moveit::PickupPlannerPtr pickup_planner_;
 
    
 
@@ -55,8 +58,8 @@ class TrajPlanner
        // init class members
        my_cart_planner_ = new trajectory_planner_moveit::CartPlanner(nh_);
        my_state_planner_ = new trajectory_planner_moveit::StatePlanner(nh_);
-       
-       pickup_planner_.reset(new PickupPlanner(nh));
+       my_pick_planner_ = new trajectory_planner_moveit::PickPlanner(nh_);
+//        pickup_planner_.reset(new PickupPlanner(nh));
        
     }
 
@@ -83,7 +86,9 @@ bool TrajPlanner::planTrajectory(definitions::TrajectoryPlanning::Request &reque
 			break;
 
 		case definitions::TrajectoryPlanning::Request::PICK:
-            if(pickup_planner_->planPickup(request, response)) {
+//             if(pickup_planner_->planPickup(request, response)) {
+            if ( my_pick_planner_->planTrajectoryFromCode(request, response) )
+            {
                 ROS_INFO("Succesfully created a motion plan for the desired PICK operation");
             } else {
                 ROS_ERROR("Failed to find a valid motion plan for the desired PICK operation");
@@ -92,7 +97,7 @@ bool TrajPlanner::planTrajectory(definitions::TrajectoryPlanning::Request &reque
 			break;
 
 		case definitions::TrajectoryPlanning::Request::PLACE:
-			ROS_INFO("Succesfully planned a trajectory to the desired PLACE operation");
+			ROS_INFO("definitions::TrajectoryPlanning::Request::PLACE not implemented yet, sorry");
 			break;
 
 		case definitions::TrajectoryPlanning::Request::MOVE_TO_STATE_GOAL:
@@ -112,7 +117,6 @@ bool TrajPlanner::planTrajectory(definitions::TrajectoryPlanning::Request &reque
 
 
 } // namespace trajectory_planner_moveit
-
 
 int main(int argc, char **argv)
 {

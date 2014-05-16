@@ -3,9 +3,9 @@
   <!-- CONFIGURE YOUR PLANNING SYSTEM -->
   
   <!-- GRASP PLANNER -->
-  <include file="$(find grasp_planner_bham)/launch/GraspPlannerBHAM.launch"/>
+  <!--include file="$(find grasp_planner_bham)/launch/GraspPlannerBHAM.launch"/-->
 
-<!-- <include file="$(find grasp_planner_uibk)/launch/GraspPlannerUIBK.launch"/> --> 
+  <include file="$(find grasp_planner_uibk)/launch/GraspPlannerUIBK.launch"/>
 
 
   <!-- PLANNER FOR ARM TRAJECTORIES -->

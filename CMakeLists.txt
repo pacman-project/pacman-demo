@@ -611,13 +611,13 @@ if(BUILD_ROS_PKGS)
 				FILE(MAKE_DIRECTORY ${CATKIN_DIRECTORY})  
 				FILE(MAKE_DIRECTORY ${CATKIN_DIRECTORY}/src) 
 				EXECUTE_PROCESS(COMMAND catkin_init_workspace ${CATKIN_DIRECTORY}/src)
-				EXECUTE_PROCESS(COMMAND catkin_make -C ${CATKIN_DIRECTORY})
+				EXECUTE_PROCESS(COMMAND catkin_make --force-cmake -C ${CATKIN_DIRECTORY})
 				# this is not working as expected, needs to be done outside
 				#EXECUTE_PROCESS(COMMAND source ${CATKIN_DIRECTORY}/setup.bash)
 				EXECUTE_PROCESS(COMMAND ln -s ${PROJECT_PARENT}/pacman/ros_pkgs ${CATKIN_DIRECTORY}/src)
 			endif()
 			# build and rebuild re-build the packages after all desired targets are built
-			ADD_CUSTOM_TARGET(ROSPkgs ALL catkin_make -C ${CATKIN_DIRECTORY}
+			ADD_CUSTOM_TARGET(ROSPkgs ALL catkin_make --force-cmake -C ${CATKIN_DIRECTORY}
 				COMMENT "Built target ROSPkgs"
 				DEPENDS PaCManBhamControl PaCManBhamGrasp PaCManUIBKPoseEstimationTest PaCManUIBKPoseEstimation
 			)

@@ -111,9 +111,12 @@ add_library(StatePlanner
 	)
 
 add_library(PickupPlanner
-    src/pickupplanner.cpp
+    src/PickPlanner.cpp
+#     src/pickupplanner.cpp
     )
-
+add_library(KinematicsHelper
+	src/KinematicsHelper.cpp
+	)     
 ## Declare a cpp executable
 add_executable(trajectory_planner_node 
 	src/trajectory_planner_node.cpp
@@ -121,6 +124,9 @@ add_executable(trajectory_planner_node
 # examples
 add_executable(ping_cart_planner 
 	examples/ping_cart_planner.cpp
+	)
+add_executable(ping_pick_planner 
+	examples/ping_pick_planner.cpp
 	)
 add_executable(ping_cart_planner_and_execution
 	examples/ping_cart_planner_and_execution.cpp
@@ -141,9 +147,9 @@ add_executable(ping_gripper_only
 ## as an example, message headers may need to be generated before nodes
 # libraries
 add_dependencies(CartPlanner
+	KinematicsHelper
 	definitions_generate_messages_cpp
 	)
-	
 add_dependencies(PickupPlanner
     definitions_generate_messages_cpp
     )
@@ -164,6 +170,9 @@ add_dependencies(trajectory_planner_node
 add_dependencies(ping_cart_planner
 	definitions_generate_messages_cpp
 	)
+add_dependencies(ping_pick_planner
+	definitions_generate_messages_cpp
+	)
 add_dependencies(ping_cart_planner_and_execution
 	definitions_generate_messages_cpp
 	)
@@ -182,11 +191,13 @@ add_dependencies(ping_gripper_only
 ## Specify libraries to link a library or executable target against
 # libraries
 target_link_libraries(CartPlanner 
+	KinematicsHelper
 	${catkin_LIBRARIES}
 	)
 target_link_libraries(PickupPlanner
-    ${catkin_LIBRARIES}
-    )
+	KinematicsHelper
+	${catkin_LIBRARIES}
+	)
 target_link_libraries(StatePlanner 
 	${catkin_LIBRARIES}
 	)
@@ -200,6 +211,9 @@ target_link_libraries(trajectory_planner_node
 
 # examples
 target_link_libraries(ping_cart_planner
+	${catkin_LIBRARIES}
+	)
+target_link_libraries(ping_pick_planner
 	${catkin_LIBRARIES}
 	)
 target_link_libraries(ping_cart_planner_and_execution
