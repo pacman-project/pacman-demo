@@ -32,6 +32,7 @@ namespace visualization
     ros::Subscriber sub_grasps_;
     ros::Subscriber sub_cur_grasp_;
     ros::Subscriber sub_clear_;
+    ros::Subscriber sub_marker_;
     ros::Publisher pub_objects_cloud_;
     ros::Publisher pub_scene_cloud_;
     ros::Publisher pub_gripper_;
@@ -40,6 +41,7 @@ namespace visualization
     string path_to_seg_scene_;
 
     visualization_msgs::MarkerArray last_markers_;
+    visualization_msgs::MarkerArray last_markers_sub_;
     int num_pts_;
 
    public:
@@ -53,6 +55,7 @@ namespace visualization
        pub_scene_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>(nh_.resolveName("/segmented_scene"), 10);
        pub_gripper_ = nh_.advertise<visualization_msgs::MarkerArray>("/gripper_pose", 1 );
        sub_clear_ = nh_.subscribe ("/visualization/clear_all", 500, &Visualization::callback_clear_all, this);
+       sub_marker_ = nh_.subscribe("/gripper_pose", 500, &Visualization::callback_gripper_marker, this);
 
        nh_.param<std::string>("path_to_object_database",path_to_object_db_, "");
        nh_.param<std::string>("path_to_segmented_scene",path_to_seg_scene_, "");
@@ -71,7 +74,13 @@ namespace visualization
    	void visualize_gripper(geometry_msgs::PoseStamped gripper_pose,int &id,visualization_msgs::MarkerArray &markers,Eigen::Vector4f color);
     void visualize_segmented_scene();
     void callback_clear_all(const std_msgs::String &msg);
+    void callback_gripper_marker(const visualization_msgs::MarkerArray &markers);
  };
+
+ void Visualization::callback_gripper_marker(const visualization_msgs::MarkerArray &markers)
+ {
+   last_markers_sub_ = markers;
+ }
 
  void Visualization::callback_clear_all(const std_msgs::String &msg)
  {
@@ -92,6 +101,16 @@ namespace visualization
       markers.markers.push_back(marker);
    }
    pub_gripper_.publish(markers);
+
+   visualization_msgs::MarkerArray markers_sub;
+   for( size_t i = 0; i < last_markers_sub_.markers.size(); i++ )
+   {
+      visualization_msgs::Marker marker = last_markers_sub_.markers[i];
+      marker.action = visualization_msgs::Marker::DELETE;
+      markers_sub.markers.push_back(marker);
+   }
+   pub_gripper_.publish(markers_sub);
+
 
  }
 
