@@ -8,6 +8,7 @@
 
 //// local headers
 #include <definitions/TrajectoryPlanning.h>
+#include <KinematicsHelper.h>
 
 namespace trajectory_planner_moveit {
 
@@ -18,6 +19,7 @@ class CartPlanner
 
     // clients
     ros::ServiceClient clt_moveit_planning_;
+    KinematicsHelper ki_helper_;
 
 	// the variable where the plans are stored
 	std::vector<moveit_msgs::MotionPlanResponse> motion_plans_;
@@ -53,13 +55,19 @@ class CartPlanner
   	bool planTrajectoryFromCode(definitions::TrajectoryPlanning::Request &request, definitions::TrajectoryPlanning::Response &response);
 
   	// the actual planning function
+  	// first, carlos' configuration is tried, and 
+  	// if it doesn't find a plan, then, martin's
+  	// config is tried
+  	// implements carlos' configuration of moveit
   	bool planTrajectory(std::vector<definitions::Trajectory> &trajectories, moveit_msgs::Constraints &goal, std::string &arm, sensor_msgs::JointState &startState, definitions::SDHand &goal_hand);
+  	// implements martin's configuration of moveit
+  	bool planTrajectoryUIBK(std::vector<definitions::Trajectory> &trajectories, definitions::SDHand &goal, std::string &arm, sensor_msgs::JointState &startState);
 
   	// helper to attach collision objects
     void callback_collision_object(const moveit_msgs::AttachedCollisionObject &object);
 
     // constructor
-    CartPlanner(ros::NodeHandle nh)
+    CartPlanner(ros::NodeHandle nh) : ki_helper_(nh)
     {
 
 		// wait for moveit to load

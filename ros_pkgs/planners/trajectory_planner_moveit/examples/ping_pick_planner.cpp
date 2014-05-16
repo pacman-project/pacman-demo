@@ -74,6 +74,8 @@ int main(int argc, char **argv)
 
     trajectory_planning_srv.request.ordered_grasp = test_grasps;
 
+    ros::Time now = ros::Time::now();
+
     // call the picking service with the instance
     ROS_INFO("Calling the picking service for the %s hand", trajectory_planning_srv.request.arm.c_str());
     if ( !ros::service::call( planning_service_name, trajectory_planning_srv) )
@@ -81,6 +83,8 @@ int main(int argc, char **argv)
         ROS_ERROR("Call to the service %s failed.", planning_service_name.c_str());  
         return (-1);
     }   
+
+    std::cout << "Time to do the pick planning: " << ros::Time::now() - now << std::endl;
 
     if (trajectory_planning_srv.response.result == trajectory_planning_srv.response.OTHER_ERROR)
     {   
@@ -100,7 +104,7 @@ int main(int argc, char **argv)
     }
     
     // print the whole trajectory
-    std::cout << "trajectory[0]:" << std::endl << trajectory_planning_srv.response.trajectory[0] << std::endl;
+    // std::cout << "trajectory[0]:" << std::endl << trajectory_planning_srv.response.trajectory[0] << std::endl;
     
     // create the execution service instance
     definitions::TrajectoryExecution trajectory_execution_srv;
@@ -108,11 +112,16 @@ int main(int argc, char **argv)
 
     // call the execution service with the instance
     ROS_INFO("Calling the execution service");
+    
+    now = ros::Time::now();
+    
     if ( !ros::service::call( execution_service_name, trajectory_execution_srv) )
     { 
         ROS_ERROR("Call to the service %s failed.", execution_service_name.c_str());  
         return (-1);
     }   
+
+    std::cout << "Time to do the execution: " << ros::Time::now() - now << std::endl;
 
     if (trajectory_execution_srv.response.result == trajectory_execution_srv.response.OTHER_ERROR)
     {   

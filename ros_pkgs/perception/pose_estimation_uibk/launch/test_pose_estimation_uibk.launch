@@ -1,7 +1,7 @@
 <launch>
 	<!-- fake a primesense point cloud from a pcd file for testing placed somewhere in the world -->	
 	<remap from="cloud_pcd" to="/camera/depth/points"/>
-	<node pkg="pcl_ros" name="fake_primesense" type="pcd_to_pointcloud" respawn="true" output="screen" args="$(find pose_estimation_uibk)/resources/frame0.pcd 0.1 _frame_id:=/camera_rgb_optical_frame"/>
+	<node pkg="pcl_ros" name="fake_primesense" type="pcd_to_pointcloud" respawn="true" output="screen" args="$(find pose_estimation_uibk)/resources/scene.pcd 0.1 _frame_id:=/camera_rgb_optical_frame"/>
 	<node pkg="tf" type="static_transform_publisher" name="camera_link" args="0 0 0 0 0 0 1 /world /camera_link 100"/>
 	<node pkg="tf" type="static_transform_publisher" name="camera_depth_frame" args="0.000 -0.020 0.000 0.000 0.000 0.000 1.000  /camera_link /camera_depth_frame 100"/>
 	<node pkg="tf" type="static_transform_publisher" name="camera_depth_optical_frame" args="0.000 -0.020 0.000 -0.500 0.500 -0.500 0.500  /camera_link /camera_depth_optical_frame 100"/>
