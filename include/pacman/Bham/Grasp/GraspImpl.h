@@ -43,9 +43,9 @@ namespace pacman {
 		/** Waypoint conversion */
 		void convert(const SchunkDexHand::Config& src, ::grasp::Manipulator::Config& dst) const;
 		/** Trajectory conversion */
-		void convert(const ::grasp::Robot::State::List& src, RobotUIBK::Config::Seq& dst) const;
+		void convert(const ::grasp::Robot::State::Seq& src, RobotUIBK::Config::Seq& dst) const;
 		/** Trajectory conversion */
-		void convert(const RobotUIBK::Config::Seq& src, ::grasp::Robot::State::List& dst) const;
+		void convert(const RobotUIBK::Config::Seq& src, ::grasp::Robot::State::Seq& dst) const;
 
 	protected:
 		BhamGraspImpl(golem::Scene &scene);
