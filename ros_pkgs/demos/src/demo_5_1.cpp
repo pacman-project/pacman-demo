@@ -192,7 +192,7 @@ class DemoSimple
     string arm_;    
     
     // State functions
-    bool goToStartPos(bool user_debug=false);
+    bool goToStartPos(bool user_debug=true);
     int doPoseEstimation();
     void reconstruct_scene();
     void goToNextObject();
@@ -201,8 +201,8 @@ class DemoSimple
     bool post_grasp(int grasp_id);
     void goToNextGrasp();
     bool plan_trajectory();
-    bool executeMovement(bool pre_grasp,bool post_grasp,int &grasp_id,int traj_id=2,bool user_debug=false);    
-    bool restart(bool place,bool drop,bool user_debug=false);
+    bool executeMovement(bool pre_grasp,bool post_grasp,int &grasp_id,int traj_id=2,bool user_debug=true);    
+    bool restart(bool place,bool drop,bool user_debug=true);
 
     // State Machine evaluations
     Event evaluate_cur_state();
@@ -277,7 +277,7 @@ class DemoSimple
       // * open hand at the begining * // 
       hand_pose_start_.push_back(0.); hand_pose_start_.push_back(-0.5); hand_pose_start_.push_back(0.5);
       hand_pose_start_.push_back(-0.5); hand_pose_start_.push_back(0.5); hand_pose_start_.push_back(-0.5);
-      hand_pose_start_.push_back(0.5);
+      hand_pose_start_.push_back(0.5);     
 
       robot_start_joints_ = vector<float>(7,0);
       robot_place_joints_ = vector<float>(7,0);
@@ -1152,7 +1152,12 @@ bool DemoSimple::planGrasps(string arm)
      ofs << ros::Time::now() << " grasp_planner did not succeed." << endl;
      return success;
    }
-   order_grasp();
+   
+   // NO MORE ORDERING GRASPS IN THE DEMO NODE, IT IS THE PLANNER THAT DECIDES WHICH ONE IS FEASIBLE
+   // EACH GRASP PLANNER SHOULD PROVIDE THE LIST ALREADY ORDERED!
+   ///////           order_grasp();
+   ///////////////
+
    if(my_calculated_grasp.size() == 0 )
    {
      success = false;
