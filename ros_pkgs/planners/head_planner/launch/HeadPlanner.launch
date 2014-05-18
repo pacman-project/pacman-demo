@@ -1,0 +1,4 @@
+<launch>
+	<remap from="/joint_states" to="/golem/joint_states"/>
+	<node name="head_planner" pkg="head_planner" type="head_planner_node" respawn="true" output="screen"/>
+</launch>

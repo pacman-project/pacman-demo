@@ -1,24 +1,18 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(trajectory_planner_moveit)
+project(head_planner)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED
-    roscpp
-    moveit_msgs
-    sensor_msgs
-    eigen
-    moveit_core
-    moveit_ros_planning_interface
-    geometry_msgs
-    definitions
-    actionlib
-    tf
+find_package(catkin REQUIRED 
+	roscpp
+	moveit_msgs
+	geometry_msgs
+	sensor_msgs
 )
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system thread)
 
 # STILL NEED TO SEE HOW TO PASS THE PACMAN ROOT FOLDER, PERHAPS SETTING AN ENV VAR?
 set(PACMAN ../../../../)
@@ -91,8 +85,8 @@ set(CMAKE_CXX_FLAGS "-std=c++0x")
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES trajectory_planner_moveit
-#  CATKIN_DEPENDS moveit_core moveit_ros_planning_interface
+#  LIBRARIES head_planner
+#  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
 )
 
@@ -106,142 +100,33 @@ include_directories(include
 	${PACMAN}/pacman/include
 	${catkin_INCLUDE_DIRS}
 	/usr/include/eigen3
-	)
+)
 
 link_directories(
 	${PACMAN}/bin
-	)
+)
 
 ## Declare a cpp library
-# helper classes
-add_library(CartPlanner
-	src/CartPlanner.cpp
-	)
-add_library(StatePlanner
-	src/StatePlanner.cpp
-	)
+# add_library(head_planner
+#   src/${PROJECT_NAME}/head_planner.cpp
+# )
 
-add_library(PickupPlanner
-    src/PickPlanner.cpp
-#     src/pickupplanner.cpp
-    )
-add_library(KinematicsHelper
-	src/KinematicsHelper.cpp
-	)     
 ## Declare a cpp executable
-add_executable(trajectory_planner_node 
-	src/trajectory_planner_node.cpp
-	)
-# examples
-add_executable(ping_cart_planner 
-	examples/ping_cart_planner.cpp
-	)
-add_executable(ping_pick_planner 
-	examples/ping_pick_planner.cpp
-	)
-add_executable(ping_cart_planner_and_execution
-	examples/ping_cart_planner_and_execution.cpp
-	)
-add_executable(ping_state_planner
-	examples/ping_state_planner.cpp
-	)
-add_executable(ping_state_planner_and_execution
-	examples/ping_state_planner_and_execution.cpp
-	)
-add_executable(test_pickup_planner
-    examples/test_pickup_planner.cpp
-    )
-add_executable(ping_gripper_only
-    examples/ping_gripper_only.cpp
-    )
+add_executable(head_planner_node
+    src/head_planner_node.cpp
+)
+
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# libraries
-add_dependencies(CartPlanner
-	KinematicsHelper
-	definitions_generate_messages_cpp
-	)
-add_dependencies(PickupPlanner
+add_dependencies(head_planner_node
     definitions_generate_messages_cpp
-    )
-        
-add_dependencies(StatePlanner
-	definitions_generate_messages_cpp
-	)
+)
 
-# executables
-add_dependencies(trajectory_planner_node
-	CartPlanner
-	StatePlanner
-	PickupPlanner
-	definitions_generate_messages_cpp
-	)
-
-#examples
-add_dependencies(ping_cart_planner
-	definitions_generate_messages_cpp
-	)
-add_dependencies(ping_pick_planner
-	definitions_generate_messages_cpp
-	)
-add_dependencies(ping_cart_planner_and_execution
-	definitions_generate_messages_cpp
-	)
-add_dependencies(ping_state_planner
-	definitions_generate_messages_cpp
-	)
-add_dependencies(ping_state_planner_and_execution
-	definitions_generate_messages_cpp
-	)
-add_dependencies(test_pickup_planner
-    definitions_generate_messages_cpp
-    )
-add_dependencies(ping_gripper_only
-    definitions_generate_messages_cpp
-    )
 ## Specify libraries to link a library or executable target against
-# libraries
-target_link_libraries(CartPlanner 
-	KinematicsHelper
-	${catkin_LIBRARIES}
-	)
-target_link_libraries(PickupPlanner
-	KinematicsHelper
-	${catkin_LIBRARIES}
-	)
-target_link_libraries(StatePlanner 
-	${catkin_LIBRARIES}
-	)
-# executables
-target_link_libraries(trajectory_planner_node 
-	CartPlanner
-	PickupPlanner
-	StatePlanner
-	${catkin_LIBRARIES}
-	)
-
-# examples
-target_link_libraries(ping_cart_planner
-	${catkin_LIBRARIES}
-	)
-target_link_libraries(ping_pick_planner
-	${catkin_LIBRARIES}
-	)
-target_link_libraries(ping_cart_planner_and_execution
-	${catkin_LIBRARIES}
-	)
-target_link_libraries(ping_state_planner
-	${catkin_LIBRARIES}
-	)
-target_link_libraries(ping_state_planner_and_execution
-	${catkin_LIBRARIES}
-	)
-target_link_libraries(test_pickup_planner
-        ${catkin_LIBRARIES}
-        )
-target_link_libraries(ping_gripper_only
-        ${catkin_LIBRARIES}
-        )
+target_link_libraries(head_planner_node
+  pthread
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
@@ -258,7 +143,7 @@ target_link_libraries(ping_gripper_only
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS trajectory_planner_moveit trajectory_planner_moveit_node
+# install(TARGETS head_planner head_planner_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -283,14 +168,10 @@ target_link_libraries(ping_gripper_only
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_trajectory_planner_moveit.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_head_planner.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
-
-
-## Specify additional locations of header files
-## Your package locations should be listed before other locations

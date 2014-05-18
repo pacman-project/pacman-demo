@@ -45,6 +45,7 @@ add_service_files(
   TrajectoryExecution.srv
   KinectGrabberService.srv
   ObjectCloudReader.srv
+  MoveHead.srv
 )
 
 ## Generate added messages and services with any dependencies listed here

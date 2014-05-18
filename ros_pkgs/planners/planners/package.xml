@@ -19,6 +19,12 @@
   <!--> Mirela and Safoura's grasp planner </-->
   <run_depend>grasp_planner_uibk</run_depend>
 
+  <!--> Several configurations for planning request in moveit </-->
+  <run_depend>trajectory_planner_moveit</run_depend>
+
+  <!--> Head motion planning </-->
+  <run_depend>head_planner</run_depend>
+
 
   <!--> UIBK robot configuration for MoveIt!  </-->
   <run_depend>uibk_robot_moveit_config</run_depend>

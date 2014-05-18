@@ -1,0 +1,12 @@
+
+# point to look at if desired
+geometry_msgs/Point look_at
+
+# for now, two possible ways to move the head
+byte THINK = 0
+byte STOP_THINK = 1 
+byte LOOK_AT = 2
+byte type
+
+---
+
