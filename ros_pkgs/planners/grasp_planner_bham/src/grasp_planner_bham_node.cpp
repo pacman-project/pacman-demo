@@ -221,6 +221,19 @@ bool GraspPlanner::planGrasp(definitions::GraspPlanning::Request  &req, definiti
 
 	bool good_grasp;
 
+	// std::cout << "pacman interface grasp " << planned_grasps_[0].trajectory[0].pose.R.m11 << " " 
+	// << planned_grasps_[0].trajectory[0].pose.R.m12 << " "
+	// << planned_grasps_[0].trajectory[0].pose.R.m13 << " "
+	// << planned_grasps_[0].trajectory[0].pose.p.x << std::endl;
+	// std::cout << "pacman interface grasp " << planned_grasps_[0].trajectory[0].pose.R.m21 << " "
+	// << planned_grasps_[0].trajectory[0].pose.R.m22 << " "
+	// << planned_grasps_[0].trajectory[0].pose.R.m23 << " "
+	// << planned_grasps_[0].trajectory[0].pose.p.y << std::endl;
+	// std::cout << "pacman interface grasp" << planned_grasps_[0].trajectory[0].pose.R.m31 << " " 
+	// << planned_grasps_[0].trajectory[0].pose.R.m32 << " "
+	// << planned_grasps_[0].trajectory[0].pose.R.m33 << " "
+	// << planned_grasps_[0].trajectory[0].pose.p.z << std::endl;
+
 	// note: convert (perhaps it is a good idea to have conversions between definitions and Defs.h in one header file inside pacman, 
 	// the problem is that the definitions package might change)
 	// loop
@@ -228,10 +241,10 @@ bool GraspPlanner::planGrasp(definitions::GraspPlanning::Request  &req, definiti
 	// index w for wrist positions, typical 3 -> pre-grasp, middle point and grasp, but we leave it general for the future
 	// remember for trajectory planning, that the grasps are assumed to be the wrist position, hence the value for the ARM_sdh_palm_link
 	// and the hand joints
-	for (int t = 0; t <  planned_grasps_.size(); t++ )
+	for (int t = 0; t <  1/*planned_grasps_.size()*/; t++ )
 	{
 		// resize, this one should be typical to 3 in pacman
-		grasp.grasp_trajectory.resize(planned_grasps_[t].trajectory.size());
+		grasp.grasp_trajectory.resize( planned_grasps_[t].trajectory.size() );
 
 		good_grasp = false;
 		for (int w = 0; w < planned_grasps_[t].trajectory.size(); w++)
@@ -257,6 +270,7 @@ bool GraspPlanner::planGrasp(definitions::GraspPlanning::Request  &req, definiti
 
 			// fill the wrist pose
 			grasp.grasp_trajectory[w].wrist_pose.pose = pose_tmp.pose;
+			
 			// for now, we are always planning grasps with respect to the world_link
 			grasp.grasp_trajectory[w].wrist_pose.header.frame_id = "world_link";
 
@@ -270,28 +284,28 @@ bool GraspPlanner::planGrasp(definitions::GraspPlanning::Request  &req, definiti
 			grasp.grasp_trajectory[w].joints[5] = planned_grasps_[t].trajectory[w].config.middle[0];
 			grasp.grasp_trajectory[w].joints[6] = planned_grasps_[t].trajectory[w].config.middle[1];
 			
-			if ( (checkWorkspaceHeuristic(pose_tmp.pose, 90, 0.15) && w<1) )
-			{
-				ROS_INFO("Grasp Nr. %d is inside the workspace, hence added to the list of good grasps !", t);
-				
-				good_grasp = true;
-			}
-			else
-			{
+			//if ( (checkWorkspaceHeuristic(pose_tmp.pose, 90, 0.15) && w<1) )
+			//{
+				//ROS_INFO("Grasp Nr. %d is inside the workspace, hence added to the list of good grasps !", t);
+			//	good_grasp = true;
+			//}
+			//else
+			//{
 				// only if w = 0 is not a good grasp
-				if ( w==0 )
-				{
-					ROS_WARN("Grasp Nr. %d is out of the workspace, hence discarded.", t);
-					good_grasp = false;
-				}
-			}
+			//	if ( w==0 )
+			//	{
+					//ROS_WARN("Grasp Nr. %d is out of the workspace, hence discarded.", t);
+			//		good_grasp = false;
+			//	}
+			//}
 		}
-		if (good_grasp)
-		{
+		//if (good_grasp)
+		//{
 			// push back the current grasp only if it is good
 			estimated_grasps.push_back(grasp);
-		}
+		//}
 	}
+	// std::cout << "ros grasp " << estimated_grasps[0].grasp_trajectory[0].wrist_pose.pose << std::endl;
 
 	// write the response
 	res.grasp_list = estimated_grasps;
