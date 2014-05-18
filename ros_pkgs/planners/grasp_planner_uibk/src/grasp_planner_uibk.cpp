@@ -59,8 +59,8 @@ private:
     vector<double> grasp_score_;
     string arm_;
     ros::Publisher pub_grasps_;
-    vector<Grasps> grasp_type_;
-    Grasps cur_grasp_type_;
+   // vector<Grasps> grasp_type_;
+  //  Grasps cur_grasp_type_;
   
 public:
     
@@ -520,7 +520,7 @@ void GraspPlanner::poseEigenToMsg(const Eigen::Affine3d &e, geometry_msgs::PoseS
 
 vector<string> GraspPlanner::giveAllFiles(string obj_id)
 {
-  grasp_type_.clear();
+  //grasp_type_.clear();
 
   if( obj_id.find("cuttlery") != string::npos )
     obj_id = "cuttlery";
