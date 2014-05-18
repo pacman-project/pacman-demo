@@ -4,7 +4,12 @@
   <!-- transformation between world_link and camera_depth_optical_frame is in perception.launch-->
   <!-- <node name="static_transform_publisher" pkg="tf" type="static_transform_publisher" args="0.645214 0.332272 0.714251 -0.627166 0.654277 -0.323644  -0.271734 /camera_depth_optical_frame /world_link 1"/> -->
 
-  <param name="arm_name" value="right"/>
+  <param name="arm_name" value="both"/>
+
+  <param name="order_grasp_scene" value="true"/>
+
+  <param name="select_arm_factor" value="position_based"/>
+  <!-- <param name="select_arm_factor" value="grasp_based"/> -->
 
   <param name="log_path" value="/tmp/"/>
 
@@ -12,7 +17,7 @@
   <include file="$(find demos)/launch/perception.launch"/>
 
   <!-- PLANNERS -->
-  <include file="$(find demos)/launch/planners.launch"/>
+  <include file="$(find demos)/launch/planners.launch"/> 
 
   <!-- CONTROLLERS -->
   <include file="$(find demos)/launch/controllers.launch"/>
