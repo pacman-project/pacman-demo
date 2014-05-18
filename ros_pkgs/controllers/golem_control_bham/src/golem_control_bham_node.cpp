@@ -166,7 +166,6 @@ bool GolemController::executeTrajectoryFromCode(definitions::TrajectoryExecution
     }
   }
 
-
   return true;
 }
 
@@ -202,72 +201,74 @@ bool GolemController::executeTrajectoryNonBlocking(const RobotEddie::Command::Se
 
 bool GolemController::testEddieController(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
 {
-  try {
-    // RobotEddie
-    // Read current state
-    RobotEddie::State begin;
-    controller_->lookupState(controller_->time(), begin);
-    // Initial configuration command
-    RobotEddie::Command init;
-    init.armLeft.pos = begin.armLeft.pos;
-    init.handLeft.pos = begin.handLeft.pos;
-    init.armRight.pos = begin.armRight.pos;
-    init.handRight.pos = begin.handRight.pos;
-    init.head.pos = begin.head.pos;
-    // Prepare trajectory
-    RobotEddie::Command::Seq commands(7);
-    // Pose #0
-    commands[0] = init;
-    commands[0].t = controller_->time() + pacman::float_t(1.0);
-    // Pose #1
-    commands[1] = init;
-    commands[1].armRight.pos.c[5] += pacman::float_t(0.5);
-    commands[1].handRight.pos.middle[0] -= pacman::float_t(0.3);
-    commands[1].handRight.pos.middle[1] -= pacman::float_t(0.3);
-    commands[1].handRight.pos.left[0] -= pacman::float_t(0.3);
-    commands[1].handRight.pos.left[1] -= pacman::float_t(0.3);
-    commands[1].handRight.pos.right[0] -= pacman::float_t(0.3);
-    commands[1].handRight.pos.right[1] -= pacman::float_t(0.3);
-    commands[1].t = commands[0].t + pacman::float_t(2.0);
-    // Pose #2
-    commands[2] = init;
-    commands[2].armRight.pos.c[5] -= pacman::float_t(0.5);
-    commands[2].t = commands[1].t + pacman::float_t(2.0);
-    // Pose #3
-    commands[3] = init;
-    commands[3].armRight.pos.c[6] += pacman::float_t(0.5);
-    commands[3].armLeft.pos.c[6] += pacman::float_t(0.5);
-    commands[3].handLeft.pos.middle[0] -= pacman::float_t(0.3);
-    commands[3].handLeft.pos.middle[1] -= pacman::float_t(0.3);
-    commands[3].handLeft.pos.left[0] -= pacman::float_t(0.3);
-    commands[3].handLeft.pos.left[1] -= pacman::float_t(0.3);
-    commands[3].handLeft.pos.right[0] -= pacman::float_t(0.3);
-    commands[3].handLeft.pos.right[1] -= pacman::float_t(0.3);
-    commands[3].t = commands[2].t + pacman::float_t(2.0);
-    // Pose #4
-    commands[4] = init;
-    commands[4].armLeft.pos.c[6] -= pacman::float_t(0.5);
-    commands[4].t = commands[3].t + pacman::float_t(2.0);
-    // Pose #5
-    commands[5] = init;
-    commands[5].head.pos.neck[0] += pacman::float_t(0.1);
-    commands[5].head.pos.neck[1] += pacman::float_t(0.1);
-    commands[5].head.pos.neck[2] += pacman::float_t(0.1);
-    commands[5].head.pos.neck[3] += pacman::float_t(0.1);
-    commands[5].head.pos.eyeLeft -= pacman::float_t(0.4);
-    commands[5].head.pos.eyeRight += pacman::float_t(0.4);
-    commands[5].t = commands[4].t + pacman::float_t(2.0);
-    // Pose #6
-    commands[6] = init;
-    commands[6].t = commands[5].t + pacman::float_t(2.0);
+    try
+    {
+        // RobotEddie
+        // Read current state
+        RobotEddie::State begin;
+        controller_->lookupState(controller_->time(), begin);
+        // Initial configuration command
+        RobotEddie::Command init;
+        init.armLeft.pos = begin.armLeft.pos;
+        init.handLeft.pos = begin.handLeft.pos;
+        init.armRight.pos = begin.armRight.pos;
+        init.handRight.pos = begin.handRight.pos;
+        init.head.pos = begin.head.pos;
+        // Prepare trajectory
+        RobotEddie::Command::Seq commands(7);
+        // Pose #0
+        commands[0] = init;
+        commands[0].t = controller_->time() + pacman::float_t(1.0);
+        // Pose #1
+        commands[1] = init;
+        commands[1].armRight.pos.c[5] += pacman::float_t(0.5);
+        commands[1].handRight.pos.middle[0] -= pacman::float_t(0.3);
+        commands[1].handRight.pos.middle[1] -= pacman::float_t(0.3);
+        commands[1].handRight.pos.left[0] -= pacman::float_t(0.3);
+        commands[1].handRight.pos.left[1] -= pacman::float_t(0.3);
+        commands[1].handRight.pos.right[0] -= pacman::float_t(0.3);
+        commands[1].handRight.pos.right[1] -= pacman::float_t(0.3);
+        commands[1].t = commands[0].t + pacman::float_t(2.0);
+        // Pose #2
+        commands[2] = init;
+        commands[2].armRight.pos.c[5] -= pacman::float_t(0.5);
+        commands[2].t = commands[1].t + pacman::float_t(2.0);
+        // Pose #3
+        commands[3] = init;
+        commands[3].armRight.pos.c[6] += pacman::float_t(0.5);
+        commands[3].armLeft.pos.c[6] += pacman::float_t(0.5);
+        commands[3].handLeft.pos.middle[0] -= pacman::float_t(0.3);
+        commands[3].handLeft.pos.middle[1] -= pacman::float_t(0.3);
+        commands[3].handLeft.pos.left[0] -= pacman::float_t(0.3);
+        commands[3].handLeft.pos.left[1] -= pacman::float_t(0.3);
+        commands[3].handLeft.pos.right[0] -= pacman::float_t(0.3);
+        commands[3].handLeft.pos.right[1] -= pacman::float_t(0.3);
+        commands[3].t = commands[2].t + pacman::float_t(2.0);
+        // Pose #4
+        commands[4] = init;
+        commands[4].armLeft.pos.c[6] -= pacman::float_t(0.5);
+        commands[4].t = commands[3].t + pacman::float_t(2.0);
+        // Pose #5
+        commands[5] = init;
+        commands[5].head.pos.neck[0] += pacman::float_t(0.1);
+        commands[5].head.pos.neck[1] += pacman::float_t(0.1);
+        commands[5].head.pos.neck[2] += pacman::float_t(0.1);
+        commands[5].head.pos.neck[3] += pacman::float_t(0.1);
+        commands[5].head.pos.eyeLeft -= pacman::float_t(0.4);
+        commands[5].head.pos.eyeRight += pacman::float_t(0.4);
+        commands[5].t = commands[4].t + pacman::float_t(2.0);
+        // Pose #6
+        commands[6] = init;
+        commands[6].t = commands[5].t + pacman::float_t(2.0);
 
-    // execute trajectory
-    executeTrajectory(commands);
-  }
-  catch (const std::exception& ex) {
-    printf("ControlTest exception: %s\n", ex.what());
-    return 1;
-  }
+        // execute trajectory
+        executeTrajectory(commands);
+    }
+    catch (const std::exception& ex)
+    {
+        printf("ControlTest exception: %s\n", ex.what());
+        return 1;
+    }
 
   return true;
 }
@@ -310,7 +311,6 @@ int main(int argc, char **argv)
   boost::thread control_thread( controlThread_fnc, node );
   publish_thread.join();
   control_thread.join();
-
 
   // detach the threads
   publish_thread.detach();

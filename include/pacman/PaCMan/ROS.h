@@ -294,85 +294,66 @@ namespace pacman {
 				trajectory.time_from_previous.push_back( dt );
 			}
 		}
-
-       /* double max_diff = 0;
-        int best_id = -1;
-
-        for( size_t i = 1; i < trajectory.time_from_previous.size(); i++ )
-        {
-		   ros::Duration  dt(trajectory.time_from_previous[i]);
-		   double diff_cur = dt.toSec();
-		   if( diff_cur > max_diff )
-		   {
-		   	  max_diff = diff_cur;
-		   	  best_id = i;
-		   }
-        }
-
-        for( size_t i = 1; i < trajectory.time_from_previous.size(); i++ )
-        {
-            if( best_id == -1 )
-            	break;
-            
-            if( max_diff < 0.1 )
-            {
-              trajectory.time_from_previous[i] = ros::Duration(0.1);
-            }
-            else if( ( max_diff > 0.3 ) && (trajectory.time_from_previous[i].toSec() < 0.1 ) )
-            {
-              trajectory.time_from_previous[i] = ros::Duration(0.5);
-            }
-        }*/
-
-		/*for( size_t i = 0; i < trajectory.time_from_previous.size(); i++ )
-			std::cout << "increment is: " << trajectory.time_from_previous[i] << std::endl;	*/
 	}
 
-	// // this mapping uses names defined in the urdf of the UIBK robot, so be careful if you change them
-	// void mapStates(const RobotUIBK::State &state, std::string name, sensor_msgs::JointState &joint_states, ros::Time stamp) 
-	// {
+	void convertJointStateToEddie(const sensor_msgs::JointState &state, definitions::RobotEddie &eddie)
+	{	
 
-	// 	// initialize the joint state topic
-	// 	joint_states.name.resize(RobotUIBK::Config::JOINTS);
-	// 	joint_states.position.resize(RobotUIBK::Config::JOINTS);
-	// 	joint_states.velocity.resize(RobotUIBK::Config::JOINTS);
-	// 	joint_states.effort.resize(RobotUIBK::Config::JOINTS);
-	// 	joint_states.name[0] = name + "_arm_0_joint";
-	// 	joint_states.name[1] = name + "_arm_1_joint";
-	// 	joint_states.name[2] = name + "_arm_2_joint";
-	// 	joint_states.name[3] = name + "_arm_3_joint";
-	// 	joint_states.name[4] = name + "_arm_4_joint";
-	// 	joint_states.name[5] = name + "_arm_5_joint";
-	// 	joint_states.name[6] = name + "_arm_6_joint";
-	// 	joint_states.name[7] = name + "_sdh_knuckle_joint";
-	// 	joint_states.name[8] = name + "_sdh_finger_12_joint";
-	// 	joint_states.name[9] = name + "_sdh_finger_13_joint";
-	// 	joint_states.name[10] = name + "_sdh_finger_22_joint";
-	// 	joint_states.name[11] = name + "_sdh_finger_23_joint";
-	// 	joint_states.name[12] = name + "_sdh_thumb_2_joint";
-	// 	joint_states.name[13] = name + "_sdh_thumb_3_joint";
+		// arms mapping
+		eddie.armRight.joints.resize(KukaLWR::Config::JOINTS);
+		eddie.armRight.velocity.resize(KukaLWR::Config::JOINTS);
+		eddie.armRight.acceleration.resize(KukaLWR::Config::JOINTS);
+		eddie.armLeft.joints.resize(KukaLWR::Config::JOINTS);
+		eddie.armLeft.velocity.resize(KukaLWR::Config::JOINTS);
+		eddie.armLeft.acceleration.resize(KukaLWR::Config::JOINTS);
+		for(int j = 0; j < KukaLWR::Config::JOINTS; j++)
+		{
+			eddie.armRight.joints.at(j) = state.position[j+7];
+			eddie.armRight.velocity.at(j) = state.velocity[j+7];
+			eddie.armRight.acceleration.at(j) = 0.0;
 
-	// 	joint_states.header.stamp = stamp;
+			eddie.armLeft.joints.at(j) = state.position[j];
+			eddie.armLeft.velocity.at(j) = state.velocity[j];
+			eddie.armLeft.acceleration.at(j) = 0.0;
+		}
 
-	// 	// the joint mapping needs to be hardcoded to match Golem.xml and Ros.urdf structures
-	// 	// note that, the names are set in the class constructor for the order convention
-	// 	// and let the party begin... first the arm:
-	// 	for (int j = 0; j < KukaLWR::Config::JOINTS; j++)
-	// 	{
-	// 		joint_states.position[j] = state.arm.pos.c[j];
-	// 	}
+		// hands mapping
+		eddie.handRight.joints.resize(SchunkDexHand::Config::JOINTS);
+		eddie.handRight.velocity.resize(SchunkDexHand::Config::JOINTS);
+		eddie.handRight.acceleration.resize(SchunkDexHand::Config::JOINTS);
+		eddie.handLeft.joints.resize(SchunkDexHand::Config::JOINTS);
+		eddie.handLeft.velocity.resize(SchunkDexHand::Config::JOINTS);
+		eddie.handLeft.acceleration.resize(SchunkDexHand::Config::JOINTS);
+		for(int h = 0; h < SchunkDexHand::Config::JOINTS; h++)
+		{
+			eddie.handLeft.joints.at(h) = state.position[h+14];
+			eddie.handLeft.velocity.at(h) = state.velocity[h+14];
+			eddie.handLeft.acceleration.at(h) = 0.0;
 
-	// 	// and continue with the hand:
-	// 	joint_states.position[7] = state.hand.pos.rotation;
-	// 	joint_states.position[8] = state.hand.pos.left[0];
-	// 	joint_states.position[9] = state.hand.pos.left[1];
-	// 	joint_states.position[10] = state.hand.pos.right[0];
-	// 	joint_states.position[11] = state.hand.pos.right[1];
-	// 	joint_states.position[12] = state.hand.pos.middle[0];
-	// 	joint_states.position[13] = state.hand.pos.middle[1];
+			eddie.handRight.joints.at(h) = state.position[h+21];
+			eddie.handRight.velocity.at(h) = state.velocity[h+21];
+			eddie.handRight.acceleration.at(h) = 0.0;
+		}
 
-	// 	return;
-	// }
+		// head mapping
+		eddie.head.joints.resize(KITHead::Config::JOINTS);
+		eddie.head.velocity.resize(KITHead::Config::JOINTS);
+		eddie.head.acceleration.resize(KITHead::Config::JOINTS);
+		for(int k = 0; k < KITHead::Config::JOINTS_NECK; k++)
+		{
+			eddie.head.joints.at(k) = state.position[k+28];
+			eddie.head.velocity.at(k) = state.velocity[k+28];
+			eddie.head.acceleration.at(k) = 0.0;
+		}
+
+		eddie.head.jointsLEye = state.position[33];
+		eddie.head.velocityLEye = state.velocity[33];
+		eddie.head.accelerationLEye = 0.0;
+
+		eddie.head.jointsREye = state.position[34];
+		eddie.head.velocityREye = state.velocity[34];
+		eddie.head.accelerationREye = 0.0;
+	}
 
 	// this mapping uses names defined in the urdf of the UIBK robot, so be careful if you change them
 	void mapStates(const RobotEddie::State &state, sensor_msgs::JointState &joint_states, ros::Time stamp) 
