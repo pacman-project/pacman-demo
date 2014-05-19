@@ -2,9 +2,8 @@
 
 Trajectory trajectory
 
-# select which robot configuration you would like to use to execute the trajectory
-int32 RobotEddie = 0
-int32 robot
+# say if you want to move with a non-blocking execution
+bool nonblocking
 
 ---
 

@@ -105,7 +105,7 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 		if (fraction < 1.0)
 		{
 			ROS_WARN("The goal configuration can not be reached easily, for the MOVE_TO_CART_GOAL, trying other approach");
-  			if (!planTrajectoryUIBK(trajectories, goal_hand, request.arm, startJointState) )
+  			if (!planTrajectoryUIBK(trajectories, goal_hand, request.arm, startJointState, response) )
 			{
 				ROS_WARN("No trajectory found for the required goal state");
 				response.result = response.NO_FEASIBLE_TRAJECTORY_FOUND;
@@ -148,10 +148,10 @@ bool CartPlanner::planTrajectoryFromCode(definitions::TrajectoryPlanning::Reques
 
 			if( !planTrajectory(trajectories, goal_state, request.arm, startJointState, goal_hand) || trajectories.size() < 1 ) 
 			{
-				if (!planTrajectoryUIBK(trajectories, goal_hand, request.arm, startJointState) )
+				if (!planTrajectoryUIBK(trajectories, goal_hand, request.arm, startJointState, response) )
 				{
 					ROS_WARN("No trajectory found for the required goal state");
-					response.result = response.NO_FEASIBLE_TRAJECTORY_FOUND;
+					//response.result = response.NO_FEASIBLE_TRAJECTORY_FOUND;
 					return false;
 				}
 			}
@@ -261,7 +261,7 @@ bool CartPlanner::planTrajectory(std::vector<definitions::Trajectory> &trajector
 	}
 }
 
-bool CartPlanner::planTrajectoryUIBK(std::vector<definitions::Trajectory> &trajectories, definitions::SDHand &goal, std::string &arm, sensor_msgs::JointState &startState)
+bool CartPlanner::planTrajectoryUIBK(std::vector<definitions::Trajectory> &trajectories, definitions::SDHand &goal, std::string &arm, sensor_msgs::JointState &startState, definitions::TrajectoryPlanning::Response &response)
 {
 	ROS_INFO("USING MARTIN's CONFIGURATION FOR CARTESIAN PLANNING");
 	ROS_INFO("Planning for wrist (px, py, pz, qx, qy, qz, qw):\t%f\t%f\t%f\t%f\t%f\t%f\t%f", goal.wrist_pose.pose.position.x, goal.wrist_pose.pose.position.y, goal.wrist_pose.pose.position.z, goal.wrist_pose.pose.orientation.x, goal.wrist_pose.pose.orientation.y, goal.wrist_pose.pose.orientation.z, goal.wrist_pose.pose.orientation.w);
@@ -303,6 +303,7 @@ bool CartPlanner::planTrajectoryUIBK(std::vector<definitions::Trajectory> &traje
 
 	if(motion_plan_request.goal_constraints.size() == 0) {
 		ROS_WARN("No valid IK solution found for given pose goal - planning failed!");
+		response.result = response.NO_IK_SOLUTION;
 		return false;
 	}
 
@@ -338,6 +339,7 @@ bool CartPlanner::planTrajectoryUIBK(std::vector<definitions::Trajectory> &traje
 		if(trajSize > max_points_in_trajectory_)
 		{
 			ROS_WARN("Computed trajectory contains too many points, so it will be dropped!");
+			response.result = response.OTHER_ERROR;
 			return false;
 		} 
 		else 

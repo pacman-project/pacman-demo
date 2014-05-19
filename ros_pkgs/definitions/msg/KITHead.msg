@@ -1,6 +1,6 @@
 ## THIS FILE DEFINES THE KIT HEAD STATE/COMMAND
 
-## 0 base 4 neck joints
+## 0-5 joints before eyes
 float32[] joints
 float32[] velocity
 float32[] acceleration

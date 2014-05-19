@@ -65,13 +65,11 @@ namespace golem_control_bham{
       void publishRobotState();
 
       // service function to request trajectory execution
-      //bool executeTrajectoryFromMoveItGUI(moveit_msgs::RobotTrajectory::Request &req, moveit_msgs::RobotTrajectory::Response &res);
       bool executeTrajectoryFromCode(definitions::TrajectoryExecution::Request &req, definitions::TrajectoryExecution::Response &res);
-      //bool executeTrajectory(const RobotUIBK::Command::Seq &command);
       bool executeTrajectory(const RobotEddie::Command::Seq &command);
+      bool executeTrajectoryNonBlocking(const RobotEddie::Command::Seq &command);
 
       // service function to test the controller
-      //bool testUIBKController(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
       bool testEddieController(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 
       // constructor
@@ -89,7 +87,6 @@ namespace golem_control_bham{
 
         // advertise the node services
         srv_trajectory_execution_ = nh_.advertiseService(nh_.resolveName("/trajectory_execution_srv"),&GolemController::executeTrajectoryFromCode, this);
-        //srv_test_uibk_controller_ = nh_.advertiseService(nh_.resolveName("/test_uibk_controller_srv"),&GolemController::testUIBKController, this);
         srv_test_eddie_controller_ = nh_.advertiseService(nh_.resolveName("/test_eddie_controller_srv"),&GolemController::testEddieController, this);
 
 
@@ -140,36 +137,37 @@ bool GolemController::executeTrajectoryFromCode(definitions::TrajectoryExecution
   pacman::convert(trajectory, robot_eddie_command_, controller_->time());
 
   // excexute the trajectory
-  if( executeTrajectory(robot_eddie_command_) )
+  if(req.nonblocking)
   {
-    ROS_INFO("Exectution finished cleanly...");
-    res.result = res.SUCCESS;
+    if( executeTrajectoryNonBlocking(robot_eddie_command_) )
+    {
+        ROS_INFO("Commands sent correctly.");
+        res.result = res.SUCCESS;
+    }
+    else
+    {
+      ROS_ERROR("Commands couldn't be sent to the controller.");
+      res.result = res.OTHER_ERROR;
+      return false;
+    }
   }
   else
   {
-    ROS_ERROR("Trajectory could not be executed...");
-    res.result = res.OTHER_ERROR;
-    return false;
+    if( executeTrajectory(robot_eddie_command_) )
+    {
+        ROS_INFO("Execution finished cleanly...");
+        res.result = res.SUCCESS;
+    }
+    else
+    {
+      ROS_ERROR("Trajectory could not be executed...");
+      res.result = res.OTHER_ERROR;
+      return false;
+    }
   }
 
   return true;
 }
-/*
-bool GolemController::executeTrajectory(const RobotUIBK::Command::Seq &command)
-{
-  try 
-  {  
-    controller_->send(command.data(), command.size());
-    // wait for completion
-    controller_->waitForTrajectoryEnd();
-  }
-  catch (const std::exception& ex) 
-  {
-    ROS_ERROR("Unable to execute the given trajectory:  %s\n", ex.what());
-    return false;
-  }
-  return true;
-}*/
 
 bool GolemController::executeTrajectory(const RobotEddie::Command::Seq &command)
 {
@@ -187,162 +185,93 @@ bool GolemController::executeTrajectory(const RobotEddie::Command::Seq &command)
   return true;
 }
 
-// this function is called to test that the controller client works well with some basic motions
-/*bool GolemController::testUIBKController(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
+bool GolemController::executeTrajectoryNonBlocking(const RobotEddie::Command::Seq &command)
 {
-  try {
-    // Read current state
-    RobotUIBK::State begin;
-    controller_->lookupState(controller_->time(), begin);
-
-    RobotUIBK::Command init;
-
-    init.hand.pos = begin.hand.pos;
-    init.arm.pos = begin.arm.pos;
-
-    // Prepare trajectory
-    RobotUIBK::Command::Seq commands(12);
-    // Initial pose
-    commands[0] = init;
-    
-    commands[0].t = controller_->time() + pacman::float_t(1.0);
-
-    // test arm
-    // Pose #1
-    commands[1] = init;
-    commands[1].t = commands[0].t + pacman::float_t(3.0);
-    commands[1].arm.pos.c[0] += pacman::float_t(0.1);
-    // Go to home in the hand at pose 1
-    commands[1].hand.pos.setToDefault();
-    // Pose #2
-    commands[2] = init;
-    commands[2].t = commands[1].t + pacman::float_t(3.0);
-    commands[2].arm.pos.c[1] -= pacman::float_t(0.1);
-    // Pose #3
-    commands[3] = init;
-    commands[3].t = commands[2].t + pacman::float_t(3.0);
-    commands[3].arm.pos.c[2] += pacman::float_t(0.1);
-    // Pose #4
-    commands[4] = init;
-    commands[4].t = commands[3].t + pacman::float_t(3.0);
-    commands[4].arm.pos.c[3] -= pacman::float_t(0.1);
-    // Pose #5
-    commands[5] = init;
-    commands[5].t = commands[4].t + pacman::float_t(3.0);
-    commands[5].arm.pos.c[4] += pacman::float_t(0.1);
-    // Pose #6
-    commands[6] = init;
-    commands[6].t = commands[5].t + pacman::float_t(3.0);
-    commands[6].arm.pos.c[5] -= pacman::float_t(0.1);
-    // Pose #7
-    commands[7] = init;
-    commands[7].t = commands[6].t + pacman::float_t(3.0);
-    commands[7].arm.pos.c[6] += pacman::float_t(0.1);
-    // Back to the initial pose
-    commands[8] = init;
-    commands[8].t = commands[7].t + pacman::float_t(3.0);
-    // Test the hand as well
-    // Move knucle
-    commands[9] = init;
-    commands[9].t = commands[8].t + pacman::float_t(3.0);
-    commands[9].hand.pos.rotation += pacman::float_t(0.25);
-    // Open
-    commands[10] = init;
-    commands[10].t = commands[9].t + pacman::float_t(3.0);
-    commands[10].hand.pos.middle[0] -= pacman::float_t(0.3);
-    commands[10].hand.pos.middle[1] -= pacman::float_t(0.3);
-    commands[10].hand.pos.left[0] -= pacman::float_t(0.3);
-    commands[10].hand.pos.left[1] -= pacman::float_t(0.3);
-    commands[10].hand.pos.right[0] -= pacman::float_t(0.3);
-    commands[10].hand.pos.right[1] -= pacman::float_t(0.3);
-    // Close to home position
-    commands[11] = init;
-    commands[11].t = commands[10].t + pacman::float_t(3.0);
-
-
-    // execute trajectory
-    executeTrajectory(commands);
+  try 
+  {  
+    controller_->send(command.data(), command.size());
   }
-  catch (const std::exception& ex) {
-    printf("ControlTest exception: %s\n", ex.what());
-    return 1;
+  catch (const std::exception& ex) 
+  {
+    ROS_ERROR("Unable to execute the given trajectory:  %s\n", ex.what());
+    return false;
   }
-
-  return true;
-}*/
-
-bool GolemController::testEddieController(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
-{
-  try {
-    // RobotEddie
-    // Read current state
-    RobotEddie::State begin;
-    controller_->lookupState(controller_->time(), begin);
-    // Initial configuration command
-    RobotEddie::Command init;
-    init.armLeft.pos = begin.armLeft.pos;
-    init.handLeft.pos = begin.handLeft.pos;
-    init.armRight.pos = begin.armRight.pos;
-    init.handRight.pos = begin.handRight.pos;
-    init.head.pos = begin.head.pos;
-    // Prepare trajectory
-    RobotEddie::Command::Seq commands(7);
-    // Pose #0
-    commands[0] = init;
-    commands[0].t = controller_->time() + pacman::float_t(1.0);
-    // Pose #1
-    commands[1] = init;
-    commands[1].armRight.pos.c[5] += pacman::float_t(0.5);
-    commands[1].handRight.pos.middle[0] -= pacman::float_t(0.3);
-    commands[1].handRight.pos.middle[1] -= pacman::float_t(0.3);
-    commands[1].handRight.pos.left[0] -= pacman::float_t(0.3);
-    commands[1].handRight.pos.left[1] -= pacman::float_t(0.3);
-    commands[1].handRight.pos.right[0] -= pacman::float_t(0.3);
-    commands[1].handRight.pos.right[1] -= pacman::float_t(0.3);
-    commands[1].t = commands[0].t + pacman::float_t(2.0);
-    // Pose #2
-    commands[2] = init;
-    commands[2].armRight.pos.c[5] -= pacman::float_t(0.5);
-    commands[2].t = commands[1].t + pacman::float_t(2.0);
-    // Pose #3
-    commands[3] = init;
-    commands[3].armRight.pos.c[6] += pacman::float_t(0.5);
-    commands[3].armLeft.pos.c[6] += pacman::float_t(0.5);
-    commands[3].handLeft.pos.middle[0] -= pacman::float_t(0.3);
-    commands[3].handLeft.pos.middle[1] -= pacman::float_t(0.3);
-    commands[3].handLeft.pos.left[0] -= pacman::float_t(0.3);
-    commands[3].handLeft.pos.left[1] -= pacman::float_t(0.3);
-    commands[3].handLeft.pos.right[0] -= pacman::float_t(0.3);
-    commands[3].handLeft.pos.right[1] -= pacman::float_t(0.3);
-    commands[3].t = commands[2].t + pacman::float_t(2.0);
-    // Pose #4
-    commands[4] = init;
-    commands[4].armLeft.pos.c[6] -= pacman::float_t(0.5);
-    commands[4].t = commands[3].t + pacman::float_t(2.0);
-    // Pose #5
-    commands[5] = init;
-    commands[5].head.pos.neck[0] += pacman::float_t(0.1);
-    commands[5].head.pos.neck[1] += pacman::float_t(0.1);
-    commands[5].head.pos.neck[2] += pacman::float_t(0.1);
-    commands[5].head.pos.neck[3] += pacman::float_t(0.1);
-    commands[5].head.pos.eyeLeft -= pacman::float_t(0.4);
-    commands[5].head.pos.eyeRight += pacman::float_t(0.4);
-    commands[5].t = commands[4].t + pacman::float_t(2.0);
-    // Pose #6
-    commands[6] = init;
-    commands[6].t = commands[5].t + pacman::float_t(2.0);
-
-    // execute trajectory
-    executeTrajectory(commands);
-  }
-  catch (const std::exception& ex) {
-    printf("ControlTest exception: %s\n", ex.what());
-    return 1;
-  }
-
   return true;
 }
 
+bool GolemController::testEddieController(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
+{
+    try
+    {
+        // RobotEddie
+        // Read current state
+        RobotEddie::State begin;
+        controller_->lookupState(controller_->time(), begin);
+        // Initial configuration command
+        RobotEddie::Command init;
+        init.armLeft.pos = begin.armLeft.pos;
+        init.handLeft.pos = begin.handLeft.pos;
+        init.armRight.pos = begin.armRight.pos;
+        init.handRight.pos = begin.handRight.pos;
+        init.head.pos = begin.head.pos;
+        // Prepare trajectory
+        RobotEddie::Command::Seq commands(7);
+        // Pose #0
+        commands[0] = init;
+        commands[0].t = controller_->time() + pacman::float_t(1.0);
+        // Pose #1
+        commands[1] = init;
+        commands[1].armRight.pos.c[5] += pacman::float_t(0.5);
+        commands[1].handRight.pos.middle[0] -= pacman::float_t(0.3);
+        commands[1].handRight.pos.middle[1] -= pacman::float_t(0.3);
+        commands[1].handRight.pos.left[0] -= pacman::float_t(0.3);
+        commands[1].handRight.pos.left[1] -= pacman::float_t(0.3);
+        commands[1].handRight.pos.right[0] -= pacman::float_t(0.3);
+        commands[1].handRight.pos.right[1] -= pacman::float_t(0.3);
+        commands[1].t = commands[0].t + pacman::float_t(2.0);
+        // Pose #2
+        commands[2] = init;
+        commands[2].armRight.pos.c[5] -= pacman::float_t(0.5);
+        commands[2].t = commands[1].t + pacman::float_t(2.0);
+        // Pose #3
+        commands[3] = init;
+        commands[3].armRight.pos.c[6] += pacman::float_t(0.5);
+        commands[3].armLeft.pos.c[6] += pacman::float_t(0.5);
+        commands[3].handLeft.pos.middle[0] -= pacman::float_t(0.3);
+        commands[3].handLeft.pos.middle[1] -= pacman::float_t(0.3);
+        commands[3].handLeft.pos.left[0] -= pacman::float_t(0.3);
+        commands[3].handLeft.pos.left[1] -= pacman::float_t(0.3);
+        commands[3].handLeft.pos.right[0] -= pacman::float_t(0.3);
+        commands[3].handLeft.pos.right[1] -= pacman::float_t(0.3);
+        commands[3].t = commands[2].t + pacman::float_t(2.0);
+        // Pose #4
+        commands[4] = init;
+        commands[4].armLeft.pos.c[6] -= pacman::float_t(0.5);
+        commands[4].t = commands[3].t + pacman::float_t(2.0);
+        // Pose #5
+        commands[5] = init;
+        commands[5].head.pos.neck[0] += pacman::float_t(0.1);
+        commands[5].head.pos.neck[1] += pacman::float_t(0.1);
+        commands[5].head.pos.neck[2] += pacman::float_t(0.1);
+        commands[5].head.pos.neck[3] += pacman::float_t(0.1);
+        commands[5].head.pos.eyeLeft -= pacman::float_t(0.4);
+        commands[5].head.pos.eyeRight += pacman::float_t(0.4);
+        commands[5].t = commands[4].t + pacman::float_t(2.0);
+        // Pose #6
+        commands[6] = init;
+        commands[6].t = commands[5].t + pacman::float_t(2.0);
+
+        // execute trajectory
+        executeTrajectory(commands);
+    }
+    catch (const std::exception& ex)
+    {
+        printf("ControlTest exception: %s\n", ex.what());
+        return 1;
+    }
+
+  return true;
+}
 
 } // end namespace golem_control_bham
 
@@ -382,7 +311,6 @@ int main(int argc, char **argv)
   boost::thread control_thread( controlThread_fnc, node );
   publish_thread.join();
   control_thread.join();
-
 
   // detach the threads
   publish_thread.detach();
