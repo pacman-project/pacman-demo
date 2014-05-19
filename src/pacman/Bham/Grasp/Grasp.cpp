@@ -49,7 +49,7 @@ void BhamGraspImpl::estimate(const ::grasp::Cloud::PointSeq& points, Trajectory:
 	Cluster::find(clusterDesc, ptr->graspConfigs, ptr->graspClusters);
 
 	// HACK: max reliable grasps, filtering
-	golem::U32 grasps = 100, j = 0;
+	golem::U32 grasps = 300, j = 0;
 	Real elevation = Real(0.1);
 
 	// export trajectories, transform to the hand frame
