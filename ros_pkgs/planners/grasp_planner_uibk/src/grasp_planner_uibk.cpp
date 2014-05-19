@@ -59,8 +59,8 @@ private:
     vector<double> grasp_score_;
     string arm_;
     ros::Publisher pub_grasps_;
-   // vector<Grasps> grasp_type_;
-  //  Grasps cur_grasp_type_;
+    vector<Grasps> grasp_type_;
+    Grasps cur_grasp_type_;
   
 public:
     
@@ -120,21 +120,26 @@ geometry_msgs::PoseStamped GraspPlanner::find_mid_point(geometry_msgs::PoseStamp
  mid_point.pose.position.z = mid_z;
  mid_point.pose.orientation = grasp.pose.orientation;
 
- vector<float> pre_grasp_joints = getTargetAnglesFromGraspType(rim_pre_grasp,1.0);
+ /*vector<float> pre_grasp_joints = getTargetAnglesFromGraspType(rim_pre_grasp,1.0);
  vector<float> grasp_joints = getTargetAnglesFromGraspType(rim_close,1.0); 
-
-/* vector<float> pre_grasp_joints;
+*/
+ vector<float> pre_grasp_joints;
  vector<float> grasp_joints;
  if( cur_grasp_type_ == cylindrical )
  {
-   pre_grasp_joints = getTargetAnglesFromGraspType(cylindrical,1.0);
-   grasp_joints = getTargetAnglesFromGraspType(cylindrical,0.1); 
+   pre_grasp_joints = getTargetAnglesFromGraspType(cylindrical,0.1);
+   grasp_joints = getTargetAnglesFromGraspType(cylindrical,1.0); 
  }
+ else if( cur_grasp_type_ == spherical )
+ {
+   pre_grasp_joints = getTargetAnglesFromGraspType(spherical,0.1);
+   grasp_joints = getTargetAnglesFromGraspType(spherical,1.0); 
+ } 
  else
  {
     pre_grasp_joints = getTargetAnglesFromGraspType(rim_pre_grasp,1.0);
     grasp_joints = getTargetAnglesFromGraspType(rim_close,1.0);
- }*/
+ }
 
 
  mid_grasp_joint.resize(pre_grasp_joints.size(),0);
@@ -520,7 +525,7 @@ void GraspPlanner::poseEigenToMsg(const Eigen::Affine3d &e, geometry_msgs::PoseS
 
 vector<string> GraspPlanner::giveAllFiles(string obj_id)
 {
-  //grasp_type_.clear();
+  grasp_type_.clear();
 
   if( obj_id.find("cuttlery") != string::npos )
     obj_id = "cuttlery";
@@ -540,12 +545,12 @@ vector<string> GraspPlanner::giveAllFiles(string obj_id)
       {
        	string path = path_to_dir + cur_path;
 	      path_to_obj_dir.push_back(path);
-        /*if( cur_path.find("cylindrical") != string::npos )
+        if( cur_path.find("cylindrical") != string::npos )
            grasp_type_.push_back(cylindrical);
         if( cur_path.find("spherical") != string::npos )
            grasp_type_.push_back(spherical);
         else
-          grasp_type_.push_back(rim_close);*/        
+          grasp_type_.push_back(rim_close);        
       }
    }
   }
@@ -758,16 +763,16 @@ bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, defin
   
   vector<definitions::Grasp> grasp_traj;
  
-  vector<float> pre_grasp_joints = getTargetAnglesFromGraspType(rim_pre_grasp,1.0);
+/*  vector<float> pre_grasp_joints = getTargetAnglesFromGraspType(rim_pre_grasp,1.0);
   // vector<float> pre_grasp_joints = getTargetAnglesFromGraspType(rim_open,1.0);
-  vector<float> grasp_joints = getTargetAnglesFromGraspType(rim_close,1.0); 
+  vector<float> grasp_joints = getTargetAnglesFromGraspType(rim_close,1.0); */
 
   int min_id = 0;
   double min = 1000.;
   definitions::GraspList grasp_list;
   for( size_t i = 0; i < grasps.size(); i++ )
   {
-   /* vector<float> pre_grasp_joints;
+    vector<float> pre_grasp_joints;
     vector<float> grasp_joints;
     if( grasp_type_[i] == cylindrical )
     {
@@ -775,12 +780,18 @@ bool GraspPlanner::extractGrasp(definitions::GraspPlanning::Request  &req, defin
       grasp_joints = getTargetAnglesFromGraspType(cylindrical,1.0); 
       cur_grasp_type_ = cylindrical;
     }
+    if( grasp_type_[i] == spherical )
+    {
+      pre_grasp_joints = getTargetAnglesFromGraspType(spherical,0.1);
+      grasp_joints = getTargetAnglesFromGraspType(spherical,1.0); 
+      cur_grasp_type_ = spherical;
+    }    
     else
     {
       pre_grasp_joints = getTargetAnglesFromGraspType(rim_pre_grasp,1.0);
       grasp_joints = getTargetAnglesFromGraspType(rim_close,1.0);
       cur_grasp_type_ = rim_close;
-    }*/
+    }
 
     geometry_msgs::PoseStamped old_pre_grasp = pre_grasps[i];
     geometry_msgs::PoseStamped old_grasp = grasps[i];

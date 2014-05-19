@@ -1207,7 +1207,6 @@ void DemoSimple::order_grasp()
 
    ROS_INFO("Ordering grasp list");
    std::vector<definitions::Grasp> my_calculated_grasp_tmp;
-   //double threshold = 0.2;
    double threshold = 0.15;
    vector<double> euc_dists;  
    for( size_t i = 0; i <  my_calculated_grasp.size(); i++ )
@@ -1290,7 +1289,7 @@ bool DemoSimple::plan_trajectory()
   {
     cur_state_ = PreGraspTraj_State;
 
-    ROS_INFO_STREAM("Plan for pre-grasp id: " << grasp_id_);
+    ROS_INFO_STREAM("Plan for pre-grasp id: " << (size_t) (grasp_id_+1));
     curState_[PreGraspTraj_State] = Fail;
 
     stringstream ss;
@@ -1303,11 +1302,11 @@ bool DemoSimple::plan_trajectory()
     ss << "<font size=" << "20"<<  " color=red>" <<"No. of found objects: " << my_detected_objects.size() << "</font>" << "<br>"; 
     ss << "<font size=" << "20"<<  " color=red>" <<"I am going for object: " << 
          my_detected_objects[object_id_].name.data << "</font>" << "<br>";
-
-    ss << "<font size=" << "20" << " color=red>" << "Plan for grasp: " << grasp_id_ << 
+    ss << "<font size=" << "20" << " color=red>" << "Plan for grasp: " << (size_t) (grasp_id_+1) << 
         " from "<< my_calculated_grasp.size() << "</font>" << "<br>";
     msg.data = ss.str();
     pub_states_.publish(msg);
+    usleep(1000*1000);
 
     // for testing wo execution 
    // curState_[PreGraspTraj_State] = Success;
@@ -1323,8 +1322,9 @@ bool DemoSimple::plan_trajectory()
       trajectory_planning_srv.request.eddie_goal_state.handLeft.joints = my_calculated_grasp[grasp_id_].grasp_trajectory[0].joints;    
     }
     executeMovement(true,false,grasp_id_);
-    if( grasp_success_ )
-      curState_[PreGraspTraj_State] = Success;
+    if( grasp_success_ ){
+      curState_[PreGraspTraj_State] = Success;       
+    }
   }
   else if( ( curState_[PreGraspTraj_State] == Success ) && ( curState_[GraspTraj_State] == Idle ) )
   {
@@ -1375,18 +1375,18 @@ bool DemoSimple::post_grasp(int grasp_id)
   
   if( arm_ == "right" )
   {
-    trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose = my_calculated_grasp[grasp_id].grasp_trajectory[N].wrist_pose;
+    trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose = my_calculated_grasp[grasp_id_].grasp_trajectory[N].wrist_pose;
     trajectory_planning_srv.request.eddie_goal_state.handRight.wrist_pose.pose.position.z += offset_z;
-    trajectory_planning_srv.request.eddie_goal_state.handRight.joints = my_calculated_grasp[grasp_id].grasp_trajectory[N].joints;
+    trajectory_planning_srv.request.eddie_goal_state.handRight.joints = my_calculated_grasp[grasp_id_].grasp_trajectory[N].joints;
   }
   else if( arm_ == "left" )
   {
-    trajectory_planning_srv.request.eddie_goal_state.handLeft.wrist_pose = my_calculated_grasp[grasp_id].grasp_trajectory[N].wrist_pose;
+    trajectory_planning_srv.request.eddie_goal_state.handLeft.wrist_pose = my_calculated_grasp[grasp_id_].grasp_trajectory[N].wrist_pose;
     trajectory_planning_srv.request.eddie_goal_state.handLeft.wrist_pose.pose.position.z += offset_z;
-    trajectory_planning_srv.request.eddie_goal_state.handLeft.joints = my_calculated_grasp[grasp_id].grasp_trajectory[N].joints;    
+    trajectory_planning_srv.request.eddie_goal_state.handLeft.joints = my_calculated_grasp[grasp_id_].grasp_trajectory[N].joints;    
   }
 
-  success = executeMovement(false,true,grasp_id);
+  success = executeMovement(false,true,grasp_id_);
   
   return success;
 }
@@ -1400,7 +1400,7 @@ bool DemoSimple::executeMovement(bool pre_grasp, bool post_grasp, int &grasp_id,
   {
     return succeed;
   }
-  if( !pre_grasp && !post_grasp) 
+  if( (!pre_grasp) && (!post_grasp) ) 
   {    
     reader_srv.request.detected_objects = my_detected_objects;
     reader_srv.request.object_id = object_id_;
@@ -1478,6 +1478,17 @@ bool DemoSimple::executeMovement(bool pre_grasp, bool post_grasp, int &grasp_id,
       {    
       
       //Arm movement
+        if( pre_grasp )
+        {
+          stringstream ss_arm;
+          ss_arm << "<font size=" << "20" << " color=red>" << "I am selecting: " << arm_ << " arm" 
+                 "</font>" << "<br>";
+          std_msgs::String msg;
+          msg.data = ss_arm.str();
+          pub_states_.publish(msg);
+          usleep(1000*1000);
+        }
+
         std::cout << "Executing arm trajectory" << std::endl;
         my_calculated_trajectory[0].trajectory_id=0;
       
@@ -1521,14 +1532,14 @@ bool DemoSimple::executeMovement(bool pre_grasp, bool post_grasp, int &grasp_id,
         return false;
       }
     }
-    else if( ( (grasp_id+1) < (my_calculated_grasp.size()) ) && (pre_grasp) )
+    /*else if( ( (grasp_id+1) < (my_calculated_grasp.size()) ) && (pre_grasp) )
     { 
       
       grasp_id++;
       ROS_INFO_STREAM("Could not find a plan, so try another pre-grasp id: " << grasp_id);
       ofs << ros::Time::now() << " plan another grasp id: " << grasp_id << endl;
       executeMovement(pre_grasp,post_grasp,grasp_id);
-    }
+    }*/
     else if( ( (grasp_id+1) >= (my_calculated_grasp.size()) ) && (pre_grasp) )
     {
       ROS_WARN_STREAM("No plan found for pre-grasp id: " << grasp_id);
