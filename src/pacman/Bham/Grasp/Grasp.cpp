@@ -48,12 +48,22 @@ void BhamGraspImpl::estimate(const ::grasp::Cloud::PointSeq& points, Trajectory:
 	// sort, no clustering
 	Cluster::find(clusterDesc, ptr->graspConfigs, ptr->graspClusters);
 
+	// HACK: max reliable grasps, filtering
+	golem::U32 grasps = 100, j = 0;
+	Real elevation = Real(0.1);
+
 	// export trajectories, transform to the hand frame
 	trajectories.clear();
 	const golem::Mat34 trn = manipulator->getBaseFrame();
 	for (auto i: ptr->graspConfigs) {
 		Trajectory trajectory;
 		
+		// HACK: filtering
+		if (++j > grasps)
+			break;
+		if (i->path.getGrip().p.z < elevation)
+			continue;
+
 		// order of elements
 		const bool reverse = i->path.getGripIndex() <= 0; // i.e. trajectory starts from the grip
 
