@@ -44,12 +44,12 @@ void BhamGraspImpl::estimate(const ::grasp::Cloud::PointSeq& points, Trajectory:
 		throw Message(Message::LEVEL_ERROR, "BhamGraspImpl::estimate(): invalid current data pointer");
 
 	// estimate
-	classifier->find(points, points, ptr->graspConfigs);
+	classifier->find(points, ptr->graspConfigs);
 	// sort, no clustering
 	Cluster::find(clusterDesc, ptr->graspConfigs, ptr->graspClusters);
 
 	// HACK: max reliable grasps, filtering
-	golem::U32 grasps = 300, j = 0;
+	golem::U32 grasps = 500, j = 0;
 	Real elevation = Real(0.1);
 
 	// export trajectories, transform to the hand frame
