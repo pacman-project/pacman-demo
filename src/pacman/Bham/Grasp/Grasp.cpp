@@ -18,7 +18,7 @@ bool BhamGraspImpl::create(const grasp::ShapePlanner::Desc& desc) {
 	(void)ShapePlanner::create(desc);
 
 	// Initialise data collection
-	getData().insert(Data::Map::value_type(data->name, createData()));
+	getData().insert(Data::Map::value_type(data->path, createData()));
 	currentDataPtr = getData().begin();
 	scene.getOpenGL(to<Data>(currentDataPtr)->openGL);
 
@@ -133,7 +133,7 @@ void BhamGraspImpl::function(Data::Map::iterator& dataPtr, int key) {
 		{
 			const int key = waitKey("PT", "Press a key to import (P)oint cloud/(T)trajectory...");
 			// export data
-			std::string path = data->dir;
+			std::string path = data->path;
 			readString("Enter file path: ", path);
 			// point cloud
 			if (key == 'P') {
@@ -156,7 +156,7 @@ void BhamGraspImpl::function(Data::Map::iterator& dataPtr, int key) {
 		{
 			const int key = waitKey("PT", "Press a key to export (P)oint cloud/(T)trajectory...");
 			// export data
-			std::string path = data->dir;
+			std::string path = data->path;
 			readString("Enter file path: ", path);
 			// point cloud
 			if (key == 'P') {
