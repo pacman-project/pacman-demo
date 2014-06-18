@@ -266,7 +266,7 @@
     <pose v1="0.653760" v2="-0.363143" v3="0.38" roll="3.1415926" pitch="0.0" yaw="0.0"/>
   </player>
 
-  <robot force_disp_scale="0.2" trajectory_idle="0.5" trajectory_duration="10.0">
+  <robot force_disp_scale="0.2" trajectory_idle="0.5" trajectory_duration="10.0" trajectory_trials="5">
     <ft_sensor use_ft_sensor_client="0">
       <daq calibration_file="FT10731.cal" sampling_rate="10000" avg_window_size="10"/>
       <client host="localhost" port="26873"/>
