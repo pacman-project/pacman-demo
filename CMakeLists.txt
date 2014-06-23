@@ -206,13 +206,8 @@ if (WIN32)
 		MARK_AS_ADVANCED(POINTGRAY_LIBRARY)
 	endif(BUILD_BHAM_GRASP_CAMERA_PGR)
 	# OpenNI
-	option(BUILD_BHAM_GRASP_CAMERA_DEPTH_OPENNI "Build OpenNI camera device" YES)
-	if(BUILD_BHAM_GRASP_CAMERA_DEPTH_OPENNI)
-		SET(OPENNI2_INCLUDE "${PROGRAM_FILES}/OpenNI2/Include" CACHE PATH "Path prefix for OpenNI include")
-		MARK_AS_ADVANCED(OPENNI2_INCLUDE)
-		SET(OPENNI2_LIBRARY "${PROGRAM_FILES}/OpenNI2/Lib" CACHE PATH "Path prefix for OpenNI library")
-		MARK_AS_ADVANCED(OPENNI2_LIBRARY)
-	endif(BUILD_BHAM_GRASP_CAMERA_DEPTH_OPENNI)
+	SET(OPENNI2_INCLUDE "${PROGRAM_FILES}/OpenNI2/Include" CACHE PATH "Path prefix for OpenNI include")
+	SET(OPENNI2_LIBRARY "${PROGRAM_FILES}/OpenNI2/Lib" CACHE PATH "Path prefix for OpenNI library")
 elseif (UNIX)
 	# Expat
 	SET(EXPAT_INCLUDE /usr/include CACHE PATH "Path prefix for Expat include")
@@ -264,13 +259,8 @@ elseif (UNIX)
 		MARK_AS_ADVANCED(POINTGRAY_LIBRARY)
 	endif(BUILD_BHAM_GRASP_CAMERA_PGR)
 	# OpenNI
-	option(BUILD_BHAM_GRASP_CAMERA_DEPTH_OPENNI "Build OpenNI camera device" NO)
-	if(BUILD_BHAM_GRASP_CAMERA_DEPTH_OPENNI)
-		SET(OPENNI2_INCLUDE /usr/include/openni2 CACHE PATH "Path prefix for OpenNI include")
-		MARK_AS_ADVANCED(OPENNI2_INCLUDE)
-		SET(OPENNI2_LIBRARY /usr/lib CACHE PATH "Path prefix for OpenNI library")
-		MARK_AS_ADVANCED(OPENNI2_LIBRARY)
-	endif(BUILD_BHAM_GRASP_CAMERA_DEPTH_OPENNI)
+	SET(OPENNI2_INCLUDE /usr/include/openni2 CACHE PATH "Path prefix for OpenNI include")
+	SET(OPENNI2_LIBRARY /usr/lib CACHE PATH "Path prefix for OpenNI library")
 endif()
 
 LINK_DIRECTORIES(
@@ -334,11 +324,10 @@ if (WIN32)
 		optimized GolemPhys${CMAKE_RELEASE_POSTFIX} debug GolemPhys${CMAKE_DEBUG_POSTFIX}
 		optimized GolemPhysCtrl${CMAKE_RELEASE_POSTFIX} debug GolemPhysCtrl${CMAKE_DEBUG_POSTFIX}
 		optimized GolemDeviceSingleCtrl${CMAKE_RELEASE_POSTFIX} debug GolemDeviceSingleCtrl${CMAKE_DEBUG_POSTFIX}
-		optimized GolemDeviceMultiCtrl${CMAKE_RELEASE_POSTFIX} debug GolemDeviceMultiCtrl${CMAKE_DEBUG_POSTFIX}
-		optimized GolemDeviceRobotJustin${CMAKE_RELEASE_POSTFIX} debug GolemDeviceRobotJustin${CMAKE_DEBUG_POSTFIX} 
 		optimized CamcalbCalb${CMAKE_RELEASE_POSTFIX} debug CamcalbCalb${CMAKE_DEBUG_POSTFIX}
 		optimized CamcalbMatas${CMAKE_RELEASE_POSTFIX} debug CamcalbMatas${CMAKE_DEBUG_POSTFIX}		 
 		${PCL_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBS}
+		OpenNI2
 	)
 	if(BUILD_BHAM_GRASP_FTSENSOR_DAQ)
 		TARGET_LINK_LIBRARIES(
@@ -351,9 +340,6 @@ if (WIN32)
 	if(BUILD_BHAM_GRASP_CAMERA_PGR)
 		TARGET_LINK_LIBRARIES(PaCManBhamGrasp FlyCapture2_v${MSVC_VER})
 	endif(BUILD_BHAM_GRASP_CAMERA_PGR)
-	if(BUILD_BHAM_GRASP_CAMERA_DEPTH_OPENNI)
-		TARGET_LINK_LIBRARIES(PaCManBhamGrasp OpenNI2)
-	endif(BUILD_BHAM_GRASP_CAMERA_DEPTH_OPENNI)
 elseif (UNIX)
 	TARGET_LINK_LIBRARIES(
 		PaCManBhamGrasp
@@ -371,8 +357,6 @@ elseif (UNIX)
 		optimized GolemPlan${CMAKE_RELEASE_POSTFIX} debug GolemPlan${CMAKE_DEBUG_POSTFIX}
 		optimized GolemPhysCtrl${CMAKE_RELEASE_POSTFIX} debug GolemPhysCtrl${CMAKE_DEBUG_POSTFIX}
 		optimized GolemDeviceSingleCtrl${CMAKE_RELEASE_POSTFIX} debug GolemDeviceSingleCtrl${CMAKE_DEBUG_POSTFIX}
-		optimized GolemDeviceMultiCtrl${CMAKE_RELEASE_POSTFIX} debug GolemDeviceMultiCtrl${CMAKE_DEBUG_POSTFIX}
-		optimized GolemDeviceRobotJustin${CMAKE_RELEASE_POSTFIX} debug GolemDeviceRobotJustin${CMAKE_DEBUG_POSTFIX}
 		${CMAKE_DL_LIBS}
 		optimized GolemMath${CMAKE_RELEASE_POSTFIX} debug GolemMath${CMAKE_DEBUG_POSTFIX}
 		optimized GolemPhys${CMAKE_RELEASE_POSTFIX} debug GolemPhys${CMAKE_DEBUG_POSTFIX}
@@ -380,6 +364,7 @@ elseif (UNIX)
 		GLU
 		glut
 		NxCharacter NxCooking PhysXCore PhysXLoader
+		OpenNI2
 	)
 	if(BUILD_BHAM_GRASP_FTSENSOR_DAQ)
 		TARGET_LINK_LIBRARIES(
@@ -392,9 +377,6 @@ elseif (UNIX)
 	if(BUILD_BHAM_GRASP_CAMERA_PGR)
 		TARGET_LINK_LIBRARIES(PaCManBhamGrasp flycapture)
 	endif(BUILD_BHAM_GRASP_CAMERA_PGR)
-	if(BUILD_BHAM_GRASP_CAMERA_DEPTH_OPENNI)
-		TARGET_LINK_LIBRARIES(PaCManBhamGrasp OpenNI2)
-	endif(BUILD_BHAM_GRASP_CAMERA_DEPTH_OPENNI)
 endif()	
 SET_PROPERTY(TARGET PaCManBhamGrasp PROPERTY RELEASE_POSTFIX ${CMAKE_RELEASE_POSTFIX})
 SET_PROPERTY(TARGET PaCManBhamGrasp PROPERTY DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
