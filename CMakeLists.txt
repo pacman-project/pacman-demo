@@ -89,9 +89,6 @@ elseif(UNIX)
 	mark_as_advanced(BUILD_ROS_PKGS)
 endif()
 
-# Boost
-FIND_PACKAGE(Boost COMPONENTS system filesystem thread)
-
 # OpenCV
 FIND_PACKAGE(OpenCV REQUIRED)
 
@@ -154,6 +151,8 @@ if (WIN32)
 		SET(MSVC_VER "100")
 	elseif(MSVC11)
 		SET(MSVC_VER "110")
+	elseif(MSVC12)
+		SET(MSVC_VER "120")
 	endif()
 	
 	# Expat
@@ -178,7 +177,7 @@ if (WIN32)
 	#MARK_AS_ADVANCED(GOLEM_LIBRARY)
 	SET(GOLEM_BINARIES "${PROGRAM_FILES}/Golem/bin" CACHE PATH "Path prefix for Golem binaries")
 	#MARK_AS_ADVANCED(GOLEM_BINARIES)
-	SET(GOLEM_RESOURCES "${PROGRAM_FILES}/Golem/bin" CACHE PATH "Path prefix for Golem device resources")
+	SET(GOLEM_RESOURCES "${PROGRAM_FILES}/Golem/resources" CACHE PATH "Path prefix for Golem device resources")
 	#MARK_AS_ADVANCED(GOLEM_RESOURCES)
 	# Grasp
 	SET(GRASP_INCLUDE "${PROGRAM_FILES}/Grasp/include" CACHE PATH "Path prefix for Grasp include")
@@ -187,6 +186,11 @@ if (WIN32)
 	#MARK_AS_ADVANCED(GRASP_LIBRARY)
 	SET(GRASP_BINARIES "${PROGRAM_FILES}/Grasp/bin" CACHE PATH "Path prefix for Grasp binaries")
 	#MARK_AS_ADVANCED(GRASP_BINARIES)
+	# Boost
+	ADD_DEFINITIONS(-DBOOST_ALL_NO_LIB)
+	SET(Boost_USE_STATIC_LIBS ON)
+	SET(Boost_ALL_DYN_LINK OFF)
+	FIND_PACKAGE(Boost COMPONENTS system filesystem thread)
 	# National Instruments DAQmx
 	OPTION(BUILD_BHAM_GRASP_FTSENSOR_DAQ "Build NI DAQ F/T sensor device" YES)
 	MARK_AS_ADVANCED(BUILD_BHAM_GRASP_FTSENSOR_DAQ)
@@ -206,8 +210,8 @@ if (WIN32)
 		MARK_AS_ADVANCED(POINTGRAY_LIBRARY)
 	endif(BUILD_BHAM_GRASP_CAMERA_PGR)
 	# OpenNI
-	SET(OPENNI2_INCLUDE "${PROGRAM_FILES}/OpenNI2/Include" CACHE PATH "Path prefix for OpenNI include")
-	SET(OPENNI2_LIBRARY "${PROGRAM_FILES}/OpenNI2/Lib" CACHE PATH "Path prefix for OpenNI library")
+	SET(OPENNI2_INCLUDE_DIRS "${PROGRAM_FILES}/OpenNI2/Include" CACHE PATH "Path prefix for OpenNI include")
+	SET(OPENNI2_LIBRARY "${PROGRAM_FILES}/OpenNI2/Lib/OpenNI2.lib" CACHE PATH "OpenNI library")
 elseif (UNIX)
 	# Expat
 	SET(EXPAT_INCLUDE /usr/include CACHE PATH "Path prefix for Expat include")
@@ -240,6 +244,11 @@ elseif (UNIX)
 	#MARK_AS_ADVANCED(GRASP_LIBRARY)
 	SET(GRASP_BINARIES /usr/local/bin CACHE PATH "Path prefix for Grasp binaries")
 	#MARK_AS_ADVANCED(GRASP_BINARIES)
+	# Boost
+	#ADD_DEFINITIONS(-DBOOST_ALL_NO_LIB)
+	#SET(Boost_USE_STATIC_LIBS OFF)
+	#SET(Boost_ALL_DYN_LINK ON)
+	FIND_PACKAGE(Boost COMPONENTS system filesystem thread)
 	# National Instruments DAQmx
 	OPTION(BUILD_BHAM_GRASP_FTSENSOR_DAQ "Build NI DAQ F/T sensor device" NO)
 	MARK_AS_ADVANCED(BUILD_BHAM_GRASP_FTSENSOR_DAQ)
@@ -259,8 +268,8 @@ elseif (UNIX)
 		MARK_AS_ADVANCED(POINTGRAY_LIBRARY)
 	endif(BUILD_BHAM_GRASP_CAMERA_PGR)
 	# OpenNI
-	SET(OPENNI2_INCLUDE /usr/include/openni2 CACHE PATH "Path prefix for OpenNI include")
-	SET(OPENNI2_LIBRARY /usr/lib CACHE PATH "Path prefix for OpenNI library")
+	SET(OPENNI2_INCLUDE_DIRS /usr/include/openni2 CACHE PATH "Path prefix for OpenNI include")
+	SET(OPENNI2_LIBRARY /usr/lib/libOpenNI2.so CACHE PATH "OpenNI library")
 endif()
 
 LINK_DIRECTORIES(
@@ -272,7 +281,6 @@ LINK_DIRECTORIES(
 	${GRASP_LIBRARY}
 	${GRASP_BINARIES}
 	${NIDAQMX_LIBRARY}
-	${OPENNI2_LIBRARY}
 	${POINTGRAY_LIBRARY}
 )
 INCLUDE_DIRECTORIES(
@@ -284,7 +292,7 @@ INCLUDE_DIRECTORIES(
 	${PHYSX_INCLUDE}/Cooking/include
 	${GOLEM_INCLUDE}
 	${GRASP_INCLUDE}
-	${OPENNI2_INCLUDE}
+	${OPENNI2_INCLUDE_DIRS}
 	${NIDAQMX_INCLUDE}
 	${POINTGRAY_INCLUDE}
 )
@@ -327,7 +335,7 @@ if (WIN32)
 		optimized CamcalbCalb${CMAKE_RELEASE_POSTFIX} debug CamcalbCalb${CMAKE_DEBUG_POSTFIX}
 		optimized CamcalbMatas${CMAKE_RELEASE_POSTFIX} debug CamcalbMatas${CMAKE_DEBUG_POSTFIX}		 
 		${PCL_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBS}
-		OpenNI2
+		${OPENNI2_LIBRARY}
 	)
 	if(BUILD_BHAM_GRASP_FTSENSOR_DAQ)
 		TARGET_LINK_LIBRARIES(
@@ -364,7 +372,7 @@ elseif (UNIX)
 		GLU
 		glut
 		NxCharacter NxCooking PhysXCore PhysXLoader
-		OpenNI2
+		${OPENNI2_LIBRARY}
 	)
 	if(BUILD_BHAM_GRASP_FTSENSOR_DAQ)
 		TARGET_LINK_LIBRARIES(
