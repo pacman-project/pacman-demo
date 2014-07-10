@@ -271,7 +271,9 @@ void BhamGraspImpl::convert(const RobotUIBK::Config::Seq& src, ::grasp::Robot::S
 		convert(i.hand, config);
 
 		configDst.command = configDst.config = manipulator->getState(config);
-		configDst.ftSensor.setToDefault();
+		manipulator->getController().jointForwardTransform(configDst.command.cpos, configDst.commandWJC);
+		manipulator->getController().jointForwardTransform(configDst.config.cpos, configDst.configWJC);
+
 		dst.push_back(configDst);
 	}
 }
