@@ -415,7 +415,10 @@
           <pose v1="0.6" v2="-0.3" v3="0.2" roll="0.0" pitch="0.0" yaw="0.0"/>
         </bounds>
       </object_region>
-      <region_colour R="255" G="0" B="255" A="255"/>
+      <region_colour>
+        <solid R="255" G="0" B="0" A="32"/>
+        <wire R="255" G="0" B="0" A="255"/>
+      </region_colour>
     </cloud>
 
     <!-- codec="I420" codec="DIVX" codec="XVID" codec="X264" -->
