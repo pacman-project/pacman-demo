@@ -467,7 +467,7 @@
     </pose_estimation>
 
     <data path="./data.xml" ext_data=".xml" ext_cloud=".pcd" ext_trajectory=".trj" ext_grasp_pose=".grasppose" ext_grasp_cluster=".graspcluster" sep_name="-" sep_field="&#x9;">
-      <appearance mode="point" mode_3d="1" mode_3d_a="177" point_size="1.0" frame_num="10" camera_frame="1" camera_frame_size="0.05">
+      <appearance mode="point" mode_3d="1" mode_3d_a="177" point_size="1.0" frame_num="10" camera_frame="1" camera_frame_size="0.05" feature_curv_pow="1.0">
         <frame_size v1="1e-1" v2="1e-1" v3="1e-2"/>
         <colour override="0" R="127" G="127" B="127" A="255"/>
       </appearance>
