@@ -45,8 +45,8 @@ void BhamGraspImpl::estimate(const ::grasp::Cloud::PointSeq& points, Trajectory:
 
 	// estimate
 	classifier->find(points, ptr->graspConfigs);
-	// sort, no clustering
-	Cluster::find(clusterDesc, ptr->graspConfigs, ptr->graspClusters);
+	// sort by likelihood
+	Cluster::findLikelihood(clusterDesc, ptr->graspConfigs, ptr->graspClusters);
 
 	// HACK: max reliable grasps, filtering
 	golem::U32 grasps = 500, j = 0;
