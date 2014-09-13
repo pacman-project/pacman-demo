@@ -2,7 +2,7 @@
 
 <golem>
   <rand seed="0"></rand>
-  <parallels threads="4"></parallels>
+  <parallels threads="8"></parallels>
   <messages level="verbose"/>
   <!-- level="undef" level="verbose" level="debug" level="info" level="warning" level="error" level="crit" -->
   <library physx="0" normals="0"/>
