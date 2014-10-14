@@ -77,9 +77,9 @@
           <config_stddev c1="0.15708" c2="0.15708" c3="0.15708" c4="0.15708" c5="0.15708" c6="0.15708" c7="0.15708" c8="0.015708" c9="0.015708" c10="0.015708" c11="0.015708" c12="0.015708" c13="0.015708" c14="0.015708" c15="0.015708" c16="0.015708" c17="0.015708" c18="0.015708" c19="0.015708" c20="0.015708" c21="0.015708" c22="0.015708" c23="0.015708" c24="0.015708" c25="0.015708" c26="0.015708" c27="0.015708"/>
         </configuration_model>
 
-        <optimisation name="CPU" runs="500" steps="500" tries="100" sa_temp="0.1" sa_delta="1.0" sa_energy="0.1" epsilon="1.e-10"/>
+        <optimisation name="CPU" runs="500" steps="500" tries="100" sa_temp="0.1" sa_delta="1.0" sa_energy="0.1" epsilon="1.e-10" collision_last="1" collision_all="0"/>
 
-        <collision enabled_last="1" enabled_all="0">
+        <collision>
           <waypoint path_dist="0.7" points="5000" depth_stddev="2000.0" likelihood="2000.0"/>
           <waypoint path_dist="1.5" points="5000" depth_stddev="5000.0" likelihood="5000.0"/>
           <waypoint path_dist="5.0" points="5000" depth_stddev="50000.0" likelihood="50000.0"/>
