@@ -57,7 +57,7 @@
       <!--<grasp_type type="generic" name="Default"/>-->
 
       <grasp name="Default">
-        <contact_model>
+        <contact_model penalty_exp="1.0">
           <joint_contact samples="1000" radius="0.01" trials="5" steps="1" kernels="2000" neighbours="100" distance_max="20.0" weight="1e0">
             <feature feature_curv_fac="100.0" feature_min_num="50" subsample_size="0" distance="0.01" lambda="50.0" normal_slope="1.570796"/>
             <feature_curv_cov v1="5000.0" v2="5000.0" v3="1.0"/>
