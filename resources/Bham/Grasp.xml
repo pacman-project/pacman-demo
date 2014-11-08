@@ -101,6 +101,10 @@
             <solid_colour R="255" G="255" B="0" A="150"/>
             <wire_colour R="127" G="127" B="127" A="255"/>
           </bounds>
+          <bounds_select show_solid="1" show_wire="0" wire_width="1.0">
+            <solid_colour R="0" G="0" B="255" A="150"/>
+            <wire_colour R="127" G="127" B="127" A="255"/>
+          </bounds_select>
           <chains_frame_size v1="0.1" v2="0.1" v3="0.1"/>
           <joints_frame_size v1="0.01" v2="0.01" v3="0.01"/>
         </manipulator>
@@ -116,14 +120,13 @@
             <solid_colour R="255" G="255" B="0" A="150"/>
             <wire_colour R="127" G="127" B="127" A="255"/>
           </bounds>
+          <bounds_select show_solid="1" show_wire="0" wire_width="1.0">
+            <solid_colour R="0" G="0" B="255" A="150"/>
+            <wire_colour R="127" G="127" B="127" A="255"/>
+          </bounds_select>
           <chains_frame_size v1="0.1" v2="0.1" v3="0.1"/>
           <joints_frame_size v1="0.01" v2="0.01" v3="0.01"/>
         </manipulator>
-
-        <bounds_select show_solid="1" show_wire="0" wire_width="1.0">
-          <solid_colour R="255" G="255" B="0" A="150"/>
-          <wire_colour R="127" G="127" B="127" A="255"/>
-        </bounds_select>
 
         <sample_colour R="255" G="0" B="0" A="30"/>
         <sample_frame_size v1="0.01" v2="0.01" v3="0.01"/>
@@ -135,6 +138,10 @@
             <solid_colour R="255" G="255" B="0" A="150"/>
             <wire_colour R="127" G="127" B="127" A="255"/>
           </bounds>
+          <bounds_select show_solid="1" show_wire="0" wire_width="1.0">
+            <solid_colour R="0" G="0" B="255" A="150"/>
+            <wire_colour R="127" G="127" B="127" A="255"/>
+          </bounds_select>
           <chains_frame_size v1="0.1" v2="0.1" v3="0.1"/>
           <joints_frame_size v1="0.01" v2="0.01" v3="0.01"/>
         </manipulator>
