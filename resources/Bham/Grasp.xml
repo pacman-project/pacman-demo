@@ -432,7 +432,7 @@
     </cloud>
 
     <!-- codec="I420" codec="DIVX" codec="XVID" codec="X264" -->
-    <!--<camera type="depth" name="robotDepth" index="0" calibration_file="GraspCameraRobotDepth.xml" buffer_len="60" buffer_off="1" thread_timeout="20000" stream_timeout="1000" in_hand="1" recording="0" recording_app="0" video="1" codec="XVID">
+    <!--<camera type="openni" name="robotDepth" index="0" calibration_file="GraspCameraRobotDepth.xml" buffer_len="60" buffer_off="1" thread_timeout="20000" stream_timeout="1000" in_hand="1" recording="0" recording_app="0" video="1" codec="XVID">
       <property width="640" height="480" fps="30" mode="colour" format="200"/>
       <property width="320" height="240" fps="30" mode="depth colour" format="101 200"/>
       <colour R="127" G="127" B="0" A="255"/>
@@ -441,7 +441,7 @@
         <sample_magnitude lin="0.1" ang="0.5"/>
       </optimisation>
     </camera>-->
-    <!--<camera type="depth" name="externDepth" index="1" calibration_file="GraspCameraExternDepth.xml" buffer_len="60" buffer_off="1" thread_timeout="20000" stream_timeout="1000" in_hand="0" recording="1" recording_app="0" video="1" codec="XVID">
+    <!--<camera type="openni" name="externDepth" index="1" calibration_file="GraspCameraExternDepth.xml" buffer_len="60" buffer_off="1" thread_timeout="20000" stream_timeout="1000" in_hand="0" recording="1" recording_app="0" video="1" codec="XVID">
       <property width="640" height="480" fps="30" mode="colour" format="200"/>
       <property width="640" height="480" fps="30" mode="depth" format="101"/>
       <colour R="127" G="127" B="0" A="255"/>
