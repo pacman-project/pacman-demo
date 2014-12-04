@@ -280,7 +280,7 @@
   </player>
 
   <robot force_disp_scale="0.2" trajectory_idle="0.5" trajectory_duration="10.0" trajectory_trials="5">
-    <ft_sensor use_ft_sensor_client="0">
+    <ft_sensor use_ft_sensor_client="0" calibration_file="GraspFTSensor.xml">
       <daq calibration_file="FT10731.cal" sampling_rate="10000" avg_window_size="10"/>
       <client host="localhost" port="26873"/>
       <!-- y = 80(kuka end-effector mounting) + 7+2+2(Rustam's F/T sensor and Kinect mounting plates) + 33.3(Gamma FT sensor) -->
