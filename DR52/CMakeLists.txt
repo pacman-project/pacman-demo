@@ -269,7 +269,7 @@ endif(BUILD_DYNAMIC_LIBS)
 if (WIN32)
 	TARGET_LINK_LIBRARIES(
 		PaCManBhamActiveSens
-		optimized GraspCore${CMAKE_RELEASE_POSTFIX} debug GraspGCore${CMAKE_DEBUG_POSTFIX}
+		optimized GraspCore${CMAKE_RELEASE_POSTFIX} debug GraspCore${CMAKE_DEBUG_POSTFIX}
 		optimized GraspGrasp${CMAKE_RELEASE_POSTFIX} debug GraspGrasp${CMAKE_DEBUG_POSTFIX}
 		optimized GraspApp${CMAKE_RELEASE_POSTFIX} debug GraspApp${CMAKE_DEBUG_POSTFIX}		 
 		NxCharacter64 PhysXCooking64 PhysXCore64 PhysXLoader64
@@ -343,7 +343,7 @@ endif(BUILD_DYNAMIC_LIBS)
 if (WIN32)
 	TARGET_LINK_LIBRARIES(
 		PaCManBhamContactPred
-		optimized GraspCore${CMAKE_RELEASE_POSTFIX} debug GraspGCore${CMAKE_DEBUG_POSTFIX}
+		optimized GraspCore${CMAKE_RELEASE_POSTFIX} debug GraspCore${CMAKE_DEBUG_POSTFIX}
 		optimized GraspGrasp${CMAKE_RELEASE_POSTFIX} debug GraspGrasp${CMAKE_DEBUG_POSTFIX}
 		optimized GraspApp${CMAKE_RELEASE_POSTFIX} debug GraspApp${CMAKE_DEBUG_POSTFIX}		 
 		NxCharacter64 PhysXCooking64 PhysXCore64 PhysXLoader64
@@ -417,7 +417,7 @@ endif(BUILD_DYNAMIC_LIBS)
 if (WIN32)
 	TARGET_LINK_LIBRARIES(
 		PaCManBhamTracker
-		optimized GraspCore${CMAKE_RELEASE_POSTFIX} debug GraspGCore${CMAKE_DEBUG_POSTFIX}
+		optimized GraspCore${CMAKE_RELEASE_POSTFIX} debug GraspCore${CMAKE_DEBUG_POSTFIX}
 		optimized GraspGrasp${CMAKE_RELEASE_POSTFIX} debug GraspGrasp${CMAKE_DEBUG_POSTFIX}
 		optimized GraspApp${CMAKE_RELEASE_POSTFIX} debug GraspApp${CMAKE_DEBUG_POSTFIX}		 
 		NxCharacter64 PhysXCooking64 PhysXCore64 PhysXLoader64
