@@ -155,6 +155,8 @@ void pacman::Demo::create(const Desc& desc) {
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  CE                                      Go to Camera Hypothesis\n"));
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  CV                                      Change view to Camera Hypothesis\n"));
+	//TODO: Add instructions for the other options
+
 
 	// data menu control and commands
 	menuCtrlMap.insert(std::make_pair("P", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
@@ -185,7 +187,7 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 
 	menuCtrlMap.insert(std::make_pair("C", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: (E)Goto to Camera Hypothesis Pose,(V)Set OpenGL View Point to Camera Hypothesis View, (S)Show camera matrices\n";
+		desc = "Press a key to: (E)Goto to Camera Hypothesis Pose,(V)Set OpenGL View Point to Camera Hypothesis View, (S)Show camera matrices\n(N)View from Next ViewHypothesis\n(K)View from Mounted Sensor\n(S)Print Mounted Sensors Matrices\n(H)Print Sensor Hypothesis Matrices";
 		//menuCmdMap.erase("CE");
 		//menuCmdMap.erase("CV");
 	}));
@@ -382,18 +384,6 @@ void pacman::Demo::create(const Desc& desc) {
 
 	}));
 
-	menuCmdMap.insert(std::make_pair("CK", [&]() {
-
-		select(sensorCurrentPtr, sensorMap.begin(), sensorMap.end(), "Select Sensor:\n", [](grasp::Sensor::Map::const_iterator ptr) -> const std::string&{
-			return ptr->second->getID();
-		});
-
-		viewHypotheses[0]->setGLView(this->scene, grasp::to<grasp::CameraDepth>(sensorCurrentPtr)->getFrame());
-
-
-		context.write("Done!\n");
-
-	}));
 
 	menuCmdMap.insert(std::make_pair("CN", [&]() {
 
