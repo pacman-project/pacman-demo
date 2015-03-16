@@ -57,7 +57,7 @@ protected:
 
 protected:
 	void create(const Desc& desc);
-	void init();
+	void initActiveSense(golem::Scene &scene);
 	void gotoPoseWS(const grasp::ConfigMat34& pose);
 	
 	/** golem::Object (Post)processing function called AFTER every physics simulation step and before randering. */

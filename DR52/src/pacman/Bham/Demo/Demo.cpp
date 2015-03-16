@@ -16,34 +16,45 @@ void pacman::Demo::Desc::load(golem::Context& context, const golem::XMLContext* 
 
 //------------------------------------------------------------------------------
 
+
+
 pacman::Demo::Demo(golem::Scene &scene) : grasp::Player(scene) {
 
+	this->initActiveSense(scene);
+}
+
+pacman::Demo::~Demo() {
+}
+
+/*************************USEFUL FUNCTION FOR ACTIVE SENS*******************************************************/
+void pacman::Demo::initActiveSense(golem::Scene& scene)
+{
 	this->currentViewHypothesis = 0;
-	
+
 	Mat34 dummyPose;
 	dummyPose.setId();
 	dummyPose.p.set(0.0, 0.0, 0.025);
 
 	pacman::HypothesisSensor::ConfigQuery configQuery = [&](U32 joint, pacman::HypothesisSensor::Config& config) { getPose(joint, config); };
 	this->dummySensor = pacman::HypothesisSensor::Ptr(new pacman::HypothesisSensor(context, dummyPose, configQuery, 7, golem::RGBA(255, 125, 0, 125)));
-	
+
 	golem::Vec3 center;
 	Mat34 sensorPose;
 	golem::Rand rand;
 	rand.setRandSeed(context.getRandSeed());
 
-	
+
 	/*//Up right sensor
 	sensorPose.R.setColumn(0,golem::Vec3(0.0, 0.0, 1.0));
 	sensorPose.R.setColumn(1,golem::Vec3(1.0, 0.0, 0.0));
 	sensorPose.R.setColumn(2,golem::Vec3(0.0, 1.0, 0.0));
 	*/
-	
+
 	//Upside down sensor
 	sensorPose.R.setColumn(0, golem::Vec3(1.0, 0.0, 0.0));
 	sensorPose.R.setColumn(1, golem::Vec3(0.0, 0.0, -1.0));
 	sensorPose.R.setColumn(2, golem::Vec3(0.0, 1.0, 0.0));
-	
+
 	sensorPose.p.set(0.5, -0.5, 0.025);
 	center = sensorPose.p;
 
@@ -61,12 +72,12 @@ pacman::Demo::Demo(golem::Scene &scene) : grasp::Player(scene) {
 		//Generate random orientation
 		float x, y, z, theta;
 		U8 r, g, b, a;
-		
+
 		r = (U8)rand.nextUniform<float>(50, 255), g = (U8)rand.nextUniform<float>(50, 255), b = (U8)rand.nextUniform<float>(50, 255), a = 255;
 		theta = rand.nextUniform<float>();
 		x = rand.nextUniform<float>(-1, 1), y = rand.nextUniform<float>(-1, 1), z = rand.nextUniform<float>(-1, 1);
 		printf("Generating random> XYZ: %f %f %f  RGBA: %d %d %d %d Theta: %f\n", x, y, z, r, g, b, a, theta);
-		randomVec.set(x,y,z);
+		randomVec.set(x, y, z);
 		randomVec.normalise();
 		randomVec *= radius;
 
@@ -87,45 +98,39 @@ pacman::Demo::Demo(golem::Scene &scene) : grasp::Player(scene) {
 		n.normalise();
 
 		q.fromAngleAxis(theta, ori);
-		
-		
+
+
 
 		//Up right sensor
 		/*sensorPose.R.setColumn(0, up);
 		sensorPose.R.setColumn(1, n);
 		sensorPose.R.setColumn(2, f);
 		*/
-		
-		
+
+
 		//Upside down sensor
 		sensorPose.R.setColumn(0, n);
 		sensorPose.R.setColumn(1, -up);
 		sensorPose.R.setColumn(2, f);
-		
+
 
 		pacman::HypothesisSensor::Ptr s(new HypothesisSensor(context, sensorPose, configQuery, 0, golem::RGBA(r, g, b, a)));
 		this->viewHypotheses.push_back(s);
 
 	}
-
-	
-
-}
-
-pacman::Demo::~Demo() {
 }
 
 void pacman::Demo::postprocess(golem::SecTmReal elapsedTime)
 {
 
 	Player::postprocess(elapsedTime);
-	
+
 	dummySensor->draw(dummySensor->getAppearance(), this->sensorRenderer);
 	for (pacman::HypothesisSensor::Seq::iterator it = viewHypotheses.begin(); it != viewHypotheses.end(); it++)
 	{
 		(*it)->draw((*it)->getAppearance(), this->sensorRenderer);
 	}
-	
+
 }
 
 void pacman::Demo::gotoPoseWS(const grasp::ConfigMat34& pose) {
@@ -142,7 +147,7 @@ void pacman::Demo::gotoPoseWS(const grasp::ConfigMat34& pose) {
 	// sleep
 	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
 }
-
+//-------------------------------------------------------------------------------------------------------------------
 
 void pacman::Demo::create(const Desc& desc) {
 	desc.assertValid(Assert::Context("Demo::Desc."));
