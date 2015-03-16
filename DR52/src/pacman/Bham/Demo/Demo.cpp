@@ -168,31 +168,14 @@ void pacman::Demo::create(const Desc& desc) {
 		desc = "Press a key to: run (D)emo...";
 	}));
 	menuCmdMap.insert(std::make_pair("PD", [=]() {
-		// TODO
-		// select and remove
-		float tx, ty, tz;
-		ConfigMat34 pose;
 		
-		//context.write("Insert Position:\n");
-		//scanf("%f %f %f", &tx, &ty, &tz);
-		//context.write("%f %f %f\n",tx,ty,tz);
-		pose.w.p.set(tx, ty, tz);
-		
-		//pose.c.resize(info.getJoints().size());
-		//seq[index - 1].cpos.get(pose.c.begin(), pose.c.end());
-		//gotoPoseWS(pose);
-		// done!
-		createRender();
-
-		
-
 
 		context.write("Done!\n");
 		
 	}));
 
 	menuCtrlMap.insert(std::make_pair("C", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: (E)Goto to Camera Hypothesis Pose,(V)Set OpenGL View Point to Camera Hypothesis View, (S)Show camera matrices\n(N)View from Next ViewHypothesis\n(K)View from Mounted Sensor\n(S)Print Mounted Sensors Matrices\n(H)Print Sensor Hypothesis Matrices";
+		desc = "Press a key to: (E)Goto to Camera Hypothesis Pose\n(V)Set OpenGL View Point to Camera Hypothesis View\n(S)Show camera matrices\n(N)View from Next ViewHypothesis\n(K)View from Mounted Sensor\n(S)Print Mounted Sensors Matrices\n(H)Print Sensor Hypothesis Matrices";
 		//menuCmdMap.erase("CE");
 		//menuCmdMap.erase("CV");
 	}));
@@ -329,19 +312,24 @@ void pacman::Demo::create(const Desc& desc) {
 		grasp::ConfigMat34 wrist, invWrist, base, invBase;
 		frame.setId(), invFrame.setId(), wrist.w.setId(), invWrist.w.setId(), refPose.setId(), invRefPose.setId();
 
+		//Reference frame
 		refPose = controller->getChains()[armInfo.getChains().begin()]->getReferencePose();
 		invRefPose.setInverse(refPose);
 		
+		//Wrist pose (7th joint)
 		camera->getConfig(wrist);
-		
+		//Inverse wrist
 		invWrist.w.setInverse(wrist.w);
+
+		//Arm base frame
 		getPose(0, base);
 		invBase.w.setInverse(base.w);
 
-		
+		//It should be the local frame of the camera
 		frame = invWrist.w*camera->getFrame();
 		invFrame.setInverse(frame);
 
+		//Let's print that
 		Mat34 m = frame;
 		m = base.w;
 		context.write("\n\nBase: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}", m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
@@ -350,13 +338,8 @@ void pacman::Demo::create(const Desc& desc) {
 		m = invFrame;
 		context.write("\ninvFrame: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n\n", m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
 		
-		/*Mat34 t;
-		t.R.m11 = 0.0828823; t.R.m12 = 0.996521; t.R.m13 = -0.00874724;
-		t.R.m21 = -0.996559; t.R.m22 = 0.0828765; t.R.m23 = -0.00102093;
-		t.R.m31 = -0.000292434; t.R.m32 = 0.00880176;t.R.m33 = 0.999961;
-		t.p.v1 = 0.3162; t.p.v2 = -0.231877; t.p.v3 = -0.347643;
-		//t.setInverse(t);*/
-		Mat34 goal = viewHypotheses[index - 1]->getFrame()*refPose*invFrame;
+		
+		Mat34 goal = invFrame*viewHypotheses[index - 1]->getFrame();
 	
 		this->gotoPoseWS(goal);
 
