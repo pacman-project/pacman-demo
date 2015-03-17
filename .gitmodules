@@ -1,0 +1,3 @@
+[submodule "DR53"]
+	path = DR53
+	url = https://github.com/CentroEPiaggio/pacman-DR53

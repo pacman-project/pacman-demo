@@ -4,6 +4,10 @@
 
 PaCMan demo.
 
+Use `git clone --recursive https://github.com/pacman-project/pacman.git` to get all submodules for DR53.
+
+ToDo: Move some parts to Golem, other to DR51, this is now the README of all demos, and what is below does not apply to all of them.
+
 ## Dependencies
 
 1.- General tools:
@@ -24,6 +28,7 @@ PaCMan demo.
 * Freeglut (bham)
 
 Alternatively, dependencies for PCL can be installed following the instructions given at [Install PCL 1.7 from sources](http://pointclouds.org/downloads/source.html).
+
 
 3.- For the Golem Library, you will need the all PhysX libs in the compressed folder which correspond to your architecture. You can download it from here.
 
