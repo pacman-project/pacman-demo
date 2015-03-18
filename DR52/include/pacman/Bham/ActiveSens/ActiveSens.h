@@ -182,7 +182,7 @@ namespace pacman {
 		ActiveSense() {}
 		ActiveSense(golem::Context& context);
 
-		/** Uniformly generates a set of nsamples sensor hypotheses (viewHypotheses) around a sphere with specified radius centered at centroid in workspace coordinates */
+		/** Generates a set of nsamples sensor hypotheses (viewHypotheses) with uniformly distributed view directions (viewDir) around a sphere with specified radius centered at centroid in workspace coordinates */
 		void generateRandomViews(pacman::HypothesisSensor::Seq& viewHypotheses, const golem::Vec3& centroid, const golem::I32& nsamples = 5, const golem::Real& radius = 0.25);
 		
 		/** Gets current view hypotheses a.k.a. sensor hypotheses*/
@@ -190,7 +190,7 @@ namespace pacman {
 			return this->viewHypotheses;
 		}
 
-		/** Gets current view hypotheses a.k.a. sensor hypotheses*/
+		/** Gets current view hypotheses a.k.a. sensor hypothesis*/
 		pacman::HypothesisSensor::Ptr getViewHypothesis(golem::U32 index) {
 			grasp::Assert::valid(index < this->viewHypotheses.size(), "this->viewHypotheses[index]");
 			return this->viewHypotheses[index];
@@ -199,8 +199,6 @@ namespace pacman {
 
 		golem::Rand rand;
 		pacman::HypothesisSensor::Seq viewHypotheses;
-		golem::I32 currentViewHypothesis;
-		golem::I32 selectedViewHypothesis;
 
 		
 

@@ -150,7 +150,6 @@ void ActiveSense::generateRandomViews(pacman::HypothesisSensor::Seq& viewHypothe
 
 
 	golem::Vec3 randomVec;
-	golem::Real x, y, z, theta;
 	golem::U8 r, g, b, a;
 
 	for (int i = 0; i < nsamples; i++)
@@ -160,9 +159,10 @@ void ActiveSense::generateRandomViews(pacman::HypothesisSensor::Seq& viewHypothe
 		
 		
 		//Generate random orientation vector
-		randomVec.x = rand.nextUniform<float>(-1, 1);
-		randomVec.y = rand.nextUniform<float>(-1, 1);
-		randomVec.z = rand.nextUniform<float>(-1, 1);
+		//randomVec.x = rand.nextUniform<float>(-1, 1);
+		//randomVec.y = rand.nextUniform<float>(-1, 1);
+		//randomVec.z = rand.nextUniform<float>(-1, 1);
+		randomVec.next(rand);
 		randomVec.setMagnitude(radius);
 
 		//Generate a new pose
@@ -188,6 +188,7 @@ void ActiveSense::generateRandomViews(pacman::HypothesisSensor::Seq& viewHypothe
 		sensorPose.R.setColumn(0, n);
 		sensorPose.R.setColumn(1, -up);
 		sensorPose.R.setColumn(2, f);
+
 
 		//Creating uniformly generated random hypothesis sensor
 		pacman::HypothesisSensor::Ptr s(new HypothesisSensor(sensorPose, golem::RGBA(r, g, b, a)));

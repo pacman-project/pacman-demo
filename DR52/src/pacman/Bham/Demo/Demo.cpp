@@ -26,7 +26,7 @@ pacman::Demo::Demo(golem::Scene &scene) : grasp::Player(scene) {
 pacman::Demo::~Demo() {
 }
 
-/*************************USEFUL FUNCTION FOR ACTIVE SENS*******************************************************/
+/*************************USEFUL FUNCTIONS FOR ACTIVE SENS*******************************************************/
 void pacman::Demo::initActiveSense(golem::Scene& scene)
 {
 	Mat34 sensorPose;
@@ -48,7 +48,7 @@ void pacman::Demo::initActiveSense(golem::Scene& scene)
 	dummyObject = pacman::HypothesisSensor::Ptr(new HypothesisSensor(sensorPose));
 
 	//Generating sensor hypotheses around dummyObject's center
-	this->activeSense.generateRandomViews(this->activeSense.getViewHypotheses(), dummyObject->getPose().p);
+	this->activeSense.generateRandomViews(this->activeSense.getViewHypotheses(), dummyObject->getPose().p,20);
 }
 
 void pacman::Demo::postprocess(golem::SecTmReal elapsedTime)
