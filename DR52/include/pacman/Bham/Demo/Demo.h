@@ -50,10 +50,12 @@ public:
 		GRASP_CREATE_FROM_OBJECT_DESC1(Demo, golem::Object::Ptr, golem::Scene&)
 	};
 protected:
-	pacman::HypothesisSensor::Ptr dummySensor;
-	pacman::HypothesisSensor::Seq viewHypotheses;
-	int currentViewHypothesis;
+	golem::I32 currentViewHypothesis;
 	golem::I32 selectedCamera;
+	ActiveSense activeSense;
+
+	pacman::HypothesisSensor::Ptr dummyObject;
+
 
 protected:
 	void create(const Desc& desc);

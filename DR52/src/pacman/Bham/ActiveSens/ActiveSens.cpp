@@ -12,106 +12,75 @@ using namespace grasp;
 
 void pacman::HypothesisSensor::Appearance::load(const golem::XMLContext* xmlcontext) {
 
-	/*
-	<appearance>
-      <frame show="1" v1="0.05" v2="0.05" v3="0.1"/>
-      <shape show="1" R="127" G="255" B="10" A="255">
-        <bounds type="box" group="1">
-          <dimensions v1="0.025" v2="0.025" v3="0.025"/>
-          <pose v1="0.0" v2="0.0" v3="-0.025" roll="0.0" pitch="0.0" yaw="0.0"/>
-        </bounds>
-      </shape>
-    </appearance>	
-	*/
-	if (!xmlcontext)
-	{
-		
-		frameSize.set(0.05, 0.05, 0.1);
-		frameShow = true;
-		shapeColour.set(255, 0, 0, 255);
-		shapeShow = true;
-	}
-	else
-	{
-		golem::XMLData(frameSize, xmlcontext->getContextFirst("frame"), false);
-		golem::XMLData("show", frameShow, xmlcontext->getContextFirst("frame"), false);
-		golem::XMLData(shapeColour, xmlcontext->getContextFirst("shape"), false);
-		golem::XMLData("show", shapeShow, xmlcontext->getContextFirst("shape"), false);
-	}
-	
+
+	golem::XMLData(frameSize, xmlcontext->getContextFirst("frame"), false);
+	golem::XMLData("show", frameShow, xmlcontext->getContextFirst("frame"), false);
+	golem::XMLData(shapeColour, xmlcontext->getContextFirst("shape"), false);
+	golem::XMLData("show", shapeShow, xmlcontext->getContextFirst("shape"), false);
+
+
 }
 
 //------------------------------------------------------------------------------
 
 void pacman::HypothesisSensor::Desc::load(golem::Context& context, const golem::XMLContext* xmlcontext) {
 
-	if (!xmlcontext)
-	{
-		appearance.load(xmlcontext);
 
-		golem::BoundingBox::Desc desc;
-		desc.dimensions.set(0.025, 0.025, 0.025);
-		desc.pose.setId();
-		desc.pose.p.z -= 0.025;
-		golem::BoundingBox::Desc::Ptr descBox(new golem::BoundingBox::Desc(desc));
-
-		shapeDesc.push_back(descBox);
-		this->configJoint = 0;
-	}
-	else
-	{
-		appearance.load(xmlcontext->getContextFirst("appearance"));
-		try {
+	appearance.load(xmlcontext->getContextFirst("appearance"));
+	try {
 		golem::XMLData(shapeDesc, shapeDesc.max_size(), xmlcontext->getContextFirst("appearance shape"), "bounds", false);
-		}
-		catch (const MsgXMLParserNameNotFound&) {
-		}
-
-		golem::XMLData("config_joint", configJoint, const_cast<golem::XMLContext*>(xmlcontext), false);
 	}
-	
-	
+	catch (const MsgXMLParserNameNotFound&) {
+	}
+
+
+
 }
 
 //------------------------------------------------------------------------------
-pacman::HypothesisSensor::HypothesisSensor(golem::Context& context, Mat34 pose, ConfigQuery configQuery, golem::U32 configJoint, golem::RGBA shapeColour) : configJoint(0) {
+pacman::HypothesisSensor::HypothesisSensor(Mat34 pose, golem::RGBA shapeColour) {
 
 
 	pacman::HypothesisSensor::Desc desc;
-	desc.load(context, nullptr);
-	desc.appearance.load(nullptr);
+
+	//Appearance of the Hypothesis Sensor
+	desc.appearance.frameSize.set(0.05, 0.05, 0.05);
+	desc.appearance.frameShow = true;
+	desc.appearance.shapeShow = true;
 	desc.appearance.shapeColour = shapeColour;
 
-	desc.configQuery = configQuery;
-	desc.configJoint = configJoint;
+	//Bounds description
+	golem::BoundingBox::Desc boundDesc;
+	boundDesc.dimensions.set(0.025, 0.025, 0.025);
+	boundDesc.pose.setId();
+	boundDesc.pose.p.z -= 0.025;
+	golem::BoundingBox::Desc::Ptr descBox(new golem::BoundingBox::Desc(boundDesc));
 
-	this->viewFrame.setId();
-	this->viewFrame.p.z = 0.05;
+	desc.shapeDesc.push_back(descBox);
+
+	//Local view frame 
+	//Frame is attached on the frontal face of the cube representing this Hypothesis Sensor
+	desc.viewFrame.setId();
+	desc.viewFrame.p.z = 0.05;
+
+	//Pose with respect to base frame
 	this->pose = pose;
 	this->create(desc);
-	
+
 
 }
-pacman::HypothesisSensor::HypothesisSensor(golem::Context& context) : configJoint(0), configQuery(nullptr), viewFrame(Mat34::identity()) {
-	
+pacman::HypothesisSensor::HypothesisSensor(golem::Context& context) : pose(Mat34::identity()), viewFrame(Mat34::identity()) {
+
 }
 
-pacman::HypothesisSensor::HypothesisSensor(const pacman::HypothesisSensor::Desc& desc)
+pacman::HypothesisSensor::HypothesisSensor(const pacman::HypothesisSensor::Desc& desc) : pose(Mat34::identity()), viewFrame(Mat34::identity())
 {
-	pose.setId();
-	viewFrame.setId();
 	this->create(desc);
 }
 
 void pacman::HypothesisSensor::create(const pacman::HypothesisSensor::Desc& desc) {
-	
 
-
-	this->configJoint = desc.configJoint;
-	if (hasVariableMounting() && !desc.configQuery)
-		throw golem::Message(golem::Message::LEVEL_CRIT, "Sensor::create(): Null config callback interface");
-	if (hasVariableMounting())
-		configQuery = desc.configQuery;
+	this->viewFrame = desc.viewFrame;
 
 	appearance = desc.appearance;
 	shape.clear();
@@ -122,23 +91,12 @@ void pacman::HypothesisSensor::create(const pacman::HypothesisSensor::Desc& desc
 	}
 }
 
-//------------------------------------------------------------------------------
-
-void pacman::HypothesisSensor::getConfig(Config& config) const {
-	if (configQuery != nullptr) {
-	
-		configQuery(configJoint, config);
-	}
-	else {
-		config.setToDefault();
-	}
-}
 
 //------------------------------------------------------------------------------
 
 void pacman::HypothesisSensor::draw(const Appearance& appearance, golem::DebugRenderer& renderer) const {
 
-	
+
 	const Mat34 frame = this->getFrame();
 	if (appearance.shapeShow){
 		for (size_t i = 0; i < shape.size(); ++i) {
@@ -154,8 +112,8 @@ void pacman::HypothesisSensor::draw(const Appearance& appearance, golem::DebugRe
 
 void pacman::HypothesisSensor::setGLView(golem::Scene& scene)
 {
-	
-	this->setGLView(scene,this->getFrame());
+
+	this->setGLView(scene, this->getFrame());
 }
 
 void pacman::HypothesisSensor::setGLView(golem::Scene& scene, const golem::Mat34& sensorFrame)
@@ -168,12 +126,72 @@ void pacman::HypothesisSensor::setGLView(golem::Scene& scene, const golem::Mat34
 
 	frame.p.get(opengl.viewPoint.v);
 	frame.R.getColumn(2, opengl.viewDir);
-	frame.R.getColumn(0, opengl.viewUp); //Up right sensor
-	//frame.R.getColumn(0, -opengl.viewUp); //Upside down sensor
+	//frame.R.getColumn(0, opengl.viewUp); //Up right sensor
+	frame.R.getColumn(0, -opengl.viewUp); //Upside down sensor
 
 	opengl.viewDir.normalise();
 	opengl.viewUp.normalise();
 
 
 	scene.setOpenGL(opengl);
+}
+
+
+
+//ActiveSense------------------------------------------------------------------------------
+ActiveSense::ActiveSense(golem::Context& context)
+{
+	rand.setRandSeed(context.getRandSeed());
+}
+
+void ActiveSense::generateRandomViews(pacman::HypothesisSensor::Seq& viewHypotheses, const golem::Vec3& centroid, const golem::I32& nsamples, const golem::Real& radius)
+{
+	Mat34 sensorPose;
+
+
+	golem::Vec3 randomVec;
+	golem::Real x, y, z, theta;
+	golem::U8 r, g, b, a;
+
+	for (int i = 0; i < nsamples; i++)
+	{	
+		//Generate random color
+		r = (U8)rand.nextUniform<float>(50, 255), g = (U8)rand.nextUniform<float>(50, 255), b = (U8)rand.nextUniform<float>(50, 255), a = 255;
+		
+		
+		//Generate random orientation vector
+		randomVec.x = rand.nextUniform<float>(-1, 1);
+		randomVec.y = rand.nextUniform<float>(-1, 1);
+		randomVec.z = rand.nextUniform<float>(-1, 1);
+		randomVec.setMagnitude(radius);
+
+		//Generate a new pose
+		sensorPose = golem::Mat34(golem::Mat34::identity());
+		sensorPose.p = centroid + randomVec;
+
+		//Generate sensor orientation
+		golem::Vec3 f = -randomVec;
+		golem::Vec3 up(0.0, 0.0, 1.0);
+		golem::Vec3 n = f.cross(up);
+		up = n.cross(f);
+
+		//Make sure this is an orthonormal basis
+		f.normalise(); up.normalise(); n.normalise();
+
+		//Up right sensor
+		/*sensorPose.R.setColumn(0, up);
+		sensorPose.R.setColumn(1, n);
+		sensorPose.R.setColumn(2, f);
+		*/
+
+		//Upside down sensor (The sensor is sticked upside down on Boris' wrist)
+		sensorPose.R.setColumn(0, n);
+		sensorPose.R.setColumn(1, -up);
+		sensorPose.R.setColumn(2, f);
+
+		//Creating uniformly generated random hypothesis sensor
+		pacman::HypothesisSensor::Ptr s(new HypothesisSensor(sensorPose, golem::RGBA(r, g, b, a)));
+		this->viewHypotheses.push_back(s);
+
+	}
 }

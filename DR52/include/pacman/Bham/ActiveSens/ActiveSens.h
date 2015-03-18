@@ -17,6 +17,7 @@
 namespace pacman {
 
 	//------------------------------------------------------------------------------
+	
 
 	/** Sensor interface */
 	class HypothesisSensor {
@@ -26,9 +27,6 @@ namespace pacman {
 		typedef std::vector<Ptr> Seq;
 
 		typedef grasp::ConfigMat34 Config;
-
-		/** Configuration query */
-		typedef std::function<void(golem::U32 joint, Config& config)> ConfigQuery;
 
 		/** Sensor appearance */
 		class Appearance {
@@ -49,6 +47,7 @@ namespace pacman {
 			}
 			/** Sets the parameters to the default values. */
 			void setToDefault() {
+
 				frameSize.set(golem::Real(0.03), golem::Real(0.03), golem::Real(0.05));
 				frameShow = true;
 				shapeColour = golem::RGBA(127, 127, 127, 255);
@@ -69,13 +68,12 @@ namespace pacman {
 
 			/** Sensor appearance */
 			Appearance appearance;
+
+			/** View frame pose (Frame attached to the front of this sensor appearance)*/
+			golem::Mat34 viewFrame;
+
 			/** Sensor shape */
 			golem::Bounds::Desc::Seq shapeDesc;
-
-			/** Configuration joint */
-			golem::U32 configJoint;
-			/** Configuration handler */
-			ConfigQuery configQuery;
 
 			/** Constructs description. */
 			Desc() {
@@ -90,9 +88,9 @@ namespace pacman {
 				appearance.setToDefault();
 				shapeDesc.clear();
 
+				viewFrame.setId();
+				viewFrame.p.z = 0.05;
 
-				configJoint = 0;
-				configQuery = nullptr;
 			}
 
 			/** Assert that the description is valid. */
@@ -115,30 +113,10 @@ namespace pacman {
 			virtual void load(golem::Context& context, const golem::XMLContext* xmlcontext);
 		};
 
-		/** Variable mounting */
-		bool hasVariableMounting() const {
-			return configJoint > 0;
-		}
-
-		/** Configuration joint */
-		golem::U32 getConfigJoint() const {
-			return configJoint;
-		}
-
-		/** Current config */
-		void getConfig(Config& config) const;
 
 		/** Curent sensor frame */
 		virtual golem::Mat34 getFrame() const {
 			//Insert here your hypothesis of a pose
-			//TODO: Implement full virtual member getFrame (it varies depending on the mounted sensor)
-			Config config;
-			getConfig(config);
-			return config.w*pose*viewFrame;
-		}
-
-		/** Local frame */
-		golem::Mat34 getLocalFrame() const {
 			return pose*viewFrame;
 		}
 
@@ -149,7 +127,7 @@ namespace pacman {
 
 		/** Local frame */
 		golem::Mat34 getViewFrame() const {
-			return pose;
+			return viewFrame;
 		}
 
 		/** Sensor appearance */
@@ -162,11 +140,6 @@ namespace pacman {
 
 	
 	protected:
-
-		/** Configuration joint */
-		golem::U32 configJoint;
-		/** Configuration handler */
-		ConfigQuery configQuery;
 
 		/** Camera appearance */
 		Appearance appearance;
@@ -192,7 +165,7 @@ namespace pacman {
 
 	public:
 		/** Constructs the Sensor with default configurations */
-		HypothesisSensor(golem::Context& context, golem::Mat34 pose, ConfigQuery configQuery = nullptr, golem::U32 configJoint = 0, golem::RGBA shapeColour = golem::RGBA::CYAN);
+		HypothesisSensor(golem::Mat34 pose, golem::RGBA shapeColour = golem::RGBA::CYAN);
 
 		/** Set OpenGL view point to *this sensor's frame view point*/
 		void setGLView(golem::Scene& scene);
@@ -201,12 +174,40 @@ namespace pacman {
 		void setGLView(golem::Scene& scene, const golem::Mat34& sensorFrame);
 	};
 
-
-
-
 	class ActiveSense {
 
+
+
+	public:
+		ActiveSense() {}
+		ActiveSense(golem::Context& context);
+
+		/** Uniformly generates a set of nsamples sensor hypotheses (viewHypotheses) around a sphere with specified radius centered at centroid in workspace coordinates */
+		void generateRandomViews(pacman::HypothesisSensor::Seq& viewHypotheses, const golem::Vec3& centroid, const golem::I32& nsamples = 5, const golem::Real& radius = 0.25);
+		
+		/** Gets current view hypotheses a.k.a. sensor hypotheses*/
+		pacman::HypothesisSensor::Seq& getViewHypotheses() {
+			return this->viewHypotheses;
+		}
+
+		/** Gets current view hypotheses a.k.a. sensor hypotheses*/
+		pacman::HypothesisSensor::Ptr getViewHypothesis(golem::U32 index) {
+			grasp::Assert::valid(index < this->viewHypotheses.size(), "this->viewHypotheses[index]");
+			return this->viewHypotheses[index];
+		}
+	protected:
+
+		golem::Rand rand;
+		pacman::HypothesisSensor::Seq viewHypotheses;
+		golem::I32 currentViewHypothesis;
+		golem::I32 selectedViewHypothesis;
+
+		
+
 	};
+
+
+
 
 };
 

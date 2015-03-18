@@ -29,22 +29,9 @@ pacman::Demo::~Demo() {
 /*************************USEFUL FUNCTION FOR ACTIVE SENS*******************************************************/
 void pacman::Demo::initActiveSense(golem::Scene& scene)
 {
-	this->currentViewHypothesis = 0;
-
-	Mat34 dummyPose;
-	dummyPose.setId();
-	dummyPose.p.set(0.0, 0.0, 0.025);
-
-	pacman::HypothesisSensor::ConfigQuery configQuery = [&](U32 joint, pacman::HypothesisSensor::Config& config) { getPose(joint, config); };
-	this->dummySensor = pacman::HypothesisSensor::Ptr(new pacman::HypothesisSensor(context, dummyPose, configQuery, 7, golem::RGBA(255, 125, 0, 125)));
-
-	golem::Vec3 center;
 	Mat34 sensorPose;
-	golem::Rand rand;
-	rand.setRandSeed(context.getRandSeed());
 
-
-	/*//Up right sensor
+	/*Up right sensor
 	sensorPose.R.setColumn(0,golem::Vec3(0.0, 0.0, 1.0));
 	sensorPose.R.setColumn(1,golem::Vec3(1.0, 0.0, 0.0));
 	sensorPose.R.setColumn(2,golem::Vec3(0.0, 1.0, 0.0));
@@ -56,77 +43,19 @@ void pacman::Demo::initActiveSense(golem::Scene& scene)
 	sensorPose.R.setColumn(2, golem::Vec3(0.0, 1.0, 0.0));
 
 	sensorPose.p.set(0.5, -0.5, 0.025);
-	center = sensorPose.p;
 
-	//Adding example sensor hypothesis
-	pacman::HypothesisSensor::Ptr sensor(new HypothesisSensor(context, sensorPose, configQuery, 0));
-	this->viewHypotheses.push_back(sensor);
+	//Example sensor hypothesis is going to be used just as an object in the scene
+	dummyObject = pacman::HypothesisSensor::Ptr(new HypothesisSensor(sensorPose));
 
-	//generate 5 random poses centered
-	golem::Vec3 randomVec;
-	golem::Vec3 ori;
-	float radius = 0.25;
-
-	for (int i = 0; i < 20; i++)
-	{
-		//Generate random orientation
-		float x, y, z, theta;
-		U8 r, g, b, a;
-
-		r = (U8)rand.nextUniform<float>(50, 255), g = (U8)rand.nextUniform<float>(50, 255), b = (U8)rand.nextUniform<float>(50, 255), a = 255;
-		theta = rand.nextUniform<float>();
-		x = rand.nextUniform<float>(-1, 1), y = rand.nextUniform<float>(-1, 1), z = rand.nextUniform<float>(-1, 1);
-		printf("Generating random> XYZ: %f %f %f  RGBA: %d %d %d %d Theta: %f\n", x, y, z, r, g, b, a, theta);
-		randomVec.set(x, y, z);
-		randomVec.normalise();
-		randomVec *= radius;
-
-		//Generate point
-		sensorPose = golem::Mat34(golem::Mat34::identity());
-		sensorPose.p = center + randomVec;
-
-		//Generate orientation
-		ori = center - sensorPose.p;
-		golem::Quat q;
-		golem::Vec3 f = ori;
-		golem::Vec3 up(0.0, 0.0, 1.0);
-		golem::Vec3 n = f.cross(up);
-		up = n.cross(f);
-
-		f.normalise();
-		up.normalise();
-		n.normalise();
-
-		q.fromAngleAxis(theta, ori);
-
-
-
-		//Up right sensor
-		/*sensorPose.R.setColumn(0, up);
-		sensorPose.R.setColumn(1, n);
-		sensorPose.R.setColumn(2, f);
-		*/
-
-
-		//Upside down sensor
-		sensorPose.R.setColumn(0, n);
-		sensorPose.R.setColumn(1, -up);
-		sensorPose.R.setColumn(2, f);
-
-
-		pacman::HypothesisSensor::Ptr s(new HypothesisSensor(context, sensorPose, configQuery, 0, golem::RGBA(r, g, b, a)));
-		this->viewHypotheses.push_back(s);
-
-	}
+	//Generating sensor hypotheses around dummyObject's center
+	this->activeSense.generateRandomViews(this->activeSense.getViewHypotheses(), dummyObject->getPose().p);
 }
 
 void pacman::Demo::postprocess(golem::SecTmReal elapsedTime)
 {
 
 	Player::postprocess(elapsedTime);
-
-	dummySensor->draw(dummySensor->getAppearance(), this->sensorRenderer);
-	for (pacman::HypothesisSensor::Seq::iterator it = viewHypotheses.begin(); it != viewHypotheses.end(); it++)
+	for (pacman::HypothesisSensor::Seq::iterator it = activeSense.getViewHypotheses().begin(); it != activeSense.getViewHypotheses().end(); it++)
 	{
 		(*it)->draw((*it)->getAppearance(), this->sensorRenderer);
 	}
@@ -256,8 +185,8 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("CH", [=]() {
 
-		size_t index = viewHypotheses.size();
-		Menu::selectIndex(viewHypotheses, index, "Camera Hypothesis");
+		size_t index = activeSense.getViewHypotheses().size();
+		Menu::selectIndex(activeSense.getViewHypotheses(), index, "Camera Hypothesis");
 
 		
 		//Show pose lambda
@@ -272,25 +201,19 @@ void pacman::Demo::create(const Desc& desc) {
 		frame.setId();
 
 		//Camera Frame
-		frame = viewHypotheses[index - 1]->getFrame();
+		frame = activeSense.getViewHypothesis(index - 1)->getFrame();
 		showPose("Camera Frame Pose", frame);
 		frame.setInverse(frame);
 		showPose("Camera Frame InvPose", frame);
 
-		//LocalFrame Pose
-		frame = viewHypotheses[index - 1]->getLocalFrame();
-		showPose("LocalFrame Pose", frame);
-		frame.setInverse(frame);
-		showPose("LocalFrame InvPose", frame);
-
 		//ViewFrame Pose
-		frame = viewHypotheses[index - 1]->getViewFrame();
+		frame = activeSense.getViewHypothesis(index - 1)->getViewFrame();
 		showPose("ViewFrame Pose", frame);
 		frame.setInverse(frame);
 		showPose("ViewFrame InvPose", frame);
 
 		//Pose
-		frame = viewHypotheses[index - 1]->getPose();
+		frame = activeSense.getViewHypothesis(index - 1)->getPose();
 		showPose("Pose", frame);
 		frame.setInverse(frame);
 		showPose("InvPose", frame);
@@ -305,8 +228,8 @@ void pacman::Demo::create(const Desc& desc) {
 
 		grasp::CameraDepth* camera = grasp::to<grasp::CameraDepth>(sensorCurrentPtr);
 		
-		size_t index = viewHypotheses.size();
-		Menu::selectIndex(viewHypotheses, index, "Choose Camera Hypothesis to Go");
+		size_t index = activeSense.getViewHypotheses().size();
+		Menu::selectIndex(activeSense.getViewHypotheses(), index, "Choose Camera Hypothesis to Go");
 
 		golem::Mat34 frame, invFrame, refPose, invRefPose;
 		grasp::ConfigMat34 wrist, invWrist, base, invBase;
@@ -321,25 +244,12 @@ void pacman::Demo::create(const Desc& desc) {
 		//Inverse wrist
 		invWrist.w.setInverse(wrist.w);
 
-		//Arm base frame
-		getPose(0, base);
-		invBase.w.setInverse(base.w);
-
 		//It should be the local frame of the camera
 		frame = invWrist.w*camera->getFrame();
 		invFrame.setInverse(frame);
 
-		//Let's print that
-		Mat34 m = frame;
-		m = base.w;
-		context.write("\n\nBase: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}", m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
-		m = frame;
-		context.write("\nFrame: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}", m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
-		m = invFrame;
-		context.write("\ninvFrame: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n\n", m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
 		
-		
-		Mat34 goal = invFrame*viewHypotheses[index - 1]->getFrame();
+		Mat34 goal = activeSense.getViewHypothesis(index - 1)->getFrame()*invFrame*refPose;
 	
 		this->gotoPoseWS(goal);
 
@@ -349,10 +259,10 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("CV", [&]() {
 
-		size_t index = viewHypotheses.size();
-		Menu::selectIndex(viewHypotheses, index, "Camera Hypothesis");
+		size_t index = activeSense.getViewHypotheses().size();
+		Menu::selectIndex(activeSense.getViewHypotheses(), index, "Camera Hypothesis");
 
-		viewHypotheses[index - 1]->setGLView(this->scene);
+		activeSense.getViewHypothesis(index - 1)->setGLView(this->scene);
 
 
 		context.write("Done!\n");
@@ -365,7 +275,7 @@ void pacman::Demo::create(const Desc& desc) {
 			return ptr->second->getID();
 		});
 
-		viewHypotheses[0]->setGLView(this->scene, grasp::to<grasp::CameraDepth>(sensorCurrentPtr)->getFrame());
+		activeSense.getViewHypothesis(0)->setGLView(this->scene, grasp::to<grasp::CameraDepth>(sensorCurrentPtr)->getFrame());
 
 
 		context.write("Done!\n");
@@ -376,9 +286,9 @@ void pacman::Demo::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("CN", [&]() {
 
 		context.write("View from ViewHypothesis %d\n", this->currentViewHypothesis);
-		viewHypotheses[this->currentViewHypothesis]->setGLView(this->scene);
+		activeSense.getViewHypothesis(this->currentViewHypothesis)->setGLView(this->scene);
 
-		this->currentViewHypothesis = (this->currentViewHypothesis + 1) % viewHypotheses.size();
+		this->currentViewHypothesis = (this->currentViewHypothesis + 1) % activeSense.getViewHypotheses().size();
 		
 		context.write("Done!\n");
 
