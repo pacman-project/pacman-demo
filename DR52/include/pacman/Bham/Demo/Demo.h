@@ -16,11 +16,13 @@
 /** PaCMan name space */
 namespace pacman {
 
+	class ActiveSense;
 //------------------------------------------------------------------------------
 
 /** Demo. */
 class Demo : public grasp::Player {
 public:
+	friend class ActiveSense;
 
 	/** Player description */
 	class Desc : public grasp::Player::Desc {
@@ -50,18 +52,21 @@ public:
 		GRASP_CREATE_FROM_OBJECT_DESC1(Demo, golem::Object::Ptr, golem::Scene&)
 	};
 protected:
+	
 	golem::I32 currentViewHypothesis;
 	golem::I32 selectedCamera;
 	ActiveSense activeSense;
 
 	pacman::HypothesisSensor::Ptr dummyObject;
 
+public:
+	
 
 protected:
 	void create(const Desc& desc);
 	void initActiveSense(golem::Scene &scene);
 	void gotoPoseWS(const grasp::ConfigMat34& pose);
-	
+	void scanPoseActive(ScanPoseCommand scanPoseCommand = nullptr, std::string itemLabel = ActiveSense::DFT_IMAGE_ITEM_LABEL);
 	/** golem::Object (Post)processing function called AFTER every physics simulation step and before randering. */
 	virtual void postprocess(golem::SecTmReal elapsedTime);
 

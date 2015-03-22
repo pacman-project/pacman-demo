@@ -12,10 +12,18 @@
 #include <Grasp/Core/Defs.h>
 #include <Golem/Phys/Renderer.h>
 #include <Golem/Phys/Scene.h>
+#include <Grasp/Core/Camera.h>
+#include <Grasp/App/Manager/Manager.h>
+#include <Golem/Tools/Data.h>
+#include <Golem/Phys/Data.h>
+#include <Grasp/Core/Data.h>
+#include <Grasp/Core/UI.h>
+#include <Grasp/App/Player/Player.h>
 
 /** PaCMan name space */
 namespace pacman {
 
+	class Demo;
 	//------------------------------------------------------------------------------
 	
 
@@ -176,8 +184,13 @@ namespace pacman {
 
 	class ActiveSense {
 
+	public:
 
+		static const std::string DFT_IMAGE_ITEM_LABEL;
+		static const std::string DFT_POINT_CURV_ITEM_LABEL;
 
+		typedef golem::shared_ptr<ActiveSense> Ptr;
+		
 	public:
 		ActiveSense() {}
 		ActiveSense(golem::Context& context);
@@ -185,6 +198,14 @@ namespace pacman {
 		/** Generates a set of nsamples sensor hypotheses (viewHypotheses) with uniformly distributed view directions (viewDir) around a sphere with specified radius centered at centroid in workspace coordinates */
 		void generateRandomViews(pacman::HypothesisSensor::Seq& viewHypotheses, const golem::Vec3& centroid, const golem::I32& nsamples = 5, const golem::Real& radius = 0.25);
 		
+		pacman::HypothesisSensor::Ptr generateNextRandomView(const golem::Vec3& centroid, const golem::Real& radius = 0.25);
+
+		void processItems(pacman::Demo& demo, grasp::data::Item::List& list);
+
+		/** Gaze ActiveSense main method */
+		void executeActiveSense(pacman::Demo& demo, const golem::Vec3& centroid, golem::U32 nsamples = 5, const golem::Real& radius = 0.25/*TODO: Receive Contacts, Normals and GraspType*/);
+
+
 		/** Gets current view hypotheses a.k.a. sensor hypotheses*/
 		pacman::HypothesisSensor::Seq& getViewHypotheses() {
 			return this->viewHypotheses;
@@ -195,17 +216,35 @@ namespace pacman {
 			grasp::Assert::valid(index < this->viewHypotheses.size(), "this->viewHypotheses[index]");
 			return this->viewHypotheses[index];
 		}
+
+		golem::CriticalSection& getCSViewHypotheses()
+		{
+			return this->csViewHypotheses;
+		}
+
+		void setRandSeed(const golem::RandSeed& seed){
+			this->rand.setRandSeed(seed);
+		}
+
+		golem::Mat34 computeGoal(pacman::Demo& demo, golem::Mat34& targetFrame, grasp::CameraDepth* camera);
+
+	
 	protected:
 
-		golem::Rand rand;
-		pacman::HypothesisSensor::Seq viewHypotheses;
-
+		grasp::data::Item::List createItemList(grasp::data::Item::Map& itemMap);
+		void addItem(pacman::Demo& demo, const std::string& label, grasp::data::Item::Ptr item);
+		void removeItems(pacman::Demo& demo, grasp::data::Item::List& list);
+		void removeData(pacman::Demo& demo, grasp::Manager::Data::Ptr data);
+		grasp::Manager::Data::Ptr createData(pacman::Demo& demo);
 		
+	protected:
+		
+		golem::CriticalSection csViewHypotheses;
+		pacman::HypothesisSensor::Seq viewHypotheses;
+		golem::Rand rand;
+	
 
 	};
-
-
-
 
 };
 
