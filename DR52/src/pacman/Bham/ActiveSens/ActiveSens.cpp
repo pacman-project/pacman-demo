@@ -5,6 +5,7 @@
 #include <pcl/common/centroid.h>
 #include <pcl/filters/filter.h>
 
+
 using namespace pacman;
 using namespace golem;
 using namespace grasp;
@@ -157,6 +158,37 @@ void ActiveSense::init(pacman::Demo* demoOwner)
 {
 	this->demoOwner = demoOwner;
 	rand.setRandSeed(this->demoOwner->context.getRandSeed());
+
+	grasp::data::Handler::Map::iterator itImage = demoOwner->handlerMap.find("Image+Image");
+	grasp::data::Handler::Map::iterator itPointCurv = demoOwner->handlerMap.find("PointsCurv+PointsCurv");
+	grasp::data::Handler::Map::iterator itPredModel = demoOwner->handlerMap.find("PredictorModel+PredictorModel");
+	grasp::data::Handler::Map::iterator itPredQuery = demoOwner->handlerMap.find("PredictorQuery+PredictorQuery");
+	grasp::data::Transform* transformImage = is<grasp::data::Transform>(itImage);
+	grasp::data::Transform* transformPointsCurv = is<grasp::data::Transform>(itPointCurv);
+	grasp::data::Transform* transformPredictorModel = is<grasp::data::Transform>(itPredModel);
+	grasp::data::Transform* transformPredictorQuery = is<grasp::data::Transform>(itPredQuery);
+
+	if (!transformImage || !transformPointsCurv || !transformPredictorModel || !transformPredictorQuery)
+	{
+		throw Cancel("We don't have all Transforms we need!");
+	}
+	else
+	{
+		demoOwner->context.write("All transforms good!");
+	}
+
+
+	//Currently unused
+	transformMap.push_back(std::make_pair(itImage->second.get(), transformImage));
+
+	transformMap.push_back(std::make_pair(itPointCurv->second.get(), transformPointsCurv));
+
+	//Currently unused
+	transformMap.push_back(std::make_pair(itPredModel->second.get(), transformPredictorModel));
+	//Currently unused
+	transformMap.push_back(std::make_pair(itPredQuery->second.get(), transformPredictorQuery));
+
+
 }
 
 
@@ -190,9 +222,7 @@ void ActiveSense::addItem( const std::string& label, grasp::data::Item::Ptr item
 grasp::data::Item::Map::iterator pacman::ActiveSense::processItems(grasp::data::Item::List& list)
 {
 
-	typedef std::vector<std::pair<data::Handler*, data::Transform*>> TransformMap;
-	TransformMap transformMap;
-	typedef std::function<grasp::data::Item::Map::iterator(grasp::data::Item::List& list, TransformMap::value_type& transformPtr)> ReduceFunc;
+
 
 
 	ReduceFunc reduce = [&](grasp::data::Item::List& list, TransformMap::value_type& transformPtr) -> grasp::data::Item::Map::iterator {
@@ -218,30 +248,6 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::processItems(grasp::data::
 	//Used transforms: PointsCurv+PointsCurv
 	//PredictorModel+PredictorModel
 	//PredictorQuery+PredictorQuery
-
-	grasp::data::Handler::Map::iterator itImage = demoOwner->handlerMap.find("Image+Image");
-	grasp::data::Handler::Map::iterator itPointCurv = demoOwner->handlerMap.find("PointsCurv+PointsCurv");
-	grasp::data::Handler::Map::iterator itPredModel = demoOwner->handlerMap.find("PredictorModel+PredictorModel");
-	grasp::data::Handler::Map::iterator itPredQuery = demoOwner->handlerMap.find("PredictorQuery+PredictorQuery");
-	grasp::data::Transform* transformImage = is<grasp::data::Transform>(itImage);
-	grasp::data::Transform* transformPointsCurv = is<grasp::data::Transform>(itPointCurv);
-	grasp::data::Transform* transformPredictorModel = is<grasp::data::Transform>(itPredModel);
-	grasp::data::Transform* transformPredictorQuery = is<grasp::data::Transform>(itPredQuery);
-
-	if (!transformImage || !transformPointsCurv || !transformPredictorModel || !transformPredictorQuery)
-	{
-		throw Cancel("We don't have all Transforms we need!");
-	}
-	
-	//Currently unused
-	transformMap.push_back(std::make_pair(itImage->second.get(), transformImage));
-
-	transformMap.push_back(std::make_pair(itPointCurv->second.get(), transformPointsCurv));
-
-	//Currently unused
-	transformMap.push_back(std::make_pair(itPredModel->second.get(), transformPredictorModel));
-	//Currently unused
-	transformMap.push_back(std::make_pair(itPredQuery->second.get(), transformPredictorQuery));
 
 
 	//PointCurv+PointCurv Transform
@@ -549,6 +555,18 @@ void ActiveSense::generateRandomViews(const golem::Vec3& centroid, const golem::
 	}
 }
 
+/**
+Executes the following steps:
+1) Transforms (predModelItem,pointCurvItem) into predQuery;
+2) Converts predQuery into a Trajectory (traj)
+3) feedback step => Transforms (pointCurvItem,traj) into a predModelItem
+
+Output: predModelItem result of the feedBack transform
+*/
+/*grasp::data::Item::Map::iterator ActiveSense::feedBackTransform(grasp::data::Item::Ptr predModelItem, grasp::data::Item::Ptr pointCurvItem)
+{
+
+}*/
 
 //--------------------------------------------------------------------------------
 void pacman::ActiveSenseController::initActiveSense(pacman::Demo* demoOwner)

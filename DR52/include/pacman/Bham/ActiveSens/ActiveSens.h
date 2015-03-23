@@ -20,6 +20,7 @@
 #include <Grasp/Core/UI.h>
 #include <Grasp/App/Player/Player.h>
 
+
 /** PaCMan name space */
 namespace pacman {
 
@@ -179,7 +180,7 @@ namespace pacman {
 		void setGLView(golem::Scene& scene);
 
 		/** Set OpenGL view point to the sensor's frame view point */
-		void setGLView(golem::Scene& scene, const golem::Mat34& sensorFrame);
+		static void setGLView(golem::Scene& scene, const golem::Mat34& sensorFrame);
 	};
 
 	class ActiveSense {
@@ -190,6 +191,8 @@ namespace pacman {
 		static const std::string DFT_POINT_CURV_ITEM_LABEL;
 
 		typedef golem::shared_ptr<ActiveSense> Ptr;
+		typedef std::vector<std::pair<grasp::data::Handler*, grasp::data::Transform*>> TransformMap;
+		typedef std::function<grasp::data::Item::Map::iterator(grasp::data::Item::List& list, TransformMap::value_type& transformPtr)> ReduceFunc;
 
 		friend class ActiveSenseController;
 		
@@ -325,6 +328,11 @@ namespace pacman {
 		grasp::data::Item::Map::iterator feedBackTransform(grasp::data::Item::Ptr predModelItem, grasp::data::Item::Ptr pointCurvItem);
 		
 	protected:
+
+		/**
+		TransformMap containing the transformations useful for *this
+		*/
+		TransformMap transformMap;
 
 		/**
 		Owner of *this ActiveSense object (usually the main robot interface)

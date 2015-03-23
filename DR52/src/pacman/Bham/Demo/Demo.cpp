@@ -1,6 +1,8 @@
 #include <pacman/Bham/Demo/Demo.h>
 #include <Golem/Math/Rand.h>
 #include <Grasp/Core/Data.h>
+#include <Grasp/Grasp/Model.h>
+#include <Grasp/Data/PredictorModel/PredictorModel.h>
 
 using namespace pacman;
 using namespace golem;
@@ -21,9 +23,6 @@ void pacman::Demo::Desc::load(golem::Context& context, const golem::XMLContext* 
 
 pacman::Demo::Demo(golem::Scene &scene) : grasp::Player(scene) {
 
-	this->currentViewHypothesis = 0;
-	this->selectedCamera = 0;
-	this->initActiveSense(this);
 }
 
 pacman::Demo::~Demo() {
@@ -126,9 +125,14 @@ void pacman::Demo::create(const Desc& desc) {
 	//Camera Debug
 	menuCmdMap.insert(std::make_pair("CD", [=]() {
 
-
+		/*grasp::data::Item::Map::iterator itemPtr;
+		select(itemPtr, dataCurrentPtr->second->itemMap.begin(), dataCurrentPtr->second->itemMap.end(), "Select PredModel:\n", [](grasp::data::Item::Map::iterator ptr) -> const std::string&{
+			return ptr->second->getHandler().getID();
+		});*/
+		// grasp::data::ItemPredictorModel::Map::iterator ptr = to <
 		//activeSense.generateRandomViews(golem::Vec3(0.5, -0.5, 0.05),100,0.20);
-		activeSense.executeActiveSense(10, 0.20);
+		activeSense.executeActiveSense(5, 0.20); //Random view selection
+
 
 	}));
 	menuCmdMap.insert(std::make_pair("CH", [=]() {
@@ -200,11 +204,15 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("CK", [&]() {
 
+		
+
 		select(sensorCurrentPtr, sensorMap.begin(), sensorMap.end(), "Select Sensor:\n", [](grasp::Sensor::Map::const_iterator ptr) -> const std::string&{
 			return ptr->second->getID();
 		});
 
-		activeSense.getViewHypothesis(0)->setGLView(this->scene, grasp::to<grasp::CameraDepth>(sensorCurrentPtr)->getFrame());
+		
+
+		HypothesisSensor::setGLView(this->scene, grasp::to<grasp::CameraDepth>(sensorCurrentPtr)->getFrame());
 
 
 		context.write("Done!\n");
@@ -224,6 +232,11 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 
 	
+
+	//ActiveSense initialisation
+	this->currentViewHypothesis = 0;
+	this->selectedCamera = 0;
+	this->initActiveSense(this);
 }
 
 //------------------------------------------------------------------------------
