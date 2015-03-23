@@ -1,6 +1,9 @@
 #include <pacman/Bham/ActiveSens/ActiveSens.h>
 #include <Golem/Tools/XMLData.h>
 #include <pacman/Bham/Demo/Demo.h>
+#include <Grasp/Data/Image/Image.h>
+#include <pcl/common/centroid.h>
+#include <pcl/filters/filter.h>
 
 using namespace pacman;
 using namespace golem;
@@ -145,71 +148,81 @@ const std::string ActiveSense::DFT_POINT_CURV_ITEM_LABEL = "ActiveSense_PointCur
 //END
 
 
-ActiveSense::ActiveSense(golem::Context& context)
+ActiveSense::ActiveSense(pacman::Demo* demoOwner) : ActiveSense()
 {
-	rand.setRandSeed(context.getRandSeed());
+	this->init(demoOwner);
+}
+
+void ActiveSense::init(pacman::Demo* demoOwner)
+{
+	this->demoOwner = demoOwner;
+	rand.setRandSeed(this->demoOwner->context.getRandSeed());
 }
 
 
 
-void pacman::ActiveSense::removeItems(pacman::Demo& demo, grasp::data::Item::List& list)
+void pacman::ActiveSense::removeItems(grasp::data::Item::List& list)
 {
 	for (grasp::data::Item::List::const_iterator i = list.begin(); i != list.end(); ++i) {
 		//Removing items
-		grasp::UI::removeCallback(demo, &(*i)->second->getHandler());
-		golem::CriticalSectionWrapper cswData(demo.csData);
-		demo.dataCurrentPtr->second->itemMap.erase(*i);
+		grasp::UI::removeCallback(*demoOwner, &(*i)->second->getHandler());
+		golem::CriticalSectionWrapper cswData(demoOwner->csData);
+		demoOwner->dataCurrentPtr->second->itemMap.erase(*i);
 	}
 
 	
-	//grasp::UI::addCallback(demo, demo.getCurrentHandler());
-	//demo.createRender();
+	//grasp::UI::addCallback(demo, demoOwner->getCurrentHandler());
+	//demoOwner->createRender();
 }
 
-void ActiveSense::addItem(pacman::Demo& demo, const std::string& label, grasp::data::Item::Ptr item)
+void ActiveSense::addItem( const std::string& label, grasp::data::Item::Ptr item)
 {
-	golem::CriticalSectionWrapper cswData(demo.csData);
-	const data::Item::Map::iterator ptr = to<grasp::Manager::Data>(demo.dataCurrentPtr)->itemMap.insert(to<grasp::Manager::Data>(demo.dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(label, item));
-	Manager::RenderBlock renderBlock(demo);
+	golem::CriticalSectionWrapper cswData(demoOwner->csData);
+	const data::Item::Map::iterator ptr = to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap.insert(to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(label, item));
+	Manager::RenderBlock renderBlock(*demoOwner);
 	{
-		grasp::Manager::Data::View::setItem(to<grasp::Manager::Data>(demo.dataCurrentPtr)->itemMap, ptr, to<grasp::Manager::Data>(demo.dataCurrentPtr)->getView());
+		grasp::Manager::Data::View::setItem(to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap, ptr, to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->getView());
 	}
 }
 
 
 
-void pacman::ActiveSense::processItems(pacman::Demo& demo, grasp::data::Item::List& list)
+grasp::data::Item::Map::iterator pacman::ActiveSense::processItems(grasp::data::Item::List& list)
 {
 
 	typedef std::vector<std::pair<data::Handler*, data::Transform*>> TransformMap;
 	TransformMap transformMap;
-	typedef std::function<grasp::data::Item::Ptr(grasp::data::Item::List& list, TransformMap::value_type& transformPtr)> ReduceFunc;
+	typedef std::function<grasp::data::Item::Map::iterator(grasp::data::Item::List& list, TransformMap::value_type& transformPtr)> ReduceFunc;
 
 
-	ReduceFunc reduce = [&](grasp::data::Item::List& list, TransformMap::value_type& transformPtr) -> grasp::data::Item::Ptr {
+	ReduceFunc reduce = [&](grasp::data::Item::List& list, TransformMap::value_type& transformPtr) -> grasp::data::Item::Map::iterator {
 		
-		demo.context.write("List Size: %d", list.size());
+		demoOwner->context.write("List Size: %d", list.size());
 		// transform
-		Manager::RenderBlock renderBlock(demo);
+		Manager::RenderBlock renderBlock(*demoOwner);
 		
-		UI::addCallback(demo, transformPtr.first);
+		UI::addCallback(*demoOwner, transformPtr.first);
+		data::Item::Map::iterator ptr;
 		grasp::data::Item::Ptr item = transformPtr.second->transform(list);
 		{
-			golem::CriticalSectionWrapper cswData(demo.csData);
-			const data::Item::Map::iterator ptr = to<grasp::Manager::Data>(demo.dataCurrentPtr)->itemMap.insert(to<grasp::Manager::Data>(demo.dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type("ActiveSense_objectCurv", item));
-			grasp::Manager::Data::View::setItem(to<grasp::Manager::Data>(demo.dataCurrentPtr)->itemMap, ptr, to<grasp::Manager::Data>(demo.dataCurrentPtr)->getView());
+			golem::CriticalSectionWrapper cswData(demoOwner->csData);
+			ptr = to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap.insert(to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(ActiveSense::DFT_POINT_CURV_ITEM_LABEL, item));
+			grasp::Manager::Data::View::setItem(to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap, ptr, to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->getView());
+		
+		
 		}
-		return item;
+	
+		return ptr;
 	};
 	
 	//Used transforms: PointsCurv+PointsCurv
 	//PredictorModel+PredictorModel
 	//PredictorQuery+PredictorQuery
 
-	grasp::data::Handler::Map::iterator itImage = demo.handlerMap.find("Image+Image");
-	grasp::data::Handler::Map::iterator itPointCurv = demo.handlerMap.find("PointsCurv+PointsCurv");
-	grasp::data::Handler::Map::iterator itPredModel = demo.handlerMap.find("PredictorModel+PredictorModel");
-	grasp::data::Handler::Map::iterator itPredQuery = demo.handlerMap.find("PredictorQuery+PredictorQuery");
+	grasp::data::Handler::Map::iterator itImage = demoOwner->handlerMap.find("Image+Image");
+	grasp::data::Handler::Map::iterator itPointCurv = demoOwner->handlerMap.find("PointsCurv+PointsCurv");
+	grasp::data::Handler::Map::iterator itPredModel = demoOwner->handlerMap.find("PredictorModel+PredictorModel");
+	grasp::data::Handler::Map::iterator itPredQuery = demoOwner->handlerMap.find("PredictorQuery+PredictorQuery");
 	grasp::data::Transform* transformImage = is<grasp::data::Transform>(itImage);
 	grasp::data::Transform* transformPointsCurv = is<grasp::data::Transform>(itPointCurv);
 	grasp::data::Transform* transformPredictorModel = is<grasp::data::Transform>(itPredModel);
@@ -220,75 +233,120 @@ void pacman::ActiveSense::processItems(pacman::Demo& demo, grasp::data::Item::Li
 		throw Cancel("We don't have all Transforms we need!");
 	}
 	
+	//Currently unused
 	transformMap.push_back(std::make_pair(itImage->second.get(), transformImage));
 
 	transformMap.push_back(std::make_pair(itPointCurv->second.get(), transformPointsCurv));
+
 	//Currently unused
 	transformMap.push_back(std::make_pair(itPredModel->second.get(), transformPredictorModel));
 	//Currently unused
 	transformMap.push_back(std::make_pair(itPredQuery->second.get(), transformPredictorQuery));
 
-	
-	
+
 	//PointCurv+PointCurv Transform
-	grasp::data::Item::Ptr item = reduce(list, transformMap[1]);
+	grasp::data::Item::Map::iterator itemPtr = reduce(list, transformMap[1]);
 
-
-	//Addd item
-	std::string label = "ActiveSense_objectCurv";
-	//this->addItem(demo, label, item);
-	//this->removeItems(demo, list);
-	
-
-
+	return itemPtr;
 }
 
-void pacman::ActiveSense::removeData(pacman::Demo& demo, grasp::Manager::Data::Ptr data)
+void pacman::ActiveSense::removeData(grasp::data::Data::Map::iterator data)
 {
-	if (demo.dataMap.size() > 1) {
-		grasp::Manager::RenderBlock renderBlock(demo);
-		demo.context.write("Removing %s...\n", demo.dataCurrentPtr->first.c_str());
+
+	demoOwner->setCurrentDataPtr(data);
+
+	if (demoOwner->dataMap.size() > 1) {
+		grasp::Manager::RenderBlock renderBlock(*demoOwner);
+		demoOwner->context.write("Removing %s...\n", demoOwner->dataCurrentPtr->first.c_str());
 		{
-			golem::CriticalSectionWrapper cswData(demo.csData);
-			demo.dataMap.erase(demo.dataCurrentPtr++);
-			if (demo.dataCurrentPtr == demo.dataMap.end()) demo.dataCurrentPtr = demo.dataMap.begin();
+			golem::CriticalSectionWrapper cswData(demoOwner->csData);
+			demoOwner->dataMap.erase(demoOwner->dataCurrentPtr++);
+			if (demoOwner->dataCurrentPtr == demoOwner->dataMap.end()) demoOwner->dataCurrentPtr = demoOwner->dataMap.begin();
 		}
-		demo.scene.setOpenGL(grasp::to<grasp::Manager::Data>(demo.dataCurrentPtr)->getView().openGL);
-		demo.context.write("%s\n", grasp::Manager::Data::toString(demo.dataCurrentPtr).c_str());
+		demoOwner->scene.setOpenGL(grasp::to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->getView().openGL);
+		demoOwner->context.write("%s\n", grasp::Manager::Data::toString(demoOwner->dataCurrentPtr).c_str());
 	}
 }
 
-grasp::Manager::Data::Ptr pacman::ActiveSense::createData(pacman::Demo& demo)
+grasp::Manager::Data::Map::iterator pacman::ActiveSense::createData()
 {
 	//Create new Data Bundle
 	grasp::Manager::Data::Ptr data;
 
-	demo.readPath("Enter data path to create: ", demo.dataPath);
-	if (!isExt(demo.dataPath, demo.dataExt))
-		demo.dataPath += demo.dataExt;
-	data = demo.createData();
-	grasp::Manager::RenderBlock renderBlock(demo);
-	demo.scene.getOpenGL(grasp::to<grasp::Manager::Data>(demo.dataCurrentPtr)->getView().openGL); // set current view
-	demo.scene.getOpenGL(grasp::to<grasp::Manager::Data>(data)->getView().openGL); // set view of the new data
+	demoOwner->readPath("Enter data path to create: ", demoOwner->dataPath);
+	if (!isExt(demoOwner->dataPath, demoOwner->dataExt))
+		demoOwner->dataPath += demoOwner->dataExt;
+	data = demoOwner->createData();
+	grasp::Manager::RenderBlock renderBlock(*demoOwner);
+	demoOwner->scene.getOpenGL(grasp::to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->getView().openGL); // set current view
+	demoOwner->scene.getOpenGL(grasp::to<grasp::Manager::Data>(data)->getView().openGL); // set view of the new data
 	{
-		golem::CriticalSectionWrapper cswData(demo.csData);
-		demo.dataMap.erase(demo.dataPath);
-		demo.dataCurrentPtr = demo.dataMap.insert(demo.dataMap.begin(), grasp::Manager::Data::Map::value_type(demo.dataPath, data));
+		golem::CriticalSectionWrapper cswData(demoOwner->csData);
+		demoOwner->dataMap.erase(demoOwner->dataPath);
+		demoOwner->dataCurrentPtr = demoOwner->dataMap.insert(demoOwner->dataMap.begin(), grasp::Manager::Data::Map::value_type(demoOwner->dataPath, data));
 	}
-	demo.context.write("Done: Created Data Bundle!\n");
+	demoOwner->context.write("Done: Created Data Bundle!\n");
 
-	return data;
+	return demoOwner->dataCurrentPtr;
 }
 
-golem::Mat34 pacman::ActiveSense::computeGoal(pacman::Demo& demo, golem::Mat34& targetFrame, grasp::CameraDepth* camera)
+
+golem::Vec3 pacman::ActiveSense::computeCentroid(grasp::data::Item::Map::const_iterator itemImage)
+{
+	golem::Vec3 centroid(0.0, 0.0, 0.0);
+
+	grasp::data::ItemImage* image = is<grasp::data::ItemImage>(itemImage);
+
+	this->demoOwner->context.write("Computing Centroid: %lf %lf %lf CloudSize %d \n", centroid.x, centroid.y, centroid.z, image->cloud->size());
+	
+	//Computes centroid ignoring NaNs
+	int count = 0;
+	for (int i = 0; i < image->cloud->size(); i++)
+	{
+		// Ignoring NaNs
+		if (image->cloud->at(i).x != image->cloud->at(i).x || image->cloud->at(i).y != image->cloud->at(i).y || image->cloud->at(i).z != image->cloud->at(i).z)
+			continue;
+
+		centroid.x += image->cloud->at(i).x;
+		centroid.y += image->cloud->at(i).y;
+		centroid.z += image->cloud->at(i).z;
+		count++;
+
+	}
+	centroid /= float(count);
+	this->demoOwner->context.write("RESULT Centroid ==>>> %lf %lf %lf\n", centroid.x, centroid.y, centroid.z);
+	
+	return centroid;
+}
+
+grasp::CameraDepth* ActiveSense::getOwnerOPENNICamera()
+{
+
+	//Getting the camera
+	grasp::Sensor::Map::iterator camIt = demoOwner->sensorMap.find("OpenNI+OpenNI");
+	if (camIt == demoOwner->sensorMap.end()){
+		//demoOwner->context.write("OpenNI+OpenNI is not available\n");
+		throw Cancel("OpenNI+OpenNI is not available");
+	}
+
+	demoOwner->sensorCurrentPtr = camIt;
+
+	grasp::CameraDepth* camera = grasp::is<grasp::CameraDepth>(demoOwner->sensorCurrentPtr);
+
+	return camera;
+}
+
+
+golem::Mat34 pacman::ActiveSense::computeGoal(golem::Mat34& targetFrame, grasp::CameraDepth* camera)
 {
 
 	golem::Mat34 frame, invFrame, refPose;
 	grasp::ConfigMat34 wrist, invWrist;
 	frame.setId(), invFrame.setId(), wrist.w.setId(), invWrist.w.setId(), refPose.setId();
 
+	
 	//Reference frame
-	refPose = demo.controller->getChains()[demo.armInfo.getChains().begin()]->getReferencePose();
+	refPose = demoOwner->controller->getChains()[demoOwner->armInfo.getChains().begin()]->getReferencePose();
 
 	//Wrist pose (7th joint)
 	camera->getConfig(wrist);
@@ -305,9 +363,9 @@ golem::Mat34 pacman::ActiveSense::computeGoal(pacman::Demo& demo, golem::Mat34& 
 	return goal;
 }
 
-void pacman::ActiveSense::executeActiveSense(pacman::Demo& demo, const golem::Vec3& centroid, golem::U32 nsamples, const golem::Real& radius)
+grasp::data::Item::Map::iterator pacman::ActiveSense::executeActiveSense(golem::U32 nsamples, const golem::Real& radius)
 {
-
+	golem::Vec3 autoCentroid;
 
 	/*
 	//Initialization
@@ -331,23 +389,14 @@ void pacman::ActiveSense::executeActiveSense(pacman::Demo& demo, const golem::Ve
 	//endWhile
 	*/
 
-	//Getting the camera
-	grasp::Sensor::Map::iterator camIt = demo.sensorMap.find("OpenNI+OpenNI");
-	if (camIt == demo.sensorMap.end()){
-		//demo.context.write("OpenNI+OpenNI is not available\n");
-		throw Cancel("OpenNI+OpenNI is not available");
-	}
-	
-	demo.sensorCurrentPtr = camIt;
-
-	grasp::CameraDepth* camera = grasp::is<grasp::CameraDepth>(demo.sensorCurrentPtr);
+	grasp::CameraDepth* camera = this->getOwnerOPENNICamera();
 	if (camera)
-	{
-		demo.context.write("Camera good!\n");
-	}
+		demoOwner->context.write("Camera good!\n");
+
+
 
 	//Creating new Data Bundle
-	grasp::Manager::Data::Ptr data = createData(demo);
+	grasp::Manager::Data::Map::iterator data = createData();
 
 
 	//Getting view hypotheses (TODO: Compute just one initial view based on current Points of Interest)
@@ -358,10 +407,10 @@ void pacman::ActiveSense::executeActiveSense(pacman::Demo& demo, const golem::Ve
 	std::function<bool()> scanCommand = [&]() -> bool {
 		//TODO: Integrate previous measurements into the current point cloud
 
-		demo.context.write("Going to scan pose #%d/%d\n", index + 1, size);
+		demoOwner->context.write("Going to scan pose #%d/%d\n", index + 1, size);
 		
 		//Random generator. TODO: Add different types of generators
-		pacman::HypothesisSensor::Ptr hypothesis = this->generateNextRandomView(centroid, radius);
+		pacman::HypothesisSensor::Ptr hypothesis = this->generateNextRandomView(autoCentroid, radius);
 
 		{
 			golem::CriticalSectionWrapper csw(this->getCSViewHypotheses());
@@ -369,46 +418,52 @@ void pacman::ActiveSense::executeActiveSense(pacman::Demo& demo, const golem::Ve
 		}
 
 
-		Mat34 goal = this->computeGoal(demo, hypothesis->getFrame(), camera);
-		demo.gotoPoseWS(goal);
-		//(*hypothesis)->setGLView(demo.scene);
+		Mat34 goal = this->computeGoal(hypothesis->getFrame(), camera);
+		demoOwner->gotoPoseWS(goal);
+		//(*hypothesis)->setGLView(demoOwner->scene);
 
 		//TODO: Instead of going through the list, make it compute the next best view using Points of Interest.
 		
 		return false;
 	};
 
-	//Scanning viewHypotheses poses
 	
-	//demo.// select collision object
-	//	CollisionBounds::Ptr collisionBounds = selectCollisionBounds();
+	//Scanned Items List
+	grasp::data::Item::List scannedImageItems;
+	
 	//Performs first scan using current robot pose
-	demo.scanPoseActive();
+	demoOwner->scanPoseActive(scannedImageItems);
+	autoCentroid = this->computeCentroid(*scannedImageItems.begin());
+	
+	CollisionBounds::Ptr collisionBounds = demoOwner->selectCollisionBounds();
+	
+	//Scanning viewHypotheses poses
 	//TODO: Define stopping criteria
 	for (int i = 0; i < size; i++)
 	{
-		demo.scanPoseActive(scanCommand);
-		
-		{	
-			golem::CriticalSectionWrapper cswData(demo.csData);
-			data::Item::Map& itemMap = is<grasp::Manager::Data>(demo.dataCurrentPtr)->itemMap;
-			grasp::data::Item::List itemList;
-			for (grasp::data::Item::Map::iterator it = itemMap.begin(); it != itemMap.end(); it++)
-			{
-				if (it->first != ActiveSense::DFT_POINT_CURV_ITEM_LABEL && it->first == ActiveSense::DFT_IMAGE_ITEM_LABEL)
-					itemList.push_back(it);
-			}
-
-			processItems(demo, itemList);	
-		}
-		
+		demoOwner->scanPoseActive(scannedImageItems,scanCommand);
 	}
+
+	return processItems(scannedImageItems);
+	/*{
+		golem::CriticalSectionWrapper cswData(demoOwner->csData);
+		data::Item::Map& itemMap = is<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap;
+		grasp::data::Item::List itemList;
+		for (grasp::data::Item::Map::iterator it = itemMap.begin(); it != itemMap.end(); it++)
+		{
+			if (it->first != ActiveSense::DFT_POINT_CURV_ITEM_LABEL && it->first == ActiveSense::DFT_IMAGE_ITEM_LABEL)
+				itemList.push_back(it);
+
+			
+		}
+
+		processItems(itemList);
+	}*/
 
 
 
 }
-
-pacman::HypothesisSensor::Ptr ActiveSense::generateNextRandomView(const golem::Vec3& centroid, const golem::Real& radius){
+pacman::HypothesisSensor::Ptr ActiveSense::generateNextRandomView(const golem::Vec3& centroid, const golem::Real& radius, bool heightBias){
 
 	Mat34 sensorPose;
 
@@ -430,8 +485,23 @@ pacman::HypothesisSensor::Ptr ActiveSense::generateNextRandomView(const golem::V
 	//randomVec.x = rand.nextUniform<float>(-1, 1);
 	//randomVec.y = rand.nextUniform<float>(-1, 1);
 	//randomVec.z = rand.nextUniform<float>(-1, 1);
-	randomVec.next(rand);
-	randomVec.setMagnitude(radius);
+	if (!heightBias)
+	{
+		randomVec.next(rand);
+		randomVec.setMagnitude(radius);
+	}
+	else
+	{
+	
+		const Real phi = rand.nextUniform<Real>(Math::degToRad<Real>(minPhi), Math::degToRad<Real>(maxPhi));
+		const Real cos = Math::cos(rand.nextUniform<Real>(Math::degToRad<Real>(minTheta), Math::degToRad<Real>(maxTheta)));
+		const Real sin = Math::sqrt(numeric_const<Real>::ONE - cos*cos);
+
+		randomVec.set(cos, sin * Math::cos(phi), sin * Math::sin(phi));
+		randomVec.setMagnitude(radius);
+	}
+
+
 
 	//Generate a new pose
 	sensorPose = golem::Mat34(golem::Mat34::identity());
@@ -467,10 +537,43 @@ pacman::HypothesisSensor::Ptr ActiveSense::generateNextRandomView(const golem::V
 
 }
 
-void ActiveSense::generateRandomViews(pacman::HypothesisSensor::Seq& viewHypotheses, const golem::Vec3& centroid, const golem::I32& nsamples, const golem::Real& radius)
+
+
+
+void ActiveSense::generateRandomViews(const golem::Vec3& centroid, const golem::I32& nsamples, const golem::Real& radius, bool heightBias)
 {
+	CriticalSectionWrapper(this->csViewHypotheses);
 	for (int i = 0; i < nsamples; i++)
 	{
-		this->viewHypotheses.push_back(this->generateNextRandomView(centroid, radius));
+		this->viewHypotheses.push_back(this->generateNextRandomView(centroid, radius, heightBias));
 	}
+}
+
+
+//--------------------------------------------------------------------------------
+void pacman::ActiveSenseController::initActiveSense(pacman::Demo* demoOwner)
+{
+	this->activeSense.init(demoOwner);
+
+
+	Mat34 sensorPose;
+
+	/*Up right sensor
+	sensorPose.R.setColumn(0,golem::Vec3(0.0, 0.0, 1.0));
+	sensorPose.R.setColumn(1,golem::Vec3(1.0, 0.0, 0.0));
+	sensorPose.R.setColumn(2,golem::Vec3(0.0, 1.0, 0.0));
+	*/
+
+	//Upside down sensor
+	sensorPose.R.setColumn(0, golem::Vec3(1.0, 0.0, 0.0));
+	sensorPose.R.setColumn(1, golem::Vec3(0.0, 0.0, -1.0));
+	sensorPose.R.setColumn(2, golem::Vec3(0.0, 1.0, 0.0));
+
+	sensorPose.p.set(0.5, -0.5, 0.025);
+
+	//Example sensor hypothesis is going to be used just as an object in the scene
+	dummyObject = pacman::HypothesisSensor::Ptr(new HypothesisSensor(sensorPose));
+
+	//Generating sensor hypotheses around dummyObject's center
+	// this->activeSense.generateRandomViews(this->activeSense.getViewHypotheses(), dummyObject->getPose().p, 2, 0.15);
 }

@@ -20,7 +20,7 @@ namespace pacman {
 //------------------------------------------------------------------------------
 
 /** Demo. */
-class Demo : public grasp::Player {
+	class Demo : public grasp::Player, public pacman::ActiveSenseController {
 public:
 	friend class ActiveSense;
 
@@ -53,20 +53,18 @@ public:
 	};
 protected:
 	
+	/** Current viewHypothesis */
 	golem::I32 currentViewHypothesis;
+
+	/** Currently selected viewHypothesis */
 	golem::I32 selectedCamera;
-	ActiveSense activeSense;
-
-	pacman::HypothesisSensor::Ptr dummyObject;
-
-public:
 	
 
 protected:
 	void create(const Desc& desc);
-	void initActiveSense(golem::Scene &scene);
-	void gotoPoseWS(const grasp::ConfigMat34& pose);
-	void scanPoseActive(ScanPoseCommand scanPoseCommand = nullptr, std::string itemLabel = ActiveSense::DFT_IMAGE_ITEM_LABEL);
+
+	virtual void gotoPoseWS(const grasp::ConfigMat34& pose);
+	virtual void scanPoseActive(grasp::data::Item::List& scannedImageItems, ScanPoseCommand scanPoseCommand = nullptr, const std::string itemLabel = ActiveSense::DFT_IMAGE_ITEM_LABEL);
 	/** golem::Object (Post)processing function called AFTER every physics simulation step and before randering. */
 	virtual void postprocess(golem::SecTmReal elapsedTime);
 

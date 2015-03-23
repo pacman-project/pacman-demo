@@ -1,5 +1,6 @@
 #include <pacman/Bham/Demo/Demo.h>
 #include <Golem/Math/Rand.h>
+#include <Grasp/Core/Data.h>
 
 using namespace pacman;
 using namespace golem;
@@ -20,39 +21,15 @@ void pacman::Demo::Desc::load(golem::Context& context, const golem::XMLContext* 
 
 pacman::Demo::Demo(golem::Scene &scene) : grasp::Player(scene) {
 
-	this->initActiveSense(scene);
+	this->currentViewHypothesis = 0;
+	this->selectedCamera = 0;
+	this->initActiveSense(this);
 }
 
 pacman::Demo::~Demo() {
 }
 
 /*************************USEFUL FUNCTIONS FOR ACTIVE SENS*******************************************************/
-void pacman::Demo::initActiveSense(golem::Scene& scene)
-{
-	this->activeSense.setRandSeed(context.getRandSeed());
-	this->currentViewHypothesis = 0;
-	this->selectedCamera = 0;
-	Mat34 sensorPose;
-
-	/*Up right sensor
-	sensorPose.R.setColumn(0,golem::Vec3(0.0, 0.0, 1.0));
-	sensorPose.R.setColumn(1,golem::Vec3(1.0, 0.0, 0.0));
-	sensorPose.R.setColumn(2,golem::Vec3(0.0, 1.0, 0.0));
-	*/
-
-	//Upside down sensor
-	sensorPose.R.setColumn(0, golem::Vec3(1.0, 0.0, 0.0));
-	sensorPose.R.setColumn(1, golem::Vec3(0.0, 0.0, -1.0));
-	sensorPose.R.setColumn(2, golem::Vec3(0.0, 1.0, 0.0));
-
-	sensorPose.p.set(0.5, -0.5, 0.025);
-
-	//Example sensor hypothesis is going to be used just as an object in the scene
-	dummyObject = pacman::HypothesisSensor::Ptr(new HypothesisSensor(sensorPose));
-
-	//Generating sensor hypotheses around dummyObject's center
-	// this->activeSense.generateRandomViews(this->activeSense.getViewHypotheses(), dummyObject->getPose().p, 2, 0.15);
-}
 
 void pacman::Demo::postprocess(golem::SecTmReal elapsedTime)
 {
@@ -81,7 +58,7 @@ void pacman::Demo::gotoPoseWS(const grasp::ConfigMat34& pose) {
 	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
 }
 
-void pacman::Demo::scanPoseActive(ScanPoseCommand scanPoseCommand, std::string itemLabel) {
+void pacman::Demo::scanPoseActive(grasp::data::Item::List& scannedImageItems, ScanPoseCommand scanPoseCommand, const std::string itemLabel) {
 	data::Handler::Map::const_iterator handlerSnapshotPtr = handlerMap.find(to<Sensor>(sensorCurrentPtr)->getSnapshotHandler());
 	if (handlerSnapshotPtr == handlerMap.end())
 		throw Message(Message::LEVEL_ERROR, "Unknown snapshot handler %s", to<Sensor>(sensorCurrentPtr)->getSnapshotHandler().c_str());
@@ -97,6 +74,8 @@ void pacman::Demo::scanPoseActive(ScanPoseCommand scanPoseCommand, std::string i
 	if (camera && camera->getCurrentCalibration()->hasDeformationMap())
 		camera->getCurrentCalibration()->enableDeformationMap(option("YN", "Use deformation map (Y/N)...") == 'Y');
 
+
+
 	for (bool stop = false; !stop;) {
 		stop = scanPoseCommand == nullptr || !scanPoseCommand();
 		RenderBlock renderBlock(*this);
@@ -104,6 +83,7 @@ void pacman::Demo::scanPoseActive(ScanPoseCommand scanPoseCommand, std::string i
 			golem::CriticalSectionWrapper cswData(csData);
 			const data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(dataItemLabel, capture->capture(*to<Camera>(sensorCurrentPtr), [&](const grasp::TimeStamp*) -> bool { return true; })));
 			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+			scannedImageItems.push_back(ptr);
 		}
 	}
 
@@ -130,7 +110,7 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 	menuCmdMap.insert(std::make_pair("PD", [=]() {
 		
-
+		context.write("TODO!\n");
 		context.write("Done!\n");
 		
 	}));
@@ -146,8 +126,9 @@ void pacman::Demo::create(const Desc& desc) {
 	//Camera Debug
 	menuCmdMap.insert(std::make_pair("CD", [=]() {
 
-		
-		activeSense.executeActiveSense(*this, golem::Vec3(0.5, -0.5, 0.025),3, 0.15);
+
+		//activeSense.generateRandomViews(golem::Vec3(0.5, -0.5, 0.05),100,0.20);
+		activeSense.executeActiveSense(10, 0.20);
 
 	}));
 	menuCmdMap.insert(std::make_pair("CH", [=]() {
@@ -198,7 +179,7 @@ void pacman::Demo::create(const Desc& desc) {
 		size_t index = activeSense.getViewHypotheses().size();
 		Menu::selectIndex(activeSense.getViewHypotheses(), index, "Choose Camera Hypothesis to Go");
 		
-		Mat34 goal = activeSense.computeGoal(*this, activeSense.getViewHypothesis(index - 1)->getFrame(),camera);
+		Mat34 goal = activeSense.computeGoal(activeSense.getViewHypothesis(index - 1)->getFrame(),camera);
 		this->gotoPoseWS(goal);
 
 		context.write("Done!\n");
