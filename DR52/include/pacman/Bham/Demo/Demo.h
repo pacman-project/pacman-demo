@@ -67,7 +67,7 @@ protected:
 	virtual void scanPoseActive(grasp::data::Item::List& scannedImageItems, ScanPoseCommand scanPoseCommand = nullptr, const std::string itemLabel = ActiveSense::DFT_IMAGE_ITEM_LABEL);
 	/** golem::Object (Post)processing function called AFTER every physics simulation step and before randering. */
 	virtual void postprocess(golem::SecTmReal elapsedTime);
-
+	virtual void render() const;
 	Demo(golem::Scene &scene);
 	~Demo();
 };

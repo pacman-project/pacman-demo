@@ -187,9 +187,41 @@ namespace pacman {
 
 	public:
 
+		enum EMethod {
+
+			RANDOM,
+			CONTACT_BASED
+
+		};
+
+
+		class Parameters {
+		public:
+
+			/** Number of hypothesis samples */
+			golem::U32 nsamples;
+
+			/** Radius of the sphere defines the distance from object centroid from which sensor hypothesis are going to be generated */
+			golem::Real radius;
+			bool centroidAutoset;
+			/** Min and Max values for biased hypothesis generation (heuristics for minimizing shade) */
+			golem::Real minPhi, maxPhi, minTheta, maxTheta; //Param
+			EMethod method;
+
+			/** Initial Predictor Model */
+			grasp::data::Item::Map::iterator predModelItem;
+			/** Initial PointCurv cloud */
+			grasp::data::Item::Map::iterator pointCurv;
+
+			bool hasPointCurv;
+		};
+
 		static const std::string DFT_IMAGE_ITEM_LABEL;
 		static const std::string DFT_POINT_CURV_ITEM_LABEL;
+		static const std::string DFT_DATA_PATH;
 
+
+		typedef std::pair<std::string, float> ValueTuple;
 		typedef golem::shared_ptr<ActiveSense> Ptr;
 		typedef std::vector<std::pair<grasp::data::Handler*, grasp::data::Transform*>> TransformMap;
 		typedef std::function<grasp::data::Item::Map::iterator(grasp::data::Item::List& list, TransformMap::value_type& transformPtr)> ReduceFunc;
@@ -206,7 +238,7 @@ namespace pacman {
 		ActiveSense Default Constructor 
 		Warning: *this needs to be initialised before use
 		*/
-		ActiveSense() : demoOwner(nullptr), centroid(0.0, 0.0, 0.0), centroidAutoset(false), minPhi(30.0), maxPhi(150.0), minTheta(45.0), maxTheta(135.0) {}
+		ActiveSense() : dataPath(ActiveSense::DFT_DATA_PATH), hasPointCurv(false), demoOwner(nullptr), centroid(0.0, 0.0, 0.0), useManualCentroid(false), minPhi(30.0), maxPhi(150.0), minTheta(45.0), maxTheta(135.0) {}
 
 		/**
 		ActiveSense initialiser (Same function as Constructor)
@@ -234,6 +266,10 @@ namespace pacman {
 		*/
 		grasp::data::Item::Map::iterator executeActiveSense(golem::U32 nsamples = 5, const golem::Real& radius = 0.25);
 
+		grasp::data::Item::Map::iterator nextBestViewContactBased(golem::U32 nsamples = 5, const golem::Real& radius = 0.25);
+
+		/** Greedy selection for next best view based on contact point information */
+		pacman::HypothesisSensor::Ptr nextBestView();
 
 		/** Gets current view hypotheses a.k.a. sensor hypotheses*/
 		pacman::HypothesisSensor::Seq& getViewHypotheses() {
@@ -262,7 +298,7 @@ namespace pacman {
 		}
 
 		/**
-		Sets bias limits in degrees. They define minimum and maximum spherical coordinates
+		Sets bias limits in degrees. They define minimum and maximum spherical coordinates that are going to be used to generate sensor hypothesis
 		*/
 		void setBias(const golem::Real& minPhi, const golem::Real& maxPhi, const golem::Real& minTheta, const golem::Real& maxTheta){
 			this->minPhi = minPhi;
@@ -272,6 +308,26 @@ namespace pacman {
 			this->maxTheta = maxTheta;
 		}
 
+		void setPredModelItem(grasp::data::Item::Map::iterator predModelItem)
+		{
+			this->predModelItem = predModelItem;
+		}
+
+		void setPointCurv(grasp::data::Item::Map::iterator pointCurv)
+		{
+			this->pointCurv = pointCurv;
+			this->hasPointCurv = true;
+		}
+
+		void setCentroidFromItemImage(grasp::data::Item::Map::iterator itemImage)
+		{
+			centroid = this->computeCentroid(itemImage);
+		}
+		void setUseManualCentroid(bool useManualCentroid)
+		{
+			this->useManualCentroid = useManualCentroid;
+		}
+
 		/**
 		Computes goal frame such that i) camera is aligned with targetFrame
 		Input: targetFrame, camera (to be aligned)
@@ -279,13 +335,13 @@ namespace pacman {
 		*/
 		golem::Mat34 computeGoal(golem::Mat34& targetFrame, grasp::CameraDepth* camera);
 
-	
-	protected:
+	//Made public just for debugging (it should be protected)
+	public:
 
 		/**
 		Adds item and its corresponding label to demoOwner->dataCurrentPtr->itemMap
 		*/
-		void addItem(const std::string& label, grasp::data::Item::Ptr item);
+		grasp::data::Item::Map::iterator addItem(const std::string& label, grasp::data::Item::Ptr item);
 
 		/**
 		Removes list of items from demoOwner->dataCurrentPtr->second->itemMap
@@ -325,9 +381,25 @@ namespace pacman {
 
 		Output: predModelItem result of the feedBack transform
 		*/
-		grasp::data::Item::Map::iterator feedBackTransform(grasp::data::Item::Ptr predModelItem, grasp::data::Item::Ptr pointCurvItem);
+		grasp::data::Item::Map::iterator feedBackTransform(grasp::data::Item::Map::iterator predModelItem, grasp::data::Item::Map::iterator pointCurvItem);
 		
+		grasp::data::Item::Map::iterator convertToTrajectory(grasp::data::Item::Map::iterator predQueryModel);
+
+		/** Computes the value of a hypothesis sensor */
+		ValueTuple computeValue(HypothesisSensor::Ptr hypothesis, grasp::data::Item::Map::iterator);
+
+		virtual void render() const;
+
 	protected:
+		golem::CriticalSection csRenderer;
+		golem::DebugRenderer debugRenderer;
+
+		grasp::data::Item::Map::iterator predModelItem;
+		grasp::data::Item::Map::iterator pointCurv;
+		bool hasPointCurv;
+
+
+		std::string dataPath; //Param
 
 		/**
 		TransformMap containing the transformations useful for *this
@@ -359,7 +431,7 @@ namespace pacman {
 		/**
 		Defines whether this->centroid is going to be manually set or computed from a image point cloud item
 		*/
-		bool centroidAutoset;
+		bool useManualCentroid; //Param
 
 		/**
 		Random number generator (used for uniform direction generation)
@@ -369,7 +441,7 @@ namespace pacman {
 		/**
 		Min and Max values for biased hypothesis generation (heuristics for minimizing shade)
 		*/
-		golem::Real minPhi, maxPhi, minTheta, maxTheta;
+		golem::Real minPhi, maxPhi, minTheta, maxTheta; //Param
 		
 	
 

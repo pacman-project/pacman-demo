@@ -2,7 +2,7 @@
 #include <Golem/Math/Rand.h>
 #include <Grasp/Core/Data.h>
 #include <Grasp/Grasp/Model.h>
-#include <Grasp/Data/PredictorModel/PredictorModel.h>
+
 
 using namespace pacman;
 using namespace golem;
@@ -89,6 +89,12 @@ void pacman::Demo::scanPoseActive(grasp::data::Item::List& scannedImageItems, Sc
 	context.write("Done!\n");
 }
 
+void pacman::Demo::render() const
+{
+	Player::render();
+	activeSense.render();
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 void pacman::Demo::create(const Desc& desc) {
@@ -125,17 +131,74 @@ void pacman::Demo::create(const Desc& desc) {
 	//Camera Debug
 	menuCmdMap.insert(std::make_pair("CD", [=]() {
 
-		/*grasp::data::Item::Map::iterator itemPtr;
-		select(itemPtr, dataCurrentPtr->second->itemMap.begin(), dataCurrentPtr->second->itemMap.end(), "Select PredModel:\n", [](grasp::data::Item::Map::iterator ptr) -> const std::string&{
-			return ptr->second->getHandler().getID();
-		});*/
+		grasp::data::Item::Map predModelMap, imageMap, pointCurvMap;
+		grasp::data::Item::Map::iterator itemPredModelPtr, itemImagePtr, itemPointCurvPtr;
+
+		auto filter = [&](const grasp::data::Item::Map& itemMap, const std::string& filterID, grasp::data::Item::Map& outMap) {
+			for (grasp::data::Item::Map::const_iterator it = itemMap.begin(); it != itemMap.end(); it++)
+			{
+				
+				if (it->second->getHandler().getID().compare(filterID) == 0)
+				{
+					outMap.insert(*it);
+					context.write("yes it's here.\n");
+				}
+			}
+		};
+
+		
+		//Filter by PredictorModel+PredictorModel HandlerID
+		filter(dataCurrentPtr->second->itemMap, "PredictorModel+PredictorModel", predModelMap);
+		select(itemPredModelPtr, predModelMap.begin(), predModelMap.end(), "Select PredModel:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
+			return ptr->first + ": " + ptr->second->getHandler().getID();
+		});
+		//Filter by Image+Image HandlerID
+		filter(dataCurrentPtr->second->itemMap, "Image+Image", imageMap);
+		select(itemImagePtr, imageMap.begin(), imageMap.end(), "Select imageItem:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
+			return ptr->first + ": " + ptr->second->getHandler().getID();
+		});
+		//Filter by PointsCurv+PointsCurv HandlerID
+		filter(dataCurrentPtr->second->itemMap, "PointsCurv+PointsCurv", pointCurvMap);
+		select(itemPointCurvPtr, pointCurvMap.begin(), pointCurvMap.end(), "Select PointCurv:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
+			return ptr->first + ": " + ptr->second->getHandler().getID();
+		});
+	
+
+		//activeSense.setUseManualCentroid(true);
+		//activeSense.setCentroidFromItemImage(itemImagePtr);
+		//activeSense.setPointCurv(itemPointCurvPtr);
+		//activeSense.setPredModelItem(itemPredModelPtr);
+		//activeSense.nextBestViewContactBased(5, 0.25);
+		
+		context.write("COMPUTING CENTROID!\n");
+		golem::Vec3 centroid = activeSense.computeCentroid(itemImagePtr);
+
+		
+
+
+		context.write("GENERATING VIEWS!\n");
+		activeSense.generateRandomViews(centroid, 10);
+
+		activeSense.setPredModelItem(itemPredModelPtr);
+
+		pacman::HypothesisSensor::Ptr hypothesis = activeSense.nextBestView();
+
+
+		gotoPoseWS(activeSense.computeGoal(hypothesis->getFrame(), activeSense.getOwnerOPENNICamera()));
+		
+		//activeSense.feedBackTransform(itemPredModelPtr, itemPointCurvPtr);
+		//activeSense.setPredModelItem(itemPredModelPtr);
+		//activeSense.executeActiveSenseValue(5, 0.30);
 		// grasp::data::ItemPredictorModel::Map::iterator ptr = to <
 		//activeSense.generateRandomViews(golem::Vec3(0.5, -0.5, 0.05),100,0.20);
-		activeSense.executeActiveSense(5, 0.20); //Random view selection
+		//activeSense.executeActiveSense(5, 0.20); //Random view selection
 
 
 	}));
 	menuCmdMap.insert(std::make_pair("CH", [=]() {
+
+
+			
 
 		size_t index = activeSense.getViewHypotheses().size();
 		Menu::selectIndex(activeSense.getViewHypotheses(), index, "Camera Hypothesis");
@@ -214,6 +277,13 @@ void pacman::Demo::create(const Desc& desc) {
 
 		HypothesisSensor::setGLView(this->scene, grasp::to<grasp::CameraDepth>(sensorCurrentPtr)->getFrame());
 
+		//Show pose lambda
+		typedef std::function<void(const std::string&, const golem::Mat34& m)> ShowPoseFunc;
+		ShowPoseFunc showPose = [&](const std::string& description, const golem::Mat34& m) {
+			context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
+		};
+		//end of lambda
+		showPose("SensorFrame: ", grasp::to<grasp::CameraDepth>(sensorCurrentPtr)->getFrame());
 
 		context.write("Done!\n");
 
