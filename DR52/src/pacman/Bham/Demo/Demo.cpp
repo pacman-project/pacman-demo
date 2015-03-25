@@ -107,17 +107,17 @@ void pacman::Demo::create(const Desc& desc) {
 	// top menu help using global key '?'
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  C                                       Camera Sensor Options\n"));
-	
+
 
 	// data menu control and commands
 	menuCtrlMap.insert(std::make_pair("P", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
 		desc = "Press a key to: run (D)emo...";
 	}));
 	menuCmdMap.insert(std::make_pair("PD", [=]() {
-		
+
 		context.write("TODO!\n");
 		context.write("Done!\n");
-		
+
 	}));
 
 	menuCtrlMap.insert(std::make_pair("C", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
@@ -131,13 +131,13 @@ void pacman::Demo::create(const Desc& desc) {
 	//Camera Debug
 	menuCmdMap.insert(std::make_pair("CD", [=]() {
 
-		grasp::data::Item::Map predModelMap, imageMap, pointCurvMap;
-		grasp::data::Item::Map::iterator itemPredModelPtr, itemImagePtr, itemPointCurvPtr;
+		grasp::data::Item::Map predModelMap, trajMap, predQueryMap, imageMap, pointCurvMap;
+		grasp::data::Item::Map::iterator itemPredModelPtr, itemTrajPtr, itemPredQueryPtr, itemImagePtr, itemPointCurvPtr;
 
 		auto filter = [&](const grasp::data::Item::Map& itemMap, const std::string& filterID, grasp::data::Item::Map& outMap) {
 			for (grasp::data::Item::Map::const_iterator it = itemMap.begin(); it != itemMap.end(); it++)
 			{
-				
+
 				if (it->second->getHandler().getID().compare(filterID) == 0)
 				{
 					outMap.insert(*it);
@@ -146,34 +146,53 @@ void pacman::Demo::create(const Desc& desc) {
 			}
 		};
 
-		
+
+
+		//Filter by PredictorModel+PredictorModel HandlerID
+		filter(dataCurrentPtr->second->itemMap, "Trajectory+Trajectory", trajMap);
+		select(itemTrajPtr, trajMap.begin(), trajMap.end(), "Select Trajectory:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
+			return ptr->first + ": " + ptr->second->getHandler().getID();
+		});
+
+		/*
+		//Filter by PredictorModel+PredictorModel HandlerID
+		filter(dataCurrentPtr->second->itemMap, "PredictorQuery+PredictorQuery", predQueryMap);
+		select(itemPredQueryPtr, predQueryMap.begin(), predQueryMap.end(), "Select PredQuery:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
+		return ptr->first + ": " + ptr->second->getHandler().getID();
+		});*/
+
+		/*
 		//Filter by PredictorModel+PredictorModel HandlerID
 		filter(dataCurrentPtr->second->itemMap, "PredictorModel+PredictorModel", predModelMap);
 		select(itemPredModelPtr, predModelMap.begin(), predModelMap.end(), "Select PredModel:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
-			return ptr->first + ": " + ptr->second->getHandler().getID();
-		});
+		return ptr->first + ": " + ptr->second->getHandler().getID();
+		});*/
 		//Filter by Image+Image HandlerID
-		filter(dataCurrentPtr->second->itemMap, "Image+Image", imageMap);
+		/*filter(dataCurrentPtr->second->itemMap, "Image+Image", imageMap);
 		select(itemImagePtr, imageMap.begin(), imageMap.end(), "Select imageItem:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
-			return ptr->first + ": " + ptr->second->getHandler().getID();
+		return ptr->first + ": " + ptr->second->getHandler().getID();
 		});
 		//Filter by PointsCurv+PointsCurv HandlerID
 		filter(dataCurrentPtr->second->itemMap, "PointsCurv+PointsCurv", pointCurvMap);
 		select(itemPointCurvPtr, pointCurvMap.begin(), pointCurvMap.end(), "Select PointCurv:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
-			return ptr->first + ": " + ptr->second->getHandler().getID();
-		});
-	
+		return ptr->first + ": " + ptr->second->getHandler().getID();
+		});*/
 
-		activeSense.setUseManualCentroid(true);
-		activeSense.setCentroidFromItemImage(itemImagePtr);
-		activeSense.setPointCurv(itemPointCurvPtr);
-		activeSense.setPredModelItem(itemPredModelPtr);
-		activeSense.nextBestViewContactBased(5, 0.25);
+
+		activeSense.setUseManualCentroid(false);
+		activeSense.setTrajectoryItem(itemTrajPtr);
+		//activeSense.setPointCurv(itemPointCurvPtr);
+		//activeSense.setPredModelItem(itemPredModelPtr);
+
+		activeSense.getParameters().nviews = 10;
+		activeSense.getParameters().radius = 0.40;
+
+		activeSense.nextBestViewContactBased();
 		/*
 		context.write("COMPUTING CENTROID!\n");
 		golem::Vec3 centroid = activeSense.computeCentroid(itemImagePtr);
 
-		
+
 
 
 		context.write("GENERATING VIEWS!\n");
@@ -198,12 +217,12 @@ void pacman::Demo::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("CH", [=]() {
 
 
-			
+
 
 		size_t index = activeSense.getViewHypotheses().size();
 		Menu::selectIndex(activeSense.getViewHypotheses(), index, "Camera Hypothesis");
 
-		
+
 		//Show pose lambda
 		typedef std::function<void(const std::string&, const golem::Mat34& m)> ShowPoseFunc;
 		ShowPoseFunc showPose = [&](const std::string& description, const golem::Mat34& m) {
@@ -242,11 +261,11 @@ void pacman::Demo::create(const Desc& desc) {
 		});
 
 		grasp::CameraDepth* camera = grasp::to<grasp::CameraDepth>(sensorCurrentPtr);
-		
+
 		size_t index = activeSense.getViewHypotheses().size();
 		Menu::selectIndex(activeSense.getViewHypotheses(), index, "Choose Camera Hypothesis to Go");
-		
-		Mat34 goal = activeSense.computeGoal(activeSense.getViewHypothesis(index - 1)->getFrame(),camera);
+
+		Mat34 goal = activeSense.computeGoal(activeSense.getViewHypothesis(index - 1)->getFrame(), camera);
 		this->gotoPoseWS(goal);
 
 		context.write("Done!\n");
@@ -267,13 +286,13 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("CK", [&]() {
 
-		
+
 
 		select(sensorCurrentPtr, sensorMap.begin(), sensorMap.end(), "Select Sensor:\n", [](grasp::Sensor::Map::const_iterator ptr) -> const std::string&{
 			return ptr->second->getID();
 		});
 
-		
+
 
 		HypothesisSensor::setGLView(this->scene, grasp::to<grasp::CameraDepth>(sensorCurrentPtr)->getFrame());
 
@@ -296,12 +315,12 @@ void pacman::Demo::create(const Desc& desc) {
 		activeSense.getViewHypothesis(this->currentViewHypothesis)->setGLView(this->scene);
 
 		this->currentViewHypothesis = (this->currentViewHypothesis + 1) % activeSense.getViewHypotheses().size();
-		
+
 		context.write("Done!\n");
 
 	}));
 
-	
+
 
 	//ActiveSense initialisation
 	this->currentViewHypothesis = 0;

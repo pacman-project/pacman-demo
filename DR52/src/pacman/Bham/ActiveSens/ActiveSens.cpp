@@ -207,8 +207,8 @@ void pacman::ActiveSense::removeItems(grasp::data::Item::List& list)
 		demoOwner->dataCurrentPtr->second->itemMap.erase(*i);
 	}
 
-	
-	//grasp::UI::addCallback(demo, demoOwner->getCurrentHandler());
+
+	//grasp::UI::addCallback(*demoOwner, demoOwner->getCurrentHandler());
 	//demoOwner->createRender();
 }
 
@@ -233,11 +233,11 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::processItems(grasp::data::
 
 
 	ReduceFunc reduce = [&](grasp::data::Item::List& list, TransformMap::value_type& transformPtr) -> grasp::data::Item::Map::iterator {
-		
-		demoOwner->context.write("List Size: %d", list.size());
+
+		demoOwner->context.write("\n---List Size: %d---\n", list.size());
 		// transform
 		Manager::RenderBlock renderBlock(*demoOwner);
-		
+
 		UI::addCallback(*demoOwner, transformPtr.first);
 		data::Item::Map::iterator ptr;
 		grasp::data::Item::Ptr item = transformPtr.second->transform(list);
@@ -245,13 +245,13 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::processItems(grasp::data::
 			golem::CriticalSectionWrapper cswData(demoOwner->csData);
 			ptr = to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap.insert(to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(ActiveSense::DFT_POINT_CURV_ITEM_LABEL, item));
 			grasp::Manager::Data::View::setItem(to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap, ptr, to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->getView());
-		
-		
+
+
 		}
-	
+
 		return ptr;
 	};
-	
+
 	//Used transforms: PointsCurv+PointsCurv
 	//PredictorModel+PredictorModel
 	//PredictorQuery+PredictorQuery
@@ -259,6 +259,10 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::processItems(grasp::data::
 
 	//PointCurv+PointCurv Transform
 	grasp::data::Item::Map::iterator itemPtr = reduce(list, transformMap[1]);
+
+
+	//Adding PointCurv to results
+	this->result.pointCurvs.push_back(itemPtr);
 
 	return itemPtr;
 }
@@ -317,7 +321,7 @@ golem::Vec3 pacman::ActiveSense::computeCentroid(grasp::data::Item::Map::const_i
 	}
 
 	this->demoOwner->context.write("Computing Centroid: %lf %lf %lf CloudSize %d \n", centroid.x, centroid.y, centroid.z, image->cloud->size());
-	
+
 	//Computes centroid ignoring NaNs
 	int count = 0;
 	for (int i = 0; i < image->cloud->size(); i++)
@@ -334,7 +338,7 @@ golem::Vec3 pacman::ActiveSense::computeCentroid(grasp::data::Item::Map::const_i
 	}
 	centroid /= float(count);
 	this->demoOwner->context.write("RESULT Centroid ==>>> %lf %lf %lf\n", centroid.x, centroid.y, centroid.z);
-	
+
 	return centroid;
 }
 
@@ -363,7 +367,7 @@ golem::Mat34 pacman::ActiveSense::computeGoal(golem::Mat34& targetFrame, grasp::
 	grasp::ConfigMat34 wrist, invWrist;
 	frame.setId(), invFrame.setId(), wrist.w.setId(), invWrist.w.setId(), refPose.setId();
 
-	
+
 	//Reference frame
 	refPose = demoOwner->controller->getChains()[demoOwner->armInfo.getChains().begin()]->getReferencePose();
 
@@ -382,7 +386,7 @@ golem::Mat34 pacman::ActiveSense::computeGoal(golem::Mat34& targetFrame, grasp::
 	return goal;
 }
 
-grasp::data::Item::Map::iterator pacman::ActiveSense::executeActiveSense(golem::U32 nsamples, const golem::Real& radius)
+grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewRandom()
 {
 	golem::Vec3 autoCentroid;
 
@@ -415,21 +419,21 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::executeActiveSense(golem::
 
 
 	//Creating new Data Bundle
-	grasp::Manager::Data::Map::iterator data = createData();
+	//grasp::Manager::Data::Map::iterator data = createData();
 
 
 	//Getting view hypotheses (TODO: Compute just one initial view based on current Points of Interest)
 	//pacman::HypothesisSensor::Seq::const_iterator hypothesis = this->viewHypotheses.begin();
-	size_t index = 0, size = nsamples;
+	size_t index = 0, size = this->params.nviews;
 
 	//Setting up scan command responsible for taking the camera to the selected hyptheses
 	std::function<bool()> scanCommand = [&]() -> bool {
 		//TODO: Integrate previous measurements into the current point cloud
 
 		demoOwner->context.write("Going to scan pose #%d/%d\n", index + 1, size);
-		
+
 		//Random generator. TODO: Add different types of generators
-		pacman::HypothesisSensor::Ptr hypothesis = this->generateNextRandomView(autoCentroid, radius);
+		pacman::HypothesisSensor::Ptr hypothesis = this->generateNextRandomView(this->params.centroid, this->params.radius);
 
 		{
 			golem::CriticalSectionWrapper csw(this->getCSViewHypotheses());
@@ -441,50 +445,52 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::executeActiveSense(golem::
 		demoOwner->gotoPoseWS(goal);
 		//(*hypothesis)->setGLView(demoOwner->scene);
 
-		//TODO: Instead of going through the list, make it compute the next best view using Points of Interest.
-		
 		return false;
 	};
 
-	
+
 	//Scanned Items List
 	grasp::data::Item::List scannedImageItems;
-	
+
 	//Performs first scan using current robot pose
 	demoOwner->scanPoseActive(scannedImageItems);
-	autoCentroid = this->computeCentroid(*scannedImageItems.begin());
-	
+
+	if (!this->params.useManualCentroid)
+	{
+		demoOwner->context.write("Automatically Computing Centroid From First View\n");
+		this->params.centroid = this->computeCentroid(*scannedImageItems.begin());
+	}
+
 	CollisionBounds::Ptr collisionBounds = demoOwner->selectCollisionBounds();
-	
+
 	//Scanning viewHypotheses poses
 	//TODO: Define stopping criteria
 	for (int i = 0; i < size; i++)
 	{
-		demoOwner->scanPoseActive(scannedImageItems,scanCommand);
+		demoOwner->scanPoseActive(scannedImageItems, scanCommand);
 	}
 
 	return processItems(scannedImageItems);
 	/*{
-		golem::CriticalSectionWrapper cswData(demoOwner->csData);
-		data::Item::Map& itemMap = is<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap;
-		grasp::data::Item::List itemList;
-		for (grasp::data::Item::Map::iterator it = itemMap.begin(); it != itemMap.end(); it++)
-		{
-			if (it->first != ActiveSense::DFT_POINT_CURV_ITEM_LABEL && it->first == ActiveSense::DFT_IMAGE_ITEM_LABEL)
-				itemList.push_back(it);
+	golem::CriticalSectionWrapper cswData(demoOwner->csData);
+	data::Item::Map& itemMap = is<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap;
+	grasp::data::Item::List itemList;
+	for (grasp::data::Item::Map::iterator it = itemMap.begin(); it != itemMap.end(); it++)
+	{
+	if (it->first != ActiveSense::DFT_POINT_CURV_ITEM_LABEL && it->first == ActiveSense::DFT_IMAGE_ITEM_LABEL)
+	itemList.push_back(it);
 
-			
-		}
 
-		processItems(itemList);
+	}
+
+	processItems(itemList);
 	}*/
 
 
 
 }
-grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased(golem::U32 nsamples, const golem::Real& radius)
+grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased()
 {
-	this->nsamples = nsamples; this->radius = radius;
 	grasp::CameraDepth* camera = this->getOwnerOPENNICamera();
 	if (camera)
 		demoOwner->context.write("Camera good!\n");
@@ -495,20 +501,20 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased(g
 
 	//Getting view hypotheses (TODO: Compute just one initial view based on current Points of Interest)
 	//pacman::HypothesisSensor::Seq::const_iterator hypothesis = this->viewHypotheses.begin();
-	size_t index = 0, size = nsamples;
+	size_t index = 0, size = this->params.nviews;
 	pacman::HypothesisSensor::Ptr hypothesis(nullptr);
 	//Setting up scan command responsible for taking the camera to the selected hyptheses
 	std::function<bool()> scanCommand = [&]() -> bool {
 
 		demoOwner->context.write("Going to scan pose #%d/%d\n", ++index, size);
 
-	
+
 		if (hypothesis.get())
 		{
 			Mat34 goal = this->computeGoal(hypothesis->getFrame(), camera);
 			demoOwner->gotoPoseWS(goal);
 		}
-		
+
 
 		return false;
 	};
@@ -520,44 +526,66 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased(g
 	//Performs first scan using current robot pose
 	demoOwner->scanPoseActive(scannedImageItems);
 
-	centroid = useManualCentroid? centroid : this->computeCentroid(*scannedImageItems.begin());
+	if (!this->params.useManualCentroid)
+	{
+		demoOwner->context.write("Automatically Computing Centroid From First View\n");
+		this->params.centroid = this->computeCentroid(*scannedImageItems.begin());
+	}
 
 	//CollisionBounds::Ptr collisionBounds = demoOwner->selectCollisionBounds();
-
-	
-	//TODO: Define stopping criteria
+	this->pointCurvItem = processItems(scannedImageItems);
+	this->hasPointCurv = true;
 	for (int i = 0; i < size; i++)
 	{
 		if (hasPointCurv)
 		{
-		
-			demoOwner->context.write("TRYING FEEDBACK\n");
-			grasp::data::ItemPredictorModel::Map::iterator ptr = this->feedBackTransform(predModelItem, pointCurv);
-			this->setPredModelItem(ptr);
 
-			hypothesis = this->nextBestView();
+			demoOwner->context.write("FEEDBACK COMPUTATION\n");
+			if (!hasPredModel)
+			{
+				if (hasTrajectory)
+					this->setPredModelItem(this->computeTransformPredModel(this->trajectoryItem, this->pointCurvItem));
+				else if (hasPredQuery)
+					this->setPredModelItem(this->computePredModelFeedBack(this->predQueryItem, this->pointCurvItem));
+				else
+					throw Cancel("Failed to find one of the following required items: trajectoryItem, predQueryItem");
+			}
+			grasp::data::ItemPredictorModel::Map::iterator ptr = this->computeFeedBackTransform(predModelItem, pointCurvItem);
+			//this->setPredModelItem(ptr);
+
+			hypothesis = this->selectNextBestView(ptr);
 		}
 
 
 		demoOwner->scanPoseActive(scannedImageItems, scanCommand);
-		
-		if (hasPointCurv) {
-			//grasp::data::Item::List tmpList; tmpList.push_back(this->lastPointCurv);
-			//removeItems(tmpList);
-		}
 
 		//Integrate views into the current pointCurv
-		this->pointCurv = processItems(scannedImageItems);
-		demoOwner->context.write("PointCurv was set");
-		if (!hasPointCurv) hasPointCurv = true;
+		this->pointCurvItem = processItems(scannedImageItems);
+
 	}
 
-	
-	
-
-	return this->pointCurv;
 
 
+	demoOwner->context.write("\nNextBestView Finished!\n");
+	return this->pointCurvItem;
+
+
+}
+
+grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
+{
+	if (this->params.method == EMethod::RANDOM)
+	{
+		return nextBestViewRandom();
+	}
+	else if (this->params.method == EMethod::CONTACT_BASED)
+	{
+		return nextBestViewContactBased();
+	}
+	else
+	{
+		throw Cancel("This is not a valid method for ActiveSense Next Best View Algorithm");
+	}
 }
 pacman::HypothesisSensor::Ptr ActiveSense::generateNextRandomView(const golem::Vec3& centroid, const golem::Real& radius, bool heightBias){
 
@@ -588,9 +616,9 @@ pacman::HypothesisSensor::Ptr ActiveSense::generateNextRandomView(const golem::V
 	}
 	else
 	{
-	
-		const Real phi = rand.nextUniform<Real>(Math::degToRad<Real>(minPhi), Math::degToRad<Real>(maxPhi));
-		const Real cos = Math::cos(rand.nextUniform<Real>(Math::degToRad<Real>(minTheta), Math::degToRad<Real>(maxTheta)));
+
+		const Real phi = rand.nextUniform<Real>(Math::degToRad<Real>(this->params.minPhi), Math::degToRad<Real>(this->params.maxPhi));
+		const Real cos = Math::cos(rand.nextUniform<Real>(Math::degToRad<Real>(this->params.minTheta), Math::degToRad<Real>(this->params.maxTheta)));
 		const Real sin = Math::sqrt(numeric_const<Real>::ONE - cos*cos);
 
 		randomVec.set(cos, sin * Math::cos(phi), sin * Math::sin(phi));
@@ -634,20 +662,20 @@ pacman::HypothesisSensor::Ptr ActiveSense::generateNextRandomView(const golem::V
 
 }
 
-pacman::HypothesisSensor::Ptr ActiveSense::nextBestView()
+pacman::HypothesisSensor::Ptr ActiveSense::selectNextBestView(grasp::data::Item::Map::iterator predModelPtr)
 {
 	golem::CriticalSectionWrapper csw(this->csViewHypotheses);
 
 
 	//Random generator. TODO: Add different types of generators
-	generateRandomViews(centroid,nsamples,radius);
+	generateRandomViews(this->params.centroid, this->params.nsamples, this->params.radius);
 
 	int index = 0;
 
 	Real maxValue(-golem::REAL_MAX);
 	for (int i = 0; i < this->viewHypotheses.size(); i++)
 	{
-		ActiveSense::ValueTuple valueTuple = this->computeValue(this->viewHypotheses[i], this->predModelItem);
+		ActiveSense::ValueTuple valueTuple = this->computeValue(this->viewHypotheses[i], predModelPtr);
 
 		demoOwner->context.write("\n\nH[%d] Value: %f\n", i, valueTuple.second);
 
@@ -657,11 +685,11 @@ pacman::HypothesisSensor::Ptr ActiveSense::nextBestView()
 			maxValue = valueTuple.second;
 		}
 	}
-	if (index >= this->viewHypotheses.size() )
+	if (index >= this->viewHypotheses.size())
 		demoOwner->context.write("There's a problem here! %d", index);
 	demoOwner->context.write("\n\n\nBest View Was H[%d] Value: %f\n\n\n", index, maxValue);
 
-	
+
 	return this->getViewHypothesis(index);
 }
 
@@ -701,8 +729,8 @@ pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSens
 	{
 		demoOwner->context.write("This is not an ItemPredictorModel\n");
 	}
-		
-	
+
+
 
 
 	//Theta function returns the angle between the sensor image plane and the contact surface normal
@@ -720,9 +748,9 @@ pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSens
 		//Theta is minimum when the image plane is perpendicular to the surface plane the sensor is looking at.
 		Real theta = golem::Math::acos((-n).dot(v));
 
-		return theta;	
+		return theta;
 	};
-	
+
 	//Sigma function is an heuristics that tells that good view points are those with lowest theta
 	std::function<golem::Real(const Real&)> sigmaFunc = [](const Real& theta) -> golem::Real
 	{
@@ -731,16 +759,16 @@ pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSens
 		return c1*theta*theta + c2*theta + c3;
 	};
 
-	
+
 	//Value function for a single joint
 	std::function<golem::Real(const grasp::Contact3D::Seq&, const golem::Mat34&)> valFunc = [&](const grasp::Contact3D::Seq& graspContacts, const golem::Mat34& sensorFrame) -> golem::Real
 	{
 		Real value(0.0);
 		grasp::Contact3D last = graspContacts.back();
-		
-		
+
+
 		int maxK = 2, k = 0;
-	
+
 		golem::CriticalSectionWrapper csw(csRenderer);
 		Real cdf(0.0);
 		for (grasp::Contact3D::Seq::const_iterator it = graspContacts.begin(); it != graspContacts.end(); it++)
@@ -748,13 +776,13 @@ pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSens
 			golem::Mat34 frame;
 			frame.p = it->point;
 			frame.R.fromQuat(it->orientation);
-			
-			
-			
+
+
+
 			//Just renders a few axes
-			if ( ++k < maxK ) debugRenderer.addAxes3D(frame, golem::Vec3(0.01));
-		
-			
+			if (++k < maxK) debugRenderer.addAxes3D(frame, golem::Vec3(0.01));
+
+
 
 			Real theta = thetaFunc(sensorFrame, frame);
 			Real sigma = sigmaFunc(theta);
@@ -779,12 +807,12 @@ pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSens
 			//j->first => GraspType
 			//j->second.contacts => Map between joints x contact3D 
 			//where contact3D is contains (point,orientation,frame,weight)
-			
-			{
-				golem::CriticalSectionWrapper csw(csRenderer);
-				debugRenderer.reset();
-			}
-	
+
+				{
+					golem::CriticalSectionWrapper csw(csRenderer);
+					debugRenderer.reset();
+				}
+
 			currValue = golem::Real(0.0);
 			//For each joint's sequence of contact3D regardless of the joint associated with it, do...
 			for (grasp::Contact3D::Map::const_iterator k = j->second.contacts.begin(); k != j->second.contacts.end(); k++)
@@ -792,11 +820,11 @@ pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSens
 				// k->first => jointToString()
 				demoOwner->context.write("---JOINT %s---\n", k->first);
 				//Adds individual contributions of each joint
-				
+
 				currValue += valFunc(k->second, hypothesis->getFrame());
 				demoOwner->context.write("currValue %f CurrentMax %f\n", currValue, maxValue);
 			}
-			
+
 			if (currValue >= maxValue)
 			{
 				maxType = j->first;
@@ -805,8 +833,8 @@ pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSens
 
 		}
 	}
-	
-	
+
+
 	return std::make_pair(maxType, maxValue);
 }
 
@@ -823,27 +851,31 @@ grasp::data::Item::Map::iterator ActiveSense::convertToTrajectory(grasp::data::I
 	for (data::Handler::Map::const_iterator i = demoOwner->handlerMap.begin(); i != demoOwner->handlerMap.end(); ++i)
 		if (std::find(convert->getHandlerTypes().begin(), convert->getHandlerTypes().end(), i->second->getType()) != convert->getHandlerTypes().end())
 			handlerSet.push_back(i->second.get());
-	
-	
+
+
 	// pick up handler
 	data::Handler::Map::iterator handlerPtr = demoOwner->handlerMap.find("Trajectory+Trajectory");
 
 	// convert
 	data::Item::Ptr traj = convert->convert(*handlerPtr->second);
 	grasp::data::Item::Map::iterator output = addItem("handle", traj);
-	
+
+	//Adding Trajectory to results
+	this->result.trajectories.push_back(output);
+	this->setTrajectoryItem(output);
+
 	return output;
-	
+
 }
-grasp::data::Item::Map::iterator ActiveSense::feedBackTransform(grasp::data::Item::Map::iterator predModelItem, grasp::data::Item::Map::iterator pointCurvItem)
+grasp::data::Item::Map::iterator ActiveSense::computeFeedBackTransform(grasp::data::Item::Map::iterator predModelItem, grasp::data::Item::Map::iterator pointCurvItem)
 {
 	std::function<grasp::data::Item::Map::iterator(grasp::data::Item::List&, TransformMap::value_type&, const std::string&)> reduce = [&](grasp::data::Item::List& list, TransformMap::value_type& transformPtr, const std::string& itemLabel) -> grasp::data::Item::Map::iterator {
 
-		demoOwner->context.write("List Size: %d", list.size());
+		demoOwner->context.write("\n---List Size: %d---\n", list.size());
 		// transform
 		Manager::RenderBlock renderBlock(*demoOwner);
 
-		//UI::addCallback(*demoOwner, transformPtr.first);
+		UI::addCallback(*demoOwner, transformPtr.first);
 		data::Item::Map::iterator ptr;
 		grasp::data::Item::Ptr item = transformPtr.second->transform(list);
 		{
@@ -856,7 +888,7 @@ grasp::data::Item::Map::iterator ActiveSense::feedBackTransform(grasp::data::Ite
 
 		return ptr;
 	};
-	
+
 	grasp::data::Item::List list;
 	list.push_back(predModelItem);
 	list.push_back(pointCurvItem);
@@ -864,39 +896,68 @@ grasp::data::Item::Map::iterator ActiveSense::feedBackTransform(grasp::data::Ite
 	demoOwner->context.write("Computing FeedBackQuery!\n");
 	//Transforms predModel and pointCurv into a predictorQuery item
 	grasp::data::Item::Map::iterator predQuery = reduce(list, transformMap[3], "FeedBack_predQuery");
-	
-	demoOwner->context.write("Computing Trajectory!\n");
-	grasp::data::Item::Map::iterator traj = convertToTrajectory(predQuery);
 
-	list.clear();
+	//Setting current PredQuery
+	this->setPredQueryItem(predQuery);
 
-	//Feedback
-	list.push_back(pointCurvItem);
-	list.push_back(traj);
-
-	
-	demoOwner->context.write("Computing predModelNew!");
-	grasp::data::Item::Map::iterator predModelNew = reduce(list, transformMap[2], "predModelNew"); 
+	grasp::data::Item::Map::iterator predModelNew = computePredModelFeedBack(predQuery, pointCurvItem);
 
 	//list.push_back(predModelItem);
 	//this->removeItems(list);
 
-	/*
-	grasp::data::ItemPredictorModel::Data::Map modelMap = to<grasp::data::ItemPredictorModel>(predModelNew)->modelMap;
-
-	{
-		CriticalSectionWrapper(demoOwner->csRenderer);
-
-		demoOwner->sensorRenderer.setPointSize(0.15);
-		demoOwner->sensorRenderer.setColour(golem::RGBA(255, 125, 125,255));
-		demoOwner->sensorRenderer.addPoint(modelMap.begin()->second.contacts.begin()->second.begin()->point);
-	}
-	*/
-	//modelMap.begin()->second.contacts.begin();
-
 
 	return predModelNew;
 
+}
+
+grasp::data::Item::Map::iterator pacman::ActiveSense::computePredModelFeedBack(grasp::data::Item::Map::iterator predQuery, grasp::data::Item::Map::iterator pointCurvItem)
+{
+
+	demoOwner->context.write("Computing Trajectory!\n");
+	grasp::data::Item::Map::iterator traj = convertToTrajectory(predQuery);
+
+
+	return computeTransformPredModel(pointCurvItem, traj);
+}
+
+grasp::data::Item::Map::iterator pacman::ActiveSense::computeTransformPredModel(grasp::data::Item::Map::iterator trajItem, grasp::data::Item::Map::iterator pointCurvItem)
+{
+	std::function<grasp::data::Item::Map::iterator(grasp::data::Item::List&, TransformMap::value_type&, const std::string&)> reduce = [&](grasp::data::Item::List& list, TransformMap::value_type& transformPtr, const std::string& itemLabel) -> grasp::data::Item::Map::iterator {
+
+		demoOwner->context.write("\n---List Size: %d---\n", list.size());
+		// transform
+		Manager::RenderBlock renderBlock(*demoOwner);
+
+		UI::addCallback(*demoOwner, transformPtr.first);
+		data::Item::Map::iterator ptr;
+		grasp::data::Item::Ptr item = transformPtr.second->transform(list);
+		{
+			golem::CriticalSectionWrapper cswData(demoOwner->csData);
+			ptr = to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap.insert(to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(itemLabel, item));
+			grasp::Manager::Data::View::setItem(to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap, ptr, to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->getView());
+
+
+		}
+
+		return ptr;
+	};
+
+
+
+	grasp::data::Item::List list;
+
+	list.clear();
+	//Feedback
+	list.push_back(pointCurvItem);
+	list.push_back(trajItem);
+
+
+	demoOwner->context.write("Computing predModelNew!");
+
+	grasp::data::Item::Map::iterator predModelNew = reduce(list, transformMap[2], "predModelNew");
+
+
+	return predModelNew;
 }
 
 //--------------------------------------------------------------------------------

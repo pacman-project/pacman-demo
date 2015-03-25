@@ -1,8 +1,8 @@
 /** @file ActiveSens.h
- *
- * Bham Active sensing library
- *
- */
+*
+* Bham Active sensing library
+*
+*/
 
 #pragma once
 #ifndef _PACMAN_BHAM_ACTIVESENS_ACTIVESENS_H_ // if #pragma once is not supported
@@ -26,7 +26,7 @@ namespace pacman {
 
 	class Demo;
 	//------------------------------------------------------------------------------
-	
+
 
 	/** Sensor interface */
 	class HypothesisSensor {
@@ -147,7 +147,7 @@ namespace pacman {
 		/** Draw sensor at the current pose */
 		virtual void draw(const Appearance& appearance, golem::DebugRenderer& renderer) const;
 
-	
+
 	protected:
 
 		/** Camera appearance */
@@ -198,22 +198,58 @@ namespace pacman {
 		class Parameters {
 		public:
 
+			typedef golem::shared_ptr<Parameters> Ptr;
+
+			Parameters() {
+				this->setToDefault();
+			}
+
+
 			/** Number of hypothesis samples */
-			golem::U32 nsamples;
+			golem::U32 nsamples, nviews;
 
 			/** Radius of the sphere defines the distance from object centroid from which sensor hypothesis are going to be generated */
 			golem::Real radius;
-			bool centroidAutoset;
+
+			/**
+			Centroid around random generated view directions are generated
+			*/
+			golem::Vec3 centroid;
+
+			/**
+			Defines whether this->centroid is going to be manually set or computed from a image point cloud item
+			*/
+			bool useManualCentroid;
 			/** Min and Max values for biased hypothesis generation (heuristics for minimizing shade) */
 			golem::Real minPhi, maxPhi, minTheta, maxTheta; //Param
-			EMethod method;
+			golem::U32 method;
 
-			/** Initial Predictor Model */
-			grasp::data::Item::Map::iterator predModelItem;
-			/** Initial PointCurv cloud */
-			grasp::data::Item::Map::iterator pointCurv;
 
-			bool hasPointCurv;
+
+
+			void setToDefault() {
+				this->radius = 0.35;
+				this->nsamples = 5;
+				this->nviews = 5;
+				this->useManualCentroid = false;
+				this->centroid.setZero();
+				this->minPhi = 30.0;
+				this->maxPhi = 150.0;
+				this->minTheta = 45.0;
+				this->maxTheta = 135.0;
+
+				this->method = EMethod::CONTACT_BASED;
+
+			}
+		};
+
+		class Result {
+		public:
+
+			typedef golem::shared_ptr<Result> Ptr;
+
+			grasp::data::Item::List trajectories;
+			grasp::data::Item::List pointCurvs;
 		};
 
 		static const std::string DFT_IMAGE_ITEM_LABEL;
@@ -227,7 +263,7 @@ namespace pacman {
 		typedef std::function<grasp::data::Item::Map::iterator(grasp::data::Item::List& list, TransformMap::value_type& transformPtr)> ReduceFunc;
 
 		friend class ActiveSenseController;
-		
+
 	public:
 		/**
 		ActiveSense Constructor, needs an owner
@@ -235,10 +271,10 @@ namespace pacman {
 		ActiveSense(pacman::Demo* demoOwner);
 
 		/**
-		ActiveSense Default Constructor 
+		ActiveSense Default Constructor
 		Warning: *this needs to be initialised before use
 		*/
-		ActiveSense() : dataPath(ActiveSense::DFT_DATA_PATH), hasPointCurv(false), demoOwner(nullptr), centroid(0.0, 0.0, 0.0), useManualCentroid(false), minPhi(30.0), maxPhi(150.0), minTheta(45.0), maxTheta(135.0) {}
+		ActiveSense() : dataPath(ActiveSense::DFT_DATA_PATH), demoOwner(nullptr), hasPointCurv(false), hasPredModel(false), hasTrajectory(false) {}
 
 		/**
 		ActiveSense initialiser (Same function as Constructor)
@@ -247,7 +283,7 @@ namespace pacman {
 
 		/** Generates a set of nsamples sensor hypotheses (viewHypotheses) with uniformly distributed view directions (viewDir) around a sphere with specified radius centered at centroid in workspace coordinates */
 		void generateRandomViews(const golem::Vec3& centroid, const golem::I32& nsamples = 5, const golem::Real& radius = 0.25, bool heightBias = true);
-		
+
 		/**
 		Generates next random view with uniformly generated view direction positioned at a distance of radius from sphere centroid
 		*/
@@ -261,15 +297,16 @@ namespace pacman {
 
 		/** Gaze ActiveSense main method, approach (i)
 		Approach i) Random view selection
-		
+
 		Output: final Item with ItemPointCurv representing integrated random scans
 		*/
-		grasp::data::Item::Map::iterator executeActiveSense(golem::U32 nsamples = 5, const golem::Real& radius = 0.25);
+		grasp::data::Item::Map::iterator nextBestViewRandom();
 
-		grasp::data::Item::Map::iterator nextBestViewContactBased(golem::U32 nsamples = 5, const golem::Real& radius = 0.25);
+		grasp::data::Item::Map::iterator nextBestViewContactBased();
 
+		grasp::data::Item::Map::iterator nextBestView();
 		/** Greedy selection for next best view based on contact point information */
-		pacman::HypothesisSensor::Ptr nextBestView();
+		pacman::HypothesisSensor::Ptr selectNextBestView(grasp::data::Item::Map::iterator predModelPtr);
 
 		/** Gets current view hypotheses a.k.a. sensor hypotheses*/
 		pacman::HypothesisSensor::Seq& getViewHypotheses() {
@@ -301,33 +338,95 @@ namespace pacman {
 		Sets bias limits in degrees. They define minimum and maximum spherical coordinates that are going to be used to generate sensor hypothesis
 		*/
 		void setBias(const golem::Real& minPhi, const golem::Real& maxPhi, const golem::Real& minTheta, const golem::Real& maxTheta){
-			this->minPhi = minPhi;
-			this->maxPhi = maxPhi;
-			
-			this->minTheta = minTheta;
-			this->maxTheta = maxTheta;
+			this->params.minPhi = minPhi;
+			this->params.maxPhi = maxPhi;
+
+			this->params.minTheta = minTheta;
+			this->params.maxTheta = maxTheta;
 		}
 
+		/**
+		Sets PredictorModel item
+		*/
 		void setPredModelItem(grasp::data::Item::Map::iterator predModelItem)
 		{
 			this->predModelItem = predModelItem;
+			this->hasPredModel = true;
 		}
 
-		void setPointCurv(grasp::data::Item::Map::iterator pointCurv)
+		/**
+		Sets current online model (pointCurv member attribute)
+		*/
+		void setPointCurvItem(grasp::data::Item::Map::iterator pointCurv)
 		{
-			this->pointCurv = pointCurv;
+			this->pointCurvItem = pointCurv;
 			this->hasPointCurv = true;
 		}
 
-		void setCentroidFromItemImage(grasp::data::Item::Map::iterator itemImage)
+		/**
+		Sets current PredQuery item
+		*/
+		void setPredQueryItem(grasp::data::Item::Map::iterator predQueryItem)
 		{
-			this->centroid = this->computeCentroid(itemImage);
-		}
-		void setUseManualCentroid(bool useManualCentroid)
-		{
-			this->useManualCentroid = useManualCentroid;
+			this->predQueryItem = predQueryItem;
+			this->hasPredQuery = true;
 		}
 
+		/**
+		Sets current trajectory item
+		*/
+		void setTrajectoryItem(grasp::data::Item::Map::iterator trajectoryItem)
+		{
+			this->trajectoryItem = trajectoryItem;
+			this->hasTrajectory = true;
+		}
+
+		/**
+		Shortcut for setting centroid parameter using an ItemImage Point Cloud
+		*/
+		void setCentroidFromItemImage(grasp::data::Item::Map::iterator itemImage)
+		{
+			this->params.centroid = this->computeCentroid(itemImage);
+		}
+
+		/**
+		Shortcut for setting useManualCentroid parameter
+		*/
+		void setUseManualCentroid(bool useManualCentroid)
+		{
+			this->params.useManualCentroid = useManualCentroid;
+		}
+
+		/**
+		Sets parameters for *this
+		*/
+		void setParameters(const pacman::ActiveSense::Parameters& params)
+		{
+			this->params.centroid = params.centroid;
+			this->params.minPhi = params.minPhi;
+			this->params.maxPhi = params.maxPhi;
+			this->params.minTheta = params.minTheta;
+			this->params.maxTheta = params.maxTheta;
+
+			this->params.nsamples = params.nsamples;
+
+
+
+			this->params.method = params.method;
+		}
+
+
+		/**
+		Gets Parameters for *this
+		*/
+		pacman::ActiveSense::Parameters& getParameters(){
+			return this->params;
+		}
+
+
+		pacman::ActiveSense::Result& getResult(){
+			this->result;
+		}
 		/**
 		Computes goal frame such that i) camera is aligned with targetFrame
 		Input: targetFrame, camera (to be aligned)
@@ -335,7 +434,7 @@ namespace pacman {
 		*/
 		golem::Mat34 computeGoal(golem::Mat34& targetFrame, grasp::CameraDepth* camera);
 
-	//Made public just for debugging (it should be protected)
+		//Made public just for debugging (it should be protected)
 	public:
 
 		/**
@@ -358,10 +457,10 @@ namespace pacman {
 		Output: Iterator of the newly created data bundle in demoOwner->dataMap
 		*/
 		grasp::Manager::Data::Map::iterator createData();
-		
+
 		/**
 		Computes centroid of the point cloud represented by itemImage
-		Output: Centroid of the point cloud represented by itemImage 
+		Output: Centroid of the point cloud represented by itemImage
 		(undefined behaviour if it's not a pointcloud)
 		*/
 		golem::Vec3 computeCentroid(grasp::data::Item::Map::const_iterator itemImage);
@@ -373,16 +472,33 @@ namespace pacman {
 		*/
 		grasp::CameraDepth* getOwnerOPENNICamera();
 
-		/** 
-		Executes the following steps: 
+		/**
+		Executes the following steps:
 		1) Transforms (predModelItem,pointCurvItem) into predQuery;
 		2) Converts predQuery into a Trajectory (traj)
 		3) feedback step => Transforms (pointCurvItem,traj) into a predModelItem
 
 		Output: predModelItem result of the feedBack transform
 		*/
-		grasp::data::Item::Map::iterator feedBackTransform(grasp::data::Item::Map::iterator predModelItem, grasp::data::Item::Map::iterator pointCurvItem);
-		
+		grasp::data::Item::Map::iterator computeFeedBackTransform(grasp::data::Item::Map::iterator predModelItem, grasp::data::Item::Map::iterator pointCurvItem);
+
+
+		/**
+		Returns a Predictor model by following the following steps:
+		1) Converts predQuery into a Trajectory (traj)
+		2) feedback step => Transforms (pointCurvItem,traj) into a predModelItem
+		*/
+		grasp::data::Item::Map::iterator computePredModelFeedBack(grasp::data::Item::Map::iterator predQuery, grasp::data::Item::Map::iterator pointCurvItem);
+
+		/**
+		Returns a Predictor model by following the following steps:
+		1) Transforms trajItem + pointCurvItem into a predictory model by applying appropriate transform
+		*/
+		grasp::data::Item::Map::iterator computeTransformPredModel(grasp::data::Item::Map::iterator trajItem, grasp::data::Item::Map::iterator pointCurvItem);
+
+		/**
+		Converts a predQueryModel into a Trajectory
+		*/
 		grasp::data::Item::Map::iterator convertToTrajectory(grasp::data::Item::Map::iterator predQueryModel);
 
 		/** Computes the value of a hypothesis sensor */
@@ -394,9 +510,21 @@ namespace pacman {
 		golem::CriticalSection csRenderer;
 		golem::DebugRenderer debugRenderer;
 
+		/**Input items */
 		grasp::data::Item::Map::iterator predModelItem;
-		grasp::data::Item::Map::iterator pointCurv;
+		grasp::data::Item::Map::iterator predQueryItem;
+		grasp::data::Item::Map::iterator pointCurvItem;
+		grasp::data::Item::Map::iterator trajectoryItem;
 		bool hasPointCurv;
+		bool hasPredModel;
+		bool hasPredQuery;
+		bool hasTrajectory;
+
+		/** Parameters */
+		Parameters params;
+
+		/** Final output  */
+		Result result;
 
 
 		std::string dataPath; //Param
@@ -423,37 +551,16 @@ namespace pacman {
 		*/
 		golem::CriticalSection csViewHypotheses;
 
-		/**
-		Centroid around random generated view directions are generated
-		*/
-		golem::Vec3 centroid;
-
-		/**
-		radius
-		*/
-		golem::Real radius;
-
-		golem::U32 nsamples;
-
-		/**
-		Defines whether this->centroid is going to be manually set or computed from a image point cloud item
-		*/
-		bool useManualCentroid; //Param
 
 		/**
 		Random number generator (used for uniform direction generation)
 		*/
 		golem::Rand rand;
 
-		/**
-		Min and Max values for biased hypothesis generation (heuristics for minimizing shade)
-		*/
-		golem::Real minPhi, maxPhi, minTheta, maxTheta; //Param
-		
-	
+
 
 	};
-	
+
 
 	/**
 	ActiveSenseController defines a set of basic functions that we need to actively control Boris
@@ -479,11 +586,11 @@ namespace pacman {
 		/** Sends Boris' left arm to a pose in workspace coordinates */
 		virtual void gotoPoseWS(const grasp::ConfigMat34& pose) = 0;
 
-		/** Captures an image generating a point cloud represented by ImageItems. 
-			It should add all scanned Image Items to scannedImageItems
+		/** Captures an image generating a point cloud represented by ImageItems.
+		It should add all scanned Image Items to scannedImageItems
 		*/
-		virtual void scanPoseActive(grasp::data::Item::List& scannedImageItems, 
-			ScanPoseActiveCommand scanPoseCommand = nullptr, 
+		virtual void scanPoseActive(grasp::data::Item::List& scannedImageItems,
+			ScanPoseActiveCommand scanPoseCommand = nullptr,
 			const std::string itemLabel = ActiveSense::DFT_IMAGE_ITEM_LABEL) = 0;
 
 		/** golem::Object (Post)processing function called AFTER every physics simulation step and before randering. */
