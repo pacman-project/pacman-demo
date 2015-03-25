@@ -484,6 +484,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::executeActiveSense(golem::
 }
 grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased(golem::U32 nsamples, const golem::Real& radius)
 {
+	this->nsamples = nsamples; this->radius = radius;
 	grasp::CameraDepth* camera = this->getOwnerOPENNICamera();
 	if (camera)
 		demoOwner->context.write("Camera good!\n");
@@ -495,27 +496,19 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased(g
 	//Getting view hypotheses (TODO: Compute just one initial view based on current Points of Interest)
 	//pacman::HypothesisSensor::Seq::const_iterator hypothesis = this->viewHypotheses.begin();
 	size_t index = 0, size = nsamples;
-
+	pacman::HypothesisSensor::Ptr hypothesis(nullptr);
 	//Setting up scan command responsible for taking the camera to the selected hyptheses
 	std::function<bool()> scanCommand = [&]() -> bool {
 
 		demoOwner->context.write("Going to scan pose #%d/%d\n", ++index, size);
 
-		//Random generator. TODO: Add different types of generators
-		generateRandomViews(centroid, radius, nsamples);
-
-		pacman::HypothesisSensor::Ptr hypothesis(nullptr);
-		if (hasPointCurv)
+	
+		if (hypothesis.get())
 		{
-			demoOwner->context.write("TRYING FEEDBACK\n");
-			grasp::data::ItemPredictorModel::Map::iterator ptr = this->feedBackTransform(predModelItem, pointCurv);
-			this->setPredModelItem(ptr);
-
-			hypothesis = this->nextBestView();
+			Mat34 goal = this->computeGoal(hypothesis->getFrame(), camera);
+			demoOwner->gotoPoseWS(goal);
 		}
-
-		Mat34 goal = this->computeGoal(hypothesis->getFrame(), camera);
-		demoOwner->gotoPoseWS(goal);
+		
 
 		return false;
 	};
@@ -535,6 +528,17 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased(g
 	//TODO: Define stopping criteria
 	for (int i = 0; i < size; i++)
 	{
+		if (hasPointCurv)
+		{
+		
+			demoOwner->context.write("TRYING FEEDBACK\n");
+			grasp::data::ItemPredictorModel::Map::iterator ptr = this->feedBackTransform(predModelItem, pointCurv);
+			this->setPredModelItem(ptr);
+
+			hypothesis = this->nextBestView();
+		}
+
+
 		demoOwner->scanPoseActive(scannedImageItems, scanCommand);
 		
 		if (hasPointCurv) {
@@ -621,6 +625,7 @@ pacman::HypothesisSensor::Ptr ActiveSense::generateNextRandomView(const golem::V
 	sensorPose.R.setColumn(2, f);
 
 
+	showPose("Generated SensorPose:", sensorPose);
 	//Creating uniformly generated random hypothesis sensor
 	pacman::HypothesisSensor::Ptr s(new HypothesisSensor(sensorPose, golem::RGBA(r, g, b, a)));
 
@@ -631,8 +636,12 @@ pacman::HypothesisSensor::Ptr ActiveSense::generateNextRandomView(const golem::V
 
 pacman::HypothesisSensor::Ptr ActiveSense::nextBestView()
 {
+	golem::CriticalSectionWrapper csw(this->csViewHypotheses);
 
-	golem::CriticalSectionWrapper(this->csViewHypotheses);
+
+	//Random generator. TODO: Add different types of generators
+	generateRandomViews(centroid,nsamples,radius);
+
 	int index = 0;
 
 	Real maxValue(-golem::REAL_MAX);
@@ -648,14 +657,16 @@ pacman::HypothesisSensor::Ptr ActiveSense::nextBestView()
 			maxValue = valueTuple.second;
 		}
 	}
+	if (index >= this->viewHypotheses.size() )
+		demoOwner->context.write("There's a problem here! %d", index);
 	demoOwner->context.write("\n\n\nBest View Was H[%d] Value: %f\n\n\n", index, maxValue);
 
+	
 	return this->getViewHypothesis(index);
 }
 
 void ActiveSense::generateRandomViews(const golem::Vec3& centroid, const golem::I32& nsamples, const golem::Real& radius, bool heightBias)
 {
-	CriticalSectionWrapper(this->csViewHypotheses);
 	this->viewHypotheses.clear();
 	for (int i = 0; i < nsamples; i++)
 	{
@@ -715,7 +726,7 @@ pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSens
 	//Sigma function is an heuristics that tells that good view points are those with lowest theta
 	std::function<golem::Real(const Real&)> sigmaFunc = [](const Real& theta) -> golem::Real
 	{
-		Real c1(-0.5), c2(0.5), c3(10);
+		Real c1(-0.5), c2(-0.5), c3(10);
 
 		return c1*theta*theta + c2*theta + c3;
 	};
@@ -750,7 +761,7 @@ pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSens
 			Real weight = it->weight;
 			cdf += weight;
 			value += weight*sigma;
-			//demoOwner->context.write("Theta %lf Weight %lf Sigma %f CDF %lf LastCDF %lf \n", theta, weight, sigma, it->cdf, last.cdf);
+			demoOwner->context.write("Theta %lf Weight %lf Sigma %f CDF %lf LastCDF %lf \n", theta, weight, sigma, it->cdf, last.cdf);
 
 		}
 		value /= cdf;
@@ -779,11 +790,11 @@ pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSens
 			for (grasp::Contact3D::Map::const_iterator k = j->second.contacts.begin(); k != j->second.contacts.end(); k++)
 			{
 				// k->first => jointToString()
-				//demoOwner->context.write("---JOINT %s---\n", k->first);
+				demoOwner->context.write("---JOINT %s---\n", k->first);
 				//Adds individual contributions of each joint
 				
 				currValue += valFunc(k->second, hypothesis->getFrame());
-				//demoOwner->context.write("currValue %f CurrentMax %f\n", currValue, maxValue);
+				demoOwner->context.write("currValue %f CurrentMax %f\n", currValue, maxValue);
 			}
 			
 			if (currValue >= maxValue)
@@ -819,7 +830,7 @@ grasp::data::Item::Map::iterator ActiveSense::convertToTrajectory(grasp::data::I
 
 	// convert
 	data::Item::Ptr traj = convert->convert(*handlerPtr->second);
-	grasp::data::Item::Map::iterator output = addItem("TempTraj", traj);
+	grasp::data::Item::Map::iterator output = addItem("handle", traj);
 	
 	return output;
 	

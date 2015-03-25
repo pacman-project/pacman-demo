@@ -164,12 +164,12 @@ void pacman::Demo::create(const Desc& desc) {
 		});
 	
 
-		//activeSense.setUseManualCentroid(true);
-		//activeSense.setCentroidFromItemImage(itemImagePtr);
-		//activeSense.setPointCurv(itemPointCurvPtr);
-		//activeSense.setPredModelItem(itemPredModelPtr);
-		//activeSense.nextBestViewContactBased(5, 0.25);
-		
+		activeSense.setUseManualCentroid(true);
+		activeSense.setCentroidFromItemImage(itemImagePtr);
+		activeSense.setPointCurv(itemPointCurvPtr);
+		activeSense.setPredModelItem(itemPredModelPtr);
+		activeSense.nextBestViewContactBased(5, 0.25);
+		/*
 		context.write("COMPUTING CENTROID!\n");
 		golem::Vec3 centroid = activeSense.computeCentroid(itemImagePtr);
 
@@ -185,7 +185,7 @@ void pacman::Demo::create(const Desc& desc) {
 
 
 		gotoPoseWS(activeSense.computeGoal(hypothesis->getFrame(), activeSense.getOwnerOPENNICamera()));
-		
+		*/
 		//activeSense.feedBackTransform(itemPredModelPtr, itemPointCurvPtr);
 		//activeSense.setPredModelItem(itemPredModelPtr);
 		//activeSense.executeActiveSenseValue(5, 0.30);

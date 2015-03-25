@@ -321,7 +321,7 @@ namespace pacman {
 
 		void setCentroidFromItemImage(grasp::data::Item::Map::iterator itemImage)
 		{
-			centroid = this->computeCentroid(itemImage);
+			this->centroid = this->computeCentroid(itemImage);
 		}
 		void setUseManualCentroid(bool useManualCentroid)
 		{
@@ -427,6 +427,13 @@ namespace pacman {
 		Centroid around random generated view directions are generated
 		*/
 		golem::Vec3 centroid;
+
+		/**
+		radius
+		*/
+		golem::Real radius;
+
+		golem::U32 nsamples;
 
 		/**
 		Defines whether this->centroid is going to be manually set or computed from a image point cloud item
