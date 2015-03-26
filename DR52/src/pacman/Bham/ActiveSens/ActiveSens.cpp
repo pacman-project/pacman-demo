@@ -532,9 +532,11 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased()
 		this->params.centroid = this->computeCentroid(*scannedImageItems.begin());
 	}
 
-	//CollisionBounds::Ptr collisionBounds = demoOwner->selectCollisionBounds();
+	CollisionBounds::Ptr collisionBounds(nullptr);
 	this->pointCurvItem = processItems(scannedImageItems);
 	this->hasPointCurv = true;
+
+	grasp::data::ItemPredictorModel::Map::iterator ptr;
 	for (int i = 0; i < size; i++)
 	{
 		if (hasPointCurv)
@@ -550,14 +552,50 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased()
 				else
 					throw Cancel("Failed to find one of the following required items: trajectoryItem, predQueryItem");
 			}
-			grasp::data::ItemPredictorModel::Map::iterator ptr = this->computeFeedBackTransform(predModelItem, pointCurvItem);
+
+			ptr = this->computeFeedBackTransform(predModelItem, pointCurvItem);
 			//this->setPredModelItem(ptr);
 
 			hypothesis = this->selectNextBestView(ptr);
 		}
 
+		if (hypothesis.get())
+		{
+			Mat34 goal;
+			goal.setId();
+			//int hi = 0;
+			collisionBounds = this->selectCollisionBounds(true, *scannedImageItems.begin());
+			bool success = false;
+			while (hypothesis.get() && !success)
+			{
+				goal = this->computeGoal(hypothesis->getFrame(), camera);
 
-		demoOwner->scanPoseActive(scannedImageItems, scanCommand);
+				try {
+					success = demoOwner->gotoPoseWS(goal);
+
+					if (!success)
+					{
+						demoOwner->context.write("Couldnt got to selected hypothesis, sampling again.\n");
+						hypothesis = this->selectNextBestView(ptr);
+					}
+				}
+				catch (const golem::Message& e)
+				{
+					demoOwner->context.write("Couldnt go to selected hypothesis due exception, sampling again.\n");
+					hypothesis = this->selectNextBestView(ptr);
+				}
+				
+				
+			
+			}
+			collisionBounds.release();
+		}
+		
+		
+
+		
+		demoOwner->scanPoseActive(scannedImageItems);
+		
 
 		//Integrate views into the current pointCurv
 		this->pointCurvItem = processItems(scannedImageItems);
@@ -566,7 +604,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased()
 
 
 
-	demoOwner->context.write("\nNextBestView Finished!\n");
+	demoOwner->context.write("\nNextBestView Finished! Check this->result attribute member for: %d pointCurvs, %d predQueries and %d best trajectories\n");
 	return this->pointCurvItem;
 
 
@@ -769,7 +807,6 @@ pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSens
 
 		int maxK = 2, k = 0;
 
-		golem::CriticalSectionWrapper csw(csRenderer);
 		Real cdf(0.0);
 		for (grasp::Contact3D::Seq::const_iterator it = graspContacts.begin(); it != graspContacts.end(); it++)
 		{
@@ -789,7 +826,7 @@ pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSens
 			Real weight = it->weight;
 			cdf += weight;
 			value += weight*sigma;
-			demoOwner->context.write("Theta %lf Weight %lf Sigma %f CDF %lf LastCDF %lf \n", theta, weight, sigma, it->cdf, last.cdf);
+			//demoOwner->context.write("Theta %lf Weight %lf Sigma %f CDF %lf LastCDF %lf \n", theta, weight, sigma, it->cdf, last.cdf);
 
 		}
 		value /= cdf;
@@ -818,11 +855,11 @@ pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSens
 			for (grasp::Contact3D::Map::const_iterator k = j->second.contacts.begin(); k != j->second.contacts.end(); k++)
 			{
 				// k->first => jointToString()
-				demoOwner->context.write("---JOINT %s---\n", k->first);
+				//demoOwner->context.write("---JOINT %s---\n", k->first);
 				//Adds individual contributions of each joint
 
 				currValue += valFunc(k->second, hypothesis->getFrame());
-				demoOwner->context.write("currValue %f CurrentMax %f\n", currValue, maxValue);
+				//demoOwner->context.write("currValue %f CurrentMax %f\n", currValue, maxValue);
 			}
 
 			if (currValue >= maxValue)
@@ -836,6 +873,32 @@ pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSens
 
 
 	return std::make_pair(maxType, maxValue);
+}
+
+grasp::CollisionBounds::Ptr pacman::ActiveSense::selectCollisionBounds(bool draw, grasp::data::Item::Map::const_iterator input) {
+	CollisionBounds::Ptr collisionBounds;
+
+	// select collision object
+	demoOwner->context.write("ActiveSense: Select collision object...\n");
+
+	const data::Location3D* location = is<const data::Location3D>(input->second.get());
+
+	if (location) {
+		// create collision bounds
+		collisionBounds.reset(new CollisionBounds(*demoOwner->planner, [=](size_t i, Vec3& p) -> bool {
+
+			if (i < location->getNumOfLocations()) p = location->getLocation(i); return i < location->getNumOfLocations();
+		}, draw ? &demoOwner->objectRenderer : nullptr, draw ? &demoOwner->csRenderer : nullptr));
+		// draw locations
+		golem::CriticalSectionWrapper csw(demoOwner->csRenderer);
+		for (size_t i = 0; i < location->getNumOfLocations(); ++i)
+			demoOwner->objectRenderer.addPoint(location->getLocation(i), golem::RGBA::BLACK);
+	}
+	else
+		demoOwner->context.write("Object collisions unsupported\n");
+
+
+	return collisionBounds;
 }
 
 grasp::data::Item::Map::iterator ActiveSense::convertToTrajectory(grasp::data::Item::Map::iterator predQueryModel)
@@ -871,7 +934,7 @@ grasp::data::Item::Map::iterator ActiveSense::computeFeedBackTransform(grasp::da
 {
 	std::function<grasp::data::Item::Map::iterator(grasp::data::Item::List&, TransformMap::value_type&, const std::string&)> reduce = [&](grasp::data::Item::List& list, TransformMap::value_type& transformPtr, const std::string& itemLabel) -> grasp::data::Item::Map::iterator {
 
-		demoOwner->context.write("\n---List Size: %d---\n", list.size());
+		demoOwner->context.write("\n---[computeFeedBackTransform]: List Size: %d---\n", list.size());
 		// transform
 		Manager::RenderBlock renderBlock(*demoOwner);
 
@@ -896,6 +959,7 @@ grasp::data::Item::Map::iterator ActiveSense::computeFeedBackTransform(grasp::da
 	demoOwner->context.write("Computing FeedBackQuery!\n");
 	//Transforms predModel and pointCurv into a predictorQuery item
 	grasp::data::Item::Map::iterator predQuery = reduce(list, transformMap[3], "FeedBack_predQuery");
+	this->result.predQueries.push_back(predQuery);
 
 	//Setting current PredQuery
 	this->setPredQueryItem(predQuery);

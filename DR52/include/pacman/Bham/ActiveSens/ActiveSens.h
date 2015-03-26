@@ -248,6 +248,7 @@ namespace pacman {
 
 			typedef golem::shared_ptr<Result> Ptr;
 
+			grasp::data::Item::List predQueries;
 			grasp::data::Item::List trajectories;
 			grasp::data::Item::List pointCurvs;
 		};
@@ -326,6 +327,7 @@ namespace pacman {
 		{
 			return this->csViewHypotheses;
 		}
+
 
 		/**
 		Sets random generator seed
@@ -502,7 +504,11 @@ namespace pacman {
 		grasp::data::Item::Map::iterator convertToTrajectory(grasp::data::Item::Map::iterator predQueryModel);
 
 		/** Computes the value of a hypothesis sensor */
-		ValueTuple computeValue(HypothesisSensor::Ptr hypothesis, grasp::data::Item::Map::iterator);
+		ValueTuple computeValue(HypothesisSensor::Ptr hypothesis, grasp::data::Item::Map::iterator input);
+
+
+		grasp::CollisionBounds::Ptr selectCollisionBounds(bool draw, grasp::data::Item::Map::const_iterator input);
+	
 
 		virtual void render() const;
 
@@ -584,7 +590,8 @@ namespace pacman {
 		virtual void initActiveSense(pacman::Demo* demoOwner);
 
 		/** Sends Boris' left arm to a pose in workspace coordinates */
-		virtual void gotoPoseWS(const grasp::ConfigMat34& pose) = 0;
+		//e.g. good error: lin=0.000000065, ang=0.000002688
+		virtual bool gotoPoseWS(const grasp::ConfigMat34& pose, const golem::Real& linthr = 0.0000001, const golem::Real& angthr = 0.0000001) = 0;
 
 		/** Captures an image generating a point cloud represented by ImageItems.
 		It should add all scanned Image Items to scannedImageItems

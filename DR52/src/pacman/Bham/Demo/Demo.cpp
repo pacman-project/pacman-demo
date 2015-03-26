@@ -39,22 +39,34 @@ void pacman::Demo::postprocess(golem::SecTmReal elapsedTime)
 	{
 		(*it)->draw((*it)->getAppearance(), this->sensorRenderer);
 	}
+	golem::Mat34 centroidFrame;
+	centroidFrame.setId();
+	centroidFrame.p = activeSense.getParameters().centroid;
+	sensorRenderer.addAxes3D(centroidFrame, golem::Vec3(0.05));
 
 }
 
-void pacman::Demo::gotoPoseWS(const grasp::ConfigMat34& pose) {
+bool pacman::Demo::gotoPoseWS(const grasp::ConfigMat34& pose, const Real& linthr, const golem::Real& angthr) {
 	// current state
 	golem::Controller::State begin = controller->createState();
 	controller->lookupState(SEC_TM_REAL_MAX, begin);
 
 	// find trajectory
 	golem::Controller::State::Seq trajectory;
-	findTrajectory(begin, nullptr, &pose.w, trajectoryDuration, trajectory);
+	grasp::RBDist err = findTrajectory(begin, nullptr, &pose.w, trajectoryDuration, trajectory);
+
+	if (err.lin >= linthr || err.ang >= angthr)
+	{
+		return false;
+	}
+
 	sendTrajectory(trajectory);
 	// wait for end
 	controller->waitForEnd();
 	// sleep
 	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
+
+	return true;
 }
 
 void pacman::Demo::scanPoseActive(grasp::data::Item::List& scannedImageItems, ScanPoseCommand scanPoseCommand, const std::string itemLabel) {
@@ -149,10 +161,10 @@ void pacman::Demo::create(const Desc& desc) {
 
 
 		//Filter by PredictorModel+PredictorModel HandlerID
-		filter(dataCurrentPtr->second->itemMap, "Trajectory+Trajectory", trajMap);
+		/*filter(dataCurrentPtr->second->itemMap, "Trajectory+Trajectory", trajMap);
 		select(itemTrajPtr, trajMap.begin(), trajMap.end(), "Select Trajectory:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
 			return ptr->first + ": " + ptr->second->getHandler().getID();
-		});
+		});*/
 
 		/*
 		//Filter by PredictorModel+PredictorModel HandlerID
@@ -161,12 +173,12 @@ void pacman::Demo::create(const Desc& desc) {
 		return ptr->first + ": " + ptr->second->getHandler().getID();
 		});*/
 
-		/*
+		
 		//Filter by PredictorModel+PredictorModel HandlerID
 		filter(dataCurrentPtr->second->itemMap, "PredictorModel+PredictorModel", predModelMap);
 		select(itemPredModelPtr, predModelMap.begin(), predModelMap.end(), "Select PredModel:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
 		return ptr->first + ": " + ptr->second->getHandler().getID();
-		});*/
+		});
 		//Filter by Image+Image HandlerID
 		/*filter(dataCurrentPtr->second->itemMap, "Image+Image", imageMap);
 		select(itemImagePtr, imageMap.begin(), imageMap.end(), "Select imageItem:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
@@ -180,14 +192,15 @@ void pacman::Demo::create(const Desc& desc) {
 
 
 		activeSense.setUseManualCentroid(false);
-		activeSense.setTrajectoryItem(itemTrajPtr);
+		//activeSense.setTrajectoryItem(itemTrajPtr);
 		//activeSense.setPointCurv(itemPointCurvPtr);
-		//activeSense.setPredModelItem(itemPredModelPtr);
-
-		activeSense.getParameters().nviews = 10;
+		activeSense.setPredModelItem(itemPredModelPtr);
+		activeSense.getParameters().nviews = 7;
 		activeSense.getParameters().radius = 0.40;
 
 		activeSense.nextBestViewContactBased();
+
+
 		/*
 		context.write("COMPUTING CENTROID!\n");
 		golem::Vec3 centroid = activeSense.computeCentroid(itemImagePtr);
