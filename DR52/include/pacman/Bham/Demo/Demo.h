@@ -29,6 +29,7 @@ public:
 	public:
 		typedef golem::shared_ptr<Desc> Ptr;
 
+		/** Active Sense Attribute */
 		ActiveSense::Ptr activeSense;
 
 
@@ -46,7 +47,7 @@ public:
 		/** Assert that the description is valid. */
 		virtual void assertValid(const grasp::Assert::Context& ac) const {
 			grasp::Player::Desc::assertValid(ac);
-
+			this->activeSense->assertValid(ac);
 
 		}
 		/** Load descritpion from xml context. */
