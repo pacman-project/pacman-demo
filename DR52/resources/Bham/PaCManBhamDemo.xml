@@ -5,7 +5,7 @@
    <!-- Active Sense Configurations -->
   <active_sense>
     <!-- method = "random" -->
-    <parameters method="contact_based" use_manual_centroid="0" radius="0.35" nsamples="5" nviews="5" min_phi="30.0" max_phi="150.0" min_theta="45.0" max_theta="135.0">
+    <parameters method="contact_based" use_height_bias="1" use_manual_centroid="0" radius="0.35" nsamples="5" nviews="5" min_phi="30.0" max_phi="150.0" min_theta="45.0" max_theta="135.0">
       <centroid v1="0.0" v2="0.0" v3="0.0"/>
     </parameters>
   </active_sense>

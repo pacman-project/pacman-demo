@@ -220,7 +220,7 @@ namespace pacman {
 			/**
 			Defines whether this->centroid is going to be manually set or computed from a image point cloud item
 			*/
-			bool useManualCentroid;
+			bool useManualCentroid, useHeightBias;
 			/** Min and Max values for biased hypothesis generation (heuristics for minimizing shade) */
 			golem::Real minPhi, maxPhi, minTheta, maxTheta; //Param
 			golem::U32 method;
@@ -294,7 +294,7 @@ namespace pacman {
 		void init(pacman::Demo* demoOwner);
 
 		/** Generates a set of nsamples sensor hypotheses (viewHypotheses) with uniformly distributed view directions (viewDir) around a sphere with specified radius centered at centroid in workspace coordinates */
-		void generateRandomViews(const golem::Vec3& centroid, const golem::I32& nsamples = 5, const golem::Real& radius = 0.25, bool heightBias = true);
+		void generateRandomViews();
 
 		/**
 		Generates next random view with uniformly generated view direction positioned at a distance of radius from sphere centroid

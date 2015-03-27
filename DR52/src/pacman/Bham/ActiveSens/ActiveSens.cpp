@@ -201,6 +201,7 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 	std::string method;
 	XMLData("method", method, pxmlcontext);
 	XMLData("use_manual_centroid", this->useManualCentroid, pxmlcontext);
+	XMLData("use_height_bias", this->useHeightBias, pxmlcontext);
 	XMLData("radius", this->radius, pxmlcontext);
 	XMLData("nsamples", this->nsamples, pxmlcontext);
 	XMLData("nviews", this->nviews, pxmlcontext);
@@ -219,11 +220,11 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 		this->method = EMethod::NONE;
 
 
-	//printf("Loaded Everything!\n");
+	printf("ActiveSense: Loaded Everything!\n");
 
-	//printf("method %d usmc %d radius %f nsamples %d nviews %d\n", this->method,this->useManualCentroid, this->radius, this->nsamples,this->nviews);
-	//printf("minPhi %f maxPhi %f minTheta %f maxTheta %f!\n", this->minPhi, this->maxPhi, this->minTheta, this->maxTheta);
-	//printf("centroid %f %f %f", this->centroid.v1, this->centroid.v2, this->centroid.v3);
+	printf("ActiveSense: method %d usmc %d ushb %d radius %f nsamples %d nviews %d\n", this->method,this->useManualCentroid, this->useHeightBias, this->radius, this->nsamples,this->nviews);
+	printf("ActiveSense: minPhi %f maxPhi %f minTheta %f maxTheta %f!\n", this->minPhi, this->maxPhi, this->minTheta, this->maxTheta);
+	printf("ActiveSense: centroid %f %f %f\n", this->centroid.v1, this->centroid.v2, this->centroid.v3);
 	//system("pause");
 	
 
@@ -749,7 +750,7 @@ pacman::HypothesisSensor::Ptr ActiveSense::selectNextBestView(grasp::data::Item:
 
 
 	//Random generator. TODO: Add different types of generators
-	generateRandomViews(this->params.centroid, this->params.nsamples, this->params.radius);
+	generateRandomViews();
 
 	int index = 0;
 
@@ -773,12 +774,12 @@ pacman::HypothesisSensor::Ptr ActiveSense::selectNextBestView(grasp::data::Item:
 	return this->getViewHypothesis(index);
 }
 
-void ActiveSense::generateRandomViews(const golem::Vec3& centroid, const golem::I32& nsamples, const golem::Real& radius, bool heightBias)
+void ActiveSense::generateRandomViews()
 {
 	this->viewHypotheses.clear();
-	for (int i = 0; i < nsamples; i++)
+	for (int i = 0; i < this->params.nsamples; i++)
 	{
-		this->viewHypotheses.push_back(this->generateNextRandomView(centroid, radius, heightBias));
+		this->viewHypotheses.push_back(this->generateNextRandomView(this->params.centroid, this->params.radius, this->params.useHeightBias));
 	}
 }
 

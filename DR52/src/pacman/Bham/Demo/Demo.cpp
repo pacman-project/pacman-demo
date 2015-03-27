@@ -145,7 +145,7 @@ void pacman::Demo::create(const Desc& desc) {
 
 
 
-	//Camera Debug
+	//ActiveSense Demo 
 	menuCmdMap.insert(std::make_pair("CD", [=]() {
 
 		grasp::data::Item::Map predModelMap, trajMap, predQueryMap, imageMap, pointCurvMap;
@@ -174,8 +174,6 @@ void pacman::Demo::create(const Desc& desc) {
 
 	}));
 	menuCmdMap.insert(std::make_pair("CH", [=]() {
-
-
 
 
 		size_t index = activeSense->getViewHypotheses().size();
@@ -270,12 +268,17 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("CN", [&]() {
 
-		context.write("View from ViewHypothesis %d\n", this->currentViewHypothesis);
-		activeSense->getViewHypothesis(this->currentViewHypothesis)->setGLView(this->scene);
+		if (activeSense->getViewHypotheses().size())
+		{
+			context.write("View from ViewHypothesis %d\n", this->currentViewHypothesis);
+			activeSense->getViewHypothesis(this->currentViewHypothesis)->setGLView(this->scene);
 
-		this->currentViewHypothesis = (this->currentViewHypothesis + 1) % activeSense->getViewHypotheses().size();
+			this->currentViewHypothesis = (this->currentViewHypothesis + 1) % activeSense->getViewHypotheses().size();
+			
+		}
 
 		context.write("Done!\n");
+		
 
 	}));
 
