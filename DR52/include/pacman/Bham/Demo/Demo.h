@@ -29,6 +29,8 @@ public:
 	public:
 		typedef golem::shared_ptr<Desc> Ptr;
 
+		ActiveSense::Ptr activeSense;
+
 
 		/** Constructs from description object */
 		Desc() {
@@ -37,6 +39,8 @@ public:
 		/** Sets the parameters to the default values */
 		virtual void setToDefault() {
 			grasp::Player::Desc::setToDefault();
+
+			this->activeSense = ActiveSense::Ptr(new ActiveSense());
 
 		}
 		/** Assert that the description is valid. */

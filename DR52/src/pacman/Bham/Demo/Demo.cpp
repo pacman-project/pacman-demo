@@ -15,6 +15,10 @@ using namespace grasp;
 void pacman::Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlcontext) {
 	grasp::Player::Desc::load(context, xmlcontext);
 
+	this->activeSense->load(xmlcontext);
+
+
+
 }
 
 //------------------------------------------------------------------------------
@@ -34,14 +38,14 @@ void pacman::Demo::postprocess(golem::SecTmReal elapsedTime)
 {
 
 	Player::postprocess(elapsedTime);
-	golem::CriticalSectionWrapper csw(activeSense.getCSViewHypotheses());
-	for (pacman::HypothesisSensor::Seq::iterator it = activeSense.getViewHypotheses().begin(); it != activeSense.getViewHypotheses().end(); it++)
+	golem::CriticalSectionWrapper csw(activeSense->getCSViewHypotheses());
+	for (pacman::HypothesisSensor::Seq::iterator it = activeSense->getViewHypotheses().begin(); it != activeSense->getViewHypotheses().end(); it++)
 	{
 		(*it)->draw((*it)->getAppearance(), this->sensorRenderer);
 	}
 	golem::Mat34 centroidFrame;
 	centroidFrame.setId();
-	centroidFrame.p = activeSense.getParameters().centroid;
+	centroidFrame.p = activeSense->getParameters().centroid;
 	sensorRenderer.addAxes3D(centroidFrame, golem::Vec3(0.05));
 
 }
@@ -104,7 +108,7 @@ void pacman::Demo::scanPoseActive(grasp::data::Item::List& scannedImageItems, Sc
 void pacman::Demo::render() const
 {
 	Player::render();
-	activeSense.render();
+	activeSense->render();
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -115,6 +119,7 @@ void pacman::Demo::create(const Desc& desc) {
 	// create object
 	Player::create(desc); // throws
 
+	this->activeSense = desc.activeSense;
 
 	// top menu help using global key '?'
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
@@ -149,29 +154,12 @@ void pacman::Demo::create(const Desc& desc) {
 		auto filter = [&](const grasp::data::Item::Map& itemMap, const std::string& filterID, grasp::data::Item::Map& outMap) {
 			for (grasp::data::Item::Map::const_iterator it = itemMap.begin(); it != itemMap.end(); it++)
 			{
-
 				if (it->second->getHandler().getID().compare(filterID) == 0)
 				{
 					outMap.insert(*it);
-					context.write("yes it's here.\n");
 				}
 			}
 		};
-
-
-
-		//Filter by PredictorModel+PredictorModel HandlerID
-		/*filter(dataCurrentPtr->second->itemMap, "Trajectory+Trajectory", trajMap);
-		select(itemTrajPtr, trajMap.begin(), trajMap.end(), "Select Trajectory:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
-			return ptr->first + ": " + ptr->second->getHandler().getID();
-		});*/
-
-		/*
-		//Filter by PredictorModel+PredictorModel HandlerID
-		filter(dataCurrentPtr->second->itemMap, "PredictorQuery+PredictorQuery", predQueryMap);
-		select(itemPredQueryPtr, predQueryMap.begin(), predQueryMap.end(), "Select PredQuery:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
-		return ptr->first + ": " + ptr->second->getHandler().getID();
-		});*/
 
 		
 		//Filter by PredictorModel+PredictorModel HandlerID
@@ -179,51 +167,9 @@ void pacman::Demo::create(const Desc& desc) {
 		select(itemPredModelPtr, predModelMap.begin(), predModelMap.end(), "Select PredModel:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
 		return ptr->first + ": " + ptr->second->getHandler().getID();
 		});
-		//Filter by Image+Image HandlerID
-		/*filter(dataCurrentPtr->second->itemMap, "Image+Image", imageMap);
-		select(itemImagePtr, imageMap.begin(), imageMap.end(), "Select imageItem:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
-		return ptr->first + ": " + ptr->second->getHandler().getID();
-		});
-		//Filter by PointsCurv+PointsCurv HandlerID
-		filter(dataCurrentPtr->second->itemMap, "PointsCurv+PointsCurv", pointCurvMap);
-		select(itemPointCurvPtr, pointCurvMap.begin(), pointCurvMap.end(), "Select PointCurv:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
-		return ptr->first + ": " + ptr->second->getHandler().getID();
-		});*/
 
-
-		activeSense.setUseManualCentroid(false);
-		//activeSense.setTrajectoryItem(itemTrajPtr);
-		//activeSense.setPointCurv(itemPointCurvPtr);
-		activeSense.setPredModelItem(itemPredModelPtr);
-		activeSense.getParameters().nviews = 7;
-		activeSense.getParameters().radius = 0.40;
-
-		activeSense.nextBestViewContactBased();
-
-
-		/*
-		context.write("COMPUTING CENTROID!\n");
-		golem::Vec3 centroid = activeSense.computeCentroid(itemImagePtr);
-
-
-
-
-		context.write("GENERATING VIEWS!\n");
-		activeSense.generateRandomViews(centroid, 10);
-
-		activeSense.setPredModelItem(itemPredModelPtr);
-
-		pacman::HypothesisSensor::Ptr hypothesis = activeSense.nextBestView();
-
-
-		gotoPoseWS(activeSense.computeGoal(hypothesis->getFrame(), activeSense.getOwnerOPENNICamera()));
-		*/
-		//activeSense.feedBackTransform(itemPredModelPtr, itemPointCurvPtr);
-		//activeSense.setPredModelItem(itemPredModelPtr);
-		//activeSense.executeActiveSenseValue(5, 0.30);
-		// grasp::data::ItemPredictorModel::Map::iterator ptr = to <
-		//activeSense.generateRandomViews(golem::Vec3(0.5, -0.5, 0.05),100,0.20);
-		//activeSense.executeActiveSense(5, 0.20); //Random view selection
+		activeSense->setPredModelItem(itemPredModelPtr);
+		activeSense->nextBestView();
 
 
 	}));
@@ -232,8 +178,8 @@ void pacman::Demo::create(const Desc& desc) {
 
 
 
-		size_t index = activeSense.getViewHypotheses().size();
-		Menu::selectIndex(activeSense.getViewHypotheses(), index, "Camera Hypothesis");
+		size_t index = activeSense->getViewHypotheses().size();
+		Menu::selectIndex(activeSense->getViewHypotheses(), index, "Camera Hypothesis");
 
 
 		//Show pose lambda
@@ -248,19 +194,19 @@ void pacman::Demo::create(const Desc& desc) {
 		frame.setId();
 
 		//Camera Frame
-		frame = activeSense.getViewHypothesis(index - 1)->getFrame();
+		frame = activeSense->getViewHypothesis(index - 1)->getFrame();
 		showPose("Camera Frame Pose", frame);
 		frame.setInverse(frame);
 		showPose("Camera Frame InvPose", frame);
 
 		//ViewFrame Pose
-		frame = activeSense.getViewHypothesis(index - 1)->getViewFrame();
+		frame = activeSense->getViewHypothesis(index - 1)->getViewFrame();
 		showPose("ViewFrame Pose", frame);
 		frame.setInverse(frame);
 		showPose("ViewFrame InvPose", frame);
 
 		//Pose
-		frame = activeSense.getViewHypothesis(index - 1)->getPose();
+		frame = activeSense->getViewHypothesis(index - 1)->getPose();
 		showPose("Pose", frame);
 		frame.setInverse(frame);
 		showPose("InvPose", frame);
@@ -275,10 +221,10 @@ void pacman::Demo::create(const Desc& desc) {
 
 		grasp::CameraDepth* camera = grasp::to<grasp::CameraDepth>(sensorCurrentPtr);
 
-		size_t index = activeSense.getViewHypotheses().size();
-		Menu::selectIndex(activeSense.getViewHypotheses(), index, "Choose Camera Hypothesis to Go");
+		size_t index = activeSense->getViewHypotheses().size();
+		Menu::selectIndex(activeSense->getViewHypotheses(), index, "Choose Camera Hypothesis to Go");
 
-		Mat34 goal = activeSense.computeGoal(activeSense.getViewHypothesis(index - 1)->getFrame(), camera);
+		Mat34 goal = activeSense->computeGoal(activeSense->getViewHypothesis(index - 1)->getFrame(), camera);
 		this->gotoPoseWS(goal);
 
 		context.write("Done!\n");
@@ -287,10 +233,10 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("CV", [&]() {
 
-		size_t index = activeSense.getViewHypotheses().size();
-		Menu::selectIndex(activeSense.getViewHypotheses(), index, "Camera Hypothesis");
+		size_t index = activeSense->getViewHypotheses().size();
+		Menu::selectIndex(activeSense->getViewHypotheses(), index, "Camera Hypothesis");
 
-		activeSense.getViewHypothesis(index - 1)->setGLView(this->scene);
+		activeSense->getViewHypothesis(index - 1)->setGLView(this->scene);
 
 
 		context.write("Done!\n");
@@ -325,9 +271,9 @@ void pacman::Demo::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("CN", [&]() {
 
 		context.write("View from ViewHypothesis %d\n", this->currentViewHypothesis);
-		activeSense.getViewHypothesis(this->currentViewHypothesis)->setGLView(this->scene);
+		activeSense->getViewHypothesis(this->currentViewHypothesis)->setGLView(this->scene);
 
-		this->currentViewHypothesis = (this->currentViewHypothesis + 1) % activeSense.getViewHypotheses().size();
+		this->currentViewHypothesis = (this->currentViewHypothesis + 1) % activeSense->getViewHypotheses().size();
 
 		context.write("Done!\n");
 

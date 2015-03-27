@@ -190,7 +190,8 @@ namespace pacman {
 		enum EMethod {
 
 			RANDOM,
-			CONTACT_BASED
+			CONTACT_BASED,
+			NONE //Used for validity check
 
 		};
 
@@ -241,6 +242,16 @@ namespace pacman {
 				this->method = EMethod::CONTACT_BASED;
 
 			}
+
+			/** Assert that the object is valid. */
+			void assertValid(const grasp::Assert::Context& ac) const {
+				grasp::Assert::valid(this->nsamples > 0, ac, "nsamples: <= 0");
+				grasp::Assert::valid(this->nviews > 0, ac, "nviews: <= 0");
+				grasp::Assert::valid(this->radius > 0, ac, "radius: <= 0");
+				grasp::Assert::valid(this->method != EMethod::NONE, ac, "Method: is NONE (unknown method)");
+			}
+			/** Load from xml context */
+			void load(const golem::XMLContext* xmlcontext);
 		};
 
 		class Result {
@@ -292,7 +303,7 @@ namespace pacman {
 
 		/**
 		Processes list of itemImages
-		Output: final item
+		Output: integrated itemPointCurv
 		*/
 		grasp::data::Item::Map::iterator processItems(grasp::data::Item::List& list);
 
@@ -305,7 +316,14 @@ namespace pacman {
 
 		grasp::data::Item::Map::iterator nextBestViewContactBased();
 
+		/** Gaze ActiveSense main method, automatically uses method/approach set in this->params
+		Approach/Method i) Random view selection
+		Approach/Method ii) Contact Based view selection
+
+		Output: final Item with ItemPointCurv representing integrated random scans
+		*/
 		grasp::data::Item::Map::iterator nextBestView();
+		
 		/** Greedy selection for next best view based on contact point information */
 		pacman::HypothesisSensor::Ptr selectNextBestView(grasp::data::Item::Map::iterator predModelPtr);
 
@@ -419,14 +437,16 @@ namespace pacman {
 
 
 		/**
-		Gets Parameters for *this
+		Gets Parameters of *this
 		*/
 		pacman::ActiveSense::Parameters& getParameters(){
 			return this->params;
 		}
 
-
-		pacman::ActiveSense::Result& getResult(){
+		/**
+		Gets Parameters of *this
+		*/
+		const pacman::ActiveSense::Result& getResult(){
 			this->result;
 		}
 		/**
@@ -436,8 +456,18 @@ namespace pacman {
 		*/
 		golem::Mat34 computeGoal(golem::Mat34& targetFrame, grasp::CameraDepth* camera);
 
-		//Made public just for debugging (it should be protected)
-	public:
+		/* Renders stuff */
+		virtual void render() const;
+
+		/** Assert that the object is valid. */
+		void assertValid(const grasp::Assert::Context& ac) const {
+			this->params.assertValid(ac);
+		}
+
+		/** Load from xml context */
+		void load(const golem::XMLContext* xmlcontext);
+
+	protected:
 
 		/**
 		Adds item and its corresponding label to demoOwner->dataCurrentPtr->itemMap
@@ -503,14 +533,13 @@ namespace pacman {
 		*/
 		grasp::data::Item::Map::iterator convertToTrajectory(grasp::data::Item::Map::iterator predQueryModel);
 
-		/** Computes the value of a hypothesis sensor */
+		/** Computes the value of a hypothesis sensor given an ItemPointCurv as input */
 		ValueTuple computeValue(HypothesisSensor::Ptr hypothesis, grasp::data::Item::Map::iterator input);
 
-
+		/** Computes computes collision bounds given an input itemImage */
 		grasp::CollisionBounds::Ptr selectCollisionBounds(bool draw, grasp::data::Item::Map::const_iterator input);
-	
 
-		virtual void render() const;
+
 
 	protected:
 		golem::CriticalSection csRenderer;
@@ -521,10 +550,9 @@ namespace pacman {
 		grasp::data::Item::Map::iterator predQueryItem;
 		grasp::data::Item::Map::iterator pointCurvItem;
 		grasp::data::Item::Map::iterator trajectoryItem;
-		bool hasPointCurv;
-		bool hasPredModel;
-		bool hasPredQuery;
-		bool hasTrajectory;
+
+		/**Internal control flags*/
+		bool hasPointCurv, hasPredModel, hasPredQuery, hasTrajectory;
 
 		/** Parameters */
 		Parameters params;
@@ -565,6 +593,8 @@ namespace pacman {
 
 
 
+
+
 	};
 
 
@@ -581,10 +611,7 @@ namespace pacman {
 	protected:
 
 		/** ActiveSense Object, responsible for Gaze Selection */
-		ActiveSense activeSense;
-
-		//TODO: Delete this dummy thing
-		pacman::HypothesisSensor::Ptr dummyObject;
+		ActiveSense::Ptr activeSense;
 
 		/** Initializes ActiveSense */
 		virtual void initActiveSense(pacman::Demo* demoOwner);
@@ -602,6 +629,14 @@ namespace pacman {
 
 		/** golem::Object (Post)processing function called AFTER every physics simulation step and before randering. */
 		virtual void postprocess(golem::SecTmReal elapsedTime) = 0;
+
+		/** Assert that the object is valid. */
+		void assertValid(const grasp::Assert::Context& ac) const {
+			this->activeSense->assertValid(ac);
+		}
+
+		/** Load from xml context */
+		void load(const golem::XMLContext* xmlcontext);
 
 	};
 };
