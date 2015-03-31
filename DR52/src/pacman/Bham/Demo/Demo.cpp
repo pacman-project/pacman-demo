@@ -152,8 +152,9 @@ void pacman::Demo::create(const Desc& desc) {
 	this->activeSense = desc.activeSense;
 
 	// top menu help using global key '?'
-	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
+	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       PaCMan Demo\n"));
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  C                                       Camera Sensor Options\n"));
+	scene.getHelp().insert(Scene::StrMapVal("0F5", "  L                                       TrackLab\n"));
 
 
 	// data menu control and commands
@@ -163,6 +164,16 @@ void pacman::Demo::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("PD", [=]() {
 
 		context.write("TODO!\n");
+		context.write("Done!\n");
+
+	}));
+
+	menuCtrlMap.insert(std::make_pair("L", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+		desc = "Press a key to: run (T)est..";
+	}));
+	menuCmdMap.insert(std::make_pair("LT", [=]() {
+
+		context.write("Welcome to TrackLab Test 1\n");
 		context.write("Done!\n");
 
 	}));
