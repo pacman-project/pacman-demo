@@ -150,6 +150,8 @@ if (WIN32)
 	ADD_DEFINITIONS(-DBOOST_ALL_NO_LIB)
 	SET(Boost_USE_STATIC_LIBS ON)
 	SET(Boost_ALL_DYN_LINK OFF)
+	SET(Boost_INCLUDE_DIR "C:/Users/$ENV{USERNAME}/Libs/boost_1_55_0")
+	SET(Boost_LIBRARY_DIR "C:/Users/$ENV{USERNAME}/Libs/boost_1_55_0/stage/lib")
 	FIND_PACKAGE(Boost COMPONENTS system filesystem thread)
 	# OpenCV
 	FIND_PACKAGE(OpenCV REQUIRED)
