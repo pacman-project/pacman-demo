@@ -547,7 +547,7 @@ namespace pacman {
 		grasp::CameraDepth* getOwnerOPENNICamera();
 
 		/** Gets a sensor identified by its id=library+configFile, e.g. OpenNI+OpenNI, DepthSim+DepthSim*/
-		grasp::Camera* ActiveSense::getOwnerSensor(const std::string& sensorId);
+		grasp::Camera* getOwnerSensor(const std::string& sensorId);
 
 		/**
 		Executes the following steps:
