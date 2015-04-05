@@ -728,6 +728,90 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 		throw Cancel("This is not a valid method for ActiveSense Next Best View Algorithm");
 	}
 }
+
+pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBased(grasp::data::Item::Map::iterator predModelPtr)
+{
+	golem::CriticalSectionWrapper csw(this->csViewHypotheses);
+
+
+	
+	if( this->params.regenerateViews ) this->generateViews();
+		
+
+	int index = 0;
+
+	Real maxValue(-golem::REAL_MAX);
+	for (int i = 0; i < this->viewHypotheses.size(); i++)
+	{
+		ActiveSense::ValueTuple valueTuple = this->computeValue(this->viewHypotheses[i], predModelPtr);
+
+		demoOwner->context.write("ActiveSense: H[%d] Value: %f\n", i, valueTuple.second);
+
+		if (valueTuple.second > maxValue)
+		{
+			index = i;
+			maxValue = valueTuple.second;
+		}
+	}
+
+	demoOwner->context.write("\nActiveSense: Best View Was H[%d] Value: %f\n\n", index, maxValue);
+
+
+	return this->getViewHypothesis(index);
+}
+
+pacman::HypothesisSensor::Ptr pacman::ActiveSense::generateViewFrom(const HypothesisSensor::Config& config)
+{
+	HypothesisSensor::Config sensorConfig = config;
+
+	//Show pose lambda
+	typedef std::function<void(const std::string&, const golem::Mat34& m)> ShowPoseFunc;
+	ShowPoseFunc showPose = [&](const std::string& description, const golem::Mat34& m) {
+		printf("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
+	};
+
+
+	golem::U8 r, g, b, a;
+	//Generate random color
+	r = 125, g = 122, b = 200, a = 255;
+
+	golem::Controller::State state = demoOwner->controller->createState();
+	state.cpos.set(config.c.data(), config.c.data() + std::min(config.c.size(), (size_t)demoOwner->info.getJoints().size()));
+
+	// forward transform
+	golem::WorkspaceJointCoord wjc;
+	demoOwner->controller->jointForwardTransform(state.cpos, wjc);
+	// return value
+	grasp::Camera* camera = this->getOwnerSensor("DepthSim+DepthSim");
+
+	golem::Mat34 offsetPose;
+	offsetPose.setId();
+	offsetPose.p.z = -0.05;
+	
+
+	//Workspace pose is just for drawing purposes when generation_method="fixed"
+	sensorConfig.w = wjc[demoOwner->info.getJoints().begin() + 6] * camera->getCurrentCalibration()->getParameters().pose * offsetPose;
+
+	
+
+	showPose("Generated SensorPose:", sensorConfig.w);
+	//Creating uniformly generated random hypothesis sensor
+	pacman::HypothesisSensor::Ptr s(new HypothesisSensor(sensorConfig, golem::RGBA(r, g, b, a)));
+
+	s->getFrame();
+	return s;
+
+}
+void pacman::ActiveSense::generateViewsFromSeq(const HypothesisSensor::Config::Seq& configSeq)
+{
+	this->viewHypotheses.clear();
+	for (int i = 0; i < configSeq.size(); i++)
+	{
+		this->viewHypotheses.push_back(this->generateViewFrom(configSeq[i]));
+	}
+}
+
+
 pacman::HypothesisSensor::Ptr ActiveSense::generateNextRandomView(const golem::Vec3& centroid, const golem::Real& radius, bool heightBias){
 
 	HypothesisSensor::Config sensorConfig;
@@ -801,89 +885,6 @@ pacman::HypothesisSensor::Ptr ActiveSense::generateNextRandomView(const golem::V
 
 	return s;
 
-}
-
-pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBased(grasp::data::Item::Map::iterator predModelPtr)
-{
-	golem::CriticalSectionWrapper csw(this->csViewHypotheses);
-
-
-	
-	if( this->params.regenerateViews ) this->generateViews();
-		
-
-	int index = 0;
-
-	Real maxValue(-golem::REAL_MAX);
-	for (int i = 0; i < this->viewHypotheses.size(); i++)
-	{
-		ActiveSense::ValueTuple valueTuple = this->computeValue(this->viewHypotheses[i], predModelPtr);
-
-		demoOwner->context.write("ActiveSense: H[%d] Value: %f\n", i, valueTuple.second);
-
-		if (valueTuple.second > maxValue)
-		{
-			index = i;
-			maxValue = valueTuple.second;
-		}
-	}
-
-	demoOwner->context.write("\nActiveSense: Best View Was H[%d] Value: %f\n\n", index, maxValue);
-
-
-	return this->getViewHypothesis(index);
-}
-
-
-pacman::HypothesisSensor::Ptr pacman::ActiveSense::generateViewFrom(const HypothesisSensor::Config& config)
-{
-	HypothesisSensor::Config sensorConfig = config;
-
-	//Show pose lambda
-	typedef std::function<void(const std::string&, const golem::Mat34& m)> ShowPoseFunc;
-	ShowPoseFunc showPose = [&](const std::string& description, const golem::Mat34& m) {
-		printf("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
-	};
-
-
-	golem::U8 r, g, b, a;
-	//Generate random color
-	r = 125, g = 122, b = 200, a = 255;
-
-	golem::Controller::State state = demoOwner->controller->createState();
-	state.cpos.set(config.c.data(), config.c.data() + std::min(config.c.size(), (size_t)demoOwner->info.getJoints().size()));
-
-	// forward transform
-	golem::WorkspaceJointCoord wjc;
-	demoOwner->controller->jointForwardTransform(state.cpos, wjc);
-	// return value
-	grasp::Camera* camera = this->getOwnerSensor("DepthSim+DepthSim");
-
-	golem::Mat34 offsetPose;
-	offsetPose.setId();
-	offsetPose.p.z = -0.05;
-	
-
-	//Workspace pose is just for drawing purposes when generation_method="fixed"
-	sensorConfig.w = wjc[demoOwner->info.getJoints().begin() + 6] * camera->getCurrentCalibration()->getParameters().pose * offsetPose;
-
-	
-
-	showPose("Generated SensorPose:", sensorConfig.w);
-	//Creating uniformly generated random hypothesis sensor
-	pacman::HypothesisSensor::Ptr s(new HypothesisSensor(sensorConfig, golem::RGBA(r, g, b, a)));
-
-	s->getFrame();
-	return s;
-
-}
-void pacman::ActiveSense::generateViewsFromSeq(const HypothesisSensor::Config::Seq& configSeq)
-{
-	this->viewHypotheses.clear();
-	for (int i = 0; i < configSeq.size(); i++)
-	{
-		this->viewHypotheses.push_back(this->generateViewFrom(configSeq[i]));
-	}
 }
 
 void pacman::ActiveSense::generateRandomViews()

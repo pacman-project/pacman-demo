@@ -352,6 +352,8 @@ namespace pacman {
 		/** Contact based next best view selection */
 		grasp::data::Item::Map::iterator nextBestViewContactBased();
 
+
+
 		/** Gaze ActiveSense main method, automatically uses method/approach set in this->params
 		Approach/Method i) Random view selection
 		Approach/Method ii) Contact Based view selection
