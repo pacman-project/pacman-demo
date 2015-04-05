@@ -337,9 +337,10 @@ namespace pacman {
 		*/
 		pacman::HypothesisSensor::Ptr generateNextRandomView(const golem::Vec3& centroid, const golem::Real& radius = 0.25, bool heightBias = true);
 
-		/** Gaze ActiveSense main method, automatically uses method/approach set in this->params
+		/** Gaze ActiveSense main method, automatically uses selection and generation methods/approaches set in this->params
 		Approach/Method i) Random view selection
 		Approach/Method ii) Contact Based view selection
+		Approach/Method iii) Sequential
 
 		Output: final Item with ItemPointCurv representing integrated random scans
 		*/
@@ -351,9 +352,6 @@ namespace pacman {
 		Output: final Item with ItemPointCurv representing integrated random scans
 		*/
 		//grasp::data::Item::Map::iterator nextBestViewRandom();
-
-		/** Contact based next best view selection */
-		grasp::data::Item::Map::iterator nextBestViewContactBased();
 		
 
 		/** Greedy selection for next best view based on contact point information */

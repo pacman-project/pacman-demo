@@ -570,7 +570,7 @@ return processItems(scannedImageItems);
 }
 */
 
-grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased()
+grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 {
 	grasp::Camera* camera = this->getOwnerSensor(this->params.sensorId);
 
@@ -730,30 +730,6 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewSequential(
 	this->seqIndex = (this->seqIndex + 1) % this->viewHypotheses.size();
 
 	return ret;
-}
-
-grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
-{
-	/*
-	if (this->params.selectionMethod == ESelectionMethod::S_RANDOM)
-	{
-	this->demoOwner->context.write("ActiveSense: Running Random Next Best View.\n");
-	return nextBestViewRandom();
-	}
-	else if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED)
-	{
-	this->demoOwner->context.write("ActiveSense: Running Contact Based Next Best View.\n");
-	return nextBestViewContactBased();
-	}
-	else
-	{
-	throw Cancel("This is not a valid method for ActiveSense Next Best View Algorithm");
-	}
-	*/
-
-	//Now handling all the variants
-	return nextBestViewContactBased();
-
 }
 
 pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBased(grasp::data::Item::Map::iterator predModelPtr)
