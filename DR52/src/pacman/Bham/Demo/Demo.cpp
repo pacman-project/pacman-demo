@@ -144,6 +144,10 @@ void pacman::Demo::render() const
 //-------------------------------------------------------------------------------------------------------------------
 
 void pacman::Demo::create(const Desc& desc) {
+
+//	grasp::Manager& manager = dynamic_cast<grasp::Manager&>(*this);
+//	RenderBlock b(manager);
+
 	desc.assertValid(Assert::Context("Demo::Desc."));
 
 	// create object

@@ -131,7 +131,7 @@ void pacman::HypothesisSensor::setGLView(golem::Scene& scene, const golem::Mat34
 	frame.p.get(opengl.viewPoint.v);
 	frame.R.getColumn(2, opengl.viewDir);
 	//frame.R.getColumn(0, opengl.viewUp); //Up right sensor
-	frame.R.getColumn(0, -opengl.viewUp); //Upside down sensor
+	opengl.viewUp = -frame.R.getColumn(0); //Upside down sensor
 
 	opengl.viewDir.normalise();
 	opengl.viewUp.normalise();
@@ -151,7 +151,9 @@ const std::string ActiveSense::DFT_DATA_PATH = "./data/DFT_DebugData/debugData.x
 //END
 
 
-ActiveSense::ActiveSense(pacman::Demo* demoOwner) : ActiveSense()
+ActiveSense::ActiveSense(pacman::Demo* demoOwner) :
+		dataPath(ActiveSense::DFT_DATA_PATH),
+		demoOwner(nullptr), hasPointCurv(false), hasPredModel(false), hasTrajectory(false)
 {
 	this->init(demoOwner);
 }
@@ -295,8 +297,6 @@ grasp::data::Item::Map::iterator ActiveSense::addItem(const std::string& label, 
 	return ptr;
 }
 
-
-
 grasp::data::Item::Map::iterator pacman::ActiveSense::processItems(grasp::data::Item::List& list)
 {
 
@@ -304,7 +304,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::processItems(grasp::data::
 
 		demoOwner->context.write("\nActiveSense: [PointCurv+PointCurv]---List Size: %d---\n", list.size());
 		// transform
-		Manager::RenderBlock renderBlock(*demoOwner);
+		//RenderBlock renderBlock(*demoOwner);
 
 		UI::addCallback(*demoOwner, transformPtr.first);
 		data::Item::Map::iterator ptr;
@@ -435,7 +435,7 @@ grasp::CameraDepth* ActiveSense::getOwnerSensor(const std::string& sensorId)
 }
 
 
-golem::Mat34 pacman::ActiveSense::computeGoal(golem::Mat34& targetFrame, grasp::CameraDepth* camera)
+golem::Mat34 pacman::ActiveSense::computeGoal(const golem::Mat34& targetFrame, const grasp::CameraDepth* camera)
 {
 
 	golem::Mat34 frame, invFrame, refPose;
@@ -1080,7 +1080,7 @@ grasp::data::Item::Map::iterator ActiveSense::computeFeedBackTransform(grasp::da
 
 		demoOwner->context.write("\nActiveSense: ---[computeFeedBackTransform]: List Size: %d---\n", list.size());
 		// transform
-		Manager::RenderBlock renderBlock(*demoOwner);
+		//Manager::RenderBlock renderBlock(*demoOwner);
 
 		UI::addCallback(*demoOwner, transformPtr.first);
 		data::Item::Map::iterator ptr;
@@ -1134,7 +1134,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::computeTransformPredModel(
 
 		demoOwner->context.write("\nActiveSense: [TransformPredModel]---List Size: %d---\n", list.size());
 		// transform
-		Manager::RenderBlock renderBlock(*demoOwner);
+		//Manager::RenderBlock renderBlock(*demoOwner);
 
 		UI::addCallback(*demoOwner, transformPtr.first);
 		data::Item::Map::iterator ptr;

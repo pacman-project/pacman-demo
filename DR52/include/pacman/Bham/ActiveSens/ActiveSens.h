@@ -479,7 +479,7 @@ namespace pacman {
 		Input: targetFrame, camera (to be aligned)
 		Output: goal frame respecting statement (i)
 		*/
-		golem::Mat34 computeGoal(golem::Mat34& targetFrame, grasp::CameraDepth* camera);
+		golem::Mat34 computeGoal(const golem::Mat34& targetFrame, const grasp::CameraDepth* camera);
 
 		/* Renders stuff */
 		virtual void render() const;
@@ -668,3 +668,4 @@ namespace pacman {
 };
 
 #endif // _PACMAN_BHAM_ACTIVESENS_ACTIVESENS_H_
+
