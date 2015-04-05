@@ -58,6 +58,36 @@ bool pacman::Demo::gotoPoseWS(const grasp::ConfigMat34& pose, const Real& linthr
 	// find trajectory
 	golem::Controller::State::Seq trajectory;
 	grasp::RBDist err = findTrajectory(begin, nullptr, &pose.w, trajectoryDuration, trajectory);
+	
+
+	
+	if (err.lin >= linthr || err.ang >= angthr)
+	{
+		return false;
+	}
+
+	sendTrajectory(trajectory);
+	// wait for end
+	controller->waitForEnd();
+	// sleep
+	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
+
+	return true;
+}
+
+bool pacman::Demo::gotoPoseConfig(const grasp::ConfigMat34& pose, const Real& linthr, const golem::Real& angthr) {
+	// current state
+	golem::Controller::State begin = lookupState();
+	//context.debug("STATE[1]: t=%f, (%f, %f, %f, %f, %f, %f, %f)\n", begin.t, begin.cpos.data()[0], begin.cpos.data()[1], begin.cpos.data()[2], begin.cpos.data()[3], begin.cpos.data()[4], begin.cpos.data()[5], begin.cpos.data()[6]);
+	// target
+	golem::Controller::State end = begin;
+	end.cpos.set(pose.c.data(), pose.c.data() + std::min(pose.c.size(), (size_t)info.getJoints().size()));
+	// find trajectory
+	golem::Controller::State::Seq trajectory;
+	grasp::RBDist err = findTrajectory(begin, &end, nullptr, trajectoryDuration, trajectory);
+
+
+
 
 	if (err.lin >= linthr || err.ang >= angthr)
 	{
@@ -268,6 +298,7 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("CN", [&]() {
 
+		activeSense->generateViewsFromSeq(activeSense->getParameters().configSeq);
 		if (activeSense->getViewHypotheses().size())
 		{
 			context.write("View from ViewHypothesis %d\n", this->currentViewHypothesis);
@@ -276,11 +307,25 @@ void pacman::Demo::create(const Desc& desc) {
 			this->currentViewHypothesis = (this->currentViewHypothesis + 1) % activeSense->getViewHypotheses().size();
 			
 		}
-
+		
 		context.write("Done!\n");
 		
 
 	}));
+
+	menuCmdMap.insert(std::make_pair("CG", [&]() {
+
+		{
+			golem::CriticalSectionWrapper csw(activeSense->getCSViewHypotheses());
+			activeSense->generateViews();
+		}
+
+
+		context.write("Done!\n");
+
+
+	}));
+
 
 
 

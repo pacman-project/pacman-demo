@@ -42,7 +42,7 @@ void pacman::HypothesisSensor::Desc::load(golem::Context& context, const golem::
 }
 
 //------------------------------------------------------------------------------
-pacman::HypothesisSensor::HypothesisSensor(Mat34 pose, golem::RGBA shapeColour) {
+pacman::HypothesisSensor::HypothesisSensor(HypothesisSensor::Config config, golem::RGBA shapeColour) {
 
 
 	pacman::HypothesisSensor::Desc desc;
@@ -68,16 +68,16 @@ pacman::HypothesisSensor::HypothesisSensor(Mat34 pose, golem::RGBA shapeColour) 
 	desc.viewFrame.p.z = 0.05;
 
 	//Pose with respect to base frame
-	this->pose = pose;
+	this->config = config;
 	this->create(desc);
 
 
 }
-pacman::HypothesisSensor::HypothesisSensor(golem::Context& context) : pose(Mat34::identity()), viewFrame(Mat34::identity()) {
+pacman::HypothesisSensor::HypothesisSensor(golem::Context& context) : config(Mat34::identity()), viewFrame(Mat34::identity()) {
 
 }
 
-pacman::HypothesisSensor::HypothesisSensor(const pacman::HypothesisSensor::Desc& desc) : pose(Mat34::identity()), viewFrame(Mat34::identity())
+pacman::HypothesisSensor::HypothesisSensor(const pacman::HypothesisSensor::Desc& desc) : config(Mat34::identity()), viewFrame(Mat34::identity())
 {
 	this->create(desc);
 }
@@ -190,6 +190,7 @@ void ActiveSense::init(pacman::Demo* demoOwner)
 	transformMap.push_back(std::make_pair(itPredQuery->second.get(), transformPredictorQuery));
 
 
+	this->generateViews();
 }
 
 /** Load from xml context */
@@ -198,8 +199,10 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 	golem::XMLContext* pxmlcontext = xmlcontext->getContextFirst("active_sense parameters");
 
 	
-	std::string method;
-	XMLData("method", method, pxmlcontext);
+	std::string selectionMethodStr, generationMethodStr;
+	XMLData("selection_method", selectionMethodStr, pxmlcontext);
+	XMLData("generation_method", generationMethodStr, pxmlcontext);
+	XMLData("enable_regeration", this->regenerateViews, pxmlcontext);
 	XMLData("use_manual_centroid", this->useManualCentroid, pxmlcontext);
 	XMLData("use_height_bias", this->useHeightBias, pxmlcontext);
 	XMLData("radius", this->radius, pxmlcontext);
@@ -212,17 +215,34 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 
 	XMLData(this->centroid, pxmlcontext->getContextFirst("centroid"), false);
 
-	if (!method.compare("contact_based"))
-		this->method = EMethod::CONTACT_BASED;
-	else if (!method.compare("random"))
-		this->method = EMethod::RANDOM;
+	if (!selectionMethodStr.compare("contact_based"))
+		this->selectionMethod = ESelectionMethod::S_CONTACT_BASED;
+	else if (!selectionMethodStr.compare("random"))
+		this->selectionMethod = ESelectionMethod::S_RANDOM;
 	else
-		this->method = EMethod::NONE;
+		this->selectionMethod = ESelectionMethod::S_NONE;
 
+	if (!generationMethodStr.compare("random_sphere"))
+		this->generationMethod = EGenerationMethod::G_RANDOM_SPHERE;
+	else if (!generationMethodStr.compare("fixed"))
+		this->generationMethod = EGenerationMethod::G_FIXED;
+	else
+		this->generationMethod = EGenerationMethod::G_NONE;
+
+
+	if (this->generationMethod == EGenerationMethod::G_FIXED)
+	{
+		configSeq.clear();
+		XMLData(configSeq, configSeq.max_size(), const_cast<golem::XMLContext*>(pxmlcontext), "pose");
+
+	}
+	
+
+	printf("Loaded NPoses %d\n", configSeq.size());
 
 	printf("ActiveSense: Loaded Everything!\n");
 
-	printf("ActiveSense: method %d usmc %d ushb %d radius %f nsamples %d nviews %d\n", this->method,this->useManualCentroid, this->useHeightBias, this->radius, this->nsamples,this->nviews);
+	printf("ActiveSense: method %d usmc %d ushb %d radius %f nsamples %d nviews %d\n", this->selectionMethod, this->useManualCentroid, this->useHeightBias, this->radius, this->nsamples, this->nviews);
 	printf("ActiveSense: minPhi %f maxPhi %f minTheta %f maxTheta %f!\n", this->minPhi, this->maxPhi, this->minTheta, this->maxTheta);
 	printf("ActiveSense: centroid %f %f %f\n", this->centroid.v1, this->centroid.v2, this->centroid.v3);
 	//system("pause");
@@ -233,12 +253,14 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 void ActiveSense::load(const golem::XMLContext* xmlcontext)
 {
 	this->params.load(xmlcontext);
+
 }
 
 /** Load from xml context */
 void ActiveSenseController::load(const golem::XMLContext* xmlcontext)
 {
 	this->activeSense->load(xmlcontext);
+
 }
 
 
@@ -390,12 +412,19 @@ golem::Vec3 pacman::ActiveSense::computeCentroid(grasp::data::Item::Map::const_i
 
 grasp::CameraDepth* ActiveSense::getOwnerOPENNICamera()
 {
+	return getOwnerSensor("OpenNI+OpenNI");
+}
+
+grasp::CameraDepth* ActiveSense::getOwnerSensor(const std::string& sensorId)
+{
 
 	//Getting the camera
-	grasp::Sensor::Map::iterator camIt = demoOwner->sensorMap.find("OpenNI+OpenNI");
+
+
+	grasp::Sensor::Map::iterator camIt = demoOwner->sensorMap.find(sensorId);
 	if (camIt == demoOwner->sensorMap.end()){
-		//demoOwner->context.write("OpenNI+OpenNI is not available\n");
-		throw Cancel("ActiveSense: OpenNI+OpenNI is not available");
+		demoOwner->context.write("%s is not available\n", sensorId.c_str());
+		throw Cancel("ActiveSense: sensor is not available");
 	}
 
 	demoOwner->sensorCurrentPtr = camIt;
@@ -432,6 +461,8 @@ golem::Mat34 pacman::ActiveSense::computeGoal(golem::Mat34& targetFrame, grasp::
 	return goal;
 }
 
+
+//TODO: Fix this
 grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewRandom()
 {
 	golem::Vec3 autoCentroid;
@@ -613,7 +644,11 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased()
 				goal = this->computeGoal(hypothesis->getFrame(), camera);
 
 				try {
-					success = demoOwner->gotoPoseWS(goal);
+
+					if (this->params.generationMethod == EGenerationMethod::G_RANDOM_SPHERE )
+						success =  demoOwner->gotoPoseWS(goal);
+					if (this->params.generationMethod == EGenerationMethod::G_FIXED)
+						success = demoOwner->gotoPoseConfig(goal);
 
 					if (!success)
 					{
@@ -654,12 +689,12 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased()
 
 grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 {
-	if (this->params.method == EMethod::RANDOM)
+	if (this->params.selectionMethod == ESelectionMethod::S_RANDOM)
 	{
 		this->demoOwner->context.write("ActiveSense: Running Random Next Best View.\n");
 		return nextBestViewRandom();
 	}
-	else if (this->params.method == EMethod::CONTACT_BASED)
+	else if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED)
 	{
 		this->demoOwner->context.write("ActiveSense: Running Contact Based Next Best View.\n");
 		return nextBestViewContactBased();
@@ -671,7 +706,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 }
 pacman::HypothesisSensor::Ptr ActiveSense::generateNextRandomView(const golem::Vec3& centroid, const golem::Real& radius, bool heightBias){
 
-	Mat34 sensorPose;
+	HypothesisSensor::Config sensorConfig;
 
 	//Show pose lambda
 	typedef std::function<void(const std::string&, const golem::Mat34& m)> ShowPoseFunc;
@@ -703,15 +738,15 @@ pacman::HypothesisSensor::Ptr ActiveSense::generateNextRandomView(const golem::V
 		const Real cos = Math::cos(rand.nextUniform<Real>(Math::degToRad<Real>(this->params.minTheta), Math::degToRad<Real>(this->params.maxTheta)));
 		const Real sin = Math::sqrt(numeric_const<Real>::ONE - cos*cos);
 
-		randomVec.set(cos, sin * Math::cos(phi), sin * Math::sin(phi));
+		randomVec.set(sin * Math::cos(phi), sin * Math::sin(phi), cos);
 		randomVec.setMagnitude(radius);
 	}
 
 
 
 	//Generate a new pose
-	sensorPose = golem::Mat34(golem::Mat34::identity());
-	sensorPose.p = centroid + randomVec;
+	sensorConfig = golem::Mat34(golem::Mat34::identity());
+	sensorConfig.w.p = centroid + randomVec;
 
 	//Generate sensor orientation
 	golem::Vec3 f = -randomVec;
@@ -730,27 +765,28 @@ pacman::HypothesisSensor::Ptr ActiveSense::generateNextRandomView(const golem::V
 
 	//Upside down sensor (The sensor is sticked upside down on Boris' wrist)
 
-	sensorPose.R.setColumn(0, n);
-	sensorPose.R.setColumn(1, -up);
-	sensorPose.R.setColumn(2, f);
+	sensorConfig.w.R.setColumn(0, n);
+	sensorConfig.w.R.setColumn(1, -up);
+	sensorConfig.w.R.setColumn(2, f);
 
 
-	showPose("Generated SensorPose:", sensorPose);
+	showPose("Generated SensorPose:", sensorConfig.w);
 	//Creating uniformly generated random hypothesis sensor
-	pacman::HypothesisSensor::Ptr s(new HypothesisSensor(sensorPose, golem::RGBA(r, g, b, a)));
+	pacman::HypothesisSensor::Ptr s(new HypothesisSensor(sensorConfig, golem::RGBA(r, g, b, a)));
 
 
 	return s;
 
 }
 
-pacman::HypothesisSensor::Ptr ActiveSense::selectNextBestView(grasp::data::Item::Map::iterator predModelPtr)
+pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestView(grasp::data::Item::Map::iterator predModelPtr)
 {
 	golem::CriticalSectionWrapper csw(this->csViewHypotheses);
 
 
-	//Random generator. TODO: Add different types of generators
-	generateRandomViews();
+	
+	if( this->params.regenerateViews ) this->generateViews();
+		
 
 	int index = 0;
 
@@ -774,12 +810,77 @@ pacman::HypothesisSensor::Ptr ActiveSense::selectNextBestView(grasp::data::Item:
 	return this->getViewHypothesis(index);
 }
 
-void ActiveSense::generateRandomViews()
+
+pacman::HypothesisSensor::Ptr pacman::ActiveSense::generateViewFrom(const HypothesisSensor::Config& config)
+{
+	HypothesisSensor::Config sensorConfig;
+
+	//Show pose lambda
+	typedef std::function<void(const std::string&, const golem::Mat34& m)> ShowPoseFunc;
+	ShowPoseFunc showPose = [&](const std::string& description, const golem::Mat34& m) {
+		printf("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
+	};
+
+
+	golem::Vec3 randomVec;
+	golem::U8 r, g, b, a;
+
+	//Generate random color
+	r = 125, g = 122, b = 200, a = 255;
+
+
+
+
+	//Generate a new pose
+	sensorConfig = golem::Mat34(golem::Mat34::identity());
+
+
+
+	golem::Controller::State state = demoOwner->controller->createState();
+	state.cpos.set(config.c.data(), config.c.data() + std::min(config.c.size(), (size_t)demoOwner->info.getJoints().size()));
+
+	// forward transform
+	golem::WorkspaceJointCoord wjc;
+	demoOwner->controller->jointForwardTransform(state.cpos, wjc);
+	// return value
+	grasp::CameraDepth* camera = this->getOwnerSensor("DepthSim+DepthSim");
+
+	sensorConfig.w = wjc[demoOwner->info.getJoints().begin() + 7] * camera->getCurrentCalibration()->getParameters().pose;
+
+	
+
+	showPose("Generated SensorPose:", sensorConfig.w);
+	//Creating uniformly generated random hypothesis sensor
+	pacman::HypothesisSensor::Ptr s(new HypothesisSensor(sensorConfig, golem::RGBA(r, g, b, a)));
+
+
+	return s;
+
+}
+void pacman::ActiveSense::generateViewsFromSeq(const HypothesisSensor::Config::Seq& configSeq)
+{
+	this->viewHypotheses.clear();
+	for (int i = 0; i < configSeq.size(); i++)
+	{
+		this->viewHypotheses.push_back(this->generateViewFrom(configSeq[i]));
+	}
+}
+
+void pacman::ActiveSense::generateRandomViews()
 {
 	this->viewHypotheses.clear();
 	for (int i = 0; i < this->params.nsamples; i++)
 	{
 		this->viewHypotheses.push_back(this->generateNextRandomView(this->params.centroid, this->params.radius, this->params.useHeightBias));
+	}
+}
+
+void pacman::ActiveSense::generateViews()
+{
+	if (this->params.generationMethod == EGenerationMethod::G_RANDOM_SPHERE)
+		generateRandomViews();
+	else if (this->params.generationMethod == EGenerationMethod::G_FIXED){
+		generateViewsFromSeq(this->params.configSeq);
 	}
 }
 

@@ -68,7 +68,8 @@ protected:
 protected:
 	void create(const Desc& desc);
 
-	virtual bool gotoPoseWS(const grasp::ConfigMat34& pose, const golem::Real& linthr = 0.005, const golem::Real& angthr = 0.005);
+	virtual bool gotoPoseWS(const grasp::ConfigMat34& pose, const golem::Real& linthr = 0.0000001, const golem::Real& angthr = 0.0000001);
+	virtual bool gotoPoseConfig(const grasp::ConfigMat34& pose, const golem::Real& linthr = 0.0000001, const golem::Real& angthr = 0.0000001);
 	virtual void scanPoseActive(grasp::data::Item::List& scannedImageItems, ScanPoseCommand scanPoseCommand = nullptr, const std::string itemLabel = ActiveSense::DFT_IMAGE_ITEM_LABEL);
 	/** golem::Object (Post)processing function called AFTER every physics simulation step and before randering. */
 	virtual void postprocess(golem::SecTmReal elapsedTime);

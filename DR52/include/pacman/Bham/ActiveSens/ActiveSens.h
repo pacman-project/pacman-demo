@@ -125,13 +125,13 @@ namespace pacman {
 
 		/** Curent sensor frame */
 		virtual golem::Mat34 getFrame() const {
-			//Insert here your hypothesis of a pose
-			return pose*viewFrame;
+
+			return config.w*viewFrame;
 		}
 
 		/** Pose frame */
 		golem::Mat34 getPose() const {
-			return pose;
+			return config.w;
 		}
 
 		/** Local frame */
@@ -157,10 +157,13 @@ namespace pacman {
 		/** Camera shape frame */
 		grasp::Mat34Seq shapeFrame;
 
-		// Hypothesis of a view frame
+		/** Hypothesis of a view frame */
 		golem::Mat34 viewFrame;
 
-		golem::Mat34 pose;
+		/** Hypothesis view configuration */
+		Config config;
+
+
 
 
 		/** Creates/initialises the Sensor */
@@ -174,7 +177,7 @@ namespace pacman {
 
 	public:
 		/** Constructs the Sensor with default configurations */
-		HypothesisSensor(golem::Mat34 pose, golem::RGBA shapeColour = golem::RGBA::CYAN);
+		HypothesisSensor(HypothesisSensor::Config config, golem::RGBA shapeColour = golem::RGBA::CYAN);
 
 		/** Set OpenGL view point to *this sensor's frame view point*/
 		void setGLView(golem::Scene& scene);
@@ -187,11 +190,19 @@ namespace pacman {
 
 	public:
 
-		enum EMethod {
+		enum ESelectionMethod {
 
-			RANDOM,
-			CONTACT_BASED,
-			NONE //Used for validity check
+			S_RANDOM,
+			S_CONTACT_BASED,
+			S_NONE //Used for validity check
+
+		};
+
+		enum EGenerationMethod {
+
+			G_RANDOM_SPHERE,
+			G_FIXED,
+			G_NONE //Used for validity check
 
 		};
 
@@ -220,11 +231,13 @@ namespace pacman {
 			/**
 			Defines whether this->centroid is going to be manually set or computed from a image point cloud item
 			*/
-			bool useManualCentroid, useHeightBias;
+			bool useManualCentroid, useHeightBias, regenerateViews;
 			/** Min and Max values for biased hypothesis generation (heuristics for minimizing shade) */
 			golem::Real minPhi, maxPhi, minTheta, maxTheta; //Param
-			golem::U32 method;
+			golem::U32 selectionMethod, generationMethod;
 
+			/** Configuration sequence */
+			HypothesisSensor::Config::Seq configSeq;
 
 
 
@@ -239,7 +252,8 @@ namespace pacman {
 				this->minTheta = 45.0;
 				this->maxTheta = 135.0;
 
-				this->method = EMethod::CONTACT_BASED;
+				this->selectionMethod = ESelectionMethod::S_CONTACT_BASED;
+				this->generationMethod = EGenerationMethod::G_RANDOM_SPHERE;
 
 			}
 
@@ -248,7 +262,8 @@ namespace pacman {
 				grasp::Assert::valid(this->nsamples > 0, ac, "nsamples: <= 0");
 				grasp::Assert::valid(this->nviews > 0, ac, "nviews: <= 0");
 				grasp::Assert::valid(this->radius > 0, ac, "radius: <= 0");
-				grasp::Assert::valid(this->method != EMethod::NONE, ac, "Method: is NONE (unknown method)");
+				grasp::Assert::valid(this->selectionMethod != ESelectionMethod::S_NONE, ac, "Selection Method: is S_NONE (unknown selection method)");
+				grasp::Assert::valid(this->generationMethod != EGenerationMethod::G_NONE, ac, "Generation Method: is G_NONE (unknown generation method)");
 			}
 			/** Load from xml context */
 			void load(const golem::XMLContext* xmlcontext);
@@ -295,6 +310,15 @@ namespace pacman {
 
 		/** Generates a set of nsamples sensor hypotheses (viewHypotheses) with uniformly distributed view directions (viewDir) around a sphere with specified radius centered at centroid in workspace coordinates */
 		void generateRandomViews();
+
+		/** Generates views according to current this->params setup */
+		void generateViews();
+
+
+		pacman::HypothesisSensor::Ptr generateViewFrom(const HypothesisSensor::Config& config);
+
+		/** Generate Views given a sequence of predefined configurations */
+		void generateViewsFromSeq(const HypothesisSensor::Config::Seq& configSeq);
 
 		/**
 		Generates next random view with uniformly generated view direction positioned at a distance of radius from sphere centroid
@@ -432,7 +456,8 @@ namespace pacman {
 
 
 
-			this->params.method = params.method;
+			this->params.selectionMethod = params.selectionMethod;
+			this->params.generationMethod = params.generationMethod;
 		}
 
 
@@ -503,6 +528,7 @@ namespace pacman {
 		Output: Pointer to Openni Camera Sensor
 		*/
 		grasp::CameraDepth* getOwnerOPENNICamera();
+		grasp::CameraDepth* ActiveSense::getOwnerSensor(const std::string& sensorId);
 
 		/**
 		Executes the following steps:
@@ -619,7 +645,7 @@ namespace pacman {
 		/** Sends Boris' left arm to a pose in workspace coordinates */
 		//e.g. good error: lin=0.000000065, ang=0.000002688
 		virtual bool gotoPoseWS(const grasp::ConfigMat34& pose, const golem::Real& linthr = 0.0000001, const golem::Real& angthr = 0.0000001) = 0;
-
+		virtual bool gotoPoseConfig(const grasp::ConfigMat34& pose, const golem::Real& linthr = 0.0000001, const golem::Real& angthr = 0.0000001) = 0;
 		/** Captures an image generating a point cloud represented by ImageItems.
 		It should add all scanned Image Items to scannedImageItems
 		*/
