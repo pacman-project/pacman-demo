@@ -134,6 +134,12 @@ namespace pacman {
 			return config.w;
 		}
 
+		/** Pose frame */
+		const HypothesisSensor::Config& getConfig() const {
+
+			return this->config;
+		}
+
 		/** Local frame */
 		golem::Mat34 getViewFrame() const {
 			return viewFrame;
@@ -239,6 +245,8 @@ namespace pacman {
 			/** Configuration sequence */
 			HypothesisSensor::Config::Seq configSeq;
 
+			/** Sensor to be used for active control */
+			std::string sensorId;
 
 
 			void setToDefault() {
@@ -254,6 +262,9 @@ namespace pacman {
 
 				this->selectionMethod = ESelectionMethod::S_CONTACT_BASED;
 				this->generationMethod = EGenerationMethod::G_RANDOM_SPHERE;
+
+				this->sensorId = "OpenNI+OpenNI";
+
 
 			}
 
@@ -338,6 +349,7 @@ namespace pacman {
 		*/
 		grasp::data::Item::Map::iterator nextBestViewRandom();
 
+		/** Contact based next best view selection */
 		grasp::data::Item::Map::iterator nextBestViewContactBased();
 
 		/** Gaze ActiveSense main method, automatically uses method/approach set in this->params
@@ -349,7 +361,10 @@ namespace pacman {
 		grasp::data::Item::Map::iterator nextBestView();
 		
 		/** Greedy selection for next best view based on contact point information */
-		pacman::HypothesisSensor::Ptr selectNextBestView(grasp::data::Item::Map::iterator predModelPtr);
+		pacman::HypothesisSensor::Ptr selectNextBestViewContactBased(grasp::data::Item::Map::iterator predModelPtr);
+
+		/** Selects next best view randomly from the sequence of generated this->viewHypotheses*/
+		pacman::HypothesisSensor::Ptr selectNextBestViewRandom();
 
 		/** Gets current view hypotheses a.k.a. sensor hypotheses*/
 		pacman::HypothesisSensor::Seq& getViewHypotheses() {
@@ -479,7 +494,7 @@ namespace pacman {
 		Input: targetFrame, camera (to be aligned)
 		Output: goal frame respecting statement (i)
 		*/
-		golem::Mat34 computeGoal(golem::Mat34& targetFrame, grasp::CameraDepth* camera);
+		golem::Mat34 computeGoal(golem::Mat34& targetFrame, grasp::Camera* camera);
 
 		/* Renders stuff */
 		virtual void render() const;
@@ -528,7 +543,9 @@ namespace pacman {
 		Output: Pointer to Openni Camera Sensor
 		*/
 		grasp::CameraDepth* getOwnerOPENNICamera();
-		grasp::CameraDepth* ActiveSense::getOwnerSensor(const std::string& sensorId);
+
+		/** Gets a sensor identified by its id=library+configFile, e.g. OpenNI+OpenNI, DepthSim+DepthSim*/
+		grasp::Camera* ActiveSense::getOwnerSensor(const std::string& sensorId);
 
 		/**
 		Executes the following steps:

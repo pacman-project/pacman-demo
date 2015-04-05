@@ -42,7 +42,7 @@ void pacman::HypothesisSensor::Desc::load(golem::Context& context, const golem::
 }
 
 //------------------------------------------------------------------------------
-pacman::HypothesisSensor::HypothesisSensor(HypothesisSensor::Config config, golem::RGBA shapeColour) {
+pacman::HypothesisSensor::HypothesisSensor(HypothesisSensor::Config config, golem::RGBA shapeColour) : config(config.c,config.w) {
 
 
 	pacman::HypothesisSensor::Desc desc;
@@ -68,7 +68,7 @@ pacman::HypothesisSensor::HypothesisSensor(HypothesisSensor::Config config, gole
 	desc.viewFrame.p.z = 0.05;
 
 	//Pose with respect to base frame
-	this->config = config;
+	//this->config = config;
 	this->create(desc);
 
 
@@ -200,6 +200,7 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 
 	
 	std::string selectionMethodStr, generationMethodStr;
+	XMLData("sensor_id", this->sensorId, pxmlcontext);
 	XMLData("selection_method", selectionMethodStr, pxmlcontext);
 	XMLData("generation_method", generationMethodStr, pxmlcontext);
 	XMLData("enable_regeration", this->regenerateViews, pxmlcontext);
@@ -235,10 +236,24 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 		configSeq.clear();
 		XMLData(configSeq, configSeq.max_size(), const_cast<golem::XMLContext*>(pxmlcontext), "pose");
 
+		printf("Loaded NPoses %d\n", configSeq.size());
+
+		for (int i = 0; i < configSeq.size(); i++)
+		{
+			HypothesisSensor::Config config;
+			config = configSeq[i];
+			printf("Printing config %d\n", i);
+			for (int j = 0; j < config.c.size(); j++)
+			{
+				printf("%f ", static_cast<float>(config.c[j]));
+			}
+			printf("\n");
+		}
+
 	}
 	
 
-	printf("Loaded NPoses %d\n", configSeq.size());
+	
 
 	printf("ActiveSense: Loaded Everything!\n");
 
@@ -412,10 +427,10 @@ golem::Vec3 pacman::ActiveSense::computeCentroid(grasp::data::Item::Map::const_i
 
 grasp::CameraDepth* ActiveSense::getOwnerOPENNICamera()
 {
-	return getOwnerSensor("OpenNI+OpenNI");
+	return grasp::is<grasp::CameraDepth>(getOwnerSensor("OpenNI+OpenNI"));
 }
 
-grasp::CameraDepth* ActiveSense::getOwnerSensor(const std::string& sensorId)
+grasp::Camera* ActiveSense::getOwnerSensor(const std::string& sensorId)
 {
 
 	//Getting the camera
@@ -429,13 +444,13 @@ grasp::CameraDepth* ActiveSense::getOwnerSensor(const std::string& sensorId)
 
 	demoOwner->sensorCurrentPtr = camIt;
 
-	grasp::CameraDepth* camera = grasp::is<grasp::CameraDepth>(demoOwner->sensorCurrentPtr);
+	grasp::Camera* camera = grasp::is<grasp::Camera>(demoOwner->sensorCurrentPtr);
 
 	return camera;
 }
 
 
-golem::Mat34 pacman::ActiveSense::computeGoal(golem::Mat34& targetFrame, grasp::CameraDepth* camera)
+golem::Mat34 pacman::ActiveSense::computeGoal(golem::Mat34& targetFrame, grasp::Camera* camera)
 {
 
 	golem::Mat34 frame, invFrame, refPose;
@@ -467,67 +482,70 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewRandom()
 {
 	golem::Vec3 autoCentroid;
 
-	/*
-	//Initialization
-	0. Create new Manager::Data and set its reference as dataCurrentPtr
-	1. Retrieve current view - ItemImage1 <= Recorder::scanPose
-	2. Insert ItemImage1 to dataCurrentPtr->itemMap
-	3. Set currentCloud <= ItemImage1
-	//While(not finish)
-	4. Find points of interest(PoI) using Marek's algorithm on currentCloud => PoI //TODO: Ask Marek about PoI
-	5. Generate sensor view hypotheses :
-	viewHypotheses <= generateViewHypothesis(PoI, currentCloud) //TODO: Ask Marek about PoI
-	6. Select next best view with PoI and currentCloud = > viewPose:
-	viewPose <= selectNextBestView(PoI, currentCloud, viewHypotheses) //TODO: Ask Marek about PoI
-	7. Retrieve next best view :
-	ItemImage02 <= Recorder::scanPose //Added ItemImage02 to dataCurrentPtr->itemMap
-	8. Apply Image + Image Transform on dataCurrentPtr->itemMap :
-	currentCloud <= AlignTransform(currentCloud, ItemImage02)
-	9. Delete ItemImage02 from dataCurrentPtr->itemMap
-	19. If It's OK to finish:
-	finish <= True
-	//endWhile
-	*/
-
-	grasp::CameraDepth* camera = this->getOwnerOPENNICamera();
+	grasp::Camera* camera = this->getOwnerSensor(this->params.sensorId);
 	if (camera)
 		demoOwner->context.write("ActiveSense: Camera good!\n");
-
-
 
 	//Creating new Data Bundle
 	//grasp::Manager::Data::Map::iterator data = createData();
 
 
 	//Getting view hypotheses (TODO: Compute just one initial view based on current Points of Interest)
-	//pacman::HypothesisSensor::Seq::const_iterator hypothesis = this->viewHypotheses.begin();
 	size_t index = 0, size = this->params.nviews;
+
+
+	//Scanned Items List
+	grasp::data::Item::List scannedImageItems;
 
 	//Setting up scan command responsible for taking the camera to the selected hyptheses
 	std::function<bool()> scanCommand = [&]() -> bool {
 		//TODO: Integrate previous measurements into the current point cloud
 
-		demoOwner->context.write("ActiveSense: Going to scan pose #%d/%d\n", index + 1, size);
+		demoOwner->context.write("ActiveSense: Going to scan pose #%d/%d\n", ++index, size);
 
 		//Random generator. TODO: Add different types of generators
-		pacman::HypothesisSensor::Ptr hypothesis = this->generateNextRandomView(this->params.centroid, this->params.radius);
+		pacman::HypothesisSensor::Ptr hypothesis = this->selectNextBestViewRandom();
 
+
+		if (hypothesis.get())
 		{
-			golem::CriticalSectionWrapper csw(this->getCSViewHypotheses());
-			viewHypotheses.push_back(hypothesis);
+			Mat34 goal;
+			goal.setId();
+			CollisionBounds::Ptr collisionBounds = this->selectCollisionBounds(true, *scannedImageItems.begin());
+			bool success = false;
+			while (hypothesis.get() && !success)
+			{
+				goal = this->computeGoal(hypothesis->getFrame(), camera);
+
+				try {
+
+					if (this->params.generationMethod == EGenerationMethod::G_RANDOM_SPHERE)
+						success = demoOwner->gotoPoseWS(goal);
+					if (this->params.generationMethod == EGenerationMethod::G_FIXED)
+						success = demoOwner->gotoPoseConfig(hypothesis->getConfig());
+
+					if (!success)
+					{
+						demoOwner->context.write("ActiveSense: Couldnt go to selected hypothesis due to large final pose error, sampling again.\n");
+						hypothesis = this->selectNextBestViewRandom();
+					}
+				}
+				catch (const golem::Message& e)
+				{
+					demoOwner->context.write("ActiveSense: Couldnt go to selected hypothesis due exception %s, sampling again...\n", e.what());
+					hypothesis = this->selectNextBestViewRandom();
+				}
+
+
+
+			}
+			collisionBounds.release();
 		}
-
-
-		Mat34 goal = this->computeGoal(hypothesis->getFrame(), camera);
-		demoOwner->gotoPoseWS(goal);
 		//(*hypothesis)->setGLView(demoOwner->scene);
 
 		return false;
 	};
 
-
-	//Scanned Items List
-	grasp::data::Item::List scannedImageItems;
 
 	//Performs first scan using current robot pose
 	demoOwner->scanPoseActive(scannedImageItems);
@@ -537,8 +555,6 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewRandom()
 		demoOwner->context.write("ActiveSense: Automatically Computing Centroid From First View\n");
 		this->params.centroid = this->computeCentroid(*scannedImageItems.begin());
 	}
-
-	CollisionBounds::Ptr collisionBounds = demoOwner->selectCollisionBounds();
 
 	//Scanning viewHypotheses poses
 	//TODO: Define stopping criteria
@@ -568,7 +584,8 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewRandom()
 }
 grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased()
 {
-	grasp::CameraDepth* camera = this->getOwnerOPENNICamera();
+	grasp::Camera* camera = this->getOwnerSensor(this->params.sensorId);
+
 	if (camera)
 		demoOwner->context.write("ActiveSense: Camera good!\n");
 
@@ -578,7 +595,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased()
 	size_t index = 0, size = this->params.nviews;
 	pacman::HypothesisSensor::Ptr hypothesis(nullptr);
 	//Setting up scan command responsible for taking the camera to the selected hyptheses
-	std::function<bool()> scanCommand = [&]() -> bool {
+	/*std::function<bool()> scanCommand = [&]() -> bool {
 
 		demoOwner->context.write("ActiveSense: Going to scan pose #%d/%d\n", ++index, size);
 
@@ -591,7 +608,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased()
 
 
 		return false;
-	};
+	};*/
 
 
 	//Scanned Items List
@@ -630,7 +647,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased()
 			ptr = this->computeFeedBackTransform(predModelItem, pointCurvItem);
 			//this->setPredModelItem(ptr);
 
-			hypothesis = this->selectNextBestView(ptr);
+			hypothesis = this->selectNextBestViewContactBased(ptr);
 		}
 
 		if (hypothesis.get())
@@ -648,18 +665,18 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased()
 					if (this->params.generationMethod == EGenerationMethod::G_RANDOM_SPHERE )
 						success =  demoOwner->gotoPoseWS(goal);
 					if (this->params.generationMethod == EGenerationMethod::G_FIXED)
-						success = demoOwner->gotoPoseConfig(goal);
+						success = demoOwner->gotoPoseConfig(hypothesis->getConfig());
 
 					if (!success)
 					{
 						demoOwner->context.write("ActiveSense: Couldnt go to selected hypothesis due to large final pose error, sampling again.\n");
-						hypothesis = this->selectNextBestView(ptr);
+						hypothesis = this->selectNextBestViewContactBased(ptr);
 					}
 				}
 				catch (const golem::Message& e)
 				{
 					demoOwner->context.write("ActiveSense: Couldnt go to selected hypothesis due exception %s, sampling again...\n", e.what());
-					hypothesis = this->selectNextBestView(ptr);
+					hypothesis = this->selectNextBestViewContactBased(ptr);
 				}
 				
 				
@@ -685,6 +702,13 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestViewContactBased()
 	return this->pointCurvItem;
 
 
+}
+
+pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewRandom()
+{
+	golem::U32 index = rand.nextUniform<golem::U32>(0, this->viewHypotheses.size());
+
+	return this->getViewHypothesis(index);
 }
 
 grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
@@ -779,7 +803,7 @@ pacman::HypothesisSensor::Ptr ActiveSense::generateNextRandomView(const golem::V
 
 }
 
-pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestView(grasp::data::Item::Map::iterator predModelPtr)
+pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBased(grasp::data::Item::Map::iterator predModelPtr)
 {
 	golem::CriticalSectionWrapper csw(this->csViewHypotheses);
 
@@ -813,7 +837,7 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestView(grasp::dat
 
 pacman::HypothesisSensor::Ptr pacman::ActiveSense::generateViewFrom(const HypothesisSensor::Config& config)
 {
-	HypothesisSensor::Config sensorConfig;
+	HypothesisSensor::Config sensorConfig = config;
 
 	//Show pose lambda
 	typedef std::function<void(const std::string&, const golem::Mat34& m)> ShowPoseFunc;
@@ -822,19 +846,9 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::generateViewFrom(const Hypoth
 	};
 
 
-	golem::Vec3 randomVec;
 	golem::U8 r, g, b, a;
-
 	//Generate random color
 	r = 125, g = 122, b = 200, a = 255;
-
-
-
-
-	//Generate a new pose
-	sensorConfig = golem::Mat34(golem::Mat34::identity());
-
-
 
 	golem::Controller::State state = demoOwner->controller->createState();
 	state.cpos.set(config.c.data(), config.c.data() + std::min(config.c.size(), (size_t)demoOwner->info.getJoints().size()));
@@ -843,9 +857,15 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::generateViewFrom(const Hypoth
 	golem::WorkspaceJointCoord wjc;
 	demoOwner->controller->jointForwardTransform(state.cpos, wjc);
 	// return value
-	grasp::CameraDepth* camera = this->getOwnerSensor("DepthSim+DepthSim");
+	grasp::Camera* camera = this->getOwnerSensor("DepthSim+DepthSim");
 
-	sensorConfig.w = wjc[demoOwner->info.getJoints().begin() + 7] * camera->getCurrentCalibration()->getParameters().pose;
+	golem::Mat34 offsetPose;
+	offsetPose.setId();
+	offsetPose.p.z = -0.05;
+	
+
+	//Workspace pose is just for drawing purposes when generation_method="fixed"
+	sensorConfig.w = wjc[demoOwner->info.getJoints().begin() + 6] * camera->getCurrentCalibration()->getParameters().pose * offsetPose;
 
 	
 
@@ -853,7 +873,7 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::generateViewFrom(const Hypoth
 	//Creating uniformly generated random hypothesis sensor
 	pacman::HypothesisSensor::Ptr s(new HypothesisSensor(sensorConfig, golem::RGBA(r, g, b, a)));
 
-
+	s->getFrame();
 	return s;
 
 }
