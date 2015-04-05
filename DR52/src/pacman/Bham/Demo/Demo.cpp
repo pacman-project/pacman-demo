@@ -75,13 +75,13 @@ bool pacman::Demo::gotoPoseWS(const grasp::ConfigMat34& pose, const Real& linthr
 	return true;
 }
 
-bool pacman::Demo::gotoPoseConfig(const grasp::ConfigMat34& pose, const Real& linthr, const golem::Real& angthr) {
+bool pacman::Demo::gotoPoseConfig(const grasp::ConfigMat34& config, const Real& linthr, const golem::Real& angthr) {
 	// current state
 	golem::Controller::State begin = lookupState();
 	//context.debug("STATE[1]: t=%f, (%f, %f, %f, %f, %f, %f, %f)\n", begin.t, begin.cpos.data()[0], begin.cpos.data()[1], begin.cpos.data()[2], begin.cpos.data()[3], begin.cpos.data()[4], begin.cpos.data()[5], begin.cpos.data()[6]);
 	// target
 	golem::Controller::State end = begin;
-	end.cpos.set(pose.c.data(), pose.c.data() + std::min(pose.c.size(), (size_t)info.getJoints().size()));
+	end.cpos.set(config.c.data(), config.c.data() + std::min(config.c.size(), (size_t)info.getJoints().size()));
 	// find trajectory
 	golem::Controller::State::Seq trajectory;
 	grasp::RBDist err = findTrajectory(begin, &end, nullptr, trajectoryDuration, trajectory);
@@ -91,6 +91,7 @@ bool pacman::Demo::gotoPoseConfig(const grasp::ConfigMat34& pose, const Real& li
 
 	if (err.lin >= linthr || err.ang >= angthr)
 	{
+		context.write("Error treshold exceeded: lin: %f ang: %f", err.lin, err.ang);
 		return false;
 	}
 
@@ -267,9 +268,23 @@ void pacman::Demo::create(const Desc& desc) {
 		size_t index = activeSense->getViewHypotheses().size();
 		Menu::selectIndex(activeSense->getViewHypotheses(), index, "Choose Camera Hypothesis to Go");
 
-		Mat34 goal = activeSense->computeGoal(activeSense->getViewHypothesis(index - 1)->getFrame(), camera);
-		this->gotoPoseWS(goal);
+		
 
+		if (this->activeSense->getParameters().generationMethod == ActiveSense::EGenerationMethod::G_RANDOM_SPHERE)
+		{
+			Mat34 goal = activeSense->computeGoal(activeSense->getViewHypothesis(index - 1)->getFrame(), camera);
+			this->gotoPoseWS(goal);
+		}
+		else if (this->activeSense->getParameters().generationMethod == ActiveSense::EGenerationMethod::G_FIXED)
+		{
+			this->gotoPoseConfig(activeSense->getViewHypothesis(index - 1)->getConfig());
+		}
+		else
+		{
+			context.write("Unknown generation method!\n");
+		}
+
+		
 		context.write("Done!\n");
 
 	}));
