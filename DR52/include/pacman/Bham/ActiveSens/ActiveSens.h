@@ -200,6 +200,7 @@ namespace pacman {
 
 			S_RANDOM,
 			S_CONTACT_BASED,
+			S_SEQUENTIAL,
 			S_NONE //Used for validity check
 
 		};
@@ -312,20 +313,20 @@ namespace pacman {
 		ActiveSense Default Constructor
 		Warning: *this needs to be initialised before use
 		*/
-		ActiveSense() : dataPath(ActiveSense::DFT_DATA_PATH), demoOwner(nullptr), hasPointCurv(false), hasPredModel(false), hasTrajectory(false) {}
+		ActiveSense() : dataPath(ActiveSense::DFT_DATA_PATH), demoOwner(nullptr), hasPointCurv(false), hasPredModel(false), hasTrajectory(false), seqIndex(0) {}
 
 		/**
 		ActiveSense initialiser (Same function as Constructor)
 		*/
 		void init(pacman::Demo* demoOwner);
 
-		/** Generates a set of nsamples sensor hypotheses (viewHypotheses) with uniformly distributed view directions (viewDir) around a sphere with specified radius centered at centroid in workspace coordinates */
-		void generateRandomViews();
-
 		/** Generates views according to current this->params setup */
 		void generateViews();
 
+		/** Generates a set of nsamples sensor hypotheses (viewHypotheses) with uniformly distributed view directions (viewDir) around a sphere with specified radius centered at centroid in workspace coordinates */
+		void generateRandomViews();
 
+		/** Generates view from ConfigMat34 according to the forward kinematic parameters of the robot and selected sensor_id */
 		pacman::HypothesisSensor::Ptr generateViewFrom(const HypothesisSensor::Config& config);
 
 		/** Generate Views given a sequence of predefined configurations */
@@ -336,24 +337,6 @@ namespace pacman {
 		*/
 		pacman::HypothesisSensor::Ptr generateNextRandomView(const golem::Vec3& centroid, const golem::Real& radius = 0.25, bool heightBias = true);
 
-		/**
-		Processes list of itemImages
-		Output: integrated itemPointCurv
-		*/
-		grasp::data::Item::Map::iterator processItems(grasp::data::Item::List& list);
-
-		/** Gaze ActiveSense main method, approach (i)
-		Approach i) Random view selection
-
-		Output: final Item with ItemPointCurv representing integrated random scans
-		*/
-		grasp::data::Item::Map::iterator nextBestViewRandom();
-
-		/** Contact based next best view selection */
-		grasp::data::Item::Map::iterator nextBestViewContactBased();
-
-
-
 		/** Gaze ActiveSense main method, automatically uses method/approach set in this->params
 		Approach/Method i) Random view selection
 		Approach/Method ii) Contact Based view selection
@@ -361,12 +344,26 @@ namespace pacman {
 		Output: final Item with ItemPointCurv representing integrated random scans
 		*/
 		grasp::data::Item::Map::iterator nextBestView();
+
+		/** Gaze ActiveSense main method, approach (i)
+		Approach i) Random view selection
+
+		Output: final Item with ItemPointCurv representing integrated random scans
+		*/
+		//grasp::data::Item::Map::iterator nextBestViewRandom();
+
+		/** Contact based next best view selection */
+		grasp::data::Item::Map::iterator nextBestViewContactBased();
 		
+
 		/** Greedy selection for next best view based on contact point information */
 		pacman::HypothesisSensor::Ptr selectNextBestViewContactBased(grasp::data::Item::Map::iterator predModelPtr);
 
 		/** Selects next best view randomly from the sequence of generated this->viewHypotheses*/
 		pacman::HypothesisSensor::Ptr selectNextBestViewRandom();
+
+		/** Selects next best view sequentially*/
+		pacman::HypothesisSensor::Ptr selectNextBestViewSequential();
 
 		/** Gets current view hypotheses a.k.a. sensor hypotheses*/
 		pacman::HypothesisSensor::Seq& getViewHypotheses() {
@@ -550,6 +547,12 @@ namespace pacman {
 		grasp::Camera* ActiveSense::getOwnerSensor(const std::string& sensorId);
 
 		/**
+		Processes list of itemImages
+		Output: integrated itemPointCurv
+		*/
+		grasp::data::Item::Map::iterator processItems(grasp::data::Item::List& list);
+
+		/**
 		Executes the following steps:
 		1) Transforms (predModelItem,pointCurvItem) into predQuery;
 		2) Converts predQuery into a Trajectory (traj)
@@ -598,9 +601,14 @@ namespace pacman {
 
 		/**Internal control flags*/
 		bool hasPointCurv, hasPredModel, hasPredQuery, hasTrajectory;
+		
+		/** Internal control index for sequential selection*/
+		golem::U32 seqIndex;
 
 		/** Parameters */
 		Parameters params;
+
+		
 
 		/** Final output  */
 		Result result;
