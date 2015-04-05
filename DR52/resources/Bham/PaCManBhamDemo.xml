@@ -8,7 +8,7 @@
     <!-- selection_method = "contact_based" -->
     <!-- selection_method = "sequential" -->
     <!-- generation_method = "random_sphere" -->
-    <!-- generation_method = "fixed"  (This loads <pose></pose> tags as a sequence of fixed pose (pre-generated) and use them for next best view selection)-->
+    <!-- generation_method = "fixed"  (This loads <pose></pose> tags as a sequence of fixed poses (pre-generated) and use them for next best view selection)-->
     <!-- if enable_regeration="1"  it will regenated the poses (if random new random sensor poses will be generated - i.e. resample, if fixed then it will recreate the same set of objets and discard the old)-->
     <!-- sensor_id="OpenNI+OpenNI"-->
 
