@@ -142,6 +142,34 @@ void pacman::Demo::render() const
 	activeSense->render();
 }
 
+
+void pacman::Demo::rotateObjectInHand()
+{
+	auto showPose = [&](const std::string& description, const golem::Mat34& m) {
+		context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
+	};
+
+	const int nstep = 100;
+
+	// rotation about z-axis
+	const double angstep = golem::REAL_2_PI / nstep;
+	golem::Mat34 rotz(golem::Mat33(angstep, golem::Vec3(0.0, 0.0, 1.0)), golem::Vec3::zero());
+
+	// get current pose of wrist
+	const golem::U32 wristJoint = 7;
+	grasp::ConfigMat34 pose;
+	getPose(wristJoint, pose);
+	showPose("before", pose.w);
+	// rotate
+	pose.w = pose.w * rotz;
+	showPose("commanded", pose.w);
+	gotoPoseWS(pose, 0.001, 0.001);
+
+	Sleep::msleep(SecToMSec(1.0));
+	getPose(wristJoint, pose);
+	showPose("final", pose.w);
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 void pacman::Demo::create(const Desc& desc) {
@@ -179,6 +207,7 @@ void pacman::Demo::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("LT", [=]() {
 
 		context.write("Welcome to TrackLab Test 1\n");
+		rotateObjectInHand();
 		context.write("Done!\n");
 
 	}));

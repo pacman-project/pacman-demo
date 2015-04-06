@@ -74,6 +74,9 @@ protected:
 	/** golem::Object (Post)processing function called AFTER every physics simulation step and before randering. */
 	virtual void postprocess(golem::SecTmReal elapsedTime);
 	virtual void render() const;
+
+	void rotateObjectInHand();
+
 	Demo(golem::Scene &scene);
 	~Demo();
 };
