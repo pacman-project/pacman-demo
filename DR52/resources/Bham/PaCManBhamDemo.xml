@@ -6,11 +6,13 @@
   <active_sense>
     <!-- selection_method = "random" -->
     <!-- selection_method = "contact_based" -->
+    <!-- selection_method = "sequential" -->
     <!-- generation_method = "random_sphere" -->
-    <!-- generation_method = "fixed" -->
+    <!-- generation_method = "fixed"  (This loads <pose></pose> tags as a sequence of fixed poses (pre-generated) and use them for next best view selection)-->
+    <!-- if enable_regeration="1"  it will regenerate the poses (if random new random sensor poses will be generated - i.e. resample, if fixed then it will recreate the same set of objets and discard the old)-->
     <!-- sensor_id="OpenNI+OpenNI"-->
 
-    <parameters sensor_id="DepthSim+DepthSim" selection_method="contact_based" generation_method="fixed" enable_regeration="1" use_height_bias="1" use_manual_centroid="0" radius="0.35" nsamples="50" nviews="5" min_phi="0.0" max_phi="360.0" min_theta="-60.0" max_theta="60.0">
+    <parameters sensor_id="OpenNI+OpenNI" selection_method="random" generation_method="fixed" enable_regeration="1" use_height_bias="1" use_manual_centroid="0" radius="0.35" nsamples="50" nviews="5" min_phi="0.0" max_phi="360.0" min_theta="-60.0" max_theta="60.0">
       <centroid v1="0.0" v2="0.0" v3="0.0"/>
       <pose dim="61" c1="2.24194" c2="-0.780102" c3="2.56493" c4="-1.99426" c5="0.489691" c6="-1.03589" c7="-1.15272" c8="0" c9="0" c10="0" c11="0" c12="0" c13="0" c14="0" c15="0" c16="0" c17="0" c18="0" c19="0" c20="0" c21="0" c22="0" c23="0" c24="0" c25="0" c26="0" c27="0" c28="0" c29="0" c30="0" c31="0" c32="0" c33="0" c34="0" c35="0" c36="0" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0" c44="0" c45="0" c46="0" c47="0" c48="0" c49="0" c50="0" c51="0" c52="0" c53="0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c60="0" c61="0"/>
       <pose dim="61" c1="1.98703" c2="-1.82022" c3="2.68371" c4="-0.993679" c5="-0.472118" c6="0.701058" c7="-0.601755" c8="0" c9="0" c10="0" c11="0" c12="0" c13="0" c14="0" c15="0" c16="0" c17="0" c18="0" c19="0" c20="0" c21="0" c22="0" c23="0" c24="0" c25="0" c26="0" c27="0" c28="0" c29="0" c30="0" c31="0" c32="0" c33="0" c34="0" c35="0" c36="0" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0" c44="0" c45="0" c46="0" c47="0" c48="0" c49="0" c50="0" c51="0" c52="0" c53="0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c60="0" c61="0"/>
