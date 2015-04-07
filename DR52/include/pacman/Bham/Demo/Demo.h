@@ -32,6 +32,7 @@ public:
 		/** Active Sense Attribute */
 		ActiveSense::Ptr activeSense;
 
+		int tracker_nstep;
 
 		/** Constructs from description object */
 		Desc() {
@@ -42,7 +43,8 @@ public:
 			grasp::Player::Desc::setToDefault();
 
 			this->activeSense = ActiveSense::Ptr(new ActiveSense());
-
+			
+			tracker_nstep = 100;
 		}
 		/** Assert that the description is valid. */
 		virtual void assertValid(const grasp::Assert::Context& ac) const {
@@ -64,6 +66,10 @@ protected:
 	/** Currently selected viewHypothesis */
 	golem::I32 selectedCamera;
 	
+
+protected:
+	int tracker_nstep; // @@@
+
 
 protected:
 	void create(const Desc& desc);

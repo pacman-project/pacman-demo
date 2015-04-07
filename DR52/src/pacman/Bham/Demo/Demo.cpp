@@ -17,8 +17,8 @@ void pacman::Demo::Desc::load(golem::Context& context, const golem::XMLContext* 
 
 	this->activeSense->load(xmlcontext);
 
-
-
+	golem::XMLContext* pxmlcontext = xmlcontext->getContextFirst("tracker rotate_in_hand");
+	XMLData("nstep", tracker_nstep, pxmlcontext);
 }
 
 //------------------------------------------------------------------------------
@@ -149,11 +149,10 @@ void pacman::Demo::rotateObjectInHand()
 		context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
 	};
 
-	const int nstep = 100;
-
 	// rotation about z-axis
-	const double angstep = golem::REAL_2_PI / nstep;
+	const double angstep = golem::REAL_2_PI / tracker_nstep;
 	golem::Mat34 rotz(golem::Mat33(angstep, golem::Vec3(0.0, 0.0, 1.0)), golem::Vec3::zero());
+	context.write("%s: nstep=%d, dphi=%f, R*x=(%f, %f, %f)", "rotation", tracker_nstep, angstep, rotz * golem::Vec3(1.0, 0.0, 0.0));
 
 	// get current pose of wrist
 	const golem::U32 wristJoint = 7;
@@ -163,7 +162,7 @@ void pacman::Demo::rotateObjectInHand()
 	// rotate
 	pose.w = pose.w * rotz;
 	showPose("commanded", pose.w);
-	gotoPoseWS(pose, 0.001, 0.001);
+	gotoPoseWS(pose, 0.1, 0.1);
 
 	Sleep::msleep(SecToMSec(1.0));
 	getPose(wristJoint, pose);
@@ -183,6 +182,8 @@ void pacman::Demo::create(const Desc& desc) {
 	Player::create(desc); // throws
 
 	this->activeSense = desc.activeSense;
+
+	tracker_nstep = desc.tracker_nstep;
 
 	// top menu help using global key '?'
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       PaCMan Demo\n"));
