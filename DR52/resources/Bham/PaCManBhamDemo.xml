@@ -26,7 +26,7 @@
   <!-- END OF Active Sense Configurations -->
 
   <tracker>
-	<rotate_in_hand nstep="100">
+	<rotate_in_hand nstep="6">
 	</rotate_in_hand>
   </tracker>
 
@@ -183,12 +183,15 @@
     <!--<sensor library_path="GraspCameraOpenCV" config_path="GraspCameraOpenCV"/>-->
     <sensor library_path="GraspCameraOpenGL" config_path="GraspCameraOpenGL"/>
     <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNI"/>
+    <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNITripod"/>
     <sensor library_path="GraspCameraPointGrey" config_path="GraspCameraPointGrey"/>
     <sensor library_path="GraspFTClient" config_path="GraspFTClient"/>
     <!--<sensor library_path="GraspFTDAQ" config_path="GraspFTDAQ"/>-->
 
     <recording label="recorder">
       <sensor id="OpenNI+OpenNI"/>
+      <sensor id="OpenNI+OpenNITripod"/>
+      <sensor id="Kinect+Kinect"/>
       <sensor id="PointGrey+PointGrey"/>
       <sensor id="OpenGL+OpenGL"/>
     </recording>

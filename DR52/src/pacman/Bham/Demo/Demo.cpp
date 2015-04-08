@@ -149,24 +149,45 @@ void pacman::Demo::rotateObjectInHand()
 		context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
 	};
 
+	const bool rhScrew = option("RL", "RH or LH screw for rotation?") == 'R';
+
 	// rotation about z-axis
-	const double angstep = golem::REAL_2_PI / tracker_nstep;
-	golem::Mat34 rotz(golem::Mat33(angstep, golem::Vec3(0.0, 0.0, 1.0)), golem::Vec3::zero());
-	context.write("%s: nstep=%d, dphi=%f, R*x=(%f, %f, %f)", "rotation", tracker_nstep, angstep, rotz * golem::Vec3(1.0, 0.0, 0.0));
+	const double angstep = golem::REAL_2_PI / tracker_nstep * (rhScrew ? 1.0 : -1.0);
+	golem::Mat33 rotz(golem::Mat33(angstep, golem::Vec3(0.0, 0.0, 1.0)));
+	const golem::Vec3 Rx = rotz * golem::Vec3(1.0, 0.0, 0.0);
+	context.write("%s: nstep=%d, dphi=%f, R*x=(%f, %f, %f)\n", "rotation", tracker_nstep, angstep, Rx.x, Rx.y, Rx.z);
 
 	// get current pose of wrist
 	const golem::U32 wristJoint = 7;
 	grasp::ConfigMat34 pose;
 	getPose(wristJoint, pose);
 	showPose("before", pose.w);
-	// rotate
-	pose.w = pose.w * rotz;
-	showPose("commanded", pose.w);
-	gotoPoseWS(pose, 0.1, 0.1);
 
-	Sleep::msleep(SecToMSec(1.0));
+	// use mobile camera
+	grasp::Camera* camera = currentCamera;
+	if (camera == nullptr)
+	{
+		select(sensorCurrentPtr, sensorMap.begin(), sensorMap.end(), "Select Sensor:\n", [](grasp::Sensor::Map::const_iterator ptr) -> const std::string&{
+			return ptr->second->getID();
+		});
+
+		camera = grasp::to<grasp::Camera>(sensorCurrentPtr);
+	}
+	if (camera->hasVariableMounting())
+	{
+		// current pose of mobile camera
+		pose.w = camera->getFrame();
+		// rotate
+		pose.w.R = pose.w.R * rotz;
+		showPose("commanded", pose.w);
+		const golem::Mat34 goalPose = activeSense->computeGoal(pose.w, camera);
+		gotoPoseWS(goalPose, 0.1, 0.1);
+	}
+	else
+		context.write("%s is a static camera\n", camera->getID().c_str());
+	
 	getPose(wristJoint, pose);
-	showPose("final", pose.w);
+	showPose("final wrist pose", pose.w);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
