@@ -188,6 +188,9 @@ void pacman::Demo::rotateObjectInHand()
 	
 	getPose(wristJoint, pose);
 	showPose("final wrist pose", pose.w);
+	
+	recordingStart(dataCurrentPtr->first, recordingLabel, false);
+	context.write("taken snapshot\n");
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -224,14 +227,59 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 
 	menuCtrlMap.insert(std::make_pair("L", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: run (T)est..";
+		desc = "Press a key to: run (R)otate, (N)udge...";
 	}));
-	menuCmdMap.insert(std::make_pair("LT", [=]() {
 
-		context.write("Welcome to TrackLab Test 1\n");
+	menuCmdMap.insert(std::make_pair("LR", [=]() {
+		context.write("rotate object in hand\n");
 		rotateObjectInHand();
 		context.write("Done!\n");
+	}));
 
+	menuCmdMap.insert(std::make_pair("LN", [=]() {
+		context.write("nudge wrist\n");
+
+		auto showPose = [&](const std::string& description, const golem::Mat34& m) {
+			context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
+		};
+
+		const int dirCode = option("714682", "up:7 down:1 left:4 right:6 back:8 front:2");
+
+		const double s = 0.05; // 5cm step
+		golem::Vec3 nudge(golem::Vec3::zero());
+		switch (dirCode)
+		{
+		case '7': // up
+			nudge.z = s;
+			break;
+		case '1': // down
+			nudge.z = -s;
+			break;
+		case '4': // left
+			nudge.y = -s;
+			break;
+		case '6': // right
+			nudge.y = s;
+			break;
+		case '8': // back
+			nudge.x = -s;
+			break;
+		case '2': // front
+			nudge.x = s;
+			break;
+		};
+
+		// get current pose of wrist
+		const golem::U32 wristJoint = 7;
+		grasp::ConfigMat34 pose;
+		getPose(wristJoint, pose);
+		showPose("before", pose.w);
+
+		pose.w.p = pose.w.p + nudge;
+		showPose("commanded", pose.w);
+		gotoPoseWS(pose, 0.1, 0.1);
+
+		context.write("Done!\n");
 	}));
 
 	menuCtrlMap.insert(std::make_pair("C", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
