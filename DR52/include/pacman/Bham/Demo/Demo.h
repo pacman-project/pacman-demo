@@ -82,6 +82,7 @@ protected:
 	virtual void render() const;
 
 	void rotateObjectInHand();
+	grasp::Camera* getWristCamera() const;
 
 	Demo(golem::Scene &scene);
 	~Demo();

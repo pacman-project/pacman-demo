@@ -143,6 +143,28 @@ void pacman::Demo::render() const
 }
 
 
+grasp::Camera* pacman::Demo::getWristCamera() const
+{
+	const std::string id("OpenNI+OpenNI");
+	grasp::Sensor::Map::const_iterator i = sensorMap.find(id);
+	if (i == sensorMap.end())
+	{
+		context.write("%s was not found\n", id.c_str());
+		throw Cancel("getWristCamera: wrist-mounted camera is not available");
+	}
+
+	grasp::Camera* camera = grasp::is<grasp::Camera>(i);
+
+	// want the wrist-mounted camera
+	if (!camera->hasVariableMounting())
+	{
+		context.write("%s is a static camera\n", id.c_str());
+		throw Cancel("getWristCamera: wrist-mounted camera is not available");
+	}
+
+	return camera;
+}
+
 void pacman::Demo::rotateObjectInHand()
 {
 	auto showPose = [&](const std::string& description, const golem::Mat34& m) {
@@ -163,29 +185,15 @@ void pacman::Demo::rotateObjectInHand()
 	getPose(wristJoint, pose);
 	showPose("before", pose.w);
 
-	// use mobile camera
-	grasp::Camera* camera = currentCamera;
-	if (camera == nullptr)
-	{
-		select(sensorCurrentPtr, sensorMap.begin(), sensorMap.end(), "Select Sensor:\n", [](grasp::Sensor::Map::const_iterator ptr) -> const std::string&{
-			return ptr->second->getID();
-		});
+	// current pose of mobile camera
+	grasp::Camera* camera = getWristCamera();
+	pose.w = camera->getFrame();
+	// rotate
+	pose.w.R = pose.w.R * rotz;
+	showPose("commanded", pose.w);
+	const golem::Mat34 goalPose = activeSense->computeGoal(pose.w, camera);
+	gotoPoseWS(goalPose, 0.1, 0.1);
 
-		camera = grasp::to<grasp::Camera>(sensorCurrentPtr);
-	}
-	if (camera->hasVariableMounting())
-	{
-		// current pose of mobile camera
-		pose.w = camera->getFrame();
-		// rotate
-		pose.w.R = pose.w.R * rotz;
-		showPose("commanded", pose.w);
-		const golem::Mat34 goalPose = activeSense->computeGoal(pose.w, camera);
-		gotoPoseWS(goalPose, 0.1, 0.1);
-	}
-	else
-		context.write("%s is a static camera\n", camera->getID().c_str());
-	
 	getPose(wristJoint, pose);
 	showPose("final wrist pose", pose.w);
 	
@@ -275,9 +283,20 @@ void pacman::Demo::create(const Desc& desc) {
 		getPose(wristJoint, pose);
 		showPose("before", pose.w);
 
+		grasp::Camera* camera = getWristCamera();
+		pose.w = camera->getFrame();
+		showPose("camera frame before", pose.w);
+
 		pose.w.p = pose.w.p + nudge;
 		showPose("commanded", pose.w);
-		gotoPoseWS(pose, 0.1, 0.1);
+
+		const golem::Mat34 goalPose = activeSense->computeGoal(pose.w, camera);
+		gotoPoseWS(goalPose, 0.1, 0.1);
+
+		getPose(wristJoint, pose);
+		showPose("final wrist pose", pose.w);
+		pose.w = camera->getFrame();
+		showPose("final camera frame", pose.w);
 
 		context.write("Done!\n");
 	}));
