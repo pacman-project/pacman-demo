@@ -81,6 +81,8 @@ protected:
 	virtual void postprocess(golem::SecTmReal elapsedTime);
 	virtual void render() const;
 
+	golem::Mat34 getWristPose() const;
+	void gotoWristPose(const golem::Mat34& w);
 	void rotateObjectInHand();
 	grasp::Camera* getWristCamera() const;
 

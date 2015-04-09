@@ -165,37 +165,70 @@ grasp::Camera* pacman::Demo::getWristCamera() const
 	return camera;
 }
 
+golem::Mat34 pacman::Demo::getWristPose() const
+{
+	const golem::U32 wristJoint = 6; // @@@
+	grasp::ConfigMat34 pose;
+	getPose(wristJoint, pose);
+	return pose.w;
+}
+
+void pacman::Demo::gotoWristPose(const golem::Mat34& w)
+{
+	const golem::Mat34 R = controller->getChains()[armInfo.getChains().begin()]->getReferencePose();
+	const golem::Mat34 wR = w * R;
+
+	golem::Controller::State begin = controller->createState();
+	controller->lookupState(SEC_TM_REAL_MAX, begin);
+
+	golem::Controller::State::Seq trajectory;
+	const grasp::RBDist err = findTrajectory(begin, nullptr, &wR, trajectoryDuration, trajectory);
+
+	sendTrajectory(trajectory);
+	controller->waitForEnd();
+	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
+}
+
+
 void pacman::Demo::rotateObjectInHand()
 {
 	auto showPose = [&](const std::string& description, const golem::Mat34& m) {
 		context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
 	};
 
-	const bool rhScrew = option("RL", "RH or LH screw for rotation?") == 'R';
+	const int rotType = option("RLUD", "rotation: RH or LH screw, Up or Down");
 
-	// rotation about z-axis
-	const double angstep = golem::REAL_2_PI / tracker_nstep * (rhScrew ? 1.0 : -1.0);
-	golem::Mat33 rotz(golem::Mat33(angstep, golem::Vec3(0.0, 0.0, 1.0)));
-	const golem::Vec3 Rx = rotz * golem::Vec3(1.0, 0.0, 0.0);
-	context.write("%s: nstep=%d, dphi=%f, R*x=(%f, %f, %f)\n", "rotation", tracker_nstep, angstep, Rx.x, Rx.y, Rx.z);
+	double angstep = golem::REAL_2_PI / tracker_nstep;
+	golem::Vec3 rotAxis(golem::Vec3::zero());
 
-	// get current pose of wrist
-	const golem::U32 wristJoint = 7;
-	grasp::ConfigMat34 pose;
-	getPose(wristJoint, pose);
-	showPose("before", pose.w);
+	switch(rotType)
+	{
+	case 'R':
+		rotAxis.z = 1.0;
+		break;
+	case 'L':
+		rotAxis.z = 1.0;
+		angstep = -angstep;
+		break;
+	case 'U':
+		rotAxis.y = 1.0;
+		break;
+	case 'D':
+		rotAxis.y = 1.0;
+		angstep = -angstep;
+		break;
+	}
 
-	// current pose of mobile camera
-	grasp::Camera* camera = getWristCamera();
-	pose.w = camera->getFrame();
-	// rotate
-	pose.w.R = pose.w.R * rotz;
-	showPose("commanded", pose.w);
-	const golem::Mat34 goalPose = activeSense->computeGoal(pose.w, camera);
-	gotoPoseWS(goalPose, 0.1, 0.1);
+	golem::Mat33 rot(golem::Mat33(angstep, rotAxis));
 
-	getPose(wristJoint, pose);
-	showPose("final wrist pose", pose.w);
+	golem::Mat34 pose = getWristPose();
+	showPose("before", pose);
+
+	pose.R = pose.R * rot;
+	showPose("commanded", pose);
+
+	gotoWristPose(pose);
+	showPose("final wrist", getWristPose());
 	
 	recordingStart(dataCurrentPtr->first, recordingLabel, false);
 	context.write("taken snapshot\n");
@@ -251,9 +284,28 @@ void pacman::Demo::create(const Desc& desc) {
 			context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
 		};
 
-		const int dirCode = option("714682", "up:7 down:1 left:4 right:6 back:8 front:2");
+		double s = 5; // 5cm step
+		int dirCode;
+		for (;;)
+		{
+			std::ostringstream os;
+			os << "up:7 down:1 left:4 right:6 back:8 front:2 null:0 STEP(" << s << " cm):+/-";
+			dirCode = option("7146820+-", os.str().c_str());
+			if (dirCode == '+')
+			{
+				s *= 2;
+				if (s > 20.0) s = 20.0;
+				continue;
+			}
+			if (dirCode == '-')
+			{
+				s /= 2;
+				continue;
+			}
+			break;
+		}
+		s /= 100.0; // cm -> m
 
-		const double s = 0.05; // 5cm step
 		golem::Vec3 nudge(golem::Vec3::zero());
 		switch (dirCode)
 		{
@@ -277,26 +329,26 @@ void pacman::Demo::create(const Desc& desc) {
 			break;
 		};
 
-		// get current pose of wrist
-		const golem::U32 wristJoint = 7;
-		grasp::ConfigMat34 pose;
-		getPose(wristJoint, pose);
-		showPose("before", pose.w);
+		golem::Mat34 pose;
 
 		grasp::Camera* camera = getWristCamera();
-		pose.w = camera->getFrame();
-		showPose("camera frame before", pose.w);
+		pose = camera->getFrame();
+		showPose("camera before", pose);
 
-		pose.w.p = pose.w.p + nudge;
-		showPose("commanded", pose.w);
+		pose = getWristPose();
+		showPose("before", pose);
 
-		const golem::Mat34 goalPose = activeSense->computeGoal(pose.w, camera);
-		gotoPoseWS(goalPose, 0.1, 0.1);
+		pose.p = pose.p + nudge;
+		showPose("commanded", pose);
 
-		getPose(wristJoint, pose);
-		showPose("final wrist pose", pose.w);
-		pose.w = camera->getFrame();
-		showPose("final camera frame", pose.w);
+		//const golem::Mat34 goalPose = activeSense->computeGoal(pose, camera);
+		//gotoPoseWS(goalPose, 0.1, 0.1);
+
+		gotoWristPose(pose);
+
+		showPose("final wrist", getWristPose());
+		pose = camera->getFrame();
+		showPose("final camera", pose);
 
 		context.write("Done!\n");
 	}));
