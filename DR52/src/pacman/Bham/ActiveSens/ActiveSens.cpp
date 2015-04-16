@@ -5,7 +5,7 @@
 #include <pcl/common/centroid.h>
 #include <pcl/filters/filter.h>
 #include <Grasp/Data/PredictorModel/PredictorModel.h>
-
+#include <Grasp/Data/PointsCurv/PointsCurv.h>
 
 using namespace pacman;
 using namespace golem;
@@ -199,7 +199,8 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 	golem::XMLContext* pxmlcontext = xmlcontext->getContextFirst("active_sense parameters");
 
 
-	std::string selectionMethodStr, generationMethodStr;
+	std::string selectionMethodStr, generationMethodStr, coverageMethodStr, stoppingCriteriaStr;
+
 	XMLData("sensor_id", this->sensorId, pxmlcontext);
 	XMLData("selection_method", selectionMethodStr, pxmlcontext);
 	XMLData("generation_method", generationMethodStr, pxmlcontext);
@@ -209,12 +210,30 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 	XMLData("radius", this->radius, pxmlcontext);
 	XMLData("nsamples", this->nsamples, pxmlcontext);
 	XMLData("nviews", this->nviews, pxmlcontext);
+	XMLData("coverage_threshold", this->coverageThr, pxmlcontext);
+	XMLData("coverage_method", coverageMethodStr, pxmlcontext);
+	XMLData("stopping_criteria", stoppingCriteriaStr, pxmlcontext);
+	XMLData("enable_coverage_filter_plane", this->filterPlane, pxmlcontext);
 	XMLData("min_phi", this->minPhi, pxmlcontext);
 	XMLData("max_phi", this->maxPhi, pxmlcontext);
 	XMLData("min_theta", this->minTheta, pxmlcontext);
 	XMLData("max_theta", this->maxTheta, pxmlcontext);
 
 	XMLData(this->centroid, pxmlcontext->getContextFirst("centroid"), false);
+
+	if (!coverageMethodStr.compare("area_based"))
+		this->coverageMethod = ECoverageMethod::M_AREA_BASED;
+	else if (!coverageMethodStr.compare("volume_based"))
+		this->coverageMethod = ECoverageMethod::M_VOLUME_BASED;
+	else
+		this->coverageMethod = ECoverageMethod::M_NONE;
+
+	if (!stoppingCriteriaStr.compare("number_of_views"))
+		this->stoppingCriteria = EStoppingCriteria::C_NVIEWS;
+	else if (!stoppingCriteriaStr.compare("coverage"))
+		this->stoppingCriteria = EStoppingCriteria::C_COVERAGE;
+	else
+		this->stoppingCriteria = EStoppingCriteria::C_NONE;
 
 	if (!selectionMethodStr.compare("contact_based"))
 		this->selectionMethod = ESelectionMethod::S_CONTACT_BASED;
@@ -392,7 +411,61 @@ grasp::Manager::Data::Map::iterator pacman::ActiveSense::createData()
 	return demoOwner->dataCurrentPtr;
 }
 
+golem::Vec3 pacman::ActiveSense::computeCentroid(CloudT::Ptr cloudIn)
+{
+	
+	golem::Vec3 centroid(0.0, 0.0, 0.0);
+	this->demoOwner->context.write("ActiveSense: Computing Centroid: %lf %lf %lf CloudSize %d \n", centroid.x, centroid.y, centroid.z, cloudIn->size());
+	//Computes centroid ignoring NaNs
+	int count = 0;
+	for (int i = 0; i < cloudIn->size(); i++)
+	{
+		// Ignoring NaNs
+		if (cloudIn->at(i).x != cloudIn->at(i).x || cloudIn->at(i).y != cloudIn->at(i).y || cloudIn->at(i).z != cloudIn->at(i).z)
+			continue;
 
+		centroid.x += cloudIn->at(i).x;
+		centroid.y += cloudIn->at(i).y;
+		centroid.z += cloudIn->at(i).z;
+
+		count++;
+
+	}
+	centroid /= float(count);
+	this->demoOwner->context.write("ActiveSense: RESULT Centroid ==>>> %lf %lf %lf\n", centroid.x, centroid.y, centroid.z);
+
+	return centroid;
+
+
+}
+
+golem::Vec3 pacman::ActiveSense::computeCentroid2(grasp::Cloud::PointCurvSeq::Ptr cloudIn)
+{
+
+	golem::Vec3 centroid(0.0, 0.0, 0.0);
+	this->demoOwner->context.write("ActiveSense: Computing Centroid: %lf %lf %lf CloudSize %d \n", centroid.x, centroid.y, centroid.z, cloudIn->size());
+	//Computes centroid ignoring NaNs
+	int count = 0;
+	for (int i = 0; i < cloudIn->size(); i++)
+	{
+		// Ignoring NaNs
+		if (cloudIn->at(i).x != cloudIn->at(i).x || cloudIn->at(i).y != cloudIn->at(i).y || cloudIn->at(i).z != cloudIn->at(i).z)
+			continue;
+
+		centroid.x += cloudIn->at(i).x;
+		centroid.y += cloudIn->at(i).y;
+		centroid.z += cloudIn->at(i).z;
+
+		count++;
+
+	}
+	centroid /= float(count);
+	this->demoOwner->context.write("ActiveSense: RESULT Centroid ==>>> %lf %lf %lf\n", centroid.x, centroid.y, centroid.z);
+
+	return centroid;
+
+
+}
 golem::Vec3 pacman::ActiveSense::computeCentroid(grasp::data::Item::Map::const_iterator itemImage)
 {
 	golem::Vec3 centroid(0.0, 0.0, 0.0);
@@ -405,25 +478,8 @@ golem::Vec3 pacman::ActiveSense::computeCentroid(grasp::data::Item::Map::const_i
 		throw Cancel("ActiveSense: This is not an ItemImage!\n");
 	}
 
-	this->demoOwner->context.write("ActiveSense: Computing Centroid: %lf %lf %lf CloudSize %d \n", centroid.x, centroid.y, centroid.z, image->cloud->size());
-
-	//Computes centroid ignoring NaNs
-	int count = 0;
-	for (int i = 0; i < image->cloud->size(); i++)
-	{
-		// Ignoring NaNs
-		if (image->cloud->at(i).x != image->cloud->at(i).x || image->cloud->at(i).y != image->cloud->at(i).y || image->cloud->at(i).z != image->cloud->at(i).z)
-			continue;
-
-		centroid.x += image->cloud->at(i).x;
-		centroid.y += image->cloud->at(i).y;
-		centroid.z += image->cloud->at(i).z;
-		count++;
-
-	}
-	centroid /= float(count);
-	this->demoOwner->context.write("ActiveSense: RESULT Centroid ==>>> %lf %lf %lf\n", centroid.x, centroid.y, centroid.z);
-
+	centroid = computeCentroid(image->cloud);
+	
 	return centroid;
 }
 
@@ -613,7 +669,9 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 	}
 
 	grasp::data::ItemPredictorModel::Map::iterator ptr;
-	for (int i = 0; i < size; i++)
+	bool stop = false;
+	int i = 0;
+	while (!stop)
 	{
 
 		if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED)
@@ -697,6 +755,35 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 
 		//Integrate views into the current pointCurv
 		this->pointCurvItem = processItems(scannedImageItems);
+
+		i++;
+		//Checking stopping criteria
+		if (params.stoppingCriteria == EStoppingCriteria::C_NVIEWS)
+		{
+			stop = i >= size;
+		}	
+		else if (params.stoppingCriteria == EStoppingCriteria::C_COVERAGE)
+		{
+			std::vector< pcl::Vertices > polygons;
+			grasp::data::ItemPointsCurv* image = grasp::is<grasp::data::ItemPointsCurv>(this->pointCurvItem);
+			golem::Real coverage = 0.0;
+			if (image)
+			{
+				coverage = computeCoverage(image->cloud, polygons);
+			}
+			else
+			{
+				demoOwner->context.write("ActiveSense: This is not an ItemImage.\n");
+			}
+			
+			stop = coverage >= params.coverageThr;
+		}
+		else
+		{
+			demoOwner->context.write("ActiveSense: Unknown stopping criteria, stopping now.\n");
+			stop = true;
+		}
+			
 
 	}
 
@@ -1190,6 +1277,133 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::computeTransformPredModel(
 
 	return predModelNew;
 }
+
+/** Ad-hoc Tools for cloud processing ***/
+
+void pacman::ActiveSense::removeInliers(grasp::Cloud::PointCurvSeq::Ptr cloudIn, const pcl::PointIndices::Ptr& inliersIn, grasp::Cloud::PointCurvSeq::Ptr cloudOut, bool negative)
+{
+	demoOwner->context.write("ActiveSense: Removing plane inliers.\n");
+	// Create the filtering object
+	pcl::ExtractIndices<grasp::Cloud::PointCurv> extract;
+	// Extract the inliers
+	extract.setInputCloud(cloudIn);
+	extract.setIndices(inliersIn);
+	extract.setNegative(negative);
+	extract.filter(*cloudOut);
+
+	demoOwner->context.write("ActiveSense: Point cloud representing the non planar component has %d data points.\n", cloudOut->width * cloudOut->height);
+
+}
+
+void pacman::ActiveSense::segmentPlane(grasp::Cloud::PointCurvSeq::Ptr cloudIn, const pcl::ModelCoefficients::Ptr& coefficientsOut, const pcl::PointIndices::Ptr& inliersOut)
+{
+	demoOwner->context.write("ActiveSense: Plane segmentation.\n");
+
+	// Create the segmentation object
+	pcl::SACSegmentation<grasp::Cloud::PointCurv> seg;
+	// Optional
+	seg.setOptimizeCoefficients(true);
+	// Mandatory
+	seg.setModelType(pcl::SACMODEL_PLANE);
+	seg.setMethodType(pcl::SAC_RANSAC);
+	seg.setDistanceThreshold(0.01);
+
+	seg.setInputCloud(cloudIn);
+	seg.segment(*inliersOut, *coefficientsOut);
+
+	demoOwner->context.write("ActiveSense: PointCloud after plane segmentation has %d data points.\n", inliersOut->indices.size());
+
+
+}
+void pacman::ActiveSense::projectOnSphere(grasp::Cloud::PointCurvSeq::Ptr cloudIn, const pcl::ModelCoefficients::Ptr& coefficientsIn, grasp::Cloud::PointCurvSeq::Ptr cloudOut)
+{
+	demoOwner->context.write("ActiveSense: Projecting object points on sphere.\n");
+
+	pcl::copyPointCloud<grasp::Cloud::PointCurv, grasp::Cloud::PointCurv>(*cloudIn, *cloudOut);
+
+	golem::Vec3 sphereCenter(coefficientsIn->values[0], coefficientsIn->values[1], coefficientsIn->values[2]);
+	golem::Real sphereRadius = coefficientsIn->values[3];
+	golem::Vec3 radiusVec(0.0, 0.0, 0.0);
+	golem::Real factor = 0.0;
+	for (int i = 0; i < cloudOut->points.size(); i++)
+	{
+		radiusVec.x = cloudOut->points[i].x - sphereCenter.x;
+		radiusVec.y = cloudOut->points[i].y - sphereCenter.y;
+		radiusVec.z = cloudOut->points[i].z - sphereCenter.z;
+		factor = sphereRadius / sqrt(radiusVec.x*radiusVec.x + radiusVec.y*radiusVec.y + radiusVec.z*radiusVec.z);
+		//Making its magnitude equals to sphereRadius
+		radiusVec.x *= factor; radiusVec.y *= factor; radiusVec.z *= factor;
+
+		//Projecting onto the sphere surface
+		cloudOut->points[i].x = sphereCenter.x + radiusVec.x;
+		cloudOut->points[i].y = sphereCenter.y + radiusVec.y;
+		cloudOut->points[i].z = sphereCenter.z + radiusVec.z;
+	}
+
+	demoOwner->context.write("ActiveSense: PointCloud after projection has %d data points.\n", cloudOut->points.size());
+
+
+}
+void pacman::ActiveSense::computeHull(grasp::Cloud::PointCurvSeq::Ptr cloudIn, grasp::Cloud::PointCurvSeq::Ptr cloudOut, std::vector< pcl::Vertices > &polygonOut, golem::Real &area, golem::Real& volume)
+{
+	demoOwner->context.write("ActiveSense: Computing Convex Hull.\n");
+
+	// Create a Concave Hull representation of the projected inliers
+	pcl::ConvexHull<grasp::Cloud::PointCurv> chull;
+	chull.setComputeAreaVolume(true);
+	chull.setInputCloud(cloudIn);
+	chull.reconstruct(*cloudOut, polygonOut);
+	area = chull.getTotalArea();
+	volume = chull.getTotalVolume();
+	demoOwner->context.write("ActiveSense: -----\n\nConvex hull has %d data points. Area is %lf, Volume is %lf-----\n\n", cloudOut->points.size(),area, volume);
+
+}
+golem::Real pacman::ActiveSense::computeCoverage(grasp::Cloud::PointCurvSeq::Ptr cloudIn, std::vector< pcl::Vertices >& polygonOut)
+{
+	demoOwner->context.write("ActiveSense: Computing Coverage.\n");
+	//Local
+	golem::Vec3 centroid;
+	grasp::Cloud::PointCurvSeq::Ptr tempCloud(new grasp::Cloud::PointCurvSeq);
+	golem::Real coverage = 0.0, area = 0.0, volume = 0.0;
+
+
+
+	if (params.filterPlane) {
+		pcl::ModelCoefficients::Ptr coefficientsPlane(new pcl::ModelCoefficients);
+		pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+		segmentPlane(cloudIn, coefficientsPlane, inliers);
+		removeInliers(cloudIn, inliers, tempCloud);
+	}
+	else
+	{
+		pcl::copyPointCloud<grasp::Cloud::PointCurv, grasp::Cloud::PointCurv>(*cloudIn, *tempCloud);
+	}
+
+
+	centroid = computeCentroid2(tempCloud);
+
+	pcl::ModelCoefficients::Ptr coefficientsSphere(new pcl::ModelCoefficients);
+	coefficientsSphere->values.resize(4);
+	coefficientsSphere->values[0] = centroid.x, coefficientsSphere->values[1] = centroid.y, coefficientsSphere->values[2] = centroid.z;
+	coefficientsSphere->values[3] = 1.0;
+
+	projectOnSphere(tempCloud, coefficientsSphere, tempCloud);
+
+	computeHull(tempCloud, tempCloud, polygonOut, area, volume);
+
+	if (params.coverageMethod == ECoverageMethod::M_AREA_BASED)
+		coverage = area / (4.0*golem::REAL_PI); //currentArea/TotalSphereSurfaceArea (unit sphere)
+	else if (ECoverageMethod::M_VOLUME_BASED)
+		coverage = volume / ((4.0 / 3.0)*golem::REAL_PI); //currentArea/TotalSphereVolume(unit sphere)
+	else
+		throw Cancel("computeCoverage: coverage method unsupported");
+
+
+	demoOwner->context.write("ActiveSense: current coverage is %lf\n", coverage);
+	return coverage;
+
+}
+
 
 //--------------------------------------------------------------------------------
 void pacman::ActiveSenseController::initActiveSense(pacman::Demo* demoOwner)
