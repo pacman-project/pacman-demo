@@ -20,13 +20,23 @@
 #include <Grasp/Core/UI.h>
 #include <Grasp/App/Player/Player.h>
 
+#include <Grasp/Core/Cloud.h>
+/** Extra PCL Includes */
+#include <pcl/ModelCoefficients.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/surface/convex_hull.h>
+#include <pcl/Vertices.h>
+
 
 /** PaCMan name space */
 namespace pacman {
 
 	class Demo;
 	//------------------------------------------------------------------------------
-
+	
 
 	/** Sensor interface */
 	class HypothesisSensor {
@@ -196,6 +206,22 @@ namespace pacman {
 
 	public:
 
+		enum EStoppingCriteria {
+
+			C_NVIEWS,
+			C_COVERAGE,
+			C_NONE //Used for validity check
+
+		};
+
+		enum ECoverageMethod {
+
+			M_AREA_BASED,
+			M_VOLUME_BASED,
+			M_NONE //Used for validity check
+
+		};
+
 		enum ESelectionMethod {
 
 			S_RANDOM,
@@ -227,6 +253,8 @@ namespace pacman {
 			/** Number of hypothesis samples */
 			golem::U32 nsamples, nviews;
 
+	
+
 			/** Radius of the sphere defines the distance from object centroid from which sensor hypothesis are going to be generated */
 			golem::Real radius;
 
@@ -238,10 +266,15 @@ namespace pacman {
 			/**
 			Defines whether this->centroid is going to be manually set or computed from a image point cloud item
 			*/
-			bool useManualCentroid, useHeightBias, regenerateViews;
+			bool useManualCentroid, useHeightBias, regenerateViews, filterPlane;
 			/** Min and Max values for biased hypothesis generation (heuristics for minimizing shade) */
 			golem::Real minPhi, maxPhi, minTheta, maxTheta; //Param
-			golem::U32 selectionMethod, generationMethod;
+
+			golem::U32 selectionMethod, generationMethod, coverageMethod, stoppingCriteria;
+
+			/** Coverage threshold for stopping criteria */
+			golem::Real coverageThr;
+
 
 			/** Configuration sequence */
 			HypothesisSensor::Config::Seq configSeq;
@@ -254,6 +287,7 @@ namespace pacman {
 				this->radius = 0.35;
 				this->nsamples = 5;
 				this->nviews = 5;
+				this->coverageThr = 0.8;
 				this->useManualCentroid = false;
 				this->centroid.setZero();
 				this->minPhi = 30.0;
@@ -263,6 +297,9 @@ namespace pacman {
 
 				this->selectionMethod = ESelectionMethod::S_CONTACT_BASED;
 				this->generationMethod = EGenerationMethod::G_RANDOM_SPHERE;
+				this->coverageMethod = ECoverageMethod::M_AREA_BASED;
+				this->stoppingCriteria = EStoppingCriteria::C_NVIEWS;
+				this->filterPlane = false;
 
 				this->sensorId = "OpenNI+OpenNI";
 
@@ -276,6 +313,8 @@ namespace pacman {
 				grasp::Assert::valid(this->radius > 0, ac, "radius: <= 0");
 				grasp::Assert::valid(this->selectionMethod != ESelectionMethod::S_NONE, ac, "Selection Method: is S_NONE (unknown selection method)");
 				grasp::Assert::valid(this->generationMethod != EGenerationMethod::G_NONE, ac, "Generation Method: is G_NONE (unknown generation method)");
+				grasp::Assert::valid(this->coverageMethod != ECoverageMethod::M_NONE, ac, "Coverage Method: is M_NONE (unknown coverage method)");
+				grasp::Assert::valid(this->stoppingCriteria != EStoppingCriteria::C_NONE, ac, "Stopping Criteria: is C_NONE (unknown stopping criteria)");
 			}
 			/** Load from xml context */
 			void load(const golem::XMLContext* xmlcontext);
@@ -476,14 +515,14 @@ namespace pacman {
 		/**
 		Gets Parameters of *this
 		*/
-		pacman::ActiveSense::Parameters& getParameters(){
+		Parameters& getParameters(){
 			return this->params;
 		}
 
 		/**
 		Gets Parameters of *this
 		*/
-		const pacman::ActiveSense::Result& getResult(){
+		const Result& getResult(){
 			this->result;
 		}
 		/**
@@ -505,6 +544,9 @@ namespace pacman {
 		void load(const golem::XMLContext* xmlcontext);
 
 	protected:
+		/** Ad-hoc Tools for cloud processing: Aux Types **/
+		typedef grasp::Cloud::PointSeq CloudT;
+		typedef grasp::Cloud::Point PointT;
 
 		/**
 		Adds item and its corresponding label to demoOwner->dataCurrentPtr->itemMap
@@ -533,7 +575,8 @@ namespace pacman {
 		(undefined behaviour if it's not a pointcloud)
 		*/
 		golem::Vec3 computeCentroid(grasp::data::Item::Map::const_iterator itemImage);
-
+		golem::Vec3 computeCentroid(CloudT::Ptr cloudIn);
+		golem::Vec3 computeCentroid2(grasp::Cloud::PointCurvSeq::Ptr cloudIn); //TODO: Do it properly
 
 		/**
 		Gets DemoOwner's OPENNI Camera, and also sets it as its demoOwner->sensorCurrentPtr
@@ -584,9 +627,16 @@ namespace pacman {
 
 		/** Computes computes collision bounds given an input itemImage */
 		grasp::CollisionBounds::Ptr selectCollisionBounds(bool draw, grasp::data::Item::Map::const_iterator input);
+		
 
+		/** Ad-hoc Tools for cloud processing: Functions **/
+		
 
-
+		void removeInliers(grasp::Cloud::PointCurvSeq::Ptr cloudIn, const pcl::PointIndices::Ptr& inliersIn, grasp::Cloud::PointCurvSeq::Ptr cloudOut, bool negative = true);
+		void segmentPlane(grasp::Cloud::PointCurvSeq::Ptr cloudIn, const pcl::ModelCoefficients::Ptr& coefficientsOut, const pcl::PointIndices::Ptr& inliersOut);
+		void projectOnSphere(grasp::Cloud::PointCurvSeq::Ptr cloudIn, const pcl::ModelCoefficients::Ptr& coefficientsIn, grasp::Cloud::PointCurvSeq::Ptr cloudOut);
+		void computeHull(grasp::Cloud::PointCurvSeq::Ptr cloudIn, grasp::Cloud::PointCurvSeq::Ptr cloudOut, std::vector< pcl::Vertices > &polygonOut, golem::Real& area, golem::Real& volume);
+		golem::Real computeCoverage(grasp::Cloud::PointCurvSeq::Ptr cloudIn, std::vector< pcl::Vertices >& polygonOut);
 	protected:
 		golem::CriticalSection csRenderer;
 		golem::DebugRenderer debugRenderer;
