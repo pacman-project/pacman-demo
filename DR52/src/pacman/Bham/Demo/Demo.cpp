@@ -31,6 +31,7 @@ void Demo::Data::setOwner(Manager* owner) {
 	this->owner = is<Demo>(owner);
 	if (!this->owner)
 		throw Message(Message::LEVEL_CRIT, "pacman::Demo::Data::setOwner(): unknown data owner");
+	dataName = this->owner->dataName;
 }
 
 void Demo::Data::createRender() {
@@ -48,21 +49,33 @@ void Demo::Data::createRender() {
 void Demo::Data::load(const std::string& prefix, const golem::XMLContext* xmlcontext, const data::Handler::Map& handlerMap) {
 	data::Data::load(prefix, xmlcontext, handlerMap);
 
-	FileReadStream frs((prefix + sepName + this->owner->dataName).c_str());
-	frs.read(drainerPose);
-	frs.read(drainerVertices, drainerVertices.end());
-	frs.read(drainerTriangles, drainerTriangles.end());
-	frs.read(drainerModelTriangles, drainerModelTriangles.end());
+	try {
+		dataName.clear();
+		golem::XMLData("data_name", dataName, const_cast<golem::XMLContext*>(xmlcontext), false);
+		if (dataName.length() > 0) {
+			FileReadStream frs((prefix + sepName + dataName).c_str());
+			frs.read(drainerPose);
+			frs.read(drainerVertices, drainerVertices.end());
+			frs.read(drainerTriangles, drainerTriangles.end());
+			frs.read(drainerModelTriangles, drainerModelTriangles.end());
+		}
+	}
+	catch (const std::exception&) {
+
+	}
 }
 
 void Demo::Data::save(const std::string& prefix, golem::XMLContext* xmlcontext) const {
 	data::Data::save(prefix, xmlcontext);
 
-	FileWriteStream fws((prefix + sepName + this->owner->dataName).c_str());
-	fws.write(drainerPose);
-	fws.write(drainerVertices.begin(), drainerVertices.end());
-	fws.write(drainerTriangles.begin(), drainerTriangles.end());
-	fws.write(drainerModelTriangles.begin(), drainerModelTriangles.end());
+	if (dataName.length() > 0) {
+		golem::XMLData("data_name", const_cast<std::string&>(dataName), xmlcontext, true);
+		FileWriteStream fws((prefix + sepName + dataName).c_str());
+		fws.write(drainerPose);
+		fws.write(drainerVertices.begin(), drainerVertices.end());
+		fws.write(drainerTriangles.begin(), drainerTriangles.end());
+		fws.write(drainerModelTriangles.begin(), drainerModelTriangles.end());
+	}
 }
 
 //------------------------------------------------------------------------------

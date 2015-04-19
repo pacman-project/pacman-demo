@@ -22,6 +22,9 @@ public:
 	/** Data */
 	class Data : public grasp::Player::Data {
 	public:
+		/** Data bundle default name */
+		std::string dataName;
+
 		/** Drainer pose */
 		golem::Mat34 drainerPose;
 		/** Drainer model triangles */
