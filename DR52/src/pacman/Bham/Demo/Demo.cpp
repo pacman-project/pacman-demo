@@ -48,7 +48,7 @@ void Demo::Data::createRender() {
 void Demo::Data::load(const std::string& prefix, const golem::XMLContext* xmlcontext, const data::Handler::Map& handlerMap) {
 	data::Data::load(prefix, xmlcontext, handlerMap);
 
-	FileReadStream frs((prefix + this->owner->dataName).c_str());
+	FileReadStream frs((prefix + sepName + this->owner->dataName).c_str());
 	frs.read(drainerPose);
 	frs.read(drainerVertices, drainerVertices.end());
 	frs.read(drainerTriangles, drainerTriangles.end());
@@ -58,7 +58,7 @@ void Demo::Data::load(const std::string& prefix, const golem::XMLContext* xmlcon
 void Demo::Data::save(const std::string& prefix, golem::XMLContext* xmlcontext) const {
 	data::Data::save(prefix, xmlcontext);
 
-	FileWriteStream fws((prefix + this->owner->dataName).c_str());
+	FileWriteStream fws((prefix + sepName + this->owner->dataName).c_str());
 	fws.write(drainerPose);
 	fws.write(drainerVertices.begin(), drainerVertices.end());
 	fws.write(drainerTriangles.begin(), drainerTriangles.end());
@@ -123,15 +123,18 @@ void pacman::Demo::create(const Desc& desc) {
 	
 	// drainer pose scan and estimation
 	menuCmdMap.insert(std::make_pair("PM", [=]() {
+		// run robot
+		gotoPose(drainerScanPose);
 		// block keyboard and mouse interaction
 		InputBlock inputBlock(*this);
 		{
 			RenderBlock renderBlock(*this);
 			golem::CriticalSectionWrapper cswData(csData);
+			to<Data>(dataCurrentPtr)->itemMap.erase(drainerItem);
+			to<Data>(dataCurrentPtr)->drainerVertices.clear();
+			to<Data>(dataCurrentPtr)->drainerTriangles.clear();
 			to<Data>(dataCurrentPtr)->drainerModelTriangles.clear();
 		}
-		// run robot
-		gotoPose(drainerScanPose);
 		// obtain snapshot handler
 		data::Handler::Map::const_iterator handlerSnapshotPtr = handlerMap.find(drainerCamera->getSnapshotHandler());
 		if (handlerSnapshotPtr == handlerMap.end())
