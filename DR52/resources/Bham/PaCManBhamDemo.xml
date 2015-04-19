@@ -33,9 +33,16 @@
     </opengl>
   </scene>
 
-  <pacman_demo>
+  <demo data_name="data.pacmandemo">
+    <drainer camera="OpenNI+OpenNIDemo" handler="Image+ImageDemo" item="Drainer">
+      <scan_pose dim="61" c1="1.7097" c2="-0.944053" c3="1.20653" c4="-0.707639" c5="0.126298" c6="0.751986" c7="0.84115" c8="0" c9="0" c10="0" c11="0" c12="0" c13="0" c14="0" c15="0" c16="0" c17="0" c18="0" c19="0" c20="0" c21="0" c22="0" c23="0" c24="0" c25="0" c26="0" c27="0" c28="0" c29="0" c30="0" c31="0" c32="0" c33="0" c34="0" c35="0" c36="0" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0" c44="0" c45="0" c46="0" c47="0" c48="0" c49="0" c50="0" c51="0" c52="0" c53="0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c60="0" c61="0"/>
+      <colour>
+        <solid R="0" G="0" B="255" A="32"/>
+        <wire R="0" G="0" B="255" A="255"/>
+      </colour>
+    </drainer>
     
-  </pacman_demo>
+  </demo>
 
   <player>
     <!-- Birmingham robot simulation (controller, planner): library_path="GolemDeviceMultiCtrl" config_path="GolemDeviceRobotBhamSim" -->
@@ -107,7 +114,7 @@
     <controller id="KukaLWRSim+KukaLWRBorisR"/>
     <controller id="DLRHitHandIISim+DLRHitHandIIBorisR"/>
 
-    <sensor id="FTClient+FTClient"/>
+    <!--<sensor id="GraspFTDAQ+GraspFTDAQ"/>-->
     
     <activectrl library_path="GraspArmHandForce" config_path="GraspArmHandForce"/>
     <activectrl library_path="GraspArmHandWorkspace" config_path="GraspArmHandWorkspace"/>
@@ -150,12 +157,12 @@
 
   <recorder>
     <sensor library_path="GraspCameraDepthSim" config_path="GraspCameraDepthSim"/>
-    <sensor library_path="GraspCameraKinect" config_path="GraspCameraKinect"/>
+    <!--<sensor library_path="GraspCameraKinect" config_path="GraspCameraKinect"/>-->
     <!--<sensor library_path="GraspCameraOpenCV" config_path="GraspCameraOpenCV"/>-->
     <sensor library_path="GraspCameraOpenGL" config_path="GraspCameraOpenGL"/>
-    <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNI"/>
-    <sensor library_path="GraspCameraPointGrey" config_path="GraspCameraPointGrey"/>
-    <sensor library_path="GraspFTClient" config_path="GraspFTClient"/>
+    <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNIDemo"/>
+    <!--<sensor library_path="GraspCameraPointGrey" config_path="GraspCameraPointGrey"/>-->
+    <!--<sensor library_path="GraspFTClient" config_path="GraspFTClient"/>-->
     <!--<sensor library_path="GraspFTDAQ" config_path="GraspFTDAQ"/>-->
 
     <recording label="recorder">
@@ -166,7 +173,7 @@
   </recorder>
 
   <manager>
-    <data_template path="./data.xml" delete_if_moved="0" delete_if_unlinked="1" delete_if_temporary="1" ext=".xml" xml_handler="handler" xml_item="item" xml_label="label" xml_prefix="prefix" xml_name="use_name" sep_name="-" sep_field="&#x9;"/>
+    <data_template path="./data" delete_if_moved="0" delete_if_unlinked="1" delete_if_temporary="1" ext=".xml" xml_handler="handler" xml_item="item" xml_label="label" xml_prefix="prefix" xml_name="use_name" sep_name="-" sep_field="&#x9;"/>
 
     <handler library_path="GraspDataImage" config_path="GraspDataImage"/>
     <handler library_path="GraspDataPointsCurv" config_path="GraspDataPointsCurv"/>
@@ -175,6 +182,12 @@
     <handler library_path="GraspDataPredictorModel" config_path="GraspDataPredictorModel"/>
     <handler library_path="GraspDataPredictorQuery" config_path="GraspDataPredictorQuery"/>
     <handler library_path="GraspDataCompositions3D" config_path="GraspDataCompositions3D"/>
+
+    <handler library_path="GraspDataImage" config_path="GraspDataImageDemo"/>
+    <handler library_path="GraspDataPointsCurv" config_path="GraspDataPointsCurvDemo"/>
+    <handler library_path="GraspDataTrajectory" config_path="GraspDataTrajectoryDemo"/>
+    <handler library_path="GraspDataPredictorModel" config_path="GraspDataPredictorModelDemo"/>
+    <handler library_path="GraspDataPredictorQuery" config_path="GraspDataPredictorQueryDemo"/>
   </manager>
 
   <pose name="zero" dim="70" c1="0.0" c2="0.0" c3="0.0" c4="0.0" c5="0.0" c6="0.0" c7="0.0" c8="0.0" c9="0.0" c10="0.0" c11="0.0" c12="0.0" c13="0.0" c14="0.0" c15="0.0" c16="0.0" c17="0.0" c18="0.0" c19="0.0" c20="0.0" c21="0.0" c22="0.0" c23="0.0" c24="0.0" c25="0.0" c26="0.0" c27="0.0" c28="0.0" c29="0.0" c30="0.0" c31="0.0" c32="0.0" c33="0.0" c34="0.0" c35="0.0" c36="0.0" c37="0.0" c38="0.0" c39="0.0" c40="0.0" c41="0.0" c42="0.0" c43="0.0" c44="0.0" c45="0.0" c46="0.0" c47="0.0" c48="0.0" c49="0.0" c50="0.0" c51="0.0" c52="0.0" c53="0.0" c54="0.0" c55="0.0" c56="0.0" c57="0.0" c58="0.0" c59="0.0" c60="0.0" c61="0.0" c62="0.0" c63="0.0" c64="0.0" c65="0.0" c66="0.0" c67="0.0" c68="0.0" c69="0.0" c70="0.0"/>
