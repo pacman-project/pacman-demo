@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<grasp>
+  <data delete_if_moved="1" delete_if_unlinked="1" delete_if_temporary="1" model_suffix=".model">
+    <manipulator>
+      <config_map i1="0" i2="0" i3="0" i4="0" i5="0" i6="0" i7="0" i8="0" i9="0" i10="0" i11="10" i12="0" i13="0" i14="0" i15="14" i16="0" i17="0" i18="0" i19="18" i20="0" i21="0" i22="0" i23="22" i24="0" i25="0" i26="0" i27="26"/>
+      <trajectory lin="2000.0" ang="1000.0" collision="1" cluster_size="20" timeout="0.25"/>
+    </manipulator>
+
+    <configuration distance_scale="0.1" distance_stddev="1.0" distance_stddev_max="5.0" kernels="1000">
+      <pose_stddev lin="0.002" ang="1000.0"/>
+      <config_stddev c1="0.15708" c2="0.15708" c3="0.15708" c4="0.15708" c5="0.15708" c6="0.15708" c7="0.15708" c8="0.015708" c9="0.015708" c10="0.015708" c11="0.015708" c12="0.015708" c13="0.015708" c14="0.015708" c15="0.015708" c16="0.015708" c17="0.015708" c18="0.015708" c19="0.015708" c20="0.015708" c21="0.015708" c22="0.015708" c23="0.015708" c24="0.015708" c25="0.015708" c26="0.015708" c27="0.015708"/>
+    </configuration>
+
+    <model id="Base">
+      <contact_3d curv_fac="100.0" min_num="50" subsample_size="10000" distance="0.02" lambda="20.0" normal_slope="3.1415927"/>
+    </model>
+    <model id="Any">
+      <contact_3d curv_fac="100.0" min_num="50" subsample_size="0" distance="0.01" lambda="50.0" normal_slope="3.1415927"/>
+    </model>
+
+    <appearance>
+      <manipulator show_bounds="1" show_frames="1">
+        <bounds show_solid="1" show_wire="1" wire_width="1.0">
+          <solid_colour R="255" G="255" B="0" A="150"/>
+          <wire_colour R="127" G="127" B="127" A="255"/>
+        </bounds>
+        <bounds_select show_solid="1" show_wire="0" wire_width="1.0">
+          <solid_colour R="0" G="0" B="255" A="150"/>
+          <wire_colour R="127" G="127" B="127" A="255"/>
+        </bounds_select>
+        <chains_frame_size v1="0.1" v2="0.1" v3="0.1"/>
+        <joints_frame_size v1="0.01" v2="0.01" v3="0.01"/>
+      </manipulator>
+      <path show_vertices="1" show_edges="1" path_segments="50" path_delta="0.0">
+        <path_colour R="0" G="0" B="0" A="255"/>
+      </path>
+
+      <contact id="Base" points_show="0" frames_show="0" bounds_frame_show="1">
+        <colour R="0" G="0" B="0" A="0"/>
+        <colour R="0" G="0" B="0" A="0"/>
+        <colour R="255" G="255" B="255" A="50"/>
+        <colour R="255" G="255" B="0" A="50"/>
+        <colour R="0" G="255" B="255" A="50"/>
+        <colour R="255" G="0" B="255" A="50"/>
+        <frame_size v1="0.002" v2="0.002" v3="0.002"/>
+        <bounds_frame_size v1="0.03" v2="0.03" v3="0.03"/>
+      </contact>
+      <contact id="Any" points_show="1" frames_show="0" bounds_frame_show="0">
+        <colour R="0" G="0" B="0" A="0"/>
+        <colour R="0" G="0" B="0" A="0"/>
+        <colour R="0" G="255" B="255" A="100"/>
+        <colour R="0" G="255" B="255" A="100"/>
+        <colour R="0" G="255" B="255" A="100"/>
+        <colour R="0" G="255" B="255" A="100"/>
+        <frame_size v1="0.01" v2="0.01" v3="0.01"/>
+        <bounds_frame_size v1="0.01" v2="0.01" v3="0.01"/>
+      </contact>
+
+      <location>
+        <colour R="0" G="0" B="0" A="255"/>
+      </location>
+    </appearance>
+  </data>
+</grasp>
