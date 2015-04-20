@@ -517,6 +517,7 @@ SET(PACMAN_BHAM_DEMO_FILES
 	${PROJECT_ROOT}/resources/Bham/GraspDataPredictorQueryDemo.xml
 	${PROJECT_ROOT}/resources/Bham/GraspDataTrajectoryDemo.xml
 	${PROJECT_ROOT}/resources/Bham/PaCManBhamDemo.xml
+	${PROJECT_ROOT}/resources/Bham/GraspCameraOpenNIDemo.cal
 )
 SET(PACMAN_BHAM_DEMO_MODEL_FILES
 	${PROJECT_ROOT}/resources/Bham/PaCManBhamDemoDrainer.obj

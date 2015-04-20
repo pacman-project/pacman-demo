@@ -51,7 +51,7 @@ void Demo::Data::createRender() {
 void Demo::Data::load(const std::string& prefix, const golem::XMLContext* xmlcontext, const data::Handler::Map& handlerMap) {
 	data::Data::load(prefix, xmlcontext, handlerMap);
 
-	FileReadStream frs((prefix + this->owner->dataName).c_str());
+	FileReadStream frs((prefix + sepName + this->owner->dataName).c_str());
 	frs.read(drainerPose);
 	frs.read(drainerVertices, drainerVertices.end());
 	frs.read(drainerTriangles, drainerTriangles.end());
@@ -61,7 +61,7 @@ void Demo::Data::load(const std::string& prefix, const golem::XMLContext* xmlcon
 void Demo::Data::save(const std::string& prefix, golem::XMLContext* xmlcontext) const {
 	data::Data::save(prefix, xmlcontext);
 
-	FileWriteStream fws((prefix + this->owner->dataName).c_str());
+	FileWriteStream fws((prefix + sepName + this->owner->dataName).c_str());
 	fws.write(drainerPose);
 	fws.write(drainerVertices.begin(), drainerVertices.end());
 	fws.write(drainerTriangles.begin(), drainerTriangles.end());
@@ -339,28 +339,33 @@ void pacman::Demo::create(const Desc& desc) {
 	
 	// drainer pose scan and estimation
 	menuCmdMap.insert(std::make_pair("PM", [=]() {
-		UI::removeCallback(*this, getCurrentHandler());
-		{
-			RenderBlock renderBlock(*this);
-			golem::CriticalSectionWrapper cswData(csData);
-			to<Data>(dataCurrentPtr)->drainerModelTriangles.clear();
-		}
 		// run robot
 		gotoPose(drainerScanPose);
-		// obtain capture interface
-		data::Handler::Map::const_iterator handlerSnapshotPtr = handlerMap.find(drainerCamera->getSnapshotHandler());
-		if (handlerSnapshotPtr == handlerMap.end())
-			throw Message(Message::LEVEL_ERROR, "Unknown snapshot handler %s", drainerCamera->getSnapshotHandler().c_str());
-		data::Capture* capture = is<data::Capture>(handlerSnapshotPtr);
-		if (!capture)
-			throw Message(Message::LEVEL_ERROR, "Handler %s does not support Capture interface", drainerCamera->getSnapshotHandler().c_str());
-		// capture and insert data
-		data::Item::Map::iterator ptr;
+		// block keyboard and mouse interaction
+		InputBlock inputBlock(*this);
 		{
 			RenderBlock renderBlock(*this);
 			golem::CriticalSectionWrapper cswData(csData);
 			to<Data>(dataCurrentPtr)->itemMap.erase(drainerItem);
-			ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(drainerItem, capture->capture(*drainerCamera, [&](const grasp::TimeStamp*) -> bool { return true; })));
+			to<Data>(dataCurrentPtr)->drainerVertices.clear();
+			to<Data>(dataCurrentPtr)->drainerTriangles.clear();
+			to<Data>(dataCurrentPtr)->drainerModelTriangles.clear();
+		}
+		// obtain snapshot handler
+		data::Handler::Map::const_iterator handlerSnapshotPtr = handlerMap.find(drainerCamera->getSnapshotHandler());
+		if (handlerSnapshotPtr == handlerMap.end())
+			throw Message(Message::LEVEL_ERROR, "Unknown snapshot handler %s", drainerCamera->getSnapshotHandler().c_str());
+		// capture and insert data
+		data::Capture* capture = is<data::Capture>(handlerSnapshotPtr);
+		if (!capture)
+			throw Message(Message::LEVEL_ERROR, "Handler %s does not support Capture interface", drainerCamera->getSnapshotHandler().c_str());
+		data::Item::Map::iterator ptr;
+		data::Item::Ptr item = capture->capture(*drainerCamera, [&](const grasp::TimeStamp*) -> bool { return true; });
+		{
+			RenderBlock renderBlock(*this);
+			golem::CriticalSectionWrapper cswData(csData);
+			to<Data>(dataCurrentPtr)->itemMap.erase(drainerItem);
+			ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(drainerItem, item));
 			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
 		}
 		// generate features
@@ -369,7 +374,7 @@ void pacman::Demo::create(const Desc& desc) {
 			throw Message(Message::LEVEL_ERROR, "Handler %s does not support Transform interface", drainerCamera->getSnapshotHandler().c_str());
 		data::Item::List list;
 		list.insert(list.end(), ptr);
-		data::Item::Ptr item = transform->transform(list);
+		item = transform->transform(list);
 		{
 			RenderBlock renderBlock(*this);
 			golem::CriticalSectionWrapper cswData(csData);
@@ -380,7 +385,7 @@ void pacman::Demo::create(const Desc& desc) {
 		// estimate pose
 		data::Model* model = is<data::Model>(ptr);
 		if (!model)
-			throw Message(Message::LEVEL_ERROR, "Handler %s does not support Model interface", drainerCamera->getSnapshotHandler().c_str());
+			throw Message(Message::LEVEL_ERROR, "Item %s does not support Model interface", ptr->first.c_str());
 		grasp::ConfigMat34 robotPose;
 		golem::Mat34 drainerPose;
 		Vec3Seq drainerVertices;
@@ -396,12 +401,13 @@ void pacman::Demo::create(const Desc& desc) {
 				to<Data>(dataCurrentPtr)->drainerModelTriangles.push_back(Contact3D::Triangle(drainerVertices[j->t1], drainerVertices[j->t3], drainerVertices[j->t2]));
 		}
 		// done
+		context.write("Model load and estimation completed!\n");
 	}));
 	
 	// main demo
 	menuCmdMap.insert(std::make_pair("PD", [=]() {
 		// estimate pose
-		if (!to<Data>(dataCurrentPtr)->drainerModelTriangles.empty())
+		if (to<Data>(dataCurrentPtr)->drainerModelTriangles.empty())
 			menuCmdMap["PM"]();
 
 		// run demo
