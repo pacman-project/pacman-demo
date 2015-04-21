@@ -25,14 +25,10 @@ public:
 		/** Data bundle default name */
 		std::string dataName;
 
-		/** Drainer pose */
-		golem::Mat34 drainerPose;
-		/** Drainer model triangles */
-		grasp::Vec3Seq drainerVertices;
-		/** Drainer model triangles */
-		grasp::TriangleSeq drainerTriangles;
-		/** Drainer model triangles */
-		grasp::Contact3D::Triangle::Seq drainerModelTriangles;
+		/** Model triangles */
+		grasp::Vec3Seq modelVertices;
+		/** Model triangles */
+		grasp::TriangleSeq modelTriangles;
 
 		/** Data bundle description */
 		class Desc : public grasp::Player::Data::Desc {
@@ -72,18 +68,18 @@ public:
 		/** Data bundle default name */
 		std::string dataName;
 
-		/** Drainer pose estimation camera */
-		std::string drainerCamera;
-		/** Drainer data handler */
-		std::string drainerHandler;
-		/** Drainer data item */
-		std::string drainerItem;
-		/** Drainer scan pose */
-		grasp::ConfigMat34 drainerScanPose;
-		/** Drainer colour solid */
-		golem::RGBA drainerColourSolid;
-		/** Drainer colour wireframe */
-		golem::RGBA drainerColourWire;
+		/** Model pose estimation camera */
+		std::string modelCamera;
+		/** Model data handler */
+		std::string modelHandler;
+		/** Model data item */
+		std::string modelItem;
+		/** Model scan pose */
+		grasp::ConfigMat34 modelScanPose;
+		/** Model colour solid */
+		golem::RGBA modelColourSolid;
+		/** Model colour wireframe */
+		golem::RGBA modelColourWire;
 
 		/** Constructs from description object */
 		Desc() {
@@ -97,12 +93,12 @@ public:
 
 			dataName.clear();
 
-			drainerCamera.clear();
-			drainerHandler.clear();
-			drainerItem.clear();
-			drainerScanPose.setToDefault();
-			drainerColourSolid.set(golem::RGBA::GREEN._U8[0], golem::RGBA::GREEN._U8[1], golem::RGBA::GREEN._U8[2], golem::numeric_const<golem::U8>::MAX / 8);
-			drainerColourWire.set(golem::RGBA::GREEN);
+			modelCamera.clear();
+			modelHandler.clear();
+			modelItem.clear();
+			modelScanPose.setToDefault();
+			modelColourSolid.set(golem::RGBA::GREEN._U8[0], golem::RGBA::GREEN._U8[1], golem::RGBA::GREEN._U8[2], golem::numeric_const<golem::U8>::MAX / 8);
+			modelColourWire.set(golem::RGBA::GREEN);
 		}
 		/** Assert that the description is valid. */
 		virtual void assertValid(const grasp::Assert::Context& ac) const {
@@ -112,10 +108,10 @@ public:
 
 			grasp::Assert::valid(dataName.length() > 0, ac, "dataName: invalid");
 
-			grasp::Assert::valid(drainerCamera.length() > 0, ac, "drainerCamera: invalid");
-			grasp::Assert::valid(drainerHandler.length() > 0, ac, "drainerHandler: invalid");
-			grasp::Assert::valid(drainerItem.length() > 0, ac, "drainerItem: invalid");
-			drainerScanPose.assertValid(grasp::Assert::Context(ac, "drainerScanPose."));
+			grasp::Assert::valid(modelCamera.length() > 0, ac, "modelCamera: invalid");
+			grasp::Assert::valid(modelHandler.length() > 0, ac, "modelHandler: invalid");
+			grasp::Assert::valid(modelItem.length() > 0, ac, "modelItem: invalid");
+			modelScanPose.assertValid(grasp::Assert::Context(ac, "modelScanPose."));
 		}
 		/** Load descritpion from xml context. */
 		virtual void load(golem::Context& context, const golem::XMLContext* xmlcontext);
@@ -128,21 +124,21 @@ protected:
 	/** Data bundle default name */
 	std::string dataName;
 
-	/** Drainer pose estimation camera */
-	grasp::Camera* drainerCamera;
-	/** Drainer data handler */
-	grasp::data::Handler* drainerHandler;
-	/** Drainer data item */
-	std::string drainerItem;
-	/** Drainer scan pose */
-	grasp::ConfigMat34 drainerScanPose;
+	/** Model pose estimation camera */
+	grasp::Camera* modelCamera;
+	/** Model data handler */
+	grasp::data::Handler* modelHandler;
+	/** Model data item */
+	std::string modelItem;
+	/** Model scan pose */
+	grasp::ConfigMat34 modelScanPose;
 
-	/** Drainer colour solid */
-	golem::RGBA drainerColourSolid;
-	/** Drainer colour wireframe */
-	golem::RGBA drainerColourWire;
-	/** Drainer renderer */
-	golem::DebugRenderer drainerRenderer;
+	/** Model colour solid */
+	golem::RGBA modelColourSolid;
+	/** Model colour wireframe */
+	golem::RGBA modelColourWire;
+	/** Model renderer */
+	golem::DebugRenderer modelRenderer;
 
 	/** golem::UIRenderer interface */
 	virtual void render() const;
