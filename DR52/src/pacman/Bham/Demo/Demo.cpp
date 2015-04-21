@@ -232,7 +232,7 @@ void pacman::Demo::create(const Desc& desc) {
 		//for (grasp::TriangleSeq::const_iterator j = modelTriangles.begin(); j != modelTriangles.end(); ++j)
 		//	to<Data>(dataCurrentPtr)->modelMesh.push_back(Contact3D::Triangle(modelVertices[j->t1], modelVertices[j->t3], modelVertices[j->t2]));
 		// done
-		context.write("Model pose estimation completed!\n");
+		context.write("Done!\n");
 	}));
 	
 	// model attachement
@@ -241,17 +241,44 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 	menuCmdMap.insert(std::make_pair("PAC", [=]() {
 		// grasp and scan object
-		const data::Item::Ptr item = objectGraspAndCapture();
+		grasp::data::Item::Map::iterator ptr = objectGraspAndCapture();
 		// compute features and add to data bundle
-		grasp::data::Item::Map::iterator ptr = objectProcessAndAdd(item);
+		ptr = objectProcess(ptr);
 		// attach object to the robot's end-effector
-		objectAttach(ptr->second);
+		objectAttach(ptr);
+		context.write("Done!\n");
 	}));
 	menuCmdMap.insert(std::make_pair("PAL", [=]() {
-		data::Item::Ptr item;
+		// cast to data::Import
+		data::Import* import = is<data::Import>(objectHandlerScan);
+		if (!import)
+			throw Cancel("Object handler does not implement data::Import");
+		
+		// replace current handlers
+		UI::removeCallback(*this, getCurrentHandler());
+		UI::addCallback(*this, import);
 
+		// load/import item
+		readPath("Enter file path: ", dataImportPath, import->getFileTypes());
+		data::Item::Ptr item = import->import(dataImportPath);
+
+		// adjust pose
+
+
+		// add item to data bundle
+		data::Item::Map::iterator ptr;
+		{
+			RenderBlock renderBlock(*this);
+			golem::CriticalSectionWrapper cswData(csData);
+			ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(objectItemScan, item));
+			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+		}
+
+		// compute features and add to data bundle
+		ptr = objectProcess(ptr);
 		// attach object to the robot's end-effector
-		objectAttach(item);
+		objectAttach(ptr);
+		context.write("Done!\n");
 	}));
 
 	// main demo
@@ -263,9 +290,9 @@ void pacman::Demo::create(const Desc& desc) {
 		// run demo
 		for (;;) {
 			// grasp and scan object
-			const data::Item::Ptr item = objectGraspAndCapture();
+			grasp::data::Item::Map::iterator ptr = objectGraspAndCapture();
 			// compute features and add to data bundle
-			(void)objectProcessAndAdd(item);
+			(void)objectProcess(ptr);
 		}
 	}));
 }
@@ -273,24 +300,46 @@ void pacman::Demo::create(const Desc& desc) {
 //------------------------------------------------------------------------------
 
 // move robot to grasp open pose, wait for force event, grasp object (closed pose), move through scan poses and capture object, add as objectScan
-grasp::data::Item::Ptr pacman::Demo::objectGraspAndCapture() {
+grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture() {
 	data::Item::Ptr item;
 
-	return item;
+	// TODO
+
+	// Finally: insert object scan, remove old one
+	RenderBlock renderBlock(*this);
+	golem::CriticalSectionWrapper cswData(csData);
+	to<Data>(dataCurrentPtr)->itemMap.erase(objectItemScan);
+	grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(objectItemScan, item));
+	Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+	return ptr;
 }
 
 //------------------------------------------------------------------------------
 
 // Process object image and add to data bundle
-grasp::data::Item::Map::iterator pacman::Demo::objectProcessAndAdd(const grasp::data::Item::Ptr& item) {
-	grasp::data::Item::Map::iterator ptr;
+grasp::data::Item::Map::iterator pacman::Demo::objectProcess(grasp::data::Item::Map::iterator ptr) {
+	// generate features
+	data::Transform* transform = is<data::Transform>(objectHandler);
+	if (!transform)
+		throw Message(Message::LEVEL_ERROR, "Handler %s does not support Transform interface", objectHandler->getID().c_str());
+
+	data::Item::List list;
+	list.insert(list.end(), ptr);
+	data::Item::Ptr item = transform->transform(list);
+
+	// insert processed object, remove old one
+	RenderBlock renderBlock(*this);
+	golem::CriticalSectionWrapper cswData(csData);
+	to<Data>(dataCurrentPtr)->itemMap.erase(objectItem);
+	ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(objectItem, item));
+	Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
 	return ptr;
 }
 
 //------------------------------------------------------------------------------
 
 // Attach object to the robot's end-effector
-void pacman::Demo::objectAttach(const grasp::data::Item::Ptr& item) {
+void pacman::Demo::objectAttach(grasp::data::Item::Map::iterator ptr) {
 
 }
 

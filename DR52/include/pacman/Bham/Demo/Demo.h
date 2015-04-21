@@ -226,11 +226,11 @@ protected:
 	virtual void render() const;
 
 	/** Grasp and capture object */
-	grasp::data::Item::Ptr objectGraspAndCapture();
+	grasp::data::Item::Map::iterator objectGraspAndCapture();
 	/** Process object image and add to data bundle */
-	grasp::data::Item::Map::iterator objectProcessAndAdd(const grasp::data::Item::Ptr& item);
+	grasp::data::Item::Map::iterator objectProcess(grasp::data::Item::Map::iterator ptr);
 	/** Attach object to the robot's end-effector */
-	void objectAttach(const grasp::data::Item::Ptr& item);
+	void objectAttach(grasp::data::Item::Map::iterator ptr);
 
 	void create(const Desc& desc);
 	Demo(golem::Scene &scene);
