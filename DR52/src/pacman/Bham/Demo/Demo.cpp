@@ -87,49 +87,89 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 	modelScanPose.xmlData(xmlcontext->getContextFirst("model scan_pose"));
 	golem::XMLData(modelColourSolid, xmlcontext->getContextFirst("model colour solid"));
 	golem::XMLData(modelColourWire, xmlcontext->getContextFirst("model colour wire"));
+
+	golem::XMLData("sensor", graspSensorForce, xmlcontext->getContextFirst("grasp"));
+	golem::XMLData(graspThresholdForce, xmlcontext->getContextFirst("grasp threshold"));
+	golem::XMLData("event_time_wait", graspEventTimeWait, xmlcontext->getContextFirst("grasp"));
+	golem::XMLData("close_duration", graspCloseDuration, xmlcontext->getContextFirst("grasp"));
+	graspPoseOpen.xmlData(xmlcontext->getContextFirst("grasp pose_open"));
+	graspPoseClosed.xmlData(xmlcontext->getContextFirst("grasp pose_closed"));
+
+	golem::XMLData("camera", objectCamera, xmlcontext->getContextFirst("object"));
+	golem::XMLData("handler_scan", objectHandlerScan, xmlcontext->getContextFirst("object"));
+	golem::XMLData("handler", objectHandler, xmlcontext->getContextFirst("object"));
+	golem::XMLData("item_scan", objectItemScan, xmlcontext->getContextFirst("object"));
+	golem::XMLData("item", objectItem, xmlcontext->getContextFirst("object"));
+	objectScanPoseSeq.clear();
+	XMLData(objectScanPoseSeq, objectScanPoseSeq.max_size(), xmlcontext->getContextFirst("object"), "scan_pose");
 }
 
 //------------------------------------------------------------------------------
 
-pacman::Demo::Demo(Scene &scene) : Player(scene), modelCamera(nullptr), modelHandler(nullptr) {
-}
+pacman::Demo::Demo(Scene &scene) : 
+	Player(scene), modelCamera(nullptr), modelHandler(nullptr), graspSensorForce(nullptr), objectCamera(nullptr), objectHandlerScan(nullptr), objectHandler(nullptr)
+{}
 
 pacman::Demo::~Demo() {
 }
 
 void pacman::Demo::create(const Desc& desc) {
-	desc.assertValid(Assert::Context("Demo::Desc."));
+	desc.assertValid(Assert::Context("pacman::Demo::Desc."));
 
 	// create object
 	Player::create(desc); // throws
 
 	dataName = desc.dataName;
 
-	grasp::Sensor::Map::const_iterator camera = sensorMap.find(desc.modelCamera);
-	modelCamera = camera != sensorMap.end() ? is<Camera>(camera->second.get()) : nullptr;
+	grasp::Sensor::Map::const_iterator modelCameraPtr = sensorMap.find(desc.modelCamera);
+	modelCamera = modelCameraPtr != sensorMap.end() ? is<Camera>(modelCameraPtr->second.get()) : nullptr;
 	if (!modelCamera)
 		throw Message(Message::LEVEL_CRIT, "pacman::Demo::create(): unknown model pose estimation camera: %s", desc.modelCamera.c_str());
-	
-	grasp::data::Handler::Map::const_iterator handler = handlerMap.find(desc.modelHandler);
-	modelHandler = handler != handlerMap.end() ? handler->second.get() : nullptr;
+	grasp::data::Handler::Map::const_iterator modelHandlerPtr = handlerMap.find(desc.modelHandler);
+	modelHandler = modelHandlerPtr != handlerMap.end() ? modelHandlerPtr->second.get() : nullptr;
 	if (!modelHandler)
 		throw Message(Message::LEVEL_CRIT, "pacman::Demo::create(): unknown model data handler: %s", desc.modelHandler.c_str());
-	
 	modelItem = desc.modelItem;
 	modelScanPose = desc.modelScanPose;
 	modelColourSolid = desc.modelColourSolid;
 	modelColourWire = desc.modelColourWire;
+
+	grasp::Sensor::Map::const_iterator graspSensorForcePtr = sensorMap.find(desc.graspSensorForce);
+	graspSensorForce = graspSensorForcePtr != sensorMap.end() ? is<FT>(graspSensorForcePtr->second.get()) : nullptr;
+	if (!graspSensorForce)
+		throw Message(Message::LEVEL_CRIT, "pacman::Demo::create(): unknown grasp F/T sensor: %s", desc.graspSensorForce.c_str());
+	graspThresholdForce = desc.graspThresholdForce;
+	graspEventTimeWait = desc.graspEventTimeWait;
+	graspCloseDuration = desc.graspCloseDuration;
+	graspPoseOpen = desc.graspPoseOpen;
+	graspPoseClosed = desc.graspPoseClosed;
+
+	grasp::Sensor::Map::const_iterator objectCameraPtr = sensorMap.find(desc.objectCamera);
+	objectCamera = objectCameraPtr != sensorMap.end() ? is<Camera>(objectCameraPtr->second.get()) : nullptr;
+	if (!objectCamera)
+		throw Message(Message::LEVEL_CRIT, "pacman::Demo::create(): unknown object capture camera: %s", desc.objectCamera.c_str());
+	grasp::data::Handler::Map::const_iterator objectHandlerScanPtr = handlerMap.find(desc.objectHandlerScan);
+	objectHandlerScan = objectHandlerScanPtr != handlerMap.end() ? objectHandlerScanPtr->second.get() : nullptr;
+	if (!objectHandlerScan)
+		throw Message(Message::LEVEL_CRIT, "pacman::Demo::create(): unknown object (scan) data handler: %s", desc.objectHandlerScan.c_str());
+	grasp::data::Handler::Map::const_iterator objectHandlerPtr = handlerMap.find(desc.objectHandler);
+	objectHandler = objectHandlerPtr != handlerMap.end() ? objectHandlerPtr->second.get() : nullptr;
+	if (!objectHandler)
+		throw Message(Message::LEVEL_CRIT, "pacman::Demo::create(): unknown object (process) data handler: %s", desc.objectHandler.c_str());
+	objectItemScan = desc.objectItemScan;
+	objectItem = desc.objectItem;
+	objectScanPoseSeq = desc.objectScanPoseSeq;
 
 	// top menu help using global key '?'
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
 
 	// data menu control and commands
 	menuCtrlMap.insert(std::make_pair("P", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: run (D)emo, load and estimate (M)odel, ...";
+		desc = "Press a key to: run (D)emo, (E)stimate model pose, (A)ttach object, add (M)odel, test (Query)...";
 	}));
 	
-	// model pose scan and estimation
-	menuCmdMap.insert(std::make_pair("PM", [=]() {
+	// model pose estimation
+	menuCmdMap.insert(std::make_pair("PE", [=]() {
 		// run robot
 		gotoPose(modelScanPose);
 		// block keyboard and mouse interaction
@@ -192,17 +232,66 @@ void pacman::Demo::create(const Desc& desc) {
 		//for (grasp::TriangleSeq::const_iterator j = modelTriangles.begin(); j != modelTriangles.end(); ++j)
 		//	to<Data>(dataCurrentPtr)->modelMesh.push_back(Contact3D::Triangle(modelVertices[j->t1], modelVertices[j->t3], modelVertices[j->t2]));
 		// done
-		context.write("Model load and estimation completed!\n");
+		context.write("Model pose estimation completed!\n");
 	}));
 	
+	// model attachement
+	menuCtrlMap.insert(std::make_pair("PA", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+		desc = "Press a key to: (C)apture/(L)oad object...";
+	}));
+	menuCmdMap.insert(std::make_pair("PAC", [=]() {
+		// grasp and scan object
+		const data::Item::Ptr item = objectGraspAndCapture();
+		// compute features and add to data bundle
+		grasp::data::Item::Map::iterator ptr = objectProcessAndAdd(item);
+		// attach object to the robot's end-effector
+		objectAttach(ptr->second);
+	}));
+	menuCmdMap.insert(std::make_pair("PAL", [=]() {
+		data::Item::Ptr item;
+
+		// attach object to the robot's end-effector
+		objectAttach(item);
+	}));
+
 	// main demo
 	menuCmdMap.insert(std::make_pair("PD", [=]() {
 		// estimate pose
 		if (to<Data>(dataCurrentPtr)->modelVertices.empty() || to<Data>(dataCurrentPtr)->modelTriangles.empty())
-			menuCmdMap["PM"]();
+			menuCmdMap["PE"]();
 
 		// run demo
+		for (;;) {
+			// grasp and scan object
+			const data::Item::Ptr item = objectGraspAndCapture();
+			// compute features and add to data bundle
+			(void)objectProcessAndAdd(item);
+		}
 	}));
+}
+
+//------------------------------------------------------------------------------
+
+// move robot to grasp open pose, wait for force event, grasp object (closed pose), move through scan poses and capture object, add as objectScan
+grasp::data::Item::Ptr pacman::Demo::objectGraspAndCapture() {
+	data::Item::Ptr item;
+
+	return item;
+}
+
+//------------------------------------------------------------------------------
+
+// Process object image and add to data bundle
+grasp::data::Item::Map::iterator pacman::Demo::objectProcessAndAdd(const grasp::data::Item::Ptr& item) {
+	grasp::data::Item::Map::iterator ptr;
+	return ptr;
+}
+
+//------------------------------------------------------------------------------
+
+// Attach object to the robot's end-effector
+void pacman::Demo::objectAttach(const grasp::data::Item::Ptr& item) {
+
 }
 
 //------------------------------------------------------------------------------

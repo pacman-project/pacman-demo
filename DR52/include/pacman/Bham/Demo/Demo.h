@@ -81,6 +81,32 @@ public:
 		/** Model colour wireframe */
 		golem::RGBA modelColourWire;
 
+		/** Grasp force sensor */
+		std::string graspSensorForce;
+		/** Grasp force threshold */
+		golem::Twist graspThresholdForce;
+		/** Grasp force event - hand close time wait */
+		golem::SecTmReal graspEventTimeWait;
+		/** Grasp hand close duration */
+		golem::SecTmReal graspCloseDuration;
+		/** Grasp pose open (pre-grasp) */
+		grasp::ConfigMat34 graspPoseOpen;
+		/** Grasp pose closed (grasp) */
+		grasp::ConfigMat34 graspPoseClosed;
+
+		/** Object capture camera */
+		std::string objectCamera;
+		/** Object data handler (scan) */
+		std::string objectHandlerScan;
+		/** Object data handler (processed) */
+		std::string objectHandler;
+		/** Object data item (scan) */
+		std::string objectItemScan;
+		/** Object data item (processed) */
+		std::string objectItem;
+		/** Object scan pose */
+		grasp::ConfigMat34::Seq objectScanPoseSeq;
+
 		/** Constructs from description object */
 		Desc() {
 			Desc::setToDefault();
@@ -99,6 +125,20 @@ public:
 			modelScanPose.setToDefault();
 			modelColourSolid.set(golem::RGBA::GREEN._U8[0], golem::RGBA::GREEN._U8[1], golem::RGBA::GREEN._U8[2], golem::numeric_const<golem::U8>::MAX / 8);
 			modelColourWire.set(golem::RGBA::GREEN);
+
+			graspSensorForce.clear();
+			graspThresholdForce.setZero();
+			graspEventTimeWait = golem::SecTmReal(2.0);
+			graspCloseDuration = golem::SecTmReal(2.0);
+			graspPoseOpen.setToDefault();
+			graspPoseClosed.setToDefault();
+
+			objectCamera.clear();
+			objectHandlerScan.clear();
+			objectHandler.clear();
+			objectItemScan.clear();
+			objectItem.clear();
+			objectScanPoseSeq.clear();
 		}
 		/** Assert that the description is valid. */
 		virtual void assertValid(const grasp::Assert::Context& ac) const {
@@ -112,6 +152,22 @@ public:
 			grasp::Assert::valid(modelHandler.length() > 0, ac, "modelHandler: invalid");
 			grasp::Assert::valid(modelItem.length() > 0, ac, "modelItem: invalid");
 			modelScanPose.assertValid(grasp::Assert::Context(ac, "modelScanPose."));
+
+			grasp::Assert::valid(graspSensorForce.length() > 0, ac, "graspSensorForce: invalid");
+			grasp::Assert::valid(graspThresholdForce.isPositive(), ac, "graspThresholdForce: negative");
+			grasp::Assert::valid(graspEventTimeWait > golem::SEC_TM_REAL_ZERO, ac, "graspEventTimeWait: <= 0");
+			grasp::Assert::valid(graspCloseDuration > golem::SEC_TM_REAL_ZERO, ac, "graspCloseDuration: <= 0");
+			graspPoseOpen.assertValid(grasp::Assert::Context(ac, "graspPoseOpen."));
+			graspPoseClosed.assertValid(grasp::Assert::Context(ac, "graspPoseClosed."));
+
+			grasp::Assert::valid(objectCamera.length() > 0, ac, "objectCamera: invalid");
+			grasp::Assert::valid(objectHandlerScan.length() > 0, ac, "objectHandlerScan: invalid");
+			grasp::Assert::valid(objectHandler.length() > 0, ac, "objectHandler: invalid");
+			grasp::Assert::valid(objectItemScan.length() > 0, ac, "objectItemScan: invalid");
+			grasp::Assert::valid(objectItem.length() > 0, ac, "objectItem: invalid");
+			grasp::Assert::valid(!objectScanPoseSeq.empty(), ac, "objectScanPoseSeq: empty");
+			for (grasp::ConfigMat34::Seq::const_iterator i = objectScanPoseSeq.begin(); i != objectScanPoseSeq.end(); ++i)
+				i->assertValid(grasp::Assert::Context(ac, "objectScanPoseSeq[]."));
 		}
 		/** Load descritpion from xml context. */
 		virtual void load(golem::Context& context, const golem::XMLContext* xmlcontext);
@@ -140,8 +196,41 @@ protected:
 	/** Model renderer */
 	golem::DebugRenderer modelRenderer;
 
+	/** Grasp force sensor */
+	grasp::FT* graspSensorForce;
+	/** Grasp force threshold */
+	golem::Twist graspThresholdForce;
+	/** Grasp force event - hand close time wait */
+	golem::SecTmReal graspEventTimeWait;
+	/** Grasp hand close duration */
+	golem::SecTmReal graspCloseDuration;
+	/** Grasp pose open (pre-grasp) */
+	grasp::ConfigMat34 graspPoseOpen;
+	/** Grasp pose closed (grasp) */
+	grasp::ConfigMat34 graspPoseClosed;
+
+	/** Object capture camera */
+	grasp::Camera* objectCamera;
+	/** Object data handler (scan) */
+	grasp::data::Handler* objectHandlerScan;
+	/** Object data handler (processed) */
+	grasp::data::Handler* objectHandler;
+	/** Object data item (scan) */
+	std::string objectItemScan;
+	/** Object data item (processed) */
+	std::string objectItem;
+	/** Object scan pose */
+	grasp::ConfigMat34::Seq objectScanPoseSeq;
+
 	/** golem::UIRenderer interface */
 	virtual void render() const;
+
+	/** Grasp and capture object */
+	grasp::data::Item::Ptr objectGraspAndCapture();
+	/** Process object image and add to data bundle */
+	grasp::data::Item::Map::iterator objectProcessAndAdd(const grasp::data::Item::Ptr& item);
+	/** Attach object to the robot's end-effector */
+	void objectAttach(const grasp::data::Item::Ptr& item);
 
 	void create(const Desc& desc);
 	Demo(golem::Scene &scene);
