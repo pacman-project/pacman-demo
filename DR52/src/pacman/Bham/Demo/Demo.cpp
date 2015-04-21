@@ -272,10 +272,19 @@ void pacman::Demo::create(const Desc& desc) {
 
 //------------------------------------------------------------------------------
 
-// move robot to grasp open pose, wait for force event, grasp object (closed pose), move through scan poses and capture object, add as objectScan
+// 1. move robot to grasp open pose
+// 2. wait for force event; reset bias and wait for change > threshold (set in xml)
+// 3. grasp object (closed pose - generate in virtual env; strong enough for both plate and cup; only fingers should move)
+// full hand grasp, fingers spread out; thumb in centre
+// 4. move through scan poses and capture object, add as objectScan
+// return ptr to Image Item
 grasp::data::Item::Ptr pacman::Demo::objectGraspAndCapture() {
 	data::Item::Ptr item;
 
+	//attach object
+	//add model
+
+	// TODO SZ
 	return item;
 }
 
