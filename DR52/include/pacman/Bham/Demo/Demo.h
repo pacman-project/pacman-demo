@@ -10,6 +10,7 @@
 
 #include <Grasp/App/Player/Player.h>
 #include <Grasp/Grasp/Model.h>
+#include <Grasp/Core/RBPose.h>
 
 /** PaCMan name space */
 namespace pacman {
@@ -106,6 +107,8 @@ public:
 		std::string objectItem;
 		/** Object scan pose */
 		grasp::ConfigMat34::Seq objectScanPoseSeq;
+		/** Object manual frame adjustment */
+		grasp::RBAdjust objectFrameAdjustment;
 
 		/** Constructs from description object */
 		Desc() {
@@ -139,6 +142,7 @@ public:
 			objectItemScan.clear();
 			objectItem.clear();
 			objectScanPoseSeq.clear();
+			objectFrameAdjustment.setToDefault();
 		}
 		/** Assert that the description is valid. */
 		virtual void assertValid(const grasp::Assert::Context& ac) const {
@@ -168,6 +172,7 @@ public:
 			grasp::Assert::valid(!objectScanPoseSeq.empty(), ac, "objectScanPoseSeq: empty");
 			for (grasp::ConfigMat34::Seq::const_iterator i = objectScanPoseSeq.begin(); i != objectScanPoseSeq.end(); ++i)
 				i->assertValid(grasp::Assert::Context(ac, "objectScanPoseSeq[]."));
+			objectFrameAdjustment.assertValid(grasp::Assert::Context(ac, "objectFrameAdjustment."));
 		}
 		/** Load descritpion from xml context. */
 		virtual void load(golem::Context& context, const golem::XMLContext* xmlcontext);
@@ -221,6 +226,10 @@ protected:
 	std::string objectItem;
 	/** Object scan pose */
 	grasp::ConfigMat34::Seq objectScanPoseSeq;
+	/** Object manual frame adjustment */
+	grasp::RBAdjust objectFrameAdjustment;
+	/** Object renderer */
+	golem::DebugRenderer objectRenderer;
 
 	/** golem::UIRenderer interface */
 	virtual void render() const;

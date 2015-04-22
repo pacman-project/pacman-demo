@@ -1,5 +1,6 @@
 #include <pacman/Bham/Demo/Demo.h>
 #include <Grasp/Core/Import.h>
+#include <Grasp/App/Player/Data.h>
 #include <Golem/Phys/Data.h>
 
 using namespace pacman;
@@ -102,6 +103,7 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 	golem::XMLData("item", objectItem, xmlcontext->getContextFirst("object"));
 	objectScanPoseSeq.clear();
 	XMLData(objectScanPoseSeq, objectScanPoseSeq.max_size(), xmlcontext->getContextFirst("object"), "scan_pose");
+	objectFrameAdjustment.load(xmlcontext->getContextFirst("object frame_adjustment"));
 }
 
 //------------------------------------------------------------------------------
@@ -159,6 +161,7 @@ void pacman::Demo::create(const Desc& desc) {
 	objectItemScan = desc.objectItemScan;
 	objectItem = desc.objectItem;
 	objectScanPoseSeq = desc.objectScanPoseSeq;
+	objectFrameAdjustment = desc.objectFrameAdjustment;
 
 	// top menu help using global key '?'
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
@@ -262,14 +265,46 @@ void pacman::Demo::create(const Desc& desc) {
 		readPath("Enter file path: ", dataImportPath, import->getFileTypes());
 		data::Item::Ptr item = import->import(dataImportPath);
 
-		// adjust pose
-
+		// compute reference frame and adjust object frame
+		data::Location3D* location = is<data::Location3D>(item.get());
+		if (!location)
+			throw Cancel("Object handler does not implement data::Location3D");
+		Vec3Seq points, pointsTrn;
+		for (size_t i = 0; i < location->getNumOfLocations(); ++i)
+			points.push_back(location->getLocation(i));
+		pointsTrn.resize(points.size());
+		Mat34 frame = RBPose::createFrame(points), frameInv;
+		frameInv.setInverse(frame);
+		context.write("Press a key to: accept <Enter>, (%s/%s) to adjust position, (%s/%s) to adjust orientation... ",
+			objectFrameAdjustment.linKeysLarge.c_str(), objectFrameAdjustment.linKeysSmall.c_str(), objectFrameAdjustment.angKeysLarge.c_str(), objectFrameAdjustment.angKeysSmall.c_str());
+		for (bool accept = false;;) {
+			const Mat34 trn = frame * frameInv; // frame = trn * frameInit, trn = frame * frameInit^-1
+			for (size_t i = 0; i < points.size(); ++i)
+				trn.multiply(pointsTrn[i], points[i]);
+			{
+				golem::CriticalSectionWrapper csw(csRenderer);
+				objectRenderer.reset();
+				if (accept) break;
+				for (size_t i = 0; i < pointsTrn.size(); ++i)
+					objectRenderer.addPoint(pointsTrn[i], objectFrameAdjustment.colourSolid);
+				objectRenderer.addAxes3D(frame, objectFrameAdjustment.frameSize);
+			}
+			const int key = waitKey();
+			switch (key) {
+			case 27: throw Cancel("\nCancelled");
+			case 13: context.write(")<Enter>(\n"); accept = true; break;
+			default: objectFrameAdjustment.adjust(key, frame);
+			}
+		}
+		// transform
+		location->transform(frame * frameInv);
 
 		// add item to data bundle
 		data::Item::Map::iterator ptr;
 		{
 			RenderBlock renderBlock(*this);
 			golem::CriticalSectionWrapper cswData(csData);
+			to<Data>(dataCurrentPtr)->itemMap.erase(objectItemScan);
 			ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(objectItemScan, item));
 			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
 		}
@@ -359,6 +394,7 @@ void pacman::Demo::render() const {
 	Player::render();
 	golem::CriticalSectionWrapper cswRenderer(csRenderer);
 	modelRenderer.render();
+	objectRenderer.render();
 }
 
 //------------------------------------------------------------------------------

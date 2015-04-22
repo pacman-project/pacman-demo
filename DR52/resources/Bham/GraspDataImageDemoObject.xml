@@ -60,8 +60,9 @@
       <pose_stddev lin="0.0005" ang="2000.0"/>
       <dist prod="0" lin="1.0" ang="1.0" feature="0"/>
       <!--<optimisation minimum="1" population_size="10" generations_num="10000" de_diff_fac="0.5" de_cross_prob="0.1" test_generations="100" test_pairs="100" test_variance="1e-8" num_of_threads="-1" thread_priority="lowest"/>-->
-      <align lin_keys="1q2w3e" ang_keys="4r5t6y">
-        <increment lin="0.0005" ang="0.0031415926"/>
+      <align lin_keys_large="WSEDRF" lin_keys_small="wsedrf" ang_keys_large="YHUJIK" ang_keys_small="yhujik">
+        <increment_large lin="0.05" ang="0.31415926"/>
+        <increment_small lin="0.0005" ang="0.0031415926"/>
         <frame_size v1="0.1" v2="0.1" v3="0.1"/>
         <colour>
           <solid R="0" G="0" B="255" A="32"/>
