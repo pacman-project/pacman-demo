@@ -254,10 +254,11 @@ protected:
 
 	void create(const Desc& desc);
 
+	grasp::Camera* getWristCamera() const;
 	golem::Mat34 getWristPose() const;
 	void gotoWristPose(const golem::Mat34& w);
+	void Demo::gotoPose2(const grasp::ConfigMat34& pose, const golem::SecTmReal duration);
 	void rotateObjectInHand();
-	grasp::Camera* getWristCamera() const;
 
 	Demo(golem::Scene &scene);
 	~Demo();
