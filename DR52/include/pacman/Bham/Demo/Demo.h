@@ -75,6 +75,10 @@ public:
 		std::string modelHandler;
 		/** Model data item */
 		std::string modelItem;
+		/** Model trajectory handler */
+		std::string modelHandlerTrj;
+		/** Model trajectory item */
+		std::string modelItemTrj;
 		/** Model scan pose */
 		grasp::ConfigMat34 modelScanPose;
 		/** Model colour solid */
@@ -125,6 +129,8 @@ public:
 			modelCamera.clear();
 			modelHandler.clear();
 			modelItem.clear();
+			modelHandlerTrj.clear();
+			modelItemTrj.clear();
 			modelScanPose.setToDefault();
 			modelColourSolid.set(golem::RGBA::GREEN._U8[0], golem::RGBA::GREEN._U8[1], golem::RGBA::GREEN._U8[2], golem::numeric_const<golem::U8>::MAX / 8);
 			modelColourWire.set(golem::RGBA::GREEN);
@@ -155,6 +161,8 @@ public:
 			grasp::Assert::valid(modelCamera.length() > 0, ac, "modelCamera: invalid");
 			grasp::Assert::valid(modelHandler.length() > 0, ac, "modelHandler: invalid");
 			grasp::Assert::valid(modelItem.length() > 0, ac, "modelItem: invalid");
+			grasp::Assert::valid(modelHandlerTrj.length() > 0, ac, "modelHandlerTrj: invalid");
+			grasp::Assert::valid(modelItemTrj.length() > 0, ac, "modelItemTrj: invalid");
 			modelScanPose.assertValid(grasp::Assert::Context(ac, "modelScanPose."));
 
 			grasp::Assert::valid(graspSensorForce.length() > 0, ac, "graspSensorForce: invalid");
@@ -191,6 +199,10 @@ protected:
 	grasp::data::Handler* modelHandler;
 	/** Model data item */
 	std::string modelItem;
+	/** Model trajectory handler */
+	grasp::data::Handler* modelHandlerTrj;
+	/** Model trajectory item */
+	std::string modelItemTrj;
 	/** Model scan pose */
 	grasp::ConfigMat34 modelScanPose;
 
@@ -237,9 +249,7 @@ protected:
 	/** Grasp and capture object */
 	grasp::data::Item::Map::iterator objectGraspAndCapture();
 	/** Process object image and add to data bundle */
-	grasp::data::Item::Map::iterator objectProcess(grasp::data::Item::Map::iterator ptr);
-	/** Attach object to the robot's end-effector */
-	void objectAttach(grasp::data::Item::Map::iterator ptr);
+	void objectProcess(grasp::data::Item::Map::iterator ptr);
 
 	void create(const Desc& desc);
 	Demo(golem::Scene &scene);

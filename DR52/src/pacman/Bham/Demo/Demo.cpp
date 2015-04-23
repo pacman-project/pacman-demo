@@ -85,6 +85,8 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 	golem::XMLData("camera", modelCamera, xmlcontext->getContextFirst("model"));
 	golem::XMLData("handler", modelHandler, xmlcontext->getContextFirst("model"));
 	golem::XMLData("item", modelItem, xmlcontext->getContextFirst("model"));
+	golem::XMLData("handler_trj", modelHandlerTrj, xmlcontext->getContextFirst("model"));
+	golem::XMLData("item_trj", modelItemTrj, xmlcontext->getContextFirst("model"));
 	modelScanPose.xmlData(xmlcontext->getContextFirst("model scan_pose"));
 	golem::XMLData(modelColourSolid, xmlcontext->getContextFirst("model colour solid"));
 	golem::XMLData(modelColourWire, xmlcontext->getContextFirst("model colour wire"));
@@ -132,6 +134,11 @@ void pacman::Demo::create(const Desc& desc) {
 	if (!modelHandler)
 		throw Message(Message::LEVEL_CRIT, "pacman::Demo::create(): unknown model data handler: %s", desc.modelHandler.c_str());
 	modelItem = desc.modelItem;
+	grasp::data::Handler::Map::const_iterator modelHandlerTrjPtr = handlerMap.find(desc.modelHandlerTrj);
+	modelHandlerTrj = modelHandlerTrjPtr != handlerMap.end() ? modelHandlerTrjPtr->second.get() : nullptr;
+	if (!modelHandlerTrj)
+		throw Message(Message::LEVEL_CRIT, "pacman::Demo::create(): unknown model trajectory handler: %s", desc.modelHandlerTrj.c_str());
+	modelItemTrj = desc.modelItemTrj;
 	modelScanPose = desc.modelScanPose;
 	modelColourSolid = desc.modelColourSolid;
 	modelColourWire = desc.modelColourWire;
@@ -246,9 +253,8 @@ void pacman::Demo::create(const Desc& desc) {
 		// grasp and scan object
 		grasp::data::Item::Map::iterator ptr = objectGraspAndCapture();
 		// compute features and add to data bundle
-		ptr = objectProcess(ptr);
-		// attach object to the robot's end-effector
-		objectAttach(ptr);
+		objectProcess(ptr);
+
 		context.write("Done!\n");
 	}));
 	menuCmdMap.insert(std::make_pair("PAL", [=]() {
@@ -310,9 +316,64 @@ void pacman::Demo::create(const Desc& desc) {
 		}
 
 		// compute features and add to data bundle
-		ptr = objectProcess(ptr);
+		objectProcess(ptr);
+		context.write("Done!\n");
+	}));
+	menuCmdMap.insert(std::make_pair("PM", [=]() {
+		data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(objectItem);
+		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
+			throw Cancel("Object item has not been created - run attach object");
+
+		RenderBlock renderBlock(*this);
+		
+		// compute reference frame and adjust object frame
+		data::Location3D* location = is<data::Location3D>(ptr);
+		if (!location)
+			throw Cancel("Object handler does not implement data::Location3D");
+		Vec3Seq points, pointsTrn;
+		for (size_t i = 0; i < location->getNumOfLocations(); ++i)
+			points.push_back(location->getLocation(i));
+		pointsTrn.resize(points.size());
+		Mat34 frame = forwardTransformArm(lookupState()), frameInv;
+		frameInv.setInverse(frame);
+		context.write("Press a key to: accept <Enter>... ");
 		// attach object to the robot's end-effector
-		objectAttach(ptr);
+		for (bool accept = false;;) {
+			const Mat34 trn = frame * frameInv; // frame = trn * frameInit, trn = frame * frameInit^-1
+			for (size_t i = 0; i < points.size(); ++i)
+				trn.multiply(pointsTrn[i], points[i]);
+			{
+				golem::CriticalSectionWrapper csw(csRenderer);
+				objectRenderer.reset();
+				if (accept) break;
+				for (size_t i = 0; i < pointsTrn.size(); ++i)
+					objectRenderer.addPoint(pointsTrn[i], objectFrameAdjustment.colourSolid);
+			}
+			const int key = waitKey(20);
+			switch (key) {
+			case 27: throw Cancel("\nCancelled");
+			case 13: context.write(")<Enter>(\n"); accept = true; break;
+			}
+			frame = forwardTransformArm(lookupState());
+		}
+		// transform
+		location->transform(frame * frameInv);
+
+		// add trajectory waypoint
+		{
+			golem::CriticalSectionWrapper cswData(csData);
+			to<Data>(dataCurrentPtr)->itemMap.erase(modelItemTrj);
+			ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(modelItemTrj, modelHandlerTrj->create()));
+			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+		}
+		data::Trajectory* trajectory = is<data::Trajectory>(ptr);
+		if (!trajectory)
+			throw Cancel("Trajectory handler does not implement data::Trajectory");
+		// add current state
+		Controller::State::Seq seq = trajectory->getWaypoints();
+		seq.push_back(lookupState());
+		trajectory->setWaypoints(seq);
+
 		context.write("Done!\n");
 	}));
 
@@ -362,7 +423,7 @@ grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture() {
 //------------------------------------------------------------------------------
 
 // Process object image and add to data bundle
-grasp::data::Item::Map::iterator pacman::Demo::objectProcess(grasp::data::Item::Map::iterator ptr) {
+void pacman::Demo::objectProcess(grasp::data::Item::Map::iterator ptr) {
 	// generate features
 	data::Transform* transform = is<data::Transform>(objectHandler);
 	if (!transform)
@@ -376,16 +437,8 @@ grasp::data::Item::Map::iterator pacman::Demo::objectProcess(grasp::data::Item::
 	RenderBlock renderBlock(*this);
 	golem::CriticalSectionWrapper cswData(csData);
 	to<Data>(dataCurrentPtr)->itemMap.erase(objectItem);
-	ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(objectItem, item));
+	(void)to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(objectItem, item));
 	Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
-	return ptr;
-}
-
-//------------------------------------------------------------------------------
-
-// Attach object to the robot's end-effector
-void pacman::Demo::objectAttach(grasp::data::Item::Map::iterator ptr) {
-
 }
 
 //------------------------------------------------------------------------------
