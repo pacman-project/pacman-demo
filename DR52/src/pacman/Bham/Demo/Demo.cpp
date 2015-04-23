@@ -129,7 +129,7 @@ pacman::Demo::Demo(Scene &scene) :
 pacman::Demo::~Demo() {
 }
 
-grasp::Camera* pacman::Demo::getWristCamera() const
+grasp::Camera* Demo::getWristCamera() const
 {
 	const std::string id("OpenNI+OpenNI");
 	grasp::Sensor::Map::const_iterator i = sensorMap.find(id);
@@ -151,7 +151,7 @@ grasp::Camera* pacman::Demo::getWristCamera() const
 	return camera;
 }
 
-golem::Mat34 pacman::Demo::getWristPose() const
+golem::Mat34 Demo::getWristPose() const
 {
 	const golem::U32 wristJoint = 6; // @@@
 	grasp::ConfigMat34 pose;
@@ -159,7 +159,7 @@ golem::Mat34 pacman::Demo::getWristPose() const
 	return pose.w;
 }
 
-void pacman::Demo::gotoWristPose(const golem::Mat34& w)
+void Demo::gotoWristPose(const golem::Mat34& w)
 {
 	const golem::Mat34 R = controller->getChains()[armInfo.getChains().begin()]->getReferencePose();
 	const golem::Mat34 wR = w * R;
@@ -176,7 +176,7 @@ void pacman::Demo::gotoWristPose(const golem::Mat34& w)
 }
 
 
-void pacman::Demo::rotateObjectInHand()
+void Demo::rotateObjectInHand()
 {
 	auto showPose = [&](const std::string& description, const golem::Mat34& m) {
 		context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
@@ -248,6 +248,18 @@ void pacman::Demo::rotateObjectInHand()
 		
 	recordingStart(dataCurrentPtr->first, recordingLabel, false);
 	context.write("taken snapshot\n");
+}
+
+void Demo::gotoPose2(const ConfigMat34& pose, const SecTmReal duration)
+{
+	golem::Controller::State begin = lookupState();	// current state
+	golem::Controller::State end = begin;
+	end.cpos.set(pose.c.data(), pose.c.data() + std::min(pose.c.size(), (size_t)info.getJoints().size()));
+	golem::Controller::State::Seq trajectory;
+	findTrajectory(begin, &end, nullptr, duration, trajectory);
+	sendTrajectory(trajectory);
+	controller->waitForEnd();
+	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
 }
 
 void pacman::Demo::create(const Desc& desc) {
@@ -637,19 +649,81 @@ void pacman::Demo::create(const Desc& desc) {
 // full hand grasp, fingers spread out; thumb in centre
 // 4. move through scan poses and capture object, add as objectScan
 // return ptr to Item
-grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture() {
+grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture()
+{
 	data::Item::Ptr item;
 
-	// TODO 1-4:
-	//attach object
-	//add model
+	gotoPose(graspPoseOpen);
 
-	// Finally: insert object scan, remove old one
+	context.write("Waiting for force event, simulate (F)orce event or <ESC> to cancel\n");
+	SecTmReal t;
+	Twist biasForce, currentForce;
+	double thresholdFT[6], biasFT[6], currentFT[6];
+	graspSensorForce->readSensor(biasForce, t);
+	graspThresholdForce.get(thresholdFT);
+	biasForce.get(biasFT);
+	for (;;)
+	{
+		const int k = waitKey(10); // poll FT every 10ms
+		if (k == 27) // <Esc>
+			throw Cancel("Cancelled");
+		if (k == 'F')
+		{
+			context.write("Simulated force event\n");
+			break;
+		}
+
+		// check if force has deviated more than threshold from bias
+		graspSensorForce->readSensor(currentForce, t);
+		currentForce.get(currentFT);
+		bool tripped = false;
+		for (size_t i = 0; i < 6; ++i)
+		{
+			if (abs(currentFT[i] - biasFT[i]) > thresholdFT[i])
+			{
+				context.write("Force event detected on axis %d: |%f - %f| > %f\n", i + 1, currentFT[i], biasFT[i], thresholdFT[i]);
+				tripped = true;
+				break;
+			}
+		}
+		if (tripped) break;
+	}
+
+	Sleep::msleep(SecToMSec(graspEventTimeWait));
+
+	context.write("Closing hand!\n");
+	gotoPose2(graspPoseClosed, graspCloseDuration);
+
+	context.write("<SPACE> to continue to scan pose, or <ESC> to cancel\n");
+	for (;;)
+	{
+		const int k = waitKey(golem::MSEC_TM_U32_INF);
+		if (k == 27) // <Esc>
+			throw Cancel("Cancelled");
+		if (k == 32) // <Space>
+			break;
+	}
+
+	context.write("Proceeding to first scan pose!\n");
+	gotoPose(objectScanPoseSeq.front());
+
+	data::Capture* capture = is<data::Capture>(objectHandlerScan);
+	if (!capture)
+		throw Message(Message::LEVEL_ERROR, "Handler %s does not support Capture interface", objectHandlerScan->getID().c_str());
+
 	RenderBlock renderBlock(*this);
-	golem::CriticalSectionWrapper cswData(csData);
-	to<Data>(dataCurrentPtr)->itemMap.erase(objectItemScan);
-	grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(objectItemScan, item));
-	Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+	data::Item::Map::iterator ptr;
+	{
+		golem::CriticalSectionWrapper cswData(csData);
+		data::Item::Ptr item = capture->capture(*objectCamera, [&](const grasp::TimeStamp*) -> bool { return true; });
+
+		// Finally: insert object scan, remove old one
+		data::Item::Map& itemMap = to<Data>(dataCurrentPtr)->itemMap;
+		itemMap.erase(objectItemScan);
+		ptr = itemMap.insert(itemMap.end(), data::Item::Map::value_type(objectItemScan, item));
+		Data::View::setItem(itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+	}
+
 	return ptr;
 }
 
