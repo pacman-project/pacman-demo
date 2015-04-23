@@ -11,6 +11,9 @@
 #include <Grasp/App/Player/Player.h>
 #include <Grasp/Grasp/Model.h>
 #include <Grasp/Core/RBPose.h>
+#include <Grasp/Core/Ctrl.h>
+#include <Grasp/Grasp/Model.h>
+#include <Grasp/Grasp/Query.h>
 
 /** PaCMan name space */
 namespace pacman {
@@ -23,6 +26,25 @@ public:
 	/** Data */
 	class Data : public grasp::Player::Data {
 	public:
+		/** Model training data */
+		class Training {
+		public:
+			/** Collection */
+			typedef std::multimap<std::string, Training> Map;
+
+			/** Initialisation */
+			Training(const golem::Controller::State& state) : state(state) {}
+
+			/** Robot state */
+			golem::Controller::State state;
+			/** End-effector frame */
+			golem::Mat34 frame;
+			/** Contacts */
+			grasp::Contact3D::Seq contacts;
+			/** Locations */
+			grasp::data::Location3D::Point::Seq locations;
+		};
+
 		/** Data bundle default name */
 		std::string dataName;
 
@@ -30,6 +52,11 @@ public:
 		grasp::Vec3Seq modelVertices;
 		/** Model triangles */
 		grasp::TriangleSeq modelTriangles;
+		/** Mdel robot state */
+		golem::Controller::State::Ptr modelState;
+		
+		/** Model training data */
+		Training::Map modelTraining;
 
 		/** Data bundle description */
 		class Desc : public grasp::Player::Data::Desc {
@@ -249,7 +276,7 @@ protected:
 	/** Grasp and capture object */
 	grasp::data::Item::Map::iterator objectGraspAndCapture();
 	/** Process object image and add to data bundle */
-	void objectProcess(grasp::data::Item::Map::iterator ptr);
+	grasp::data::Item::Ptr objectProcess(grasp::data::Item::Map::iterator ptr, bool addItem = true);
 
 	void create(const Desc& desc);
 	Demo(golem::Scene &scene);
@@ -259,5 +286,14 @@ protected:
 //------------------------------------------------------------------------------
 
 };
+
+//------------------------------------------------------------------------------
+
+namespace golem {
+	template <> void Stream::read(pacman::Demo::Data::Training::Map::value_type& value) const;
+	template <> void Stream::write(const pacman::Demo::Data::Training::Map::value_type& value);
+};	// namespace
+
+//------------------------------------------------------------------------------
 
 #endif // _PACMAN_BHAM_DEMO_DEMO_H_

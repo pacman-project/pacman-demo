@@ -30,7 +30,11 @@ void Demo::Data::setOwner(Manager* owner) {
 	this->owner = is<Demo>(owner);
 	if (!this->owner)
 		throw Message(Message::LEVEL_CRIT, "pacman::Demo::Data::setOwner(): unknown data owner");
+	
+	// initialise owner-dependent data members
 	dataName = this->owner->dataName;
+	modelState.reset(new golem::Controller::State(this->owner->controller->createState()));
+	this->owner->controller->setToDefault(*modelState);
 }
 
 void Demo::Data::createRender() {
@@ -53,8 +57,14 @@ void Demo::Data::load(const std::string& prefix, const golem::XMLContext* xmlcon
 		golem::XMLData("data_name", dataName, const_cast<golem::XMLContext*>(xmlcontext), false);
 		if (dataName.length() > 0) {
 			FileReadStream frs((prefix + sepName + dataName).c_str());
+			modelVertices.clear();
 			frs.read(modelVertices, modelVertices.end());
+			modelTriangles.clear();
 			frs.read(modelTriangles, modelTriangles.end());
+			modelState.reset(new golem::Controller::State(owner->controller->createState()));
+			frs.read(*modelState);
+			modelTraining.clear();
+			frs.read(modelTraining, modelTraining.end(), std::make_pair(std::string(), Training(owner->controller->createState())));
 		}
 	}
 	catch (const std::exception&) {
@@ -70,6 +80,8 @@ void Demo::Data::save(const std::string& prefix, golem::XMLContext* xmlcontext) 
 		FileWriteStream fws((prefix + sepName + dataName).c_str());
 		fws.write(modelVertices.begin(), modelVertices.end());
 		fws.write(modelTriangles.begin(), modelTriangles.end());
+		fws.write(*modelState);
+		fws.write(modelTraining.begin(), modelTraining.end());
 	}
 }
 
@@ -175,7 +187,7 @@ void pacman::Demo::create(const Desc& desc) {
 
 	// data menu control and commands
 	menuCtrlMap.insert(std::make_pair("P", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: run (D)emo, (E)stimate model pose, (A)ttach object, add (M)odel, test (Query)...";
+		desc = "Press a key to: run (D)emo, (E)stimate model pose, (A)ttach object, edit (M)odel, perform (Q)uery...";
 	}));
 	
 	// model pose estimation
@@ -253,8 +265,10 @@ void pacman::Demo::create(const Desc& desc) {
 		// grasp and scan object
 		grasp::data::Item::Map::iterator ptr = objectGraspAndCapture();
 		// compute features and add to data bundle
-		objectProcess(ptr);
-
+		(void)objectProcess(ptr);
+		// set model robot state
+		to<Data>(dataCurrentPtr)->modelState.reset(new golem::Controller::State(lookupState()));
+		// finish
 		context.write("Done!\n");
 	}));
 	menuCmdMap.insert(std::make_pair("PAL", [=]() {
@@ -316,7 +330,11 @@ void pacman::Demo::create(const Desc& desc) {
 		}
 
 		// compute features and add to data bundle
-		objectProcess(ptr);
+		(void)objectProcess(ptr);
+		// set model robot state
+		to<Data>(dataCurrentPtr)->modelState.reset(new golem::Controller::State(lookupState()));
+
+		// finish
 		context.write("Done!\n");
 	}));
 	menuCmdMap.insert(std::make_pair("PM", [=]() {
@@ -388,7 +406,7 @@ void pacman::Demo::create(const Desc& desc) {
 			// grasp and scan object
 			grasp::data::Item::Map::iterator ptr = objectGraspAndCapture();
 			// compute features and add to data bundle
-			(void)objectProcess(ptr);
+			const data::Item::Ptr item = objectProcess(ptr, false);
 		}
 	}));
 }
@@ -423,7 +441,7 @@ grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture() {
 //------------------------------------------------------------------------------
 
 // Process object image and add to data bundle
-void pacman::Demo::objectProcess(grasp::data::Item::Map::iterator ptr) {
+grasp::data::Item::Ptr pacman::Demo::objectProcess(grasp::data::Item::Map::iterator ptr, bool addItem) {
 	// generate features
 	data::Transform* transform = is<data::Transform>(objectHandler);
 	if (!transform)
@@ -434,11 +452,15 @@ void pacman::Demo::objectProcess(grasp::data::Item::Map::iterator ptr) {
 	data::Item::Ptr item = transform->transform(list);
 
 	// insert processed object, remove old one
-	RenderBlock renderBlock(*this);
-	golem::CriticalSectionWrapper cswData(csData);
-	to<Data>(dataCurrentPtr)->itemMap.erase(objectItem);
-	(void)to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(objectItem, item));
-	Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+	if (addItem) {
+		RenderBlock renderBlock(*this);
+		golem::CriticalSectionWrapper cswData(csData);
+		to<Data>(dataCurrentPtr)->itemMap.erase(objectItem);
+		(void)to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(objectItem, item));
+		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+	}
+
+	return item;
 }
 
 //------------------------------------------------------------------------------
@@ -448,6 +470,26 @@ void pacman::Demo::render() const {
 	golem::CriticalSectionWrapper cswRenderer(csRenderer);
 	modelRenderer.render();
 	objectRenderer.render();
+}
+
+//------------------------------------------------------------------------------
+
+template <> void golem::Stream::read(pacman::Demo::Data::Training::Map::value_type& value) const {
+	read(const_cast<std::string&>(value.first));
+	read(value.second.state);
+	read(value.second.frame);
+	value.second.contacts.clear();
+	read(value.second.contacts, value.second.contacts.begin());
+	value.second.locations.clear();
+	read(value.second.locations, value.second.locations.begin());
+}
+
+template <> void golem::Stream::write(const pacman::Demo::Data::Training::Map::value_type& value) {
+	write(value.first);
+	write(value.second.state);
+	write(value.second.frame);
+	write(value.second.contacts.begin(), value.second.contacts.end());
+	write(value.second.locations.begin(), value.second.locations.end());
 }
 
 //------------------------------------------------------------------------------
