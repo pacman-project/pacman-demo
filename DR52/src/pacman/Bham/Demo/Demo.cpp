@@ -117,6 +117,127 @@ pacman::Demo::Demo(Scene &scene) :
 pacman::Demo::~Demo() {
 }
 
+grasp::Camera* pacman::Demo::getWristCamera() const
+{
+	const std::string id("OpenNI+OpenNI");
+	grasp::Sensor::Map::const_iterator i = sensorMap.find(id);
+	if (i == sensorMap.end())
+	{
+		context.write("%s was not found\n", id.c_str());
+		throw Cancel("getWristCamera: wrist-mounted camera is not available");
+	}
+
+	grasp::Camera* camera = grasp::is<grasp::Camera>(i);
+
+	// want the wrist-mounted camera
+	if (!camera->hasVariableMounting())
+	{
+		context.write("%s is a static camera\n", id.c_str());
+		throw Cancel("getWristCamera: wrist-mounted camera is not available");
+	}
+
+	return camera;
+}
+
+golem::Mat34 pacman::Demo::getWristPose() const
+{
+	const golem::U32 wristJoint = 6; // @@@
+	grasp::ConfigMat34 pose;
+	getPose(wristJoint, pose);
+	return pose.w;
+}
+
+void pacman::Demo::gotoWristPose(const golem::Mat34& w)
+{
+	const golem::Mat34 R = controller->getChains()[armInfo.getChains().begin()]->getReferencePose();
+	const golem::Mat34 wR = w * R;
+
+	golem::Controller::State begin = controller->createState();
+	controller->lookupState(SEC_TM_REAL_MAX, begin);
+
+	golem::Controller::State::Seq trajectory;
+	const grasp::RBDist err = findTrajectory(begin, nullptr, &wR, trajectoryDuration, trajectory);
+
+	sendTrajectory(trajectory);
+	controller->waitForEnd();
+	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
+}
+
+
+void pacman::Demo::rotateObjectInHand()
+{
+	auto showPose = [&](const std::string& description, const golem::Mat34& m) {
+		context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
+	};
+
+	const double maxstep = 45.0;
+	double angstep = 30.0;
+	int rotType;
+	for (;;)
+	{
+		std::ostringstream os;
+		os << "rotation: Clockwise or Anticlockwise screw, Up or Down, Left or Right; STEP(" << angstep << " deg):+/-";
+		rotType = option("CAUDLR+-", os.str().c_str());
+		if (rotType == '+')
+		{
+			angstep *= 2;
+			if (angstep > maxstep) angstep = maxstep;
+			continue;
+		}
+		if (rotType == '-')
+		{
+			angstep /= 2;
+			continue;
+		}
+		break;
+	}
+
+	golem::Vec3 rotAxis(golem::Vec3::zero());
+
+	switch(rotType)
+	{
+	case 'C':
+		rotAxis.z = 1.0;
+		break;
+	case 'A':
+		rotAxis.z = 1.0;
+		angstep = -angstep;
+		break;
+	case 'U':
+		rotAxis.y = 1.0;
+		break;
+	case 'D':
+		rotAxis.y = 1.0;
+		angstep = -angstep;
+		break;
+	case 'L':
+		rotAxis.x = 1.0;
+		break;
+	case 'R':
+		rotAxis.x = 1.0;
+		angstep = -angstep;
+		break;
+	}
+
+	golem::Mat33 rot(golem::Mat33(angstep / 180.0 * golem::REAL_PI, rotAxis));
+
+	golem::Mat34 pose = getWristPose();
+	showPose("before", pose);
+
+	pose.R = pose.R * rot;
+	showPose("commanded", pose);
+
+	gotoWristPose(pose);
+	showPose("final wrist", getWristPose());
+
+	grasp::ConfigMat34 cp;
+	getPose(0, cp);
+	context.debug("c1=\"%f\" c2=\"%f\" c3=\"%f\" c4=\"%f\" c5=\"%f\" c6=\"%f\" c7=\"%f\"\n", cp.c[0], cp.c[1], cp.c[2], cp.c[3], cp.c[4], cp.c[5], cp.c[6], cp.c[7]);
+		
+	recordingStart(dataCurrentPtr->first, recordingLabel, false);
+	context.write("taken snapshot\n");
+}
+
 void pacman::Demo::create(const Desc& desc) {
 	desc.assertValid(Assert::Context("pacman::Demo::Desc."));
 
@@ -172,12 +293,13 @@ void pacman::Demo::create(const Desc& desc) {
 
 	// top menu help using global key '?'
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
+	scene.getHelp().insert(Scene::StrMapVal("0F5", "  Z                                       menu SZ Tests\n"));
 
 	// data menu control and commands
 	menuCtrlMap.insert(std::make_pair("P", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
 		desc = "Press a key to: run (D)emo, (E)stimate model pose, (A)ttach object, add (M)odel, test (Query)...";
 	}));
-	
+
 	// model pose estimation
 	menuCmdMap.insert(std::make_pair("PE", [=]() {
 		// run robot
@@ -244,7 +366,7 @@ void pacman::Demo::create(const Desc& desc) {
 		// done
 		context.write("Done!\n");
 	}));
-	
+
 	// model attachement
 	menuCtrlMap.insert(std::make_pair("PA", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
 		desc = "Press a key to: (C)apture/(L)oad object...";
@@ -262,7 +384,7 @@ void pacman::Demo::create(const Desc& desc) {
 		data::Import* import = is<data::Import>(objectHandlerScan);
 		if (!import)
 			throw Cancel("Object handler does not implement data::Import");
-		
+
 		// replace current handlers
 		UI::removeCallback(*this, getCurrentHandler());
 		UI::addCallback(*this, import);
@@ -325,7 +447,7 @@ void pacman::Demo::create(const Desc& desc) {
 			throw Cancel("Object item has not been created - run attach object");
 
 		RenderBlock renderBlock(*this);
-		
+
 		// compute reference frame and adjust object frame
 		data::Location3D* location = is<data::Location3D>(ptr);
 		if (!location)
@@ -391,8 +513,103 @@ void pacman::Demo::create(const Desc& desc) {
 			(void)objectProcess(ptr);
 		}
 	}));
-}
 
+	menuCtrlMap.insert(std::make_pair("Z", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+		desc = "Press a key to: run (R)otate, (N)udge, (O)bjectGraspAndCapture...";
+	}));
+
+	menuCmdMap.insert(std::make_pair("ZO", [=]() {
+		context.write("Testing objectGraspAndCapture()\n");
+		objectGraspAndCapture();
+		context.write("Done!\n");
+	}));
+
+	menuCmdMap.insert(std::make_pair("ZR", [=]() {
+		context.write("rotate object in hand\n");
+		rotateObjectInHand();
+		context.write("Done!\n");
+	}));
+
+	menuCmdMap.insert(std::make_pair("ZN", [=]() {
+		context.write("nudge wrist\n");
+
+		auto showPose = [&](const std::string& description, const golem::Mat34& m) {
+			context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
+		};
+
+		double s = 5; // 5cm step
+		int dirCode;
+		for (;;)
+		{
+			std::ostringstream os;
+			os << "up:7 down:1 left:4 right:6 back:8 front:2 null:0 STEP(" << s << " cm):+/-";
+			dirCode = option("7146820+-", os.str().c_str());
+			if (dirCode == '+')
+			{
+				s *= 2;
+				if (s > 20.0) s = 20.0;
+				continue;
+			}
+			if (dirCode == '-')
+			{
+				s /= 2;
+				continue;
+			}
+			break;
+		}
+		s /= 100.0; // cm -> m
+
+		golem::Vec3 nudge(golem::Vec3::zero());
+		switch (dirCode)
+		{
+		case '7': // up
+			nudge.z = s;
+			break;
+		case '1': // down
+			nudge.z = -s;
+			break;
+		case '4': // left
+			nudge.y = -s;
+			break;
+		case '6': // right
+			nudge.y = s;
+			break;
+		case '8': // back
+			nudge.x = -s;
+			break;
+		case '2': // front
+			nudge.x = s;
+			break;
+		};
+
+		golem::Mat34 pose;
+
+		grasp::Camera* camera = getWristCamera();
+		pose = camera->getFrame();
+		showPose("camera before", pose);
+
+		pose = getWristPose();
+		showPose("before", pose);
+
+		pose.p = pose.p + nudge;
+		showPose("commanded", pose);
+
+		//const golem::Mat34 goalPose = activeSense->computeGoal(pose, camera);
+		//gotoPoseWS(goalPose, 0.1, 0.1);
+
+		gotoWristPose(pose);
+
+		showPose("final wrist", getWristPose());
+		pose = camera->getFrame();
+		showPose("final camera", pose);
+
+		grasp::ConfigMat34 cp;
+		getPose(0, cp);
+		context.debug("c1=\"%f\" c2=\"%f\" c3=\"%f\" c4=\"%f\" c5=\"%f\" c6=\"%f\" c7=\"%f\"\n", cp.c[0], cp.c[1], cp.c[2], cp.c[3], cp.c[4], cp.c[5], cp.c[6], cp.c[7]);
+
+		context.write("Done!\n");
+	}));
+}
 //------------------------------------------------------------------------------
 
 // move robot to grasp open pose, wait for force event, grasp object (closed pose), move through scan poses and capture object, add as objectScan
@@ -408,8 +625,6 @@ grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture() {
 	// TODO 1-4:
 	//attach object
 	//add model
-
-	// TODO SZ
 
 	// Finally: insert object scan, remove old one
 	RenderBlock renderBlock(*this);

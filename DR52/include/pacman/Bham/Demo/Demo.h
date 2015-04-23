@@ -9,6 +9,7 @@
 #define _PACMAN_BHAM_DEMO_DEMO_H_
 
 #include <Grasp/App/Player/Player.h>
+#include <Grasp/Core/Camera.h>
 #include <Grasp/Grasp/Model.h>
 #include <Grasp/Core/RBPose.h>
 
@@ -252,6 +253,12 @@ protected:
 	void objectProcess(grasp::data::Item::Map::iterator ptr);
 
 	void create(const Desc& desc);
+
+	golem::Mat34 getWristPose() const;
+	void gotoWristPose(const golem::Mat34& w);
+	void rotateObjectInHand();
+	grasp::Camera* getWristCamera() const;
+
 	Demo(golem::Scene &scene);
 	~Demo();
 };
