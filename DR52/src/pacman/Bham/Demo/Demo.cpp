@@ -707,22 +707,23 @@ grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture()
 	context.write("Proceeding to first scan pose!\n");
 	gotoPose(objectScanPoseSeq.front());
 
-	//sensorCurrentPtr =
-	//scanPose();
+	data::Capture* capture = is<data::Capture>(objectHandlerScan);
+	if (!capture)
+		throw Message(Message::LEVEL_ERROR, "Handler %s does not support Capture interface", objectHandlerScan->getID().c_str());
 
-	// TODO 1-4:
-	//attach object
-	//add model
-#if FINISHED_THIS
-	// Finally: insert object scan, remove old one
 	RenderBlock renderBlock(*this);
-	golem::CriticalSectionWrapper cswData(csData);
-	to<Data>(dataCurrentPtr)->itemMap.erase(objectItemScan);
-	grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(objectItemScan, item));
-	Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
-#else
-	grasp::data::Item::Map::iterator ptr;
-#endif
+	data::Item::Map::iterator ptr;
+	{
+		golem::CriticalSectionWrapper cswData(csData);
+		data::Item::Ptr item = capture->capture(*objectCamera, [&](const grasp::TimeStamp*) -> bool { return true; });
+
+		// Finally: insert object scan, remove old one
+		data::Item::Map& itemMap = to<Data>(dataCurrentPtr)->itemMap;
+		itemMap.erase(objectItemScan);
+		ptr = itemMap.insert(itemMap.end(), data::Item::Map::value_type(objectItemScan, item));
+		Data::View::setItem(itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+	}
+
 	return ptr;
 }
 
