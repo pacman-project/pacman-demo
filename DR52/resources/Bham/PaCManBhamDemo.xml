@@ -136,6 +136,7 @@
     <sensor id="FTClient+FTClient"/>
     <!--<sensor id="FTDAQ+FTDAQ"/>-->
 
+    <activectrl library_path="GraspJointCtrl" config_path="GraspJointCtrl"/>
     <activectrl library_path="GraspArmHandForce" config_path="GraspArmHandForce"/>
     <activectrl library_path="GraspArmHandWorkspace" config_path="GraspArmHandWorkspace"/>
     
