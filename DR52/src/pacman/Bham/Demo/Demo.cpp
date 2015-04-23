@@ -268,17 +268,38 @@ void pacman::Demo::rotateObjectInHand()
 		context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
 	};
 
-	const int rotType = option("RLUD", "rotation: RH or LH screw, Up or Down");
+	const int rotType = option("CAUDLR", "rotation: Clockwise or Anticlockwise screw, Up or Down, Left or Right");
 
-	double angstep = golem::REAL_2_PI / tracker_nstep;
+	const double maxstep = 30.0;
+	double angstep = 360.0 / tracker_nstep;
+	int dirCode;
+	for (;;)
+	{
+		std::ostringstream os;
+		os << "rotation: Clockwise or Anticlockwise screw, Up or Down, Left or Right; STEP(" << angstep << " deg):+/-";
+		dirCode = option("CAUDLR+-", os.str().c_str());
+		if (dirCode == '+')
+		{
+			angstep *= 2;
+			if (angstep > maxstep) angstep = maxstep;
+			continue;
+		}
+		if (dirCode == '-')
+		{
+			angstep /= 2;
+			continue;
+		}
+		break;
+	}
+
 	golem::Vec3 rotAxis(golem::Vec3::zero());
 
 	switch(rotType)
 	{
-	case 'R':
+	case 'C':
 		rotAxis.z = 1.0;
 		break;
-	case 'L':
+	case 'A':
 		rotAxis.z = 1.0;
 		angstep = -angstep;
 		break;
@@ -289,9 +310,16 @@ void pacman::Demo::rotateObjectInHand()
 		rotAxis.y = 1.0;
 		angstep = -angstep;
 		break;
+	case 'L':
+		rotAxis.x = 1.0;
+		break;
+	case 'R':
+		rotAxis.x = 1.0;
+		angstep = -angstep;
+		break;
 	}
 
-	golem::Mat33 rot(golem::Mat33(angstep, rotAxis));
+	golem::Mat33 rot(golem::Mat33(angstep / 180.0 * golem::REAL_PI, rotAxis));
 
 	golem::Mat34 pose = getWristPose();
 	showPose("before", pose);
