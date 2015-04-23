@@ -511,7 +511,8 @@ SET(PACMAN_BHAM_DEMO_HEADERS
 )
 SET(PACMAN_BHAM_DEMO_FILES
 	${PROJECT_ROOT}/resources/Bham/GraspCameraOpenNIDemo.xml
-	${PROJECT_ROOT}/resources/Bham/GraspDataImageDemo.xml
+	${PROJECT_ROOT}/resources/Bham/GraspDataImageDemoModel.xml
+	${PROJECT_ROOT}/resources/Bham/GraspDataImageDemoObject.xml
 	${PROJECT_ROOT}/resources/Bham/GraspDataPointsCurvDemo.xml
 	${PROJECT_ROOT}/resources/Bham/GraspDataPredictorModelDemo.xml
 	${PROJECT_ROOT}/resources/Bham/GraspDataPredictorQueryDemo.xml
