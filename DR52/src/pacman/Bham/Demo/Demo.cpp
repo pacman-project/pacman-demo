@@ -282,23 +282,21 @@ void pacman::Demo::rotateObjectInHand()
 		context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
 	};
 
-	const int rotType = option("CAUDLR", "rotation: Clockwise or Anticlockwise screw, Up or Down, Left or Right");
-
-	const double maxstep = 30.0;
+	const double maxstep = 45.0;
 	double angstep = 360.0 / tracker_nstep;
-	int dirCode;
+	int rotType;
 	for (;;)
 	{
 		std::ostringstream os;
 		os << "rotation: Clockwise or Anticlockwise screw, Up or Down, Left or Right; STEP(" << angstep << " deg):+/-";
-		dirCode = option("CAUDLR+-", os.str().c_str());
-		if (dirCode == '+')
+		rotType = option("CAUDLR+-", os.str().c_str());
+		if (rotType == '+')
 		{
 			angstep *= 2;
 			if (angstep > maxstep) angstep = maxstep;
 			continue;
 		}
-		if (dirCode == '-')
+		if (rotType == '-')
 		{
 			angstep /= 2;
 			continue;
@@ -343,7 +341,11 @@ void pacman::Demo::rotateObjectInHand()
 
 	gotoWristPose(pose);
 	showPose("final wrist", getWristPose());
-	
+
+	grasp::ConfigMat34 cp;
+	getPose(0, cp);
+	context.debug("c1=\"%f\" c2=\"%f\" c3=\"%f\" c4=\"%f\" c5=\"%f\" c6=\"%f\" c7=\"%f\"\n", cp.c[0], cp.c[1], cp.c[2], cp.c[3], cp.c[4], cp.c[5], cp.c[6], cp.c[7]);
+		
 	recordingStart(dataCurrentPtr->first, recordingLabel, false);
 	context.write("taken snapshot\n");
 }
@@ -716,6 +718,10 @@ void pacman::Demo::create(const Desc& desc) {
 		showPose("final wrist", getWristPose());
 		pose = camera->getFrame();
 		showPose("final camera", pose);
+
+		grasp::ConfigMat34 cp;
+		getPose(0, cp);
+		context.debug("c1=\"%f\" c2=\"%f\" c3=\"%f\" c4=\"%f\" c5=\"%f\" c6=\"%f\" c7=\"%f\"\n", cp.c[0], cp.c[1], cp.c[2], cp.c[3], cp.c[4], cp.c[5], cp.c[6], cp.c[7]);
 
 		context.write("Done!\n");
 	}));
