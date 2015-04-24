@@ -643,28 +643,35 @@ void pacman::Demo::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("ZT", [=]() {
 		context.write("compute rgb-to-ir tranform\n");
 
-		std::string fileRGB, fileIR;
-		readString("File[.cal] with extrinsic for rgb: ", fileRGB);
-		readString("File[.cal] with extrinsic for ir: ", fileIR);
+		try
+		{
+			std::string fileRGB, fileIR;
+			readString("File[.cal] with extrinsic for rgb: ", fileRGB);
+			readString("File[.cal] with extrinsic for ir: ", fileIR);
 
-		XMLParser::Ptr pParserRGB = XMLParser::load(fileRGB + ".cal");
-		XMLParser::Ptr pParserIR  = XMLParser::load(fileIR  + ".cal");
+			XMLParser::Ptr pParserRGB = XMLParser::load(fileRGB + ".cal");
+			XMLParser::Ptr pParserIR = XMLParser::load(fileIR + ".cal");
 
-		Mat34 cameraFrame, invCameraFrame, depthCameraFrame, colourToIRFrame;
-		XMLData(cameraFrame, pParserRGB->getContextRoot()->getContextFirst("grasp sensor extrinsic"));
-		XMLData(depthCameraFrame, pParserIR->getContextRoot()->getContextFirst("grasp sensor extrinsic"));
+			Mat34 cameraFrame, invCameraFrame, depthCameraFrame, colourToIRFrame;
+			XMLData(cameraFrame, pParserRGB->getContextRoot()->getContextFirst("grasp sensor extrinsic"));
+			XMLData(depthCameraFrame, pParserIR->getContextRoot()->getContextFirst("grasp sensor extrinsic"));
 
-		invCameraFrame.setInverse(cameraFrame);
-		colourToIRFrame.multiply(invCameraFrame, depthCameraFrame);
+			invCameraFrame.setInverse(cameraFrame);
+			colourToIRFrame.multiply(invCameraFrame, depthCameraFrame);
 
-		XMLParser::Ptr pParser = XMLParser::Desc().create();
-		XMLData(colourToIRFrame, pParser->getContextRoot()->getContextFirst("grasp sensor colourToIRFrame", true), true);
-		XMLData(cameraFrame, pParser->getContextRoot()->getContextFirst("grasp sensor cameraFrame", true), true);
-		XMLData(depthCameraFrame, pParser->getContextRoot()->getContextFirst("grasp sensor depthCameraFrame", true), true);
-		FileWriteStream fws("colourToIRFrame.xml");
-		pParser->store(fws);
+			XMLParser::Ptr pParser = XMLParser::Desc().create();
+			XMLData(colourToIRFrame, pParser->getContextRoot()->getContextFirst("grasp sensor colourToIRFrame", true), true);
+			XMLData(cameraFrame, pParser->getContextRoot()->getContextFirst("grasp sensor cameraFrame", true), true);
+			XMLData(depthCameraFrame, pParser->getContextRoot()->getContextFirst("grasp sensor depthCameraFrame", true), true);
+			FileWriteStream fws("colourToIRFrame.xml");
+			pParser->store(fws);
 
-		context.write("Saved transform in colourToIRFrame.xml\n");
+			context.write("Saved transform in colourToIRFrame.xml\n");
+		}
+		catch (const Message& e)
+		{
+			context.write("%s\nFailed to compute transform!\n", e.what());
+		}
 	}));
 }
 //------------------------------------------------------------------------------
