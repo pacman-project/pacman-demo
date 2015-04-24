@@ -40,6 +40,20 @@
         <solid R="0" G="0" B="255" A="32"/>
         <wire R="0" G="0" B="255" A="255"/>
       </colour>
+
+      <model id="Any">
+        <contact_3d curv_fac="100.0" min_num="50" subsample_size="0" distance="0.01" lambda="50.0" normal_slope="3.1415927"/>
+      </model>
+      <appearance points_show="1" frames_show="0" bounds_frame_show="0">
+        <colour R="0" G="0" B="0" A="0"/>
+        <colour R="0" G="0" B="0" A="0"/>
+        <colour R="0" G="255" B="255" A="100"/>
+        <colour R="0" G="255" B="255" A="100"/>
+        <colour R="0" G="255" B="255" A="100"/>
+        <colour R="0" G="255" B="255" A="100"/>
+        <frame_size v1="0.01" v2="0.01" v3="0.01"/>
+        <bounds_frame_size v1="0.01" v2="0.01" v3="0.01"/>
+      </appearance>
     </model>
 
     <grasp sensor="FTClient+FTClient" event_time_wait="2.0" close_duration="2.0">

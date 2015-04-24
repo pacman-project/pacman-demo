@@ -8,7 +8,7 @@
     <property width="320" height="240" fps="30" mode="colour, depth" format="200 101"/>-->
     <colour R="255" G="0" B="0" A="255"/>
 
-    <handler snapshot="Image+ImageDemo" sequence="Video+Video"/>
+    <handler snapshot="Image+Image" sequence="Video+Video"/>
     
     <calibration file="GraspCameraOpenNIDemo.cal" use_deformation_map="1">
       <optimisation minimum="1" population_size="100" generations_num="1000000000" de_diff_fac="0.5" de_cross_prob="0.2" test_generations="1000" test_pairs="100" test_variance="1e-7" num_of_threads="-1" thread_priority="lowest">

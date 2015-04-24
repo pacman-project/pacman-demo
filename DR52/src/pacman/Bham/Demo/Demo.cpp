@@ -9,6 +9,8 @@ using namespace grasp;
 
 //-----------------------------------------------------------------------------
 
+const std::string Demo::ID_ANY = "Any";
+
 data::Data::Ptr Demo::Data::Desc::create(golem::Context &context) const {
 	grasp::data::Data::Ptr data(new Demo::Data(context));
 	static_cast<Demo::Data*>(data.get())->create(*this);
@@ -23,6 +25,10 @@ void Demo::Data::create(const Desc& desc) {
 
 	modelVertices.clear();
 	modelTriangles.clear();
+	modelFrame.setId();
+	indexType = 0;
+	indexItem = 0;
+	contactRelation = grasp::Contact3D::RELATION_DFLT;
 }
 
 void Demo::Data::setOwner(Manager* owner) {
@@ -37,15 +43,33 @@ void Demo::Data::setOwner(Manager* owner) {
 	this->owner->controller->setToDefault(*modelState);
 }
 
+Demo::Data::Training::Map::iterator Demo::Data::getModelTrainingItem() {
+	Training::Map::iterator ptr = modelTraining.begin();
+	U32 indexType = 0;
+	for (; ptr != modelTraining.end() && ptr == --modelTraining.end() && indexType < this->indexType; ++indexType, ptr = modelTraining.upper_bound(ptr->first));
+	this->indexType = indexType;
+	U32 indexItem = 0;
+	for (; ptr != modelTraining.end() && ptr->first == (--modelTraining.end())->first && indexItem < this->indexItem; ++indexItem, ++ptr);
+	this->indexItem = indexItem;
+	return ptr;
+}
+
 void Demo::Data::createRender() {
 	Player::Data::createRender();
 	{
 		golem::CriticalSectionWrapper csw(owner->csRenderer);
 		owner->modelRenderer.reset();
+		// model
 		owner->modelRenderer.setColour(owner->modelColourSolid);
 		owner->modelRenderer.addSolid(modelVertices.data(), (U32)modelVertices.size(), modelTriangles.data(), (U32)modelTriangles.size());
 		owner->modelRenderer.setColour(owner->modelColourWire);
 		owner->modelRenderer.addWire(modelVertices.data(), (U32)modelVertices.size(), modelTriangles.data(), (U32)modelTriangles.size());
+		if (!modelVertices.empty() && !modelTriangles.empty())
+			owner->modelRenderer.addAxes3D(modelFrame, Vec3(0.2));
+		// training data
+		Training::Map::iterator ptr = getModelTrainingItem();
+		if (ptr != modelTraining.end())
+			grasp::Contact3D::draw(owner->contactAppearance, ptr->second.contacts, modelFrame, owner->modelRenderer);
 	}
 }
 
@@ -61,6 +85,7 @@ void Demo::Data::load(const std::string& prefix, const golem::XMLContext* xmlcon
 			frs.read(modelVertices, modelVertices.end());
 			modelTriangles.clear();
 			frs.read(modelTriangles, modelTriangles.end());
+			frs.read(modelFrame);
 			modelState.reset(new golem::Controller::State(owner->controller->createState()));
 			frs.read(*modelState);
 			modelTraining.clear();
@@ -68,7 +93,6 @@ void Demo::Data::load(const std::string& prefix, const golem::XMLContext* xmlcon
 		}
 	}
 	catch (const std::exception&) {
-
 	}
 }
 
@@ -80,6 +104,7 @@ void Demo::Data::save(const std::string& prefix, golem::XMLContext* xmlcontext) 
 		FileWriteStream fws((prefix + sepName + dataName).c_str());
 		fws.write(modelVertices.begin(), modelVertices.end());
 		fws.write(modelTriangles.begin(), modelTriangles.end());
+		fws.write(modelFrame);
 		fws.write(*modelState);
 		fws.write(modelTraining.begin(), modelTraining.end());
 	}
@@ -118,6 +143,10 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 	objectScanPoseSeq.clear();
 	XMLData(objectScanPoseSeq, objectScanPoseSeq.max_size(), xmlcontext->getContextFirst("object"), "scan_pose");
 	objectFrameAdjustment.load(xmlcontext->getContextFirst("object frame_adjustment"));
+
+	modelDescMap.clear();
+	golem::XMLData(modelDescMap, modelDescMap.max_size(), xmlcontext->getContextFirst("model"), "model", false);
+	contactAppearance.load(xmlcontext->getContextFirst("model appearance"));
 }
 
 //------------------------------------------------------------------------------
@@ -315,6 +344,12 @@ void pacman::Demo::create(const Desc& desc) {
 	objectScanPoseSeq = desc.objectScanPoseSeq;
 	objectFrameAdjustment = desc.objectFrameAdjustment;
 
+	// models
+	modelMap.clear();
+	for (Model::Desc::Map::const_iterator i = desc.modelDescMap.begin(); i != desc.modelDescMap.end(); ++i)
+		modelMap.insert(std::make_pair(i->first, i->second->create(context, i->first)));
+	contactAppearance = desc.contactAppearance;
+
 	// top menu help using global key '?'
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  Z                                       menu SZ Tests\n"));
@@ -337,14 +372,10 @@ void pacman::Demo::create(const Desc& desc) {
 			to<Data>(dataCurrentPtr)->modelVertices.clear();
 			to<Data>(dataCurrentPtr)->modelTriangles.clear();
 		}
-		// obtain snapshot handler
-		data::Handler::Map::const_iterator handlerSnapshotPtr = handlerMap.find(modelCamera->getSnapshotHandler());
-		if (handlerSnapshotPtr == handlerMap.end())
-			throw Message(Message::LEVEL_ERROR, "Unknown snapshot handler %s", modelCamera->getSnapshotHandler().c_str());
 		// capture and insert data
-		data::Capture* capture = is<data::Capture>(handlerSnapshotPtr);
+		data::Capture* capture = is<data::Capture>(modelHandler);
 		if (!capture)
-			throw Message(Message::LEVEL_ERROR, "Handler %s does not support Capture interface", modelCamera->getSnapshotHandler().c_str());
+			throw Message(Message::LEVEL_ERROR, "Handler %s does not support Capture interface", modelHandler->getID().c_str());
 		data::Item::Map::iterator ptr;
 		data::Item::Ptr item = capture->capture(*modelCamera, [&](const grasp::TimeStamp*) -> bool { return true; });
 		{
@@ -355,9 +386,9 @@ void pacman::Demo::create(const Desc& desc) {
 			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
 		}
 		// generate features
-		data::Transform* transform = is<data::Transform>(handlerSnapshotPtr);
+		data::Transform* transform = is<data::Transform>(modelHandler);
 		if (!transform)
-			throw Message(Message::LEVEL_ERROR, "Handler %s does not support Transform interface", modelCamera->getSnapshotHandler().c_str());
+			throw Message(Message::LEVEL_ERROR, "Handler %s does not support Transform interface", modelHandler->getID().c_str());
 		data::Item::List list;
 		list.insert(list.end(), ptr);
 		item = transform->transform(list);
@@ -377,12 +408,18 @@ void pacman::Demo::create(const Desc& desc) {
 		Vec3Seq modelVertices;
 		TriangleSeq modelTriangles;
 		model->model(robotPose, modelPose, &modelVertices, &modelTriangles);
+		// compute a new frame
+		Vec3Seq modelPoints;
+		Rand rand(context.getRandSeed());
+		Import().generate(rand, modelVertices, modelTriangles, [&](const golem::Vec3& p, const golem::Vec3&) { modelPoints.push_back(p); });
+		modelPose = RBPose::createFrame(modelPoints);
 		// create triangle mesh
 		{
 			RenderBlock renderBlock(*this);
 			golem::CriticalSectionWrapper cswData(csData);
 			to<Data>(dataCurrentPtr)->modelVertices = modelVertices;
 			to<Data>(dataCurrentPtr)->modelTriangles = modelTriangles;
+			to<Data>(dataCurrentPtr)->modelFrame = modelPose;
 		}
 		//grasp::Contact3D::Triangle::Seq modelMesh;
 		//for (grasp::TriangleSeq::const_iterator j = modelTriangles.begin(); j != modelTriangles.end(); ++j)

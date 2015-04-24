@@ -24,6 +24,9 @@ namespace pacman {
 /** Demo. */
 class Demo : public grasp::Player {
 public:
+	/** Model/Query any identifier */
+	static const std::string ID_ANY;
+
 	/** Data */
 	class Data : public grasp::Player::Data {
 	public:
@@ -53,11 +56,20 @@ public:
 		grasp::Vec3Seq modelVertices;
 		/** Model triangles */
 		grasp::TriangleSeq modelTriangles;
+		/** Model frame */
+		golem::Mat34 modelFrame;
 		/** Mdel robot state */
 		golem::Controller::State::Ptr modelState;
 		
 		/** Model training data */
 		Training::Map modelTraining;
+
+		/** Model training data type index */
+		golem::U32 indexType;
+		/** Model training data item index */
+		golem::U32 indexItem;
+		/** Contact relation */
+		golem::U32 contactRelation;
 
 		/** Data bundle description */
 		class Desc : public grasp::Player::Data::Desc {
@@ -65,6 +77,9 @@ public:
 			/** Creates the object from the description. */
 			virtual grasp::data::Data::Ptr create(golem::Context &context) const;
 		};
+
+		/** Current model training item */
+		Training::Map::iterator getModelTrainingItem();
 
 		/** Manager */
 		virtual void setOwner(grasp::Manager* owner);
@@ -142,6 +157,11 @@ public:
 		/** Object manual frame adjustment */
 		grasp::RBAdjust objectFrameAdjustment;
 
+		/** Model descriptions */
+		grasp::Model::Desc::Map modelDescMap;
+		/** Contact appearance */
+		grasp::Contact3D::Appearance contactAppearance;
+
 		/** Constructs from description object */
 		Desc() {
 			Desc::setToDefault();
@@ -177,6 +197,9 @@ public:
 			objectItem.clear();
 			objectScanPoseSeq.clear();
 			objectFrameAdjustment.setToDefault();
+
+			modelDescMap.clear();
+			contactAppearance.setToDefault();
 		}
 		/** Assert that the description is valid. */
 		virtual void assertValid(const grasp::Assert::Context& ac) const {
@@ -209,6 +232,13 @@ public:
 			for (grasp::ConfigMat34::Seq::const_iterator i = objectScanPoseSeq.begin(); i != objectScanPoseSeq.end(); ++i)
 				i->assertValid(grasp::Assert::Context(ac, "objectScanPoseSeq[]."));
 			objectFrameAdjustment.assertValid(grasp::Assert::Context(ac, "objectFrameAdjustment."));
+
+			grasp::Assert::valid(!modelDescMap.empty(), ac, "modelDescMap: empty");
+			for (grasp::Model::Desc::Map::const_iterator i = modelDescMap.begin(); i != modelDescMap.end(); ++i) {
+				grasp::Assert::valid(i->second != nullptr, ac, "modelDescMap[]: null");
+				i->second->assertValid(grasp::Assert::Context(ac, "modelDescMap[]->"));
+			}
+			contactAppearance.assertValid(grasp::Assert::Context(ac, "contactAppearance."));
 		}
 		/** Load descritpion from xml context. */
 		virtual void load(golem::Context& context, const golem::XMLContext* xmlcontext);
@@ -270,6 +300,11 @@ protected:
 	grasp::RBAdjust objectFrameAdjustment;
 	/** Object renderer */
 	golem::DebugRenderer objectRenderer;
+
+	/** Models */
+	grasp::Model::Map modelMap;
+	/** Contact appearance */
+	grasp::Contact3D::Appearance contactAppearance;
 
 	/** golem::UIRenderer interface */
 	virtual void render() const;
