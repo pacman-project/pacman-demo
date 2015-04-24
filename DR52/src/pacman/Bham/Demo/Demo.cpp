@@ -26,9 +26,16 @@ void Demo::Data::create(const Desc& desc) {
 	modelVertices.clear();
 	modelTriangles.clear();
 	modelFrame.setId();
+
+	queryVertices.clear();
+	queryTriangles.clear();
+	queryFrame.setId();
+
 	indexType = 0;
 	indexItem = 0;
 	contactRelation = grasp::Contact3D::RELATION_DFLT;
+
+	queryMode = false;
 }
 
 void Demo::Data::setOwner(Manager* owner) {
@@ -43,13 +50,13 @@ void Demo::Data::setOwner(Manager* owner) {
 	this->owner->controller->setToDefault(*modelState);
 }
 
-Demo::Data::Training::Map::iterator Demo::Data::getModelTrainingItem() {
-	Training::Map::iterator ptr = modelTraining.begin();
+Demo::Data::Training::Map::iterator Demo::Data::getTrainingItem() {
+	Training::Map::iterator ptr = training.begin();
 	U32 indexType = 0;
-	for (; ptr != modelTraining.end() && ptr == --modelTraining.end() && indexType < this->indexType; ++indexType, ptr = modelTraining.upper_bound(ptr->first));
+	for (; ptr != training.end() && ptr == --training.end() && indexType < this->indexType; ++indexType, ptr = training.upper_bound(ptr->first));
 	this->indexType = indexType;
 	U32 indexItem = 0;
-	for (; ptr != modelTraining.end() && ptr->first == (--modelTraining.end())->first && indexItem < this->indexItem; ++indexItem, ++ptr);
+	for (; ptr != training.end() && ptr->first == (--training.end())->first && indexItem < this->indexItem; ++indexItem, ++ptr);
 	this->indexItem = indexItem;
 	return ptr;
 }
@@ -59,16 +66,19 @@ void Demo::Data::createRender() {
 	{
 		golem::CriticalSectionWrapper csw(owner->csRenderer);
 		owner->modelRenderer.reset();
-		// model
+		// model/query
+		const grasp::Vec3Seq& vertices = queryMode ? queryVertices : modelVertices;
+		const grasp::TriangleSeq& triangles = queryMode ? queryTriangles : modelTriangles;
+		const golem::Mat34& frame = queryMode ? queryFrame : modelFrame;
 		owner->modelRenderer.setColour(owner->modelColourSolid);
-		owner->modelRenderer.addSolid(modelVertices.data(), (U32)modelVertices.size(), modelTriangles.data(), (U32)modelTriangles.size());
+		owner->modelRenderer.addSolid(vertices.data(), (U32)vertices.size(), triangles.data(), (U32)triangles.size());
 		owner->modelRenderer.setColour(owner->modelColourWire);
-		owner->modelRenderer.addWire(modelVertices.data(), (U32)modelVertices.size(), modelTriangles.data(), (U32)modelTriangles.size());
-		if (!modelVertices.empty() && !modelTriangles.empty())
-			owner->modelRenderer.addAxes3D(modelFrame, Vec3(0.2));
+		owner->modelRenderer.addWire(vertices.data(), (U32)vertices.size(), triangles.data(), (U32)triangles.size());
+		if (!vertices.empty() && !triangles.empty())
+			owner->modelRenderer.addAxes3D(frame, Vec3(0.2));
 		// training data
-		Training::Map::iterator ptr = getModelTrainingItem();
-		if (ptr != modelTraining.end())
+		Training::Map::iterator ptr = getTrainingItem();
+		if (ptr != training.end())
 			grasp::Contact3D::draw(owner->contactAppearance, ptr->second.contacts, modelFrame, owner->modelRenderer);
 	}
 }
@@ -81,15 +91,24 @@ void Demo::Data::load(const std::string& prefix, const golem::XMLContext* xmlcon
 		golem::XMLData("data_name", dataName, const_cast<golem::XMLContext*>(xmlcontext), false);
 		if (dataName.length() > 0) {
 			FileReadStream frs((prefix + sepName + dataName).c_str());
+			
 			modelVertices.clear();
 			frs.read(modelVertices, modelVertices.end());
 			modelTriangles.clear();
 			frs.read(modelTriangles, modelTriangles.end());
 			frs.read(modelFrame);
+			frs.read(modelFrameOffset);
+
+			queryVertices.clear();
+			frs.read(queryVertices, queryVertices.end());
+			queryTriangles.clear();
+			frs.read(queryTriangles, queryTriangles.end());
+			frs.read(queryFrame);
+
 			modelState.reset(new golem::Controller::State(owner->controller->createState()));
 			frs.read(*modelState);
-			modelTraining.clear();
-			frs.read(modelTraining, modelTraining.end(), std::make_pair(std::string(), Training(owner->controller->createState())));
+			training.clear();
+			frs.read(training, training.end(), std::make_pair(std::string(), Training(owner->controller->createState())));
 		}
 	}
 	catch (const std::exception&) {
@@ -102,11 +121,18 @@ void Demo::Data::save(const std::string& prefix, golem::XMLContext* xmlcontext) 
 	if (dataName.length() > 0) {
 		golem::XMLData("data_name", const_cast<std::string&>(dataName), xmlcontext, true);
 		FileWriteStream fws((prefix + sepName + dataName).c_str());
+
 		fws.write(modelVertices.begin(), modelVertices.end());
 		fws.write(modelTriangles.begin(), modelTriangles.end());
 		fws.write(modelFrame);
+		fws.write(modelFrameOffset);
+
+		fws.write(queryVertices.begin(), queryVertices.end());
+		fws.write(queryTriangles.begin(), queryTriangles.end());
+		fws.write(queryFrame);
+
 		fws.write(*modelState);
-		fws.write(modelTraining.begin(), modelTraining.end());
+		fws.write(training.begin(),training.end());
 	}
 }
 
@@ -122,11 +148,17 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 	golem::XMLData("camera", modelCamera, xmlcontext->getContextFirst("model"));
 	golem::XMLData("handler", modelHandler, xmlcontext->getContextFirst("model"));
 	golem::XMLData("item", modelItem, xmlcontext->getContextFirst("model"));
-	golem::XMLData("handler_trj", modelHandlerTrj, xmlcontext->getContextFirst("model"));
-	golem::XMLData("item_trj", modelItemTrj, xmlcontext->getContextFirst("model"));
+
 	modelScanPose.xmlData(xmlcontext->getContextFirst("model scan_pose"));
 	golem::XMLData(modelColourSolid, xmlcontext->getContextFirst("model colour solid"));
 	golem::XMLData(modelColourWire, xmlcontext->getContextFirst("model colour wire"));
+
+	golem::XMLData("handler_trj", modelHandlerTrj, xmlcontext->getContextFirst("model"));
+	golem::XMLData("item_trj", modelItemTrj, xmlcontext->getContextFirst("model"));
+
+	golem::XMLData("camera", queryCamera, xmlcontext->getContextFirst("query"));
+	golem::XMLData("handler", queryHandler, xmlcontext->getContextFirst("query"));
+	golem::XMLData("item", queryItem, xmlcontext->getContextFirst("query"));
 
 	golem::XMLData("sensor", graspSensorForce, xmlcontext->getContextFirst("grasp"));
 	golem::XMLData(graspThresholdForce, xmlcontext->getContextFirst("grasp threshold"));
@@ -308,14 +340,26 @@ void pacman::Demo::create(const Desc& desc) {
 	if (!modelHandler)
 		throw Message(Message::LEVEL_CRIT, "pacman::Demo::create(): unknown model data handler: %s", desc.modelHandler.c_str());
 	modelItem = desc.modelItem;
+
+	modelScanPose = desc.modelScanPose;
+	modelColourSolid = desc.modelColourSolid;
+	modelColourWire = desc.modelColourWire;
+
 	grasp::data::Handler::Map::const_iterator modelHandlerTrjPtr = handlerMap.find(desc.modelHandlerTrj);
 	modelHandlerTrj = modelHandlerTrjPtr != handlerMap.end() ? modelHandlerTrjPtr->second.get() : nullptr;
 	if (!modelHandlerTrj)
 		throw Message(Message::LEVEL_CRIT, "pacman::Demo::create(): unknown model trajectory handler: %s", desc.modelHandlerTrj.c_str());
 	modelItemTrj = desc.modelItemTrj;
-	modelScanPose = desc.modelScanPose;
-	modelColourSolid = desc.modelColourSolid;
-	modelColourWire = desc.modelColourWire;
+
+	grasp::Sensor::Map::const_iterator queryCameraPtr = sensorMap.find(desc.queryCamera);
+	queryCamera = queryCameraPtr != sensorMap.end() ? is<Camera>(queryCameraPtr->second.get()) : nullptr;
+	if (!queryCamera)
+		throw Message(Message::LEVEL_CRIT, "pacman::Demo::create(): unknown query pose estimation camera: %s", desc.queryCamera.c_str());
+	grasp::data::Handler::Map::const_iterator queryHandlerPtr = handlerMap.find(desc.queryHandler);
+	queryHandler = queryHandlerPtr != handlerMap.end() ? queryHandlerPtr->second.get() : nullptr;
+	if (!queryHandler)
+		throw Message(Message::LEVEL_CRIT, "pacman::Demo::create(): unknown query data handler: %s", desc.queryHandler.c_str());
+	queryItem = desc.queryItem;
 
 	grasp::Sensor::Map::const_iterator graspSensorForcePtr = sensorMap.find(desc.graspSensorForce);
 	graspSensorForce = graspSensorForcePtr != sensorMap.end() ? is<FT>(graspSensorForcePtr->second.get()) : nullptr;
@@ -353,96 +397,50 @@ void pacman::Demo::create(const Desc& desc) {
 	// top menu help using global key '?'
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  Z                                       menu SZ Tests\n"));
+	scene.getHelp().insert(Scene::StrMapVal("0F5", "  <Tab>                                   Query/Model mode switch\n"));
+
+	menuCmdMap.insert(std::make_pair("\t", [=]() {
+		// set mode
+		to<Data>(dataCurrentPtr)->queryMode = !to<Data>(dataCurrentPtr)->queryMode;
+		context.write("%s mode\n", to<Data>(dataCurrentPtr)->queryMode ? "Query" : "Model");
+		createRender();
+	}));
 
 	// data menu control and commands
 	menuCtrlMap.insert(std::make_pair("P", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: run (D)emo, (E)stimate model pose, (A)ttach object, edit (M)odel, perform (Q)uery...";
+		desc = "Press a key to: run (D)emo, (E)stimate pose, (C)apture object, create (M)odel, perform (Q)uery...";
 	}));
 
 	// model pose estimation
-	menuCmdMap.insert(std::make_pair("PE", [=]() {
-		// run robot
-		gotoPose(modelScanPose);
-		// block keyboard and mouse interaction
-		InputBlock inputBlock(*this);
-		{
-			RenderBlock renderBlock(*this);
-			golem::CriticalSectionWrapper cswData(csData);
-			to<Data>(dataCurrentPtr)->itemMap.erase(modelItem);
-			to<Data>(dataCurrentPtr)->modelVertices.clear();
-			to<Data>(dataCurrentPtr)->modelTriangles.clear();
-		}
-		// capture and insert data
-		data::Capture* capture = is<data::Capture>(modelHandler);
-		if (!capture)
-			throw Message(Message::LEVEL_ERROR, "Handler %s does not support Capture interface", modelHandler->getID().c_str());
-		data::Item::Map::iterator ptr;
-		data::Item::Ptr item = capture->capture(*modelCamera, [&](const grasp::TimeStamp*) -> bool { return true; });
-		{
-			RenderBlock renderBlock(*this);
-			golem::CriticalSectionWrapper cswData(csData);
-			to<Data>(dataCurrentPtr)->itemMap.erase(modelItem);
-			ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(modelItem, item));
-			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
-		}
-		// generate features
-		data::Transform* transform = is<data::Transform>(modelHandler);
-		if (!transform)
-			throw Message(Message::LEVEL_ERROR, "Handler %s does not support Transform interface", modelHandler->getID().c_str());
-		data::Item::List list;
-		list.insert(list.end(), ptr);
-		item = transform->transform(list);
-		{
-			RenderBlock renderBlock(*this);
-			golem::CriticalSectionWrapper cswData(csData);
-			to<Data>(dataCurrentPtr)->itemMap.erase(modelItem);
-			ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(modelItem, item));
-			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
-		}
-		// estimate pose
-		data::Model* model = is<data::Model>(ptr);
-		if (!model)
-			throw Message(Message::LEVEL_ERROR, "Item %s does not support Model interface", ptr->first.c_str());
-		grasp::ConfigMat34 robotPose;
-		golem::Mat34 modelPose;
-		Vec3Seq modelVertices;
-		TriangleSeq modelTriangles;
-		model->model(robotPose, modelPose, &modelVertices, &modelTriangles);
-		// compute a new frame
-		Vec3Seq modelPoints;
-		Rand rand(context.getRandSeed());
-		Import().generate(rand, modelVertices, modelTriangles, [&](const golem::Vec3& p, const golem::Vec3&) { modelPoints.push_back(p); });
-		modelPose = RBPose::createFrame(modelPoints);
-		// create triangle mesh
-		{
-			RenderBlock renderBlock(*this);
-			golem::CriticalSectionWrapper cswData(csData);
-			to<Data>(dataCurrentPtr)->modelVertices = modelVertices;
-			to<Data>(dataCurrentPtr)->modelTriangles = modelTriangles;
-			to<Data>(dataCurrentPtr)->modelFrame = modelPose;
-		}
-		//grasp::Contact3D::Triangle::Seq modelMesh;
-		//for (grasp::TriangleSeq::const_iterator j = modelTriangles.begin(); j != modelTriangles.end(); ++j)
-		//	to<Data>(dataCurrentPtr)->modelMesh.push_back(Contact3D::Triangle(modelVertices[j->t1], modelVertices[j->t3], modelVertices[j->t2]));
-		// done
+	menuCtrlMap.insert(std::make_pair("PE", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+		desc = "Press a key to: (M)odel/(Q)ery estimation...";
+	}));
+	menuCmdMap.insert(std::make_pair("PEM", [=]() {
+		// estimate
+		(void)estimatePose(false);
+		// finish
+		context.write("Done!\n");
+	}));
+	menuCmdMap.insert(std::make_pair("PEQ", [=]() {
+		// estimate
+		(void)estimatePose(true);
+		// finish
 		context.write("Done!\n");
 	}));
 
 	// model attachement
-	menuCtrlMap.insert(std::make_pair("PA", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: (C)apture/(L)oad object...";
+	menuCtrlMap.insert(std::make_pair("PC", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+		desc = "Press a key to: (C)amera/(L)oad...";
 	}));
-	menuCmdMap.insert(std::make_pair("PAC", [=]() {
+	menuCmdMap.insert(std::make_pair("PCC", [=]() {
 		// grasp and scan object
 		grasp::data::Item::Map::iterator ptr = objectGraspAndCapture();
 		// compute features and add to data bundle
 		(void)objectProcess(ptr);
-		// set model robot state
-		to<Data>(dataCurrentPtr)->modelState.reset(new golem::Controller::State(lookupState()));
 		// finish
 		context.write("Done!\n");
 	}));
-	menuCmdMap.insert(std::make_pair("PAL", [=]() {
+	menuCmdMap.insert(std::make_pair("PCL", [=]() {
 		// cast to data::Import
 		data::Import* import = is<data::Import>(objectHandlerScan);
 		if (!import)
@@ -502,16 +500,20 @@ void pacman::Demo::create(const Desc& desc) {
 
 		// compute features and add to data bundle
 		(void)objectProcess(ptr);
-		// set model robot state
-		to<Data>(dataCurrentPtr)->modelState.reset(new golem::Controller::State(lookupState()));
 
 		// finish
 		context.write("Done!\n");
 	}));
 	menuCmdMap.insert(std::make_pair("PM", [=]() {
+		// set mode
+		to<Data>(dataCurrentPtr)->queryMode = false;
+
 		data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(objectItem);
 		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
 			throw Cancel("Object item has not been created - run attach object");
+		
+		// set model robot state
+		to<Data>(dataCurrentPtr)->modelState.reset(new golem::Controller::State(lookupState()));
 
 		RenderBlock renderBlock(*this);
 
@@ -569,20 +571,20 @@ void pacman::Demo::create(const Desc& desc) {
 	// main demo
 	menuCmdMap.insert(std::make_pair("PD", [=]() {
 		// estimate pose
-		if (to<Data>(dataCurrentPtr)->modelVertices.empty() || to<Data>(dataCurrentPtr)->modelTriangles.empty())
-			menuCmdMap["PE"]();
+		if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty())
+			estimatePose(true);
 
 		// run demo
 		for (;;) {
 			// grasp and scan object
 			grasp::data::Item::Map::iterator ptr = objectGraspAndCapture();
 			// compute features and add to data bundle
-			const data::Item::Ptr item = objectProcess(ptr, false);
+			ptr = objectProcess(ptr);
 		}
 	}));
 
 	menuCtrlMap.insert(std::make_pair("Z", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: run (R)otate, (N)udge, (O)bjectGraspAndCapture...";
+		desc = "Press a key to: run (R)otate, (N)udge, (O)bjectGraspAndCapture, compute rgb-to-ir (T)ranform...";
 	}));
 
 	menuCmdMap.insert(std::make_pair("ZO", [=]() {
@@ -676,7 +678,134 @@ void pacman::Demo::create(const Desc& desc) {
 
 		context.write("Done!\n");
 	}));
+
+	menuCmdMap.insert(std::make_pair("ZT", [=]() {
+		context.write("compute rgb-to-ir tranform\n");
+
+		try
+		{
+			std::string fileRGB, fileIR;
+			readString("File[.cal] with extrinsic for rgb: ", fileRGB);
+			readString("File[.cal] with extrinsic for ir: ", fileIR);
+
+			XMLParser::Ptr pParserRGB = XMLParser::load(fileRGB + ".cal");
+			XMLParser::Ptr pParserIR = XMLParser::load(fileIR + ".cal");
+
+			Mat34 cameraFrame, invCameraFrame, depthCameraFrame, colourToIRFrame;
+			XMLData(cameraFrame, pParserRGB->getContextRoot()->getContextFirst("grasp sensor extrinsic"));
+			XMLData(depthCameraFrame, pParserIR->getContextRoot()->getContextFirst("grasp sensor extrinsic"));
+
+			invCameraFrame.setInverse(cameraFrame);
+			colourToIRFrame.multiply(invCameraFrame, depthCameraFrame);
+
+			XMLParser::Ptr pParser = XMLParser::Desc().create();
+			XMLData(colourToIRFrame, pParser->getContextRoot()->getContextFirst("grasp sensor colourToIRFrame", true), true);
+			XMLData(cameraFrame, pParser->getContextRoot()->getContextFirst("grasp sensor cameraFrame", true), true);
+			XMLData(depthCameraFrame, pParser->getContextRoot()->getContextFirst("grasp sensor depthCameraFrame", true), true);
+			FileWriteStream fws("colourToIRFrame.xml");
+			pParser->store(fws);
+
+			context.write("Saved transform in colourToIRFrame.xml\n");
+		}
+		catch (const Message& e)
+		{
+			context.write("%s\nFailed to compute transform!\n", e.what());
+		}
+	}));
 }
+
+//------------------------------------------------------------------------------
+
+grasp::data::Item::Map::iterator pacman::Demo::estimatePose(bool queryMode) {
+	if (queryMode && (to<Data>(dataCurrentPtr)->modelVertices.empty() || to<Data>(dataCurrentPtr)->modelTriangles.empty()))
+		throw Cancel("Model has not been estimated");
+
+	grasp::Vec3Seq& vertices = queryMode ? to<Data>(dataCurrentPtr)->queryVertices : to<Data>(dataCurrentPtr)->modelVertices;
+	grasp::TriangleSeq& triangles = queryMode ? to<Data>(dataCurrentPtr)->queryTriangles : to<Data>(dataCurrentPtr)->modelTriangles;
+	golem::Mat34& frame = queryMode ? to<Data>(dataCurrentPtr)->queryFrame : to<Data>(dataCurrentPtr)->modelFrame;
+	const std::string itemName = queryMode ? queryItem : modelItem;
+	grasp::data::Handler* handler = queryMode ? queryHandler : modelHandler;
+	grasp::Camera* camera = queryMode ? queryCamera : modelCamera;
+
+	// set mode
+	to<Data>(dataCurrentPtr)->queryMode = queryMode;
+
+	// run robot
+	gotoPose(modelScanPose);
+
+	// block keyboard and mouse interaction
+	InputBlock inputBlock(*this);
+	{
+		RenderBlock renderBlock(*this);
+		golem::CriticalSectionWrapper cswData(csData);
+		to<Data>(dataCurrentPtr)->itemMap.erase(itemName);
+		vertices.clear();
+		triangles.clear();
+	}
+	// capture and insert data
+	data::Capture* capture = is<data::Capture>(handler);
+	if (!capture)
+		throw Message(Message::LEVEL_ERROR, "Handler %s does not support Capture interface", handler->getID().c_str());
+	data::Item::Map::iterator ptr;
+	data::Item::Ptr item = capture->capture(*camera, [&](const grasp::TimeStamp*) -> bool { return true; });
+	{
+		RenderBlock renderBlock(*this);
+		golem::CriticalSectionWrapper cswData(csData);
+		to<Data>(dataCurrentPtr)->itemMap.erase(itemName);
+		ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(itemName, item));
+		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+	}
+	// generate features
+	data::Transform* transform = is<data::Transform>(handler);
+	if (!transform)
+		throw Message(Message::LEVEL_ERROR, "Handler %s does not support Transform interface", handler->getID().c_str());
+	data::Item::List list;
+	list.insert(list.end(), ptr);
+	item = transform->transform(list);
+	{
+		RenderBlock renderBlock(*this);
+		golem::CriticalSectionWrapper cswData(csData);
+		to<Data>(dataCurrentPtr)->itemMap.erase(itemName);
+		ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(itemName, item));
+		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+	}
+	// estimate pose
+	data::Model* model = is<data::Model>(ptr);
+	if (!model)
+		throw Message(Message::LEVEL_ERROR, "Item %s does not support Model interface", ptr->first.c_str());
+	grasp::ConfigMat34 robotPose;
+	golem::Mat34 modelFrame, modelNewFrame;
+	Vec3Seq modelVertices;
+	TriangleSeq modelTriangles;
+	model->model(robotPose, modelFrame, &modelVertices, &modelTriangles);
+
+	// compute a new frame
+	if (!queryMode) {
+		Vec3Seq modelPoints;
+		Rand rand(context.getRandSeed());
+		Import().generate(rand, modelVertices, modelTriangles, [&](const golem::Vec3& p, const golem::Vec3&) { modelPoints.push_back(p); });
+		modelNewFrame = RBPose::createFrame(modelPoints);
+	}
+
+	// create triangle mesh
+	{
+		RenderBlock renderBlock(*this);
+		golem::CriticalSectionWrapper cswData(csData);
+		vertices = modelVertices;
+		triangles = modelTriangles;
+		if (queryMode)
+			frame = modelFrame * to<Data>(dataCurrentPtr)->modelFrameOffset;
+		else {
+			// newFrame = modelFrame * offset ==> offset = modelFrame^-1 * newFrame
+			frame = modelNewFrame;
+			to<Data>(dataCurrentPtr)->modelFrameOffset.setInverse(modelFrame);
+			to<Data>(dataCurrentPtr)->modelFrameOffset.multiply(to<Data>(dataCurrentPtr)->modelFrameOffset, modelNewFrame);
+		}
+	}
+
+	return ptr;
+}
+
 //------------------------------------------------------------------------------
 
 // move robot to grasp open pose, wait for force event, grasp object (closed pose), move through scan poses and capture object, add as objectScan
@@ -767,7 +896,7 @@ grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture()
 //------------------------------------------------------------------------------
 
 // Process object image and add to data bundle
-grasp::data::Item::Ptr pacman::Demo::objectProcess(grasp::data::Item::Map::iterator ptr, bool addItem) {
+grasp::data::Item::Map::iterator pacman::Demo::objectProcess(grasp::data::Item::Map::iterator ptr) {
 	// generate features
 	data::Transform* transform = is<data::Transform>(objectHandler);
 	if (!transform)
@@ -778,15 +907,12 @@ grasp::data::Item::Ptr pacman::Demo::objectProcess(grasp::data::Item::Map::itera
 	data::Item::Ptr item = transform->transform(list);
 
 	// insert processed object, remove old one
-	if (addItem) {
-		RenderBlock renderBlock(*this);
-		golem::CriticalSectionWrapper cswData(csData);
-		to<Data>(dataCurrentPtr)->itemMap.erase(objectItem);
-		(void)to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(objectItem, item));
-		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
-	}
-
-	return item;
+	RenderBlock renderBlock(*this);
+	golem::CriticalSectionWrapper cswData(csData);
+	to<Data>(dataCurrentPtr)->itemMap.erase(objectItem);
+	ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(objectItem, item));
+	Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+	return ptr;
 }
 
 //------------------------------------------------------------------------------

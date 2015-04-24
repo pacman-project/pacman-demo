@@ -52,17 +52,30 @@ public:
 		/** Data bundle default name */
 		std::string dataName;
 
+		/** Query mode */
+		bool queryMode;
+
 		/** Model triangles */
 		grasp::Vec3Seq modelVertices;
 		/** Model triangles */
 		grasp::TriangleSeq modelTriangles;
 		/** Model frame */
 		golem::Mat34 modelFrame;
-		/** Mdel robot state */
+		/** Model frame offset */
+		golem::Mat34 modelFrameOffset;
+
+		/** Model robot state */
 		golem::Controller::State::Ptr modelState;
 		
-		/** Model training data */
-		Training::Map modelTraining;
+		/** Query triangles */
+		grasp::Vec3Seq queryVertices;
+		/** Query triangles */
+		grasp::TriangleSeq queryTriangles;
+		/** Query frame */
+		golem::Mat34 queryFrame;
+
+		/** Training data */
+		Training::Map training;
 
 		/** Model training data type index */
 		golem::U32 indexType;
@@ -78,8 +91,8 @@ public:
 			virtual grasp::data::Data::Ptr create(golem::Context &context) const;
 		};
 
-		/** Current model training item */
-		Training::Map::iterator getModelTrainingItem();
+		/** Current training item */
+		Training::Map::iterator getTrainingItem();
 
 		/** Manager */
 		virtual void setOwner(grasp::Manager* owner);
@@ -118,16 +131,25 @@ public:
 		std::string modelHandler;
 		/** Model data item */
 		std::string modelItem;
-		/** Model trajectory handler */
-		std::string modelHandlerTrj;
-		/** Model trajectory item */
-		std::string modelItemTrj;
+
 		/** Model scan pose */
 		grasp::ConfigMat34 modelScanPose;
 		/** Model colour solid */
 		golem::RGBA modelColourSolid;
 		/** Model colour wireframe */
 		golem::RGBA modelColourWire;
+
+		/** Model trajectory handler */
+		std::string modelHandlerTrj;
+		/** Model trajectory item */
+		std::string modelItemTrj;
+
+		/** Query pose estimation camera */
+		std::string queryCamera;
+		/** Query data handler */
+		std::string queryHandler;
+		/** Query data item */
+		std::string queryItem;
 
 		/** Grasp force sensor */
 		std::string graspSensorForce;
@@ -177,11 +199,17 @@ public:
 			modelCamera.clear();
 			modelHandler.clear();
 			modelItem.clear();
-			modelHandlerTrj.clear();
-			modelItemTrj.clear();
+
 			modelScanPose.setToDefault();
 			modelColourSolid.set(golem::RGBA::GREEN._U8[0], golem::RGBA::GREEN._U8[1], golem::RGBA::GREEN._U8[2], golem::numeric_const<golem::U8>::MAX / 8);
 			modelColourWire.set(golem::RGBA::GREEN);
+
+			modelHandlerTrj.clear();
+			modelItemTrj.clear();
+
+			queryCamera.clear();
+			queryHandler.clear();
+			queryItem.clear();
 
 			graspSensorForce.clear();
 			graspThresholdForce.setZero();
@@ -212,9 +240,15 @@ public:
 			grasp::Assert::valid(modelCamera.length() > 0, ac, "modelCamera: invalid");
 			grasp::Assert::valid(modelHandler.length() > 0, ac, "modelHandler: invalid");
 			grasp::Assert::valid(modelItem.length() > 0, ac, "modelItem: invalid");
+
+			modelScanPose.assertValid(grasp::Assert::Context(ac, "modelScanPose."));
+
 			grasp::Assert::valid(modelHandlerTrj.length() > 0, ac, "modelHandlerTrj: invalid");
 			grasp::Assert::valid(modelItemTrj.length() > 0, ac, "modelItemTrj: invalid");
-			modelScanPose.assertValid(grasp::Assert::Context(ac, "modelScanPose."));
+
+			grasp::Assert::valid(queryCamera.length() > 0, ac, "queryCamera: invalid");
+			grasp::Assert::valid(queryHandler.length() > 0, ac, "queryHandler: invalid");
+			grasp::Assert::valid(queryItem.length() > 0, ac, "queryItem: invalid");
 
 			grasp::Assert::valid(graspSensorForce.length() > 0, ac, "graspSensorForce: invalid");
 			grasp::Assert::valid(graspThresholdForce.isPositive(), ac, "graspThresholdForce: negative");
@@ -257,19 +291,28 @@ protected:
 	grasp::data::Handler* modelHandler;
 	/** Model data item */
 	std::string modelItem;
-	/** Model trajectory handler */
-	grasp::data::Handler* modelHandlerTrj;
-	/** Model trajectory item */
-	std::string modelItemTrj;
+
 	/** Model scan pose */
 	grasp::ConfigMat34 modelScanPose;
-
 	/** Model colour solid */
 	golem::RGBA modelColourSolid;
 	/** Model colour wireframe */
 	golem::RGBA modelColourWire;
+	
 	/** Model renderer */
 	golem::DebugRenderer modelRenderer;
+
+	/** Model trajectory handler */
+	grasp::data::Handler* modelHandlerTrj;
+	/** Model trajectory item */
+	std::string modelItemTrj;
+
+	/** Query pose estimation camera */
+	grasp::Camera* queryCamera;
+	/** Query data handler */
+	grasp::data::Handler* queryHandler;
+	/** Query data item */
+	std::string queryItem;
 
 	/** Grasp force sensor */
 	grasp::FT* graspSensorForce;
@@ -309,10 +352,12 @@ protected:
 	/** golem::UIRenderer interface */
 	virtual void render() const;
 
+	/** Pose estimation */
+	grasp::data::Item::Map::iterator estimatePose(bool query);
 	/** Grasp and capture object */
 	grasp::data::Item::Map::iterator objectGraspAndCapture();
 	/** Process object image and add to data bundle */
-	grasp::data::Item::Ptr objectProcess(grasp::data::Item::Map::iterator ptr, bool addItem = true);
+	grasp::data::Item::Map::iterator objectProcess(grasp::data::Item::Map::iterator ptr);
 
 	void create(const Desc& desc);
 
