@@ -144,6 +144,7 @@ void Demo::Data::save(const std::string& prefix, golem::XMLContext* xmlcontext) 
 
 void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlcontext) {
 	Player::Desc::load(context, xmlcontext);
+
 	this->activeSense->load(xmlcontext);
 
 	xmlcontext = xmlcontext->getContextFirst("demo");
@@ -184,6 +185,7 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 	modelDescMap.clear();
 	golem::XMLData(modelDescMap, modelDescMap.max_size(), xmlcontext->getContextFirst("model"), "model", false);
 	contactAppearance.load(xmlcontext->getContextFirst("model appearance"));
+
 
 }
 
@@ -444,6 +446,10 @@ void pacman::Demo::create(const Desc& desc) {
 	Player::create(desc); // throws
 
 	this->activeSense = desc.activeSense;
+	//ActiveSense initialisation
+	this->currentViewHypothesis = 0;
+	this->selectedCamera = 0;
+	this->initActiveSense(this);
 
 	dataName = desc.dataName;
 
@@ -870,20 +876,12 @@ void pacman::Demo::create(const Desc& desc) {
 			golem::CriticalSectionWrapper csw(activeSense->getCSViewHypotheses());
 			activeSense->generateViews();
 		}
-
+		getWristCamera();
 
 		context.write("Done!\n");
 
 
 	}));
-
-
-
-
-	//ActiveSense initialisation
-	this->currentViewHypothesis = 0;
-	this->selectedCamera = 0;
-	this->initActiveSense(this);
 		
 
 	menuCtrlMap.insert(std::make_pair("Z", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
@@ -1015,6 +1013,8 @@ void pacman::Demo::create(const Desc& desc) {
 			context.write("%s\nFailed to compute transform!\n", e.what());
 		}
 	}));
+
+	
 }
 
 //------------------------------------------------------------------------------

@@ -227,6 +227,7 @@
     <!--<sensor library_path="GraspCameraOpenCV" config_path="GraspCameraOpenCV"/>-->
     <sensor library_path="GraspCameraOpenGL" config_path="GraspCameraOpenGL"/>
     <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNIDemo"/>
+    <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNI"/>
     <!--<sensor library_path="GraspCameraPointGrey" config_path="GraspCameraPointGrey"/>-->
     <sensor library_path="GraspFTClient" config_path="GraspFTClient"/>
     <!--<sensor library_path="GraspFTDAQ" config_path="GraspFTDAQ"/>-->
