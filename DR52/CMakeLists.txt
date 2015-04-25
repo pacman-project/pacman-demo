@@ -261,17 +261,37 @@ SET(PACMAN_BHAM_ACTIVESENS_SOURCES
 )
 SET(PACMAN_BHAM_ACTIVESENS_FILES
 )
+
+
+	SET(GRASP_DATA_PREDICTOR_MODEL_HEADERS
+		${GRASP_INCLUDE}/Grasp/Data/PredictorModel/PredictorModel.h
+	)
+	SET(GRASP_HEADERS
+		${GRASP_INCLUDE}/Grasp/Grasp/Classifier.h
+		${GRASP_INCLUDE}/Grasp/Grasp/Cluster.h
+		${GRASP_INCLUDE}/Grasp/Grasp/Collision.h
+		${GRASP_INCLUDE}/Grasp/Grasp/Configuration.h
+		${GRASP_INCLUDE}/Grasp/Grasp/Data.h
+		${GRASP_INCLUDE}/Grasp/Grasp/Grasp.h
+		${GRASP_INCLUDE}/Grasp/Grasp/GraspOptimisationCPU.h
+		${GRASP_INCLUDE}/Grasp/Grasp/Manipulator.h
+		${GRASP_INCLUDE}/Grasp/Grasp/Model.h
+		${GRASP_INCLUDE}/Grasp/Grasp/Query.h
+	)
+
 if(BUILD_DYNAMIC_LIBS)
-	ADD_LIBRARY(PaCManBhamActiveSens SHARED ${PACMAN_BHAM_ACTIVESENS_HEADERS} ${PACMAN_BHAM_ACTIVESENS_SOURCES} ${PACMAN_BHAM_ACTIVESENS_FILES})
+	ADD_LIBRARY(PaCManBhamActiveSens SHARED ${PACMAN_BHAM_ACTIVESENS_HEADERS} ${GRASP_DATA_PREDICTOR_MODEL_HEADERS} ${GRASP_HEADERS} ${PACMAN_BHAM_ACTIVESENS_SOURCES} ${PACMAN_BHAM_ACTIVESENS_FILES})
 else(BUILD_DYNAMIC_LIBS)
-	ADD_LIBRARY(PaCManBhamActiveSens STATIC ${PACMAN_BHAM_ACTIVESENS_HEADERS} ${PACMAN_BHAM_ACTIVESENS_SOURCES} ${PACMAN_BHAM_ACTIVESENS_FILES})
+	ADD_LIBRARY(PaCManBhamActiveSens STATIC ${PACMAN_BHAM_ACTIVESENS_HEADERS} ${GRASP_DATA_PREDICTOR_MODEL_HEADERS} ${GRASP_HEADERS} ${PACMAN_BHAM_ACTIVESENS_SOURCES} ${PACMAN_BHAM_ACTIVESENS_FILES})
 endif(BUILD_DYNAMIC_LIBS)
 if (WIN32)
 	TARGET_LINK_LIBRARIES(
 		PaCManBhamActiveSens
 		optimized GraspCore${CMAKE_RELEASE_POSTFIX} debug GraspCore${CMAKE_DEBUG_POSTFIX}
 		optimized GraspGrasp${CMAKE_RELEASE_POSTFIX} debug GraspGrasp${CMAKE_DEBUG_POSTFIX}
-		optimized GraspApp${CMAKE_RELEASE_POSTFIX} debug GraspApp${CMAKE_DEBUG_POSTFIX}		 
+		optimized GraspApp${CMAKE_RELEASE_POSTFIX} debug GraspApp${CMAKE_DEBUG_POSTFIX}
+		optimized GraspDataPredictorModel${CMAKE_RELEASE_POSTFIX} debug GraspDataPredictorModel${CMAKE_DEBUG_POSTFIX}
+		optimized GraspDataPredictorQuery${CMAKE_RELEASE_POSTFIX} debug GraspDataPredictorQuery${CMAKE_DEBUG_POSTFIX} 
 		NxCharacter64 PhysXCooking64 PhysXCore64 PhysXLoader64
 		expat freeglut Gdiplus
 		optimized GolemDefs${CMAKE_RELEASE_POSTFIX} debug GolemDefs${CMAKE_DEBUG_POSTFIX}
@@ -296,7 +316,9 @@ elseif (UNIX)
 		${OpenCV_LIBS}
 		optimized GraspCore${CMAKE_RELEASE_POSTFIX} debug GraspCore${CMAKE_DEBUG_POSTFIX}
 		optimized GraspGrasp${CMAKE_RELEASE_POSTFIX} debug GraspGrasp${CMAKE_DEBUG_POSTFIX}
-		optimized GraspApp${CMAKE_RELEASE_POSTFIX} debug GraspApp${CMAKE_DEBUG_POSTFIX}		 
+		optimized GraspApp${CMAKE_RELEASE_POSTFIX} debug GraspApp${CMAKE_DEBUG_POSTFIX}
+		optimized GraspDataPredictorModel${CMAKE_RELEASE_POSTFIX} debug GraspDataPredictorModel${CMAKE_DEBUG_POSTFIX}
+		optimized GraspDataPredictorQuery${CMAKE_RELEASE_POSTFIX} debug GraspDataPredictorQuery${CMAKE_DEBUG_POSTFIX} 	 
 		${Boost_LIBRARIES}
 		optimized GolemDefs${CMAKE_RELEASE_POSTFIX} debug GolemDefs${CMAKE_DEBUG_POSTFIX}
 		optimized GolemSys${CMAKE_RELEASE_POSTFIX} debug GolemSys${CMAKE_DEBUG_POSTFIX}

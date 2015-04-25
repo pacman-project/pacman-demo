@@ -9,21 +9,31 @@
 #define _PACMAN_BHAM_DEMO_DEMO_H_
 
 #include <Grasp/App/Player/Player.h>
+
+#include <pacman/Bham/ActiveSens/ActiveSens.h>
+#include <Golem/Phys/Scene.h>
 #include <Grasp/Core/Camera.h>
+
 #include <Grasp/Grasp/Model.h>
 #include <Grasp/Core/RBPose.h>
 #include <Grasp/Core/Ctrl.h>
 #include <Grasp/Grasp/Model.h>
 #include <Grasp/Grasp/Query.h>
 
+
 /** PaCMan name space */
 namespace pacman {
 
+	class ActiveSense;
 //------------------------------------------------------------------------------
 
 /** Demo. */
-class Demo : public grasp::Player {
+	class Demo : public grasp::Player, public pacman::ActiveSenseController {
 public:
+
+	friend class ActiveSense;
+
+	/** Player description */
 	/** Model/Query any identifier */
 	static const std::string ID_ANY;
 
@@ -118,9 +128,13 @@ public:
 	friend class Data;
 
 	/** Demo description */
+
 	class Desc : public grasp::Player::Desc {
 	public:
 		typedef golem::shared_ptr<Desc> Ptr;
+
+		/** Active Sense Attribute */
+		ActiveSense::Ptr activeSense;
 
 		/** Data bundle default name */
 		std::string dataName;
@@ -188,6 +202,7 @@ public:
 		/** Contact appearance */
 		grasp::Contact3D::Appearance contactAppearance;
 
+
 		/** Constructs from description object */
 		Desc() {
 			Desc::setToDefault();
@@ -195,6 +210,9 @@ public:
 		/** Sets the parameters to the default values */
 		virtual void setToDefault() {
 			grasp::Player::Desc::setToDefault();
+
+
+			this->activeSense = ActiveSense::Ptr(new ActiveSense());
 
 			dataDesc.reset(new Data::Desc);
 
@@ -234,10 +252,12 @@ public:
 
 			modelDescMap.clear();
 			contactAppearance.setToDefault();
+
 		}
 		/** Assert that the description is valid. */
 		virtual void assertValid(const grasp::Assert::Context& ac) const {
 			grasp::Player::Desc::assertValid(ac);
+			this->activeSense->assertValid(ac);
 
 			grasp::Assert::valid(dataDesc != nullptr && grasp::is<Data::Desc>(dataDesc.get()), ac, "dataDesc: unknown type");
 
@@ -288,6 +308,14 @@ public:
 	protected:
 		GRASP_CREATE_FROM_OBJECT_DESC1(Demo, golem::Object::Ptr, golem::Scene&)
 	};
+protected:
+	
+	/** Current viewHypothesis */
+	golem::I32 currentViewHypothesis;
+
+	/** Currently selected viewHypothesis */
+	golem::I32 selectedCamera;
+	
 
 protected:
 	/** Data bundle default name */
@@ -372,6 +400,13 @@ protected:
 	grasp::data::Item::Map::iterator objectProcess(grasp::data::Item::Map::iterator ptr);
 
 	void create(const Desc& desc);
+
+
+	virtual bool gotoPoseWS(const grasp::ConfigMat34& pose, const golem::Real& linthr = 0.0000001, const golem::Real& angthr = 0.0000001);
+	virtual bool gotoPoseConfig(const grasp::ConfigMat34& config, const golem::Real& linthr = 0.0000001, const golem::Real& angthr = 0.0000001);
+	virtual void scanPoseActive(grasp::data::Item::List& scannedImageItems, ScanPoseCommand scanPoseCommand = nullptr, const std::string itemLabel = ActiveSense::DFT_IMAGE_ITEM_LABEL);
+	/** golem::Object (Post)processing function called AFTER every physics simulation step and before randering. */
+	virtual void postprocess(golem::SecTmReal elapsedTime);
 
 	grasp::Camera* getWristCamera() const;
 	golem::Mat34 getWristPose() const;
