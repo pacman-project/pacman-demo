@@ -131,6 +131,8 @@ public:
 		std::string modelHandler;
 		/** Model data item */
 		std::string modelItem;
+		/** Model data item object */
+		std::string modelItemObj;
 
 		/** Model scan pose */
 		grasp::ConfigMat34 modelScanPose;
@@ -150,6 +152,8 @@ public:
 		std::string queryHandler;
 		/** Query data item */
 		std::string queryItem;
+		/** Query data item object */
+		std::string queryItemObj;
 
 		/** Grasp force sensor */
 		std::string graspSensorForce;
@@ -199,6 +203,7 @@ public:
 			modelCamera.clear();
 			modelHandler.clear();
 			modelItem.clear();
+			modelItemObj.clear();
 
 			modelScanPose.setToDefault();
 			modelColourSolid.set(golem::RGBA::GREEN._U8[0], golem::RGBA::GREEN._U8[1], golem::RGBA::GREEN._U8[2], golem::numeric_const<golem::U8>::MAX / 8);
@@ -210,6 +215,7 @@ public:
 			queryCamera.clear();
 			queryHandler.clear();
 			queryItem.clear();
+			queryItemObj.clear();
 
 			graspSensorForce.clear();
 			graspThresholdForce.setZero();
@@ -240,6 +246,7 @@ public:
 			grasp::Assert::valid(modelCamera.length() > 0, ac, "modelCamera: invalid");
 			grasp::Assert::valid(modelHandler.length() > 0, ac, "modelHandler: invalid");
 			grasp::Assert::valid(modelItem.length() > 0, ac, "modelItem: invalid");
+			grasp::Assert::valid(modelItemObj.length() > 0, ac, "modelItemObj: invalid");
 
 			modelScanPose.assertValid(grasp::Assert::Context(ac, "modelScanPose."));
 
@@ -249,6 +256,7 @@ public:
 			grasp::Assert::valid(queryCamera.length() > 0, ac, "queryCamera: invalid");
 			grasp::Assert::valid(queryHandler.length() > 0, ac, "queryHandler: invalid");
 			grasp::Assert::valid(queryItem.length() > 0, ac, "queryItem: invalid");
+			grasp::Assert::valid(queryItemObj.length() > 0, ac, "queryItemObj: invalid");
 
 			grasp::Assert::valid(graspSensorForce.length() > 0, ac, "graspSensorForce: invalid");
 			grasp::Assert::valid(graspThresholdForce.isPositive(), ac, "graspThresholdForce: negative");
@@ -291,6 +299,8 @@ protected:
 	grasp::data::Handler* modelHandler;
 	/** Model data item */
 	std::string modelItem;
+	/** Model data item object */
+	std::string modelItemObj;
 
 	/** Model scan pose */
 	grasp::ConfigMat34 modelScanPose;
@@ -313,6 +323,8 @@ protected:
 	grasp::data::Handler* queryHandler;
 	/** Query data item */
 	std::string queryItem;
+	/** Query data item object */
+	std::string queryItemObj;
 
 	/** Grasp force sensor */
 	grasp::FT* graspSensorForce;

@@ -148,6 +148,7 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 	golem::XMLData("camera", modelCamera, xmlcontext->getContextFirst("model"));
 	golem::XMLData("handler", modelHandler, xmlcontext->getContextFirst("model"));
 	golem::XMLData("item", modelItem, xmlcontext->getContextFirst("model"));
+	golem::XMLData("item_obj", modelItemObj, xmlcontext->getContextFirst("model"));
 
 	modelScanPose.xmlData(xmlcontext->getContextFirst("model scan_pose"));
 	golem::XMLData(modelColourSolid, xmlcontext->getContextFirst("model colour solid"));
@@ -159,6 +160,7 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 	golem::XMLData("camera", queryCamera, xmlcontext->getContextFirst("query"));
 	golem::XMLData("handler", queryHandler, xmlcontext->getContextFirst("query"));
 	golem::XMLData("item", queryItem, xmlcontext->getContextFirst("query"));
+	golem::XMLData("item_obj", queryItemObj, xmlcontext->getContextFirst("query"));
 
 	golem::XMLData("sensor", graspSensorForce, xmlcontext->getContextFirst("grasp"));
 	golem::XMLData(graspThresholdForce, xmlcontext->getContextFirst("grasp threshold"));
@@ -340,6 +342,7 @@ void pacman::Demo::create(const Desc& desc) {
 	if (!modelHandler)
 		throw Message(Message::LEVEL_CRIT, "pacman::Demo::create(): unknown model data handler: %s", desc.modelHandler.c_str());
 	modelItem = desc.modelItem;
+	modelItemObj = desc.modelItemObj;
 
 	modelScanPose = desc.modelScanPose;
 	modelColourSolid = desc.modelColourSolid;
@@ -360,6 +363,7 @@ void pacman::Demo::create(const Desc& desc) {
 	if (!queryHandler)
 		throw Message(Message::LEVEL_CRIT, "pacman::Demo::create(): unknown query data handler: %s", desc.queryHandler.c_str());
 	queryItem = desc.queryItem;
+	queryItemObj = desc.queryItemObj;
 
 	grasp::Sensor::Map::const_iterator graspSensorForcePtr = sensorMap.find(desc.graspSensorForce);
 	graspSensorForce = graspSensorForcePtr != sensorMap.end() ? is<FT>(graspSensorForcePtr->second.get()) : nullptr;
@@ -408,7 +412,7 @@ void pacman::Demo::create(const Desc& desc) {
 
 	// data menu control and commands
 	menuCtrlMap.insert(std::make_pair("P", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: run (D)emo, (E)stimate pose, (C)apture object, create (M)odel, perform (Q)uery...";
+		desc = "Press a key to: (E)stimate pose, (C)apture object, (M)odel/(Q)uery menu, run (D)emo ...";
 	}));
 
 	// model pose estimation
@@ -504,21 +508,64 @@ void pacman::Demo::create(const Desc& desc) {
 		// finish
 		context.write("Done!\n");
 	}));
-	menuCmdMap.insert(std::make_pair("PM", [=]() {
+
+	// model operations
+	menuCtrlMap.insert(std::make_pair("PM", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
 		// set mode
 		to<Data>(dataCurrentPtr)->queryMode = false;
+		createRender();
 
+		desc = "Press a key to: (S)et/(G)oto initial object model pose, (A)dd/(R)emove training data...";
+	}));
+	menuCmdMap.insert(std::make_pair("PMS", [=]() {
+		// load object item
 		data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(objectItem);
 		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
-			throw Cancel("Object item has not been created - run attach object");
-		
-		// set model robot state
+			throw Cancel("Object item has not been created");
+		// clone object item
+		data::Item::Ptr item = ptr->second->clone();
+		// insert as model object item
+		{
+			RenderBlock renderBlock(*this);
+			golem::CriticalSectionWrapper cswData(csData);
+			to<Data>(dataCurrentPtr)->itemMap.erase(modelItemObj);
+			ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(modelItemObj, item));
+			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+		}
+		// set model robot pose
 		to<Data>(dataCurrentPtr)->modelState.reset(new golem::Controller::State(lookupState()));
+
+		context.write("Done!\n");
+	}));
+	menuCmdMap.insert(std::make_pair("PMG", [=]() {
+		// load model object item
+		{
+			RenderBlock renderBlock(*this);
+			golem::CriticalSectionWrapper cswData(csData);
+			data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(modelItemObj);
+			if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
+				throw Cancel("Model object item has not been created");
+			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+		}
+		// go to model robot pose
+		to<Data>(dataCurrentPtr)->modelState;
+		// TODO
+
+		context.write("Done!\n");
+	}));
+
+	menuCmdMap.insert(std::make_pair("PMA", [=]() {
+		// load model object item
+		data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(modelItemObj);
+		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
+			throw Cancel("Model object item has not been created");
+		// clone model object item
+		data::Item::Ptr item = ptr->second->clone();
 
 		RenderBlock renderBlock(*this);
 
 		// compute reference frame and adjust object frame
-		data::Location3D* location = is<data::Location3D>(ptr);
+		data::Location3D* location = is<data::Location3D>(item.get());
 		if (!location)
 			throw Cancel("Object handler does not implement data::Location3D");
 		Vec3Seq points, pointsTrn;
@@ -527,7 +574,7 @@ void pacman::Demo::create(const Desc& desc) {
 		pointsTrn.resize(points.size());
 		Mat34 frame = forwardTransformArm(lookupState()), frameInv;
 		frameInv.setInverse(frame);
-		context.write("Press a key to: accept <Enter>... ");
+		context.write("Press a key to: finish <Enter>... ");
 		// attach object to the robot's end-effector
 		for (bool accept = false;;) {
 			const Mat34 trn = frame * frameInv; // frame = trn * frameInit, trn = frame * frameInit^-1
