@@ -769,6 +769,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 			golem::Real coverage = 0.0;
 			if (image)
 			{
+				
 				coverage = computeCoverage(image->cloud, polygons);
 			}
 			else
