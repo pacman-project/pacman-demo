@@ -194,7 +194,7 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 //------------------------------------------------------------------------------
 
 pacman::Demo::Demo(Scene &scene) : 
-	Player(scene), modelCamera(nullptr), modelHandler(nullptr), graspSensorForce(nullptr), objectCamera(nullptr), objectHandlerScan(nullptr), objectHandler(nullptr)
+Player(scene), modelCamera(nullptr), queryCamera(nullptr), modelHandler(nullptr), queryHandler(nullptr), graspSensorForce(nullptr), objectCamera(nullptr), objectHandlerScan(nullptr), objectHandler(nullptr)
 {}
 
 pacman::Demo::~Demo() {
@@ -796,7 +796,7 @@ void pacman::Demo::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("CH", [=]() {
 
 
-		size_t index = activeSense->getViewHypotheses().size();
+		U32 index = (U32)activeSense->getViewHypotheses().size();
 		Menu::selectIndex(activeSense->getViewHypotheses(), index, "Camera Hypothesis");
 
 
@@ -839,7 +839,7 @@ void pacman::Demo::create(const Desc& desc) {
 
 		grasp::CameraDepth* camera = grasp::to<grasp::CameraDepth>(sensorCurrentPtr);
 
-		size_t index = activeSense->getViewHypotheses().size();
+		U32 index = (U32)activeSense->getViewHypotheses().size();
 		Menu::selectIndex(activeSense->getViewHypotheses(), index, "Choose Camera Hypothesis to Go");
 
 		
@@ -865,7 +865,7 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("CV", [&]() {
 
-		size_t index = activeSense->getViewHypotheses().size();
+		U32 index = (U32)activeSense->getViewHypotheses().size();
 		Menu::selectIndex(activeSense->getViewHypotheses(), index, "Camera Hypothesis");
 
 		activeSense->getViewHypothesis(index - 1)->setGLView(this->scene);
