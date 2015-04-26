@@ -20,20 +20,17 @@
 #include <Grasp/Grasp/Model.h>
 #include <Grasp/Grasp/Query.h>
 
+//------------------------------------------------------------------------------
 
 /** PaCMan name space */
 namespace pacman {
 
-	class ActiveSense;
 //------------------------------------------------------------------------------
 
 /** Demo. */
-	class Demo : public grasp::Player, public pacman::ActiveSenseController {
+class Demo : public grasp::Player, public pacman::ActiveSenseController {
 public:
-
 	friend class ActiveSense;
-
-	/** Player description */
 	/** Model/Query any identifier */
 	static const std::string ID_ANY;
 
@@ -101,8 +98,10 @@ public:
 			virtual grasp::data::Data::Ptr create(golem::Context &context) const;
 		};
 
-		/** Current training item */
+		/** Get training item */
 		Training::Map::iterator getTrainingItem();
+		/** Set training item */
+		void setTrainingItem(Training::Map::const_iterator ptr);
 
 		/** Manager */
 		virtual void setOwner(grasp::Manager* owner);
@@ -398,9 +397,8 @@ protected:
 	grasp::data::Item::Map::iterator objectGraspAndCapture();
 	/** Process object image and add to data bundle */
 	grasp::data::Item::Map::iterator objectProcess(grasp::data::Item::Map::iterator ptr);
-
-	void create(const Desc& desc);
-
+	/** Create trajectory name */
+	std::string getTrajectoryName(const std::string& type) const;
 
 	virtual bool gotoPoseWS(const grasp::ConfigMat34& pose, const golem::Real& linthr = 0.0000001, const golem::Real& angthr = 0.0000001);
 	virtual bool gotoPoseConfig(const grasp::ConfigMat34& config, const golem::Real& linthr = 0.0000001, const golem::Real& angthr = 0.0000001);
@@ -413,6 +411,9 @@ protected:
 	void gotoWristPose(const golem::Mat34& w);
 	void Demo::gotoPose2(const grasp::ConfigMat34& pose, const golem::SecTmReal duration);
 	void rotateObjectInHand();
+
+
+	void create(const Desc& desc);
 
 	Demo(golem::Scene &scene);
 	~Demo();

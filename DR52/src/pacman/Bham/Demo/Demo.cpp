@@ -65,6 +65,20 @@ Demo::Data::Training::Map::iterator Demo::Data::getTrainingItem() {
 	return ptr;
 }
 
+void Demo::Data::setTrainingItem(Training::Map::const_iterator ptr) {
+	U32 indexType = 0;
+	for (Training::Map::const_iterator i = training.begin(); i != training.end(); ++indexType, i = training.upper_bound(i->first))
+		if (i->first == ptr->first) {
+			U32 indexItem = 0;
+			for (Training::Map::const_iterator j = i; j != training.end(); ++indexItem, ++j)
+				if (j == ptr) {
+					this->indexType = indexType;
+					this->indexItem = indexItem;
+					return;
+				}
+		}
+}
+
 void Demo::Data::createRender() {
 	Player::Data::createRender();
 	{
@@ -194,7 +208,8 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 //------------------------------------------------------------------------------
 
 pacman::Demo::Demo(Scene &scene) : 
-Player(scene), modelCamera(nullptr), queryCamera(nullptr), modelHandler(nullptr), queryHandler(nullptr), graspSensorForce(nullptr), objectCamera(nullptr), objectHandlerScan(nullptr), objectHandler(nullptr)
+	Player(scene),
+	modelCamera(nullptr), queryCamera(nullptr), modelHandler(nullptr), queryHandler(nullptr), graspSensorForce(nullptr), objectCamera(nullptr), objectHandlerScan(nullptr), objectHandler(nullptr)
 {}
 
 pacman::Demo::~Demo() {
@@ -202,20 +217,20 @@ pacman::Demo::~Demo() {
 
 /*************************USEFUL FUNCTIONS FOR ACTIVE SENS*******************************************************/
 
-void pacman::Demo::postprocess(golem::SecTmReal elapsedTime)
-{
-
+void pacman::Demo::postprocess(golem::SecTmReal elapsedTime) {
 	Player::postprocess(elapsedTime);
-	golem::CriticalSectionWrapper csw(activeSense->getCSViewHypotheses());
-	for (pacman::HypothesisSensor::Seq::iterator it = activeSense->getViewHypotheses().begin(); it != activeSense->getViewHypotheses().end(); it++)
-	{
-		(*it)->draw((*it)->getAppearance(), this->sensorRenderer);
-	}
-	golem::Mat34 centroidFrame;
-	centroidFrame.setId();
-	centroidFrame.p = activeSense->getParameters().centroid;
-	sensorRenderer.addAxes3D(centroidFrame, golem::Vec3(0.05));
-
+	
+	//{
+	//	golem::CriticalSectionWrapper csw(activeSense->getCSViewHypotheses());
+	//	for (pacman::HypothesisSensor::Seq::iterator it = activeSense->getViewHypotheses().begin(); it != activeSense->getViewHypotheses().end(); it++)
+	//	{
+	//		(*it)->draw((*it)->getAppearance(), this->sensorRenderer);
+	//	}
+	//	golem::Mat34 centroidFrame;
+	//	centroidFrame.setId();
+	//	centroidFrame.p = activeSense->getParameters().centroid;
+	//	sensorRenderer.addAxes3D(centroidFrame, golem::Vec3(0.05));
+	//}
 }
 
 bool pacman::Demo::gotoPoseWS(const grasp::ConfigMat34& pose, const Real& linthr, const golem::Real& angthr) {
@@ -447,8 +462,8 @@ void pacman::Demo::create(const Desc& desc) {
 	// create object
 	Player::create(desc); // throws
 
-	this->activeSense = desc.activeSense;
 	//ActiveSense initialisation
+	this->activeSense = desc.activeSense;
 	this->currentViewHypothesis = 0;
 	this->selectedCamera = 0;
 	this->initActiveSense(this);
@@ -680,61 +695,119 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("PMA", [=]() {
 		// load model object item
-		data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(modelItemObj);
+		const data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(modelItemObj);
 		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
-			throw Cancel("Model object item has not been created");
-		// clone model object item
-		data::Item::Ptr item = ptr->second->clone();
+			throw Message(Message::LEVEL_ERROR, "Model object item has not been created");
 
+		// select model any
+		const grasp::Model::Map::const_iterator modelAny = modelMap.find(ID_ANY);
+		if (modelAny == modelMap.end())
+			throw Message(Message::LEVEL_ERROR, "Unable to find Model %s", ID_ANY.c_str());
+
+		// clear
+		ScopeGuard guard([&]() { golem::CriticalSectionWrapper csw(csRenderer); objectRenderer.reset(); });
 		RenderBlock renderBlock(*this);
 
+		// select model type
+		std::string modelType;
+		try {
+			grasp::StringSeq modelTypeSeq;
+			for (Data::Training::Map::const_iterator i = to<Data>(dataCurrentPtr)->training.begin(); i != to<Data>(dataCurrentPtr)->training.end(); i = to<Data>(dataCurrentPtr)->training.upper_bound(i->first))
+				modelTypeSeq.push_back(i->first);
+			grasp::StringSeq::iterator modelTypePtr = modelTypeSeq.end();
+			select(modelTypePtr, modelTypeSeq.begin(), modelTypeSeq.end(), "Select model type:\n", [] (grasp::StringSeq::const_iterator ptr) -> const std::string&{ return *ptr; });
+			modelType = *modelTypePtr;
+		}
+		catch (const golem::Message&) {
+			readString("Enter model type: ", modelType);
+		}
+
 		// compute reference frame and adjust object frame
-		data::Location3D* location = is<data::Location3D>(item.get());
+		const data::Location3D* location = is<data::Location3D>(ptr);
 		if (!location)
-			throw Cancel("Object handler does not implement data::Location3D");
-		Vec3Seq points, pointsTrn;
+			throw Message(Message::LEVEL_ERROR, "Object handler does not implement data::Location3D");
+		Vec3Seq points;
 		for (size_t i = 0; i < location->getNumOfLocations(); ++i)
 			points.push_back(location->getLocation(i));
+		data::Location3D::Point::Seq pointsTrn;
 		pointsTrn.resize(points.size());
 		Mat34 frame = forwardTransformArm(lookupState()), frameInv;
 		frameInv.setInverse(frame);
-		context.write("Press a key to: finish <Enter>... ");
-		// attach object to the robot's end-effector
-		for (bool accept = false;;) {
+
+		// run model tools
+		const std::string options("Press a key to: add (C)ontact/(T)rajectory data, finish <Enter>... ");
+		context.write("%s\n", options.c_str());
+		for (bool finish = false; !finish;) {
+			// attach object to the robot's end-effector
+			frame = forwardTransformArm(lookupState());
 			const Mat34 trn = frame * frameInv; // frame = trn * frameInit, trn = frame * frameInit^-1
 			for (size_t i = 0; i < points.size(); ++i)
 				trn.multiply(pointsTrn[i], points[i]);
 			{
 				golem::CriticalSectionWrapper csw(csRenderer);
 				objectRenderer.reset();
-				if (accept) break;
 				for (size_t i = 0; i < pointsTrn.size(); ++i)
 					objectRenderer.addPoint(pointsTrn[i], objectFrameAdjustment.colourSolid);
 			}
+
+			// model options
 			const int key = waitKey(20);
 			switch (key) {
-			case 27: throw Cancel("\nCancelled");
-			case 13: context.write(")<Enter>(\n"); accept = true; break;
+			case 'C': {
+				context.write("%s )C(\n", options.c_str());
+				// clone model object item
+				data::Item::Ptr item = ptr->second->clone();
+				data::Feature3D* features = is<data::Feature3D>(item.get());
+				if (!features)
+					throw Message(Message::LEVEL_ERROR, "Object handler does not implement data::Feature3D");
+				// transform
+				features->transform(frame * frameInv);
+				// select model
+				grasp::Model::Map::const_iterator model = modelMap.find(modelType);
+				if (model == modelMap.end()) model = modelAny;
+				context.write("Using model: %s\n", model->first.c_str());
+				// create contact training data
+				const grasp::Vec3Seq& vertices = to<Data>(dataCurrentPtr)->modelVertices;
+				const grasp::TriangleSeq& triangles = to<Data>(dataCurrentPtr)->modelTriangles;
+				grasp::Contact3D::Triangle::Seq modelMesh;
+				for (grasp::TriangleSeq::const_iterator j = triangles.begin(); j != triangles.end(); ++j)
+					modelMesh.push_back(Contact3D::Triangle(vertices[j->t1], vertices[j->t3], vertices[j->t2]));
+				Contact3D::Seq contacts;
+				if (model->second->create(*features, Mat34::identity(), modelMesh, contacts)) {
+					Data::Training training(lookupState());
+					training.contacts = contacts;
+					training.frame = to<Data>(dataCurrentPtr)->modelFrame;
+					training.locations = pointsTrn;
+					to<Data>(dataCurrentPtr)->setTrainingItem(to<Data>(dataCurrentPtr)->training.insert(to<Data>(dataCurrentPtr)->training.end(), std::make_pair(modelType, training)));
+					createRender();
+				}
+				// done here
+				context.write("%s\n", options.c_str());
+				break;
 			}
-			frame = forwardTransformArm(lookupState());
+			case 'T': {
+				context.write("%s )T(\n", options.c_str());
+				// add trajectory waypoint
+				const std::string trjName = getTrajectoryName(modelType);
+				grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(trjName);
+				if (ptr == to<Data>(dataCurrentPtr)->itemMap.end()) {
+					golem::CriticalSectionWrapper cswData(csData);
+					ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(trjName, modelHandlerTrj->create()));
+				}
+				data::Trajectory* trajectory = is<data::Trajectory>(ptr);
+				if (!trajectory)
+					throw Message(Message::LEVEL_ERROR, "Trajectory handler does not implement data::Trajectory");
+				// add current state
+				Controller::State::Seq seq = trajectory->getWaypoints();
+				seq.push_back(lookupState());
+				trajectory->setWaypoints(seq);
+				context.write("%s\n", options.c_str());
+				break;
+			}
+			case 13: finish = true; break;
+			case 27: throw Cancel("Cancelled");
+			}
 		}
-		// transform
-		location->transform(frame * frameInv);
-
-		// add trajectory waypoint
-		{
-			golem::CriticalSectionWrapper cswData(csData);
-			to<Data>(dataCurrentPtr)->itemMap.erase(modelItemTrj);
-			ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(modelItemTrj, modelHandlerTrj->create()));
-			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
-		}
-		data::Trajectory* trajectory = is<data::Trajectory>(ptr);
-		if (!trajectory)
-			throw Cancel("Trajectory handler does not implement data::Trajectory");
-		// add current state
-		Controller::State::Seq seq = trajectory->getWaypoints();
-		seq.push_back(lookupState());
-		trajectory->setWaypoints(seq);
 
 		context.write("Done!\n");
 	}));
@@ -1060,8 +1133,6 @@ void pacman::Demo::create(const Desc& desc) {
 			context.write("%s\nFailed to compute transform!\n", e.what());
 		}
 	}));
-
-	
 }
 
 //------------------------------------------------------------------------------
@@ -1267,12 +1338,19 @@ grasp::data::Item::Map::iterator pacman::Demo::objectProcess(grasp::data::Item::
 
 //------------------------------------------------------------------------------
 
+std::string pacman::Demo::getTrajectoryName(const std::string& type) const {
+	return modelItemTrj + "-" + type;
+}
+
+//------------------------------------------------------------------------------
+
 void pacman::Demo::render() const {
 	Player::render();
+	
 	golem::CriticalSectionWrapper cswRenderer(csRenderer);
 	modelRenderer.render();
 	objectRenderer.render();
-	activeSense->render();
+	//activeSense->render();
 }
 
 //------------------------------------------------------------------------------

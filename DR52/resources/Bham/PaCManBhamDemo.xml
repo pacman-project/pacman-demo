@@ -35,8 +35,8 @@
 
   <universe name="PaCMan">
     <!--<window x="0" y="0" width="640" height="480"></window>-->
-    <window x="0" y="0" width="800" height="600"></window>
-    <!--<window x="0" y="0" width="1288" height="964"></window>-->
+    <!--<window x="0" y="0" width="800" height="600"></window>-->
+    <window x="0" y="0" width="1288" height="964"></window>
     <physx fps="30" skin_width="0.005" sleep_lin_vel_squared="0.0025" sleep_ang_vel_squared="0.0025" max_angular_velocity="7.0" bounce_threshold="-2.0"></physx>
   </universe>
 
