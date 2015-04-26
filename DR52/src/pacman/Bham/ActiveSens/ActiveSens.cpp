@@ -1,6 +1,6 @@
 #include <pacman/Bham/ActiveSens/ActiveSens.h>
 #include <Golem/Tools/XMLData.h>
-#include <pacman/Bham/Demo/Demo.h>
+#include <pacman/Bham/ActiveSensDemo/ActiveSensDemo.h>
 #include <Grasp/Data/Image/Image.h>
 #include <pcl/common/centroid.h>
 #include <pcl/filters/filter.h>

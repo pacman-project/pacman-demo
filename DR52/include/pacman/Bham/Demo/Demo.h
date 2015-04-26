@@ -10,10 +10,6 @@
 
 #include <Grasp/App/Player/Player.h>
 
-#include <pacman/Bham/ActiveSens/ActiveSens.h>
-#include <Golem/Phys/Scene.h>
-#include <Grasp/Core/Camera.h>
-
 #include <Grasp/Grasp/Model.h>
 #include <Grasp/Core/RBPose.h>
 #include <Grasp/Core/Ctrl.h>
@@ -28,9 +24,8 @@ namespace pacman {
 //------------------------------------------------------------------------------
 
 /** Demo. */
-class Demo : public grasp::Player, public pacman::ActiveSenseController {
+class Demo : public grasp::Player {
 public:
-	friend class ActiveSense;
 	/** Model/Query any identifier */
 	static const std::string ID_ANY;
 
@@ -130,11 +125,6 @@ public:
 
 	class Desc : public grasp::Player::Desc {
 	public:
-		typedef golem::shared_ptr<Desc> Ptr;
-
-		/** Active Sense Attribute */
-		ActiveSense::Ptr activeSense;
-
 		/** Data bundle default name */
 		std::string dataName;
 
@@ -211,8 +201,6 @@ public:
 			grasp::Player::Desc::setToDefault();
 
 
-			this->activeSense = ActiveSense::Ptr(new ActiveSense());
-
 			dataDesc.reset(new Data::Desc);
 
 			dataName.clear();
@@ -256,7 +244,6 @@ public:
 		/** Assert that the description is valid. */
 		virtual void assertValid(const grasp::Assert::Context& ac) const {
 			grasp::Player::Desc::assertValid(ac);
-			this->activeSense->assertValid(ac);
 
 			grasp::Assert::valid(dataDesc != nullptr && grasp::is<Data::Desc>(dataDesc.get()), ac, "dataDesc: unknown type");
 
@@ -399,12 +386,6 @@ protected:
 	grasp::data::Item::Map::iterator objectProcess(grasp::data::Item::Map::iterator ptr);
 	/** Create trajectory name */
 	std::string getTrajectoryName(const std::string& type) const;
-
-	virtual bool gotoPoseWS(const grasp::ConfigMat34& pose, const golem::Real& linthr = 0.0000001, const golem::Real& angthr = 0.0000001);
-	virtual bool gotoPoseConfig(const grasp::ConfigMat34& config, const golem::Real& linthr = 0.0000001, const golem::Real& angthr = 0.0000001);
-	virtual void scanPoseActive(grasp::data::Item::List& scannedImageItems, ScanPoseCommand scanPoseCommand = nullptr, const std::string itemLabel = ActiveSense::DFT_IMAGE_ITEM_LABEL);
-	/** golem::Object (Post)processing function called AFTER every physics simulation step and before randering. */
-	virtual void postprocess(golem::SecTmReal elapsedTime);
 
 	grasp::Camera* getWristCamera() const;
 	golem::Mat34 getWristPose() const;
