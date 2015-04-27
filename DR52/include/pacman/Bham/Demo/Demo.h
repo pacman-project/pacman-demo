@@ -84,7 +84,7 @@ public:
 		/** Model training data item index */
 		golem::U32 indexItem;
 		/** Contact relation */
-		golem::U32 contactRelation;
+		grasp::Contact3D::Relation contactRelation;
 
 		/** Data bundle description */
 		class Desc : public grasp::Player::Data::Desc {
@@ -374,6 +374,11 @@ protected:
 	grasp::Model::Map modelMap;
 	/** Contact appearance */
 	grasp::Contact3D::Appearance contactAppearance;
+
+	/** Item selection */
+	typedef std::function<void(Data::Training::Map&, Data::Training::Map::iterator&)> ItemSelectFunc;
+	typedef std::function<void(ItemSelectFunc)> ItemSelect;
+	ItemSelect itemSelect;
 
 	/** golem::UIRenderer interface */
 	virtual void render() const;
