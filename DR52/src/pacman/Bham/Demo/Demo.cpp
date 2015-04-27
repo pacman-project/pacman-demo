@@ -96,9 +96,10 @@ void Demo::Data::createRender() {
 			owner->modelRenderer.addAxes3D(frame, Vec3(0.2));
 		// training data
 		if (!queryMode) {
+			owner->contactAppearance.relation = contactRelation;
 			Training::Map::iterator ptr = getTrainingItem();
 			if (ptr != training.end())
-				grasp::Contact3D::draw(owner->contactAppearance, ptr->second.contacts, Mat34::identity(), owner->modelRenderer);
+				grasp::Contact3D::draw(owner->contactAppearance, ptr->second.contacts, modelFrame, owner->modelRenderer);
 		}
 	}
 }
@@ -213,7 +214,7 @@ pacman::Demo::Demo(Scene &scene) :
 pacman::Demo::~Demo() {
 }
 
-//-------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 grasp::Camera* Demo::getWristCamera() const
 {
@@ -348,6 +349,7 @@ void Demo::gotoPose2(const ConfigMat34& pose, const SecTmReal duration)
 	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
 }
 
+//------------------------------------------------------------------------------
 
 void pacman::Demo::create(const Desc& desc) {
 	desc.assertValid(Assert::Context("pacman::Demo::Desc."));
@@ -426,7 +428,7 @@ void pacman::Demo::create(const Desc& desc) {
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  Z                                       menu SZ Tests\n"));
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  <Tab>                                   Query/Model mode switch\n"));
-	scene.getHelp().insert(Scene::StrMapVal("0F5", "  C                                       Camera Sensor Options\n"));
+	scene.getHelp().insert(Scene::StrMapVal("0F5", "  ()                                      Training item selection\n"));
 
 	menuCmdMap.insert(std::make_pair("\t", [=]() {
 		// set mode
@@ -434,7 +436,29 @@ void pacman::Demo::create(const Desc& desc) {
 		context.write("%s mode\n", to<Data>(dataCurrentPtr)->queryMode ? "Query" : "Model");
 		createRender();
 	}));
-
+	itemSelect = [&](ItemSelectFunc itemSelectFunc) {
+		if (!to<Data>(dataCurrentPtr)->queryMode) {
+			if (to<Data>(dataCurrentPtr)->training.empty()) {
+				context.write("No training data\n");
+				return;
+			}
+			Data::Training::Map::iterator ptr = to<Data>(dataCurrentPtr)->getTrainingItem();
+			itemSelectFunc(to<Data>(dataCurrentPtr)->training, ptr);
+			to<Data>(dataCurrentPtr)->setTrainingItem(ptr);
+			context.write("Type %s/%u, Item #%u\n", ptr->first.c_str(), to<Data>(dataCurrentPtr)->indexType + 1, to<Data>(dataCurrentPtr)->indexItem + 1);
+			createRender();
+		}
+	};
+	menuCmdMap.insert(std::make_pair("(", [&]() {
+		itemSelect([] (Data::Training::Map& map, Data::Training::Map::iterator& ptr) {
+			if (ptr == map.begin()) ptr = --map.end(); else --ptr;
+		});
+	}));
+	menuCmdMap.insert(std::make_pair(")", [&]() {
+		itemSelect([] (Data::Training::Map& map, Data::Training::Map::iterator& ptr) {
+			if (ptr == --map.end()) ptr = map.begin(); else ++ptr;
+		});
+	}));
 
 	// data menu control and commands
 	menuCtrlMap.insert(std::make_pair("P", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
@@ -484,6 +508,9 @@ void pacman::Demo::create(const Desc& desc) {
 		readPath("Enter file path: ", dataImportPath, import->getFileTypes());
 		data::Item::Ptr item = import->import(dataImportPath);
 
+		ScopeGuard guard([&]() { golem::CriticalSectionWrapper csw(csRenderer); objectRenderer.reset(); });
+		RenderBlock renderBlock(*this);
+
 		// compute reference frame and adjust object frame
 		data::Location3D* location = is<data::Location3D>(item.get());
 		if (!location)
@@ -494,24 +521,23 @@ void pacman::Demo::create(const Desc& desc) {
 		pointsTrn.resize(points.size());
 		Mat34 frame = RBPose::createFrame(points), frameInv;
 		frameInv.setInverse(frame);
-		context.write("Press a key to: accept <Enter>, (%s/%s) to adjust position, (%s/%s) to adjust orientation... ",
+		context.write("Press a key to: (%s/%s) to adjust position, (%s/%s) to adjust orientation, finish <Enter>...\n",
 			objectFrameAdjustment.linKeysLarge.c_str(), objectFrameAdjustment.linKeysSmall.c_str(), objectFrameAdjustment.angKeysLarge.c_str(), objectFrameAdjustment.angKeysSmall.c_str());
-		for (bool accept = false;;) {
+		for (bool finish = false; !finish;) {
 			const Mat34 trn = frame * frameInv; // frame = trn * frameInit, trn = frame * frameInit^-1
 			for (size_t i = 0; i < points.size(); ++i)
 				trn.multiply(pointsTrn[i], points[i]);
 			{
 				golem::CriticalSectionWrapper csw(csRenderer);
 				objectRenderer.reset();
-				if (accept) break;
 				for (size_t i = 0; i < pointsTrn.size(); ++i)
 					objectRenderer.addPoint(pointsTrn[i], objectFrameAdjustment.colourSolid);
 				objectRenderer.addAxes3D(frame, objectFrameAdjustment.frameSize);
 			}
 			const int key = waitKey();
 			switch (key) {
-			case 27: throw Cancel("\nCancelled");
-			case 13: context.write(")<Enter>(\n"); accept = true; break;
+			case 27: throw Cancel("Cancelled");
+			case 13: finish = true; break;
 			default: objectFrameAdjustment.adjust(key, frame);
 			}
 		}
@@ -521,7 +547,6 @@ void pacman::Demo::create(const Desc& desc) {
 		// add item to data bundle
 		data::Item::Map::iterator ptr;
 		{
-			RenderBlock renderBlock(*this);
 			golem::CriticalSectionWrapper cswData(csData);
 			to<Data>(dataCurrentPtr)->itemMap.erase(objectItemScan);
 			ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(objectItemScan, item));
@@ -570,12 +595,11 @@ void pacman::Demo::create(const Desc& desc) {
 			golem::CriticalSectionWrapper cswData(csData);
 			data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(modelItemObj);
 			if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
-				throw Cancel("Model object item has not been created");
+				throw Message(Message::LEVEL_ERROR, "Model object item has not been created");
 			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
 		}
 		// go to model robot pose
-		to<Data>(dataCurrentPtr)->modelState;
-		// TODO
+		gotoConfig(*to<Data>(dataCurrentPtr)->modelState);
 
 		context.write("Done!\n");
 	}));
@@ -602,11 +626,11 @@ void pacman::Demo::create(const Desc& desc) {
 			for (Data::Training::Map::const_iterator i = to<Data>(dataCurrentPtr)->training.begin(); i != to<Data>(dataCurrentPtr)->training.end(); i = to<Data>(dataCurrentPtr)->training.upper_bound(i->first))
 				modelTypeSeq.push_back(i->first);
 			grasp::StringSeq::iterator modelTypePtr = modelTypeSeq.end();
-			select(modelTypePtr, modelTypeSeq.begin(), modelTypeSeq.end(), "Select model type:\n", [] (grasp::StringSeq::const_iterator ptr) -> const std::string&{ return *ptr; });
+			select(modelTypePtr, modelTypeSeq.begin(), modelTypeSeq.end(), "Select type:\n  [0]  Create new type\n", [] (grasp::StringSeq::const_iterator ptr) -> const std::string& { return *ptr; });
 			modelType = *modelTypePtr;
 		}
 		catch (const golem::Message&) {
-			readString("Enter model type: ", modelType);
+			readString("Enter type: ", modelType);
 		}
 
 		// compute reference frame and adjust object frame
@@ -622,7 +646,7 @@ void pacman::Demo::create(const Desc& desc) {
 		frameInv.setInverse(frame);
 
 		// run model tools
-		const std::string options("Press a key to: add (C)ontact/(T)rajectory data, finish <Enter>... ");
+		const std::string options("Press a key to: add (C)ontact/(T)rajectory data, finish <Enter>...");
 		context.write("%s\n", options.c_str());
 		for (bool finish = false; !finish;) {
 			// attach object to the robot's end-effector
@@ -658,9 +682,11 @@ void pacman::Demo::create(const Desc& desc) {
 				const grasp::TriangleSeq& triangles = to<Data>(dataCurrentPtr)->modelTriangles;
 				grasp::Contact3D::Triangle::Seq modelMesh;
 				for (grasp::TriangleSeq::const_iterator j = triangles.begin(); j != triangles.end(); ++j)
-					modelMesh.push_back(Contact3D::Triangle(vertices[j->t1], vertices[j->t3], vertices[j->t2]));
+					modelMesh.push_back(Contact3D::Triangle(vertices[j->t1], vertices[j->t2], vertices[j->t3]));
 				Contact3D::Seq contacts;
-				if (model->second->create(*features, Mat34::identity(), modelMesh, contacts)) {
+				contacts.clear();
+				if (model->second->create(*features, to<Data>(dataCurrentPtr)->modelFrame, modelMesh, contacts)) {
+					golem::CriticalSectionWrapper cswData(csData);
 					Data::Training training(lookupState());
 					training.contacts = contacts;
 					training.frame = to<Data>(dataCurrentPtr)->modelFrame;
@@ -669,6 +695,7 @@ void pacman::Demo::create(const Desc& desc) {
 					createRender();
 				}
 				// done here
+				context.write("Done!\n");
 				break;
 			}
 			case 'T': {
@@ -687,11 +714,36 @@ void pacman::Demo::create(const Desc& desc) {
 				Controller::State::Seq seq = trajectory->getWaypoints();
 				seq.push_back(lookupState());
 				trajectory->setWaypoints(seq);
+				// done here
+				context.write("Done!\n");
 				break;
 			}
 			case 13: finish = true; break;
-			case 27: throw Cancel("Cancelled");
+			//case 27: throw Cancel("Cancelled");
 			}
+		}
+
+		context.write("Done!\n");
+	}));
+	menuCmdMap.insert(std::make_pair("PMR", [=]() {
+		if (to<Data>(dataCurrentPtr)->training.empty())
+			throw Message(Message::LEVEL_ERROR, "Empty training data");
+
+		const bool bModelType = option("TC", "Remove (T)ype/(C)ontact... ") == 'T';
+		// load model object item
+		{
+			RenderBlock renderBlock(*this);
+			golem::CriticalSectionWrapper cswData(csData);
+			Demo::Data::Training::Map::iterator ptr = to<Data>(dataCurrentPtr)->getTrainingItem();
+			const std::string modelType = ptr->first; // cache
+			if (bModelType)
+				to<Data>(dataCurrentPtr)->training.erase(ptr->first);
+			else
+				to<Data>(dataCurrentPtr)->training.erase(ptr);
+			// remove trajectory if no items of a given type are present
+			//if (to<Data>(dataCurrentPtr)->training.end() == to<Data>(dataCurrentPtr)->training.find(modelType))
+			//	to<Data>(dataCurrentPtr)->itemMap.erase(getTrajectoryName(modelType));
+			createRender();
 		}
 
 		context.write("Done!\n");
