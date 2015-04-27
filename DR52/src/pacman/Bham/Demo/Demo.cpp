@@ -768,7 +768,7 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 
 	menuCtrlMap.insert(std::make_pair("Z", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: run (R)otate, (N)udge, (O)bjectGraspAndCapture, compute rgb-to-ir (T)ranform...";
+		desc = "Press a key to: run (R)otate, (N)udge, (O)bjectGraspAndCapture, compute rgb-to-ir (T)ranform, (D)epth camera adjust...";
 	}));
 
 	menuCmdMap.insert(std::make_pair("ZO", [=]() {
@@ -893,7 +893,48 @@ void pacman::Demo::create(const Desc& desc) {
 			context.write("%s\nFailed to compute transform!\n", e.what());
 		}
 	}));
-}
+
+	menuCmdMap.insert(std::make_pair("ZD", [=]() {
+		RBAdjust rba;
+		rba.setToDefault();
+
+		select(sensorCurrentPtr, sensorMap.begin(), sensorMap.end(), "Select Sensor:\n",
+			[](Sensor::Map::const_iterator ptr) -> const std::string& {return ptr->second->getID();} );
+
+		if (!is<CameraDepth>(sensorCurrentPtr))
+			throw Cancel("Only works for depth cameras");
+
+		CameraDepth* camera = is<CameraDepth>(sensorCurrentPtr);
+		const Mat34 trn0 = camera->getColourToIRFrame();
+
+		context.write("Use adjustment keys %s %s or 0 for identity. To finish press <SPACE> or <ESC>\n", rba.linKeysLarge, rba.angKeysLarge);
+		for (;;)
+		{
+			const int k = waitKey(golem::MSEC_TM_U32_INF);
+			if (k == 27) // <Esc>
+			{
+				camera->setColourToIRFrame(trn0);
+				throw Cancel("Cancelled");
+			}
+			if (k == 32) // <Space>
+				break;
+			if (k == '0')
+			{
+				camera->setColourToIRFrame(Mat34::identity());
+				continue;
+			}
+			
+			Mat34 trn = camera->getColourToIRFrame();
+			rba.adjust(k, trn);
+			camera->setColourToIRFrame(trn);
+		}
+		const Mat34 m = camera->getColourToIRFrame();
+		context.write("<colourToIRFrame m11=\"%f\" m12=\"%f\" m13=\"%f\" m21=\"%f\" m22=\"%f\" m23=\"%f\" m31=\"%f\" m32=\"%f\" m33=\"%f\" v1=\"%f\" v2=\"%f\" v3=\"%f\"></colourToIRFrame>\n",
+			m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33, m.p.x, m.p.y, m.p.z);
+		context.write("Done!\n");
+	}));
+
+	}
 
 //------------------------------------------------------------------------------
 
@@ -998,8 +1039,6 @@ grasp::data::Item::Map::iterator pacman::Demo::estimatePose(bool queryMode) {
 // return ptr to Item
 grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture()
 {
-	data::Item::Ptr item;
-
 	gotoPose(graspPoseOpen);
 
 	context.write("Waiting for force event, simulate (F)orce event or <ESC> to cancel\n");
