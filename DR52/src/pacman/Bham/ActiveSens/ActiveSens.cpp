@@ -42,7 +42,7 @@ void pacman::HypothesisSensor::Desc::load(golem::Context& context, const golem::
 }
 
 //------------------------------------------------------------------------------
-pacman::HypothesisSensor::HypothesisSensor(HypothesisSensor::Config config, golem::RGBA shapeColour) : config(config.c, config.w) {
+pacman::HypothesisSensor::HypothesisSensor(HypothesisSensor::Config config, golem::RGBA shapeColour) : config(config.c, config.w), visited(false) {
 
 
 	pacman::HypothesisSensor::Desc desc;
@@ -73,11 +73,11 @@ pacman::HypothesisSensor::HypothesisSensor(HypothesisSensor::Config config, gole
 
 
 }
-pacman::HypothesisSensor::HypothesisSensor(golem::Context& context) : config(Mat34::identity()), viewFrame(Mat34::identity()) {
+pacman::HypothesisSensor::HypothesisSensor(golem::Context& context) : config(Mat34::identity()), viewFrame(Mat34::identity()), visited(false) {
 
 }
 
-pacman::HypothesisSensor::HypothesisSensor(const pacman::HypothesisSensor::Desc& desc) : config(Mat34::identity()), viewFrame(Mat34::identity())
+pacman::HypothesisSensor::HypothesisSensor(const pacman::HypothesisSensor::Desc& desc) : config(Mat34::identity()), viewFrame(Mat34::identity()), visited(false)
 {
 	this->create(desc);
 }
@@ -85,7 +85,7 @@ pacman::HypothesisSensor::HypothesisSensor(const pacman::HypothesisSensor::Desc&
 void pacman::HypothesisSensor::create(const pacman::HypothesisSensor::Desc& desc) {
 
 	this->viewFrame = desc.viewFrame;
-
+	
 	appearance = desc.appearance;
 	shape.clear();
 	shapeFrame.clear();
@@ -232,6 +232,8 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 		this->stoppingCriteria = EStoppingCriteria::C_NVIEWS;
 	else if (!stoppingCriteriaStr.compare("coverage"))
 		this->stoppingCriteria = EStoppingCriteria::C_COVERAGE;
+	else if (!stoppingCriteriaStr.compare("number_of_views_and_coverage"))
+		this->stoppingCriteria = EStoppingCriteria::C_NVIEWS_COVERAGE;
 	else
 		this->stoppingCriteria = EStoppingCriteria::C_NONE;
 
@@ -342,7 +344,9 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::processItems(grasp::data::
 		// transform
 		Manager::RenderBlock renderBlock(*demoOwner);
 
-		UI::addCallback(*demoOwner, transformPtr.first);
+		
+		grasp::Manager::InputBlock inputBlock(*demoOwner);
+		//UI::addCallback(*demoOwner, transformPtr.first);
 		data::Item::Map::iterator ptr;
 		grasp::data::Item::Ptr item = transformPtr.second->transform(list);
 		{
@@ -748,7 +752,9 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 		}
 
 
-
+		//Adding hypotheses to the set of visited hypotheses so far (used for not going to this hypothesis again later)
+		hypothesis->visited = true;
+		visitedHypotheses.push_back(hypothesis);
 
 		demoOwner->scanPoseActive(scannedImageItems);
 
@@ -756,13 +762,15 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 		//Integrate views into the current pointCurv
 		this->pointCurvItem = processItems(scannedImageItems);
 
+		//Number of views increment
 		i++;
+
 		//Checking stopping criteria
 		if (params.stoppingCriteria == EStoppingCriteria::C_NVIEWS)
 		{
 			stop = i >= size;
 		}	
-		else if (params.stoppingCriteria == EStoppingCriteria::C_COVERAGE)
+		else if (params.stoppingCriteria == EStoppingCriteria::C_COVERAGE || params.stoppingCriteria == EStoppingCriteria::C_NVIEWS_COVERAGE)
 		{
 			std::vector< pcl::Vertices > polygons;
 			grasp::data::ItemPointsCurv* image = grasp::is<grasp::data::ItemPointsCurv>(this->pointCurvItem);
@@ -778,6 +786,10 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 			}
 			
 			stop = coverage >= params.coverageThr;
+			
+			if (params.stoppingCriteria == EStoppingCriteria::C_NVIEWS_COVERAGE)
+				stop = stop || i >= size;
+
 		}
 		else
 		{
@@ -803,8 +815,15 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewRandom()
 {
 	golem::CriticalSectionWrapper csw(this->csViewHypotheses);
+	
+	if (this->params.regenerateViews) this->generateViews();
 
-	golem::U32 index = (golem::U32)(rand.nextUniform<float>()*this->viewHypotheses.size());
+	golem::U32 index = 0;
+	do{
+		index = (golem::U32)(rand.nextUniform<float>()*this->viewHypotheses.size());
+
+	} while (this->getViewHypothesis(index)->visited || hasViewed(this->getViewHypothesis(index)));
+
 
 	return this->getViewHypothesis(index);
 }
@@ -812,6 +831,8 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewRandom()
 pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewSequential()
 {
 	golem::CriticalSectionWrapper csw(this->csViewHypotheses);
+	
+	if (this->params.regenerateViews) this->generateViews();
 
 	pacman::HypothesisSensor::Ptr ret = this->getViewHypothesis(this->seqIndex);
 
@@ -834,6 +855,9 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBase
 	Real maxValue(-golem::REAL_MAX);
 	for (int i = 0; i < this->viewHypotheses.size(); i++)
 	{
+		if (this->viewHypotheses[i]->visited || hasViewed(this->viewHypotheses[i]))
+			continue;
+
 		ActiveSense::ValueTuple valueTuple = this->computeValue(this->viewHypotheses[i], predModelPtr);
 
 		demoOwner->context.write("ActiveSense: H[%d] Value: %f\n", i, valueTuple.second);
@@ -1191,9 +1215,10 @@ grasp::data::Item::Map::iterator ActiveSense::computeFeedBackTransform(grasp::da
 
 		demoOwner->context.write("\nActiveSense: ---[computeFeedBackTransform]: List Size: %d---\n", list.size());
 		// transform
+		grasp::Manager::InputBlock inputBlock(*demoOwner);
 		Manager::RenderBlock renderBlock(*demoOwner);
 
-		UI::addCallback(*demoOwner, transformPtr.first);
+		//UI::addCallback(*demoOwner, transformPtr.first);
 		data::Item::Map::iterator ptr;
 		grasp::data::Item::Ptr item = transformPtr.second->transform(list);
 		{

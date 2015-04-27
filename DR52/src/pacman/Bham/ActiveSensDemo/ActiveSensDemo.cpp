@@ -282,11 +282,15 @@ void pacman::Demo::create(const Desc& desc) {
 
 
 	menuCtrlMap.insert(std::make_pair("C", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: (D)Demo ActiveSense\n(E)Goto to Camera Hypothesis Pose\n(V)Set OpenGL View Point to Camera Hypothesis View\n(N)View from Next ViewHypothesis\n(K)View from Mounted Sensor\n(H)Print Sensor Hypothesis Matrices";
+		desc = "Press a key to: (CP)Active Sense Parameters\n(D)Demo ActiveSense\n(E)Goto to Camera Hypothesis Pose\n(V)Set OpenGL View Point to Camera Hypothesis View\n(N)View from Next ViewHypothesis\n(K)View from Mounted Sensor\n(H)Print Sensor Hypothesis Matrices";
 		//menuCmdMap.erase("CE");
 		//menuCmdMap.erase("CV");
 	}));
 
+	menuCtrlMap.insert(std::make_pair("CP", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+		desc = "Press a key to: (S)Choose Selection Method\n(G)Choose Generation Method\n(M)Choose Coverage Method\n(C)Choose Stopping Criteria";
+	
+	}));
 
 
 	//ActiveSense Demo 
@@ -452,6 +456,60 @@ void pacman::Demo::create(const Desc& desc) {
 		context.write("Done!\n");
 
 
+	}));
+
+
+	menuCmdMap.insert(std::make_pair("CPS", [&]() {
+
+		std::map<std::string, ActiveSense::ESelectionMethod> selectionMethodMap = activeSense->getParameters().getSelectionMethodMap();
+		std::map<std::string, ActiveSense::ESelectionMethod>::iterator selectionPtr;
+		select(selectionPtr, selectionMethodMap.begin(), selectionMethodMap.end(), "Select Selection Method:\n", [](std::map<std::string, ActiveSense::ESelectionMethod>::iterator ptr) -> std::string{
+			return ptr->first;
+		});
+		context.write("Selected: %s", selectionPtr->first.c_str());
+		activeSense->getParameters().selectionMethod = selectionPtr->second;
+
+		context.write("Done!\n");
+	}));
+
+	menuCmdMap.insert(std::make_pair("CPG", [&]() {
+
+		std::map<std::string, ActiveSense::EGenerationMethod> selectionMap = activeSense->getParameters().getGenerationMethodMap();
+		std::map<std::string, ActiveSense::EGenerationMethod>::iterator selectionPtr;
+		select(selectionPtr, selectionMap.begin(), selectionMap.end(), "Select Generation Method:\n", [](std::map<std::string, ActiveSense::EGenerationMethod>::iterator ptr) -> std::string{
+			return ptr->first;
+		});
+		context.write("Selected: %s",selectionPtr->first.c_str());
+		activeSense->getParameters().generationMethod = selectionPtr->second;
+
+
+		context.write("Done!\n");
+	}));
+
+	menuCmdMap.insert(std::make_pair("CPM", [&]() {
+
+		std::map<std::string, ActiveSense::ECoverageMethod> selectionMap = activeSense->getParameters().getCoverageMethodMap();
+		std::map<std::string, ActiveSense::ECoverageMethod>::iterator selectionPtr;
+		select(selectionPtr, selectionMap.begin(), selectionMap.end(), "Select Coverage Method:\n", [](std::map<std::string, ActiveSense::ECoverageMethod>::iterator ptr) -> std::string{
+			return ptr->first;
+		});
+		context.write("Selected: %s", selectionPtr->first.c_str());
+		activeSense->getParameters().coverageMethod = selectionPtr->second;
+
+		context.write("Done!\n");
+	}));
+
+	menuCmdMap.insert(std::make_pair("CPC", [&]() {
+
+		std::map<std::string, ActiveSense::EStoppingCriteria> selectionMap = activeSense->getParameters().getStoppingCriteriaMap();
+		std::map<std::string, ActiveSense::EStoppingCriteria>::iterator selectionPtr;
+		select(selectionPtr, selectionMap.begin(), selectionMap.end(), "Select Stopping Criteria:\n", [](std::map<std::string, ActiveSense::EStoppingCriteria>::iterator ptr) -> std::string{
+			return ptr->first;
+		});
+		context.write("Selected: %s", selectionPtr->first.c_str());
+		activeSense->getParameters().stoppingCriteria = selectionPtr->second;
+
+		context.write("Done!\n");
 	}));
 }
 

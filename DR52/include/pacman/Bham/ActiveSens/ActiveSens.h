@@ -179,9 +179,6 @@ namespace pacman {
 		/** Hypothesis view configuration */
 		Config config;
 
-
-
-
 		/** Creates/initialises the Sensor */
 		void create(const pacman::HypothesisSensor::Desc& desc);
 
@@ -200,6 +197,10 @@ namespace pacman {
 
 		/** Set OpenGL view point to the sensor's frame view point */
 		static void setGLView(golem::Scene& scene, const golem::Mat34& sensorFrame);
+
+
+		/** visited flag */
+		bool visited;
 	};
 
 	class ActiveSense {
@@ -210,6 +211,7 @@ namespace pacman {
 
 			C_NVIEWS,
 			C_COVERAGE,
+			C_NVIEWS_COVERAGE,
 			C_NONE //Used for validity check
 
 		};
@@ -248,6 +250,54 @@ namespace pacman {
 			Parameters() {
 				this->setToDefault();
 			}
+
+			std::map<std::string, ESelectionMethod> getSelectionMethodMap(){
+
+				std::map<std::string, ESelectionMethod> retMap;
+
+				retMap["random"] = ESelectionMethod::S_RANDOM;
+				retMap["contact_based"] = ESelectionMethod::S_CONTACT_BASED;
+				retMap["sequential"] = ESelectionMethod::S_SEQUENTIAL;
+
+				return retMap;
+
+			}
+
+			std::map<std::string, EGenerationMethod> getGenerationMethodMap(){
+
+				std::map<std::string, EGenerationMethod> retMap;
+
+				retMap["fixed"] = EGenerationMethod::G_FIXED;
+				retMap["random_sphere"] = EGenerationMethod::G_RANDOM_SPHERE;
+
+
+				return retMap;
+
+			}
+
+			std::map<std::string, ECoverageMethod> getCoverageMethodMap(){
+
+				std::map<std::string, ECoverageMethod> retMap;
+
+				retMap["area_based"] = ECoverageMethod::M_AREA_BASED;
+				retMap["volume_based"] = ECoverageMethod::M_VOLUME_BASED;
+
+
+				return retMap;
+
+			}
+
+			std::map<std::string, EStoppingCriteria> getStoppingCriteriaMap(){
+				std::map<std::string, EStoppingCriteria> retMap;
+
+				retMap["number_of_views"] = EStoppingCriteria::C_NVIEWS;
+				retMap["coverage"] = EStoppingCriteria::C_COVERAGE;
+				retMap["number_of_views_and_coverage"] = EStoppingCriteria::C_NVIEWS_COVERAGE;
+
+
+				return retMap;
+			}
+
 
 
 			/** Number of hypothesis samples */
@@ -405,6 +455,16 @@ namespace pacman {
 		/** Gets current view hypotheses a.k.a. sensor hypotheses*/
 		pacman::HypothesisSensor::Seq& getViewHypotheses() {
 			return this->viewHypotheses;
+		}
+
+		bool hasViewed(pacman::HypothesisSensor::Ptr hypothesis) {
+			for (int i = 0; i < this->visitedHypotheses.size(); i++)
+			{	
+				//If distance is less than or equal 5 centimeters...
+				if (hypothesis->getFrame().p.distance(visitedHypotheses[i]->getFrame().p) <= 0.05)
+					return true;
+			}
+			return false;
 		}
 
 		/** Gets current view hypotheses a.k.a. sensor hypothesis*/
@@ -679,6 +739,11 @@ namespace pacman {
 		Important: Write and Read operations should be done using the lock csViewHypotheses
 		*/
 		pacman::HypothesisSensor::Seq viewHypotheses;
+
+		/**
+		Visited view hypotheses
+		*/
+		pacman::HypothesisSensor::Seq visitedHypotheses;
 
 		/**
 		Lock for this->viewHypotheses
