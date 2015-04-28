@@ -910,7 +910,7 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 
 	menuCmdMap.insert(std::make_pair("ZD", [=]() {
-		RBAdjust rba;
+		/*RBAdjust rba;
 		rba.setToDefault();
 
 		select(sensorCurrentPtr, sensorMap.begin(), sensorMap.end(), "Select Sensor:\n",
@@ -950,7 +950,7 @@ void pacman::Demo::create(const Desc& desc) {
 		depthCameraFrame.multiply(cameraFrame, trn);
 		context.write("<colourToIRFrame %s></colourToIRFrame>\n", Mat34ToXML(trn).c_str());
 		context.write("<extrinsic %s></extrinsic>\n", Mat34ToXML(depthCameraFrame).c_str());
-		context.write("Done!\n");
+		context.write("Done!\n");*/
 	}));
 
 	}
