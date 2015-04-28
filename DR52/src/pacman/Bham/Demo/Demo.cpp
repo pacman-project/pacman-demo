@@ -12,6 +12,18 @@ using namespace grasp;
 
 //-----------------------------------------------------------------------------
 
+namespace {
+std::string Mat34ToXML(const golem::Mat34& m)
+{
+	char buf[BUFSIZ], *begin = buf, *const end = buf + sizeof(buf) - 1;
+	golem::snprintf(begin, end,
+			"m11=\"%f\" m12=\"%f\" m13=\"%f\" m21=\"%f\" m22=\"%f\" m23=\"%f\" m31=\"%f\" m32=\"%f\" m33=\"%f\" v1=\"%f\" v2=\"%f\" v3=\"%f\"",
+			m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33, m.p.x, m.p.y, m.p.z);
+	return std::string(buf);
+}
+}
+
+//-----------------------------------------------------------------------------
 
 const std::string Demo::ID_ANY = "Any";
 
@@ -928,9 +940,13 @@ void pacman::Demo::create(const Desc& desc) {
 			rba.adjust(k, trn);
 			camera->setColourToIRFrame(trn);
 		}
-		const Mat34 m = camera->getColourToIRFrame();
-		context.write("<colourToIRFrame m11=\"%f\" m12=\"%f\" m13=\"%f\" m21=\"%f\" m22=\"%f\" m23=\"%f\" m31=\"%f\" m32=\"%f\" m33=\"%f\" v1=\"%f\" v2=\"%f\" v3=\"%f\"></colourToIRFrame>\n",
-			m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33, m.p.x, m.p.y, m.p.z);
+
+		const Mat34 trn = camera->getColourToIRFrame();
+		const Mat34 cameraFrame = camera->getFrame();
+		Mat34 depthCameraFrame;
+		depthCameraFrame.multiply(cameraFrame, trn);
+		context.write("<colourToIRFrame %s></colourToIRFrame>\n", Mat34ToXML(trn).c_str());
+		context.write("<extrinsic %s></extrinsic>\n", Mat34ToXML(depthCameraFrame).c_str());
 		context.write("Done!\n");
 	}));
 
