@@ -907,7 +907,7 @@ void pacman::Demo::create(const Desc& desc) {
 		CameraDepth* camera = is<CameraDepth>(sensorCurrentPtr);
 		const Mat34 trn0 = camera->getColourToIRFrame();
 
-		context.write("Use adjustment keys %s %s or 0 for identity. To finish press <SPACE> or <ESC>\n", rba.linKeysLarge, rba.angKeysLarge);
+		context.write("Use adjustment keys %s %s or 0 for identity. To finish press <SPACE> or <ESC>\n", rba.linKeysLarge.c_str(), rba.angKeysLarge.c_str());
 		for (;;)
 		{
 			const int k = waitKey(golem::MSEC_TM_U32_INF);
