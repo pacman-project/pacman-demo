@@ -521,8 +521,8 @@ void pacman::Demo::create(const Desc& desc) {
 		pointsTrn.resize(points.size());
 		Mat34 frame = RBPose::createFrame(points), frameInv;
 		frameInv.setInverse(frame);
-		context.write("Press a key to: (%s/%s) to adjust position, (%s/%s) to adjust orientation, finish <Enter>...\n",
-			objectFrameAdjustment.linKeysLarge.c_str(), objectFrameAdjustment.linKeysSmall.c_str(), objectFrameAdjustment.angKeysLarge.c_str(), objectFrameAdjustment.angKeysSmall.c_str());
+		context.write("Press a key to: (%s/%s) to adjust position/orientation, (%s) to adjust increment, finish <Enter>...\n",
+			objectFrameAdjustment.linKeys.c_str(), objectFrameAdjustment.angKeys.c_str(), objectFrameAdjustment.incKeys.c_str());
 		for (bool finish = false; !finish;) {
 			const Mat34 trn = frame * frameInv; // frame = trn * frameInit, trn = frame * frameInit^-1
 			for (size_t i = 0; i < points.size(); ++i)
@@ -538,7 +538,10 @@ void pacman::Demo::create(const Desc& desc) {
 			switch (key) {
 			case 27: throw Cancel("Cancelled");
 			case 13: finish = true; break;
-			default: objectFrameAdjustment.adjust(key, frame);
+			default:
+				if (objectFrameAdjustment.adjustIncrement(key))
+					context.write("Inrement: position = %f [m], orientation = %f [deg]\n", objectFrameAdjustment.getIncrement().lin, Math::radToDeg(objectFrameAdjustment.getIncrement().ang));
+				(void)objectFrameAdjustment.adjustFrame(key, frame);
 			}
 		}
 		// transform
