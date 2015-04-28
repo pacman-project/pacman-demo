@@ -425,8 +425,9 @@ protected:
 	golem::Mat34 getWristPose() const;
 	void gotoWristPose(const golem::Mat34& w);
 	void gotoPose2(const grasp::ConfigMat34& pose, const golem::SecTmReal duration);
-	void rotateObjectInHand();
 
+	void nudgeWrist();
+	void rotateObjectInHand();
 
 	void create(const Desc& desc);
 
