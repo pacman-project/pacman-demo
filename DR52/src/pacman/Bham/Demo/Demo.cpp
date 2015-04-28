@@ -978,19 +978,23 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("ZP", [=]() {
 		context.write("create arm configs for a set of camera frames\n");
-		double theta, phi1, phi2, phiStep, R, cx, cy, cz;
-		readNumber("theta", theta);
-		readNumber("phi1", phi1);
-		readNumber("phi2", phi2);
-		readNumber("phiStep", phiStep);
-		readNumber("R", R);
-		readNumber("cx", cx);
-		readNumber("cy", cy);
-		readNumber("cz", cz);
+		double theta(60), phi1(0), phi2(150), phiStep(10), R(0.50), cx(0.45), cy(-0.40), cz(-0.30);
+		readNumber("theta ", theta);
+		readNumber("phi1 ", phi1);
+		readNumber("phi2 ", phi2);
+		readNumber("phiStep ", phiStep);
+		readNumber("R ", R);
+		readNumber("cx ", cx);
+		readNumber("cy ", cy);
+		readNumber("cz ", cz);
 
-		const Vec3 centre(cx, cy, cz), negZ(0.0,0.0,-1.0);
+		// create a set of poses at co-latitude theta, from phi1 to phi2 (step phiStep)
+		// looking at (cx,cy,cz) at a distance R
+		std::vector<Mat34> cameraPoses;
+		grasp::ConfigMat34::Seq configs;
+		const Vec3 centre(cx, cy, cz), Zaxis(0.0,0.0,1.0);
 		Vec3 cameraCentre, cameraXdir, cameraYdir, cameraZdir;
-		Mat34 cameraFrame;
+		Mat34 cameraFrame, wristPose;
 		const double degToRad = golem::REAL_PI / 180.0;
 		const double sintheta = sin(theta * degToRad);
 		const double costheta = cos(theta * degToRad);
@@ -1000,15 +1004,21 @@ void pacman::Demo::create(const Desc& desc) {
 			const double cosphi = cos(phi * degToRad);
 			const Vec3 ray(cosphi*sintheta, sinphi*sintheta, costheta);
 			cameraCentre.multiply(R, ray);
-			cameraCentre.add(cameraCentre, centre);
+			cameraCentre += centre;
 			cameraZdir.multiply(-1.0, ray);
-			cameraXdir.cross(cameraZdir, negZ);
+			cameraXdir.cross(cameraZdir, Zaxis);
 			cameraYdir.cross(cameraZdir, cameraXdir);
 			cameraFrame.R = Mat33(cameraXdir, cameraYdir, cameraZdir);
 			cameraFrame.p = cameraCentre;
-			objectRenderer.addAxes3D(cameraFrame, golem::Vec3(0.01));
+			cameraPoses.push_back(cameraFrame);
+			objectRenderer.addAxes3D(cameraFrame, golem::Vec3(0.05));
+			// transform from camera to wrist frame
+			// get config from wrist pose, by planning trajectory from current pose!
+			grasp::ConfigMat34 cfg;
+			configs.push_back(cfg);
 		}
-		
+		// write out configs in xml format to scan_poses.xml
+
 		context.write("Done!\n");
 	}));
 
