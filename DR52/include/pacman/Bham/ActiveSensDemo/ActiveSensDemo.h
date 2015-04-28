@@ -82,13 +82,6 @@ protected:
 	/** golem::Object (Post)processing function called AFTER every physics simulation step and before randering. */
 	virtual void postprocess(golem::SecTmReal elapsedTime);
 
-	grasp::Camera* getWristCamera() const;
-	golem::Mat34 getWristPose() const;
-	void gotoWristPose(const golem::Mat34& w);
-	void Demo::gotoPose2(const grasp::ConfigMat34& pose, const golem::SecTmReal duration);
-	void rotateObjectInHand();
-
-
 	void create(const Desc& desc);
 
 	Demo(golem::Scene &scene);
