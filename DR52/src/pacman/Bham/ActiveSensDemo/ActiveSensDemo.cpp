@@ -131,6 +131,27 @@ void pacman::Demo::scanPoseActive(grasp::data::Item::List& scannedImageItems, Sc
 
 //-------------------------------------------------------------------------------------------------------------------
 
+grasp::Camera* Demo::getWristCamera() const
+{
+	const std::string id("OpenNI+OpenNI");
+	grasp::Sensor::Map::const_iterator i = sensorMap.find(id);
+	if (i == sensorMap.end())
+	{
+		context.write("%s was not found\n", id.c_str());
+		throw Cancel("getWristCamera: wrist-mounted camera is not available");
+	}
+
+	grasp::Camera* camera = grasp::is<grasp::Camera>(i);
+
+	// want the wrist-mounted camera
+	if (!camera->hasVariableMounting())
+	{
+		context.write("%s is a static camera\n", id.c_str());
+		throw Cancel("getWristCamera: wrist-mounted camera is not available");
+	}
+
+	return camera;
+}
 
 void pacman::Demo::create(const Desc& desc) {
 	desc.assertValid(Assert::Context("pacman::Demo::Desc."));
@@ -318,7 +339,7 @@ void pacman::Demo::create(const Desc& desc) {
 			golem::CriticalSectionWrapper csw(activeSense->getCSViewHypotheses());
 			activeSense->generateViews();
 		}
-		getWristCamera();
+		getWristCamera(); // why this call???
 
 		context.write("Done!\n");
 
