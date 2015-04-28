@@ -13,13 +13,26 @@ using namespace grasp;
 //-----------------------------------------------------------------------------
 
 namespace {
-std::string Mat34ToXML(const golem::Mat34& m)
+std::string toXMLString(const golem::Mat34& m)
 {
 	char buf[BUFSIZ], *begin = buf, *const end = buf + sizeof(buf) - 1;
 	golem::snprintf(begin, end,
 			"m11=\"%f\" m12=\"%f\" m13=\"%f\" m21=\"%f\" m22=\"%f\" m23=\"%f\" m31=\"%f\" m32=\"%f\" m33=\"%f\" v1=\"%f\" v2=\"%f\" v3=\"%f\"",
 			m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33, m.p.x, m.p.y, m.p.z);
 	return std::string(buf);
+}
+
+std::string toXMLString(const grasp::ConfigMat34& cfg, const bool shortFormat = false)
+{
+	std::ostringstream os;
+	os.precision(6);
+	for (size_t i = 0; i < cfg.c.size(); ++i)
+	{
+		const double v = (shortFormat && i>6) ? 0.0 : cfg.c[i];
+		os << (i==0 ? "c" : " c") << i+1 << """" << v << """";
+	}
+
+	return os.str();
 }
 }
 
@@ -274,6 +287,79 @@ void Demo::gotoWristPose(const golem::Mat34& w)
 	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
 }
 
+void Demo::nudgeWrist()
+{
+	auto showPose = [&](const std::string& description, const golem::Mat34& m) {
+		context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
+	};
+
+	double s = 5; // 5cm step
+	int dirCode;
+	for (;;)
+	{
+		std::ostringstream os;
+		os << "up:7 down:1 left:4 right:6 back:8 front:2 null:0 STEP(" << s << " cm):+/-";
+		dirCode = option("7146820+-", os.str().c_str());
+		if (dirCode == '+')
+		{
+			s *= 2;
+			if (s > 20.0) s = 20.0;
+			continue;
+		}
+		if (dirCode == '-')
+		{
+			s /= 2;
+			continue;
+		}
+		break;
+	}
+	s /= 100.0; // cm -> m
+
+	golem::Vec3 nudge(golem::Vec3::zero());
+	switch (dirCode)
+	{
+	case '7': // up
+		nudge.z = s;
+		break;
+	case '1': // down
+		nudge.z = -s;
+		break;
+	case '4': // left
+		nudge.y = -s;
+		break;
+	case '6': // right
+		nudge.y = s;
+		break;
+	case '8': // back
+		nudge.x = -s;
+		break;
+	case '2': // front
+		nudge.x = s;
+		break;
+	};
+
+	golem::Mat34 pose;
+
+	grasp::Camera* camera = getWristCamera();
+	pose = camera->getFrame();
+	showPose("camera before", pose);
+
+	pose = getWristPose();
+	showPose("before", pose);
+
+	pose.p = pose.p + nudge;
+	showPose("commanded", pose);
+
+	gotoWristPose(pose);
+
+	showPose("final wrist", getWristPose());
+	pose = camera->getFrame();
+	showPose("final camera", pose);
+
+	grasp::ConfigMat34 cp;
+	getPose(0, cp);
+	context.debug("%s\n", toXMLString(cp, true));
+}
 
 void Demo::rotateObjectInHand()
 {
@@ -343,10 +429,10 @@ void Demo::rotateObjectInHand()
 
 	grasp::ConfigMat34 cp;
 	getPose(0, cp);
-	context.debug("c1=\"%f\" c2=\"%f\" c3=\"%f\" c4=\"%f\" c5=\"%f\" c6=\"%f\" c7=\"%f\"\n", cp.c[0], cp.c[1], cp.c[2], cp.c[3], cp.c[4], cp.c[5], cp.c[6], cp.c[7]);
-		
-	recordingStart(dataCurrentPtr->first, recordingLabel, false);
-	context.write("taken snapshot\n");
+	context.debug("%s\n", toXMLString(cp, true));
+
+	//recordingStart(dataCurrentPtr->first, recordingLabel, false);
+	//context.write("taken snapshot\n");
 }
 
 void Demo::gotoPose2(const ConfigMat34& pose, const SecTmReal duration)
@@ -783,7 +869,7 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 
 	menuCtrlMap.insert(std::make_pair("Z", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: run (R)otate, (N)udge, (O)bjectGraspAndCapture, compute rgb-to-ir (T)ranform, (D)epth camera adjust...";
+		desc = "Press a key to: run (R)otate, (N)udge, (O)bjectGraspAndCapture, rgb-to-ir (T)ranform, (D)epth camera adjust, create (P)oses...";
 	}));
 
 	menuCmdMap.insert(std::make_pair("ZO", [=]() {
@@ -800,78 +886,7 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("ZN", [=]() {
 		context.write("nudge wrist\n");
-
-		auto showPose = [&](const std::string& description, const golem::Mat34& m) {
-			context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
-		};
-
-		double s = 5; // 5cm step
-		int dirCode;
-		for (;;)
-		{
-			std::ostringstream os;
-			os << "up:7 down:1 left:4 right:6 back:8 front:2 null:0 STEP(" << s << " cm):+/-";
-			dirCode = option("7146820+-", os.str().c_str());
-			if (dirCode == '+')
-			{
-				s *= 2;
-				if (s > 20.0) s = 20.0;
-				continue;
-			}
-			if (dirCode == '-')
-			{
-				s /= 2;
-				continue;
-			}
-			break;
-		}
-		s /= 100.0; // cm -> m
-
-		golem::Vec3 nudge(golem::Vec3::zero());
-		switch (dirCode)
-		{
-		case '7': // up
-			nudge.z = s;
-			break;
-		case '1': // down
-			nudge.z = -s;
-			break;
-		case '4': // left
-			nudge.y = -s;
-			break;
-		case '6': // right
-			nudge.y = s;
-			break;
-		case '8': // back
-			nudge.x = -s;
-			break;
-		case '2': // front
-			nudge.x = s;
-			break;
-		};
-
-		golem::Mat34 pose;
-
-		grasp::Camera* camera = getWristCamera();
-		pose = camera->getFrame();
-		showPose("camera before", pose);
-
-		pose = getWristPose();
-		showPose("before", pose);
-
-		pose.p = pose.p + nudge;
-		showPose("commanded", pose);
-
-		gotoWristPose(pose);
-
-		showPose("final wrist", getWristPose());
-		pose = camera->getFrame();
-		showPose("final camera", pose);
-
-		grasp::ConfigMat34 cp;
-		getPose(0, cp);
-		context.debug("c1=\"%f\" c2=\"%f\" c3=\"%f\" c4=\"%f\" c5=\"%f\" c6=\"%f\" c7=\"%f\"\n", cp.c[0], cp.c[1], cp.c[2], cp.c[3], cp.c[4], cp.c[5], cp.c[6], cp.c[7]);
-
+		nudgeWrist();
 		context.write("Done!\n");
 	}));
 
@@ -956,8 +971,44 @@ void pacman::Demo::create(const Desc& desc) {
 		const Mat34 cameraFrame = camera->getFrame();
 		Mat34 depthCameraFrame;
 		depthCameraFrame.multiply(cameraFrame, trn);
-		context.write("<colourToIRFrame %s></colourToIRFrame>\n", Mat34ToXML(trn).c_str());
-		context.write("<extrinsic %s></extrinsic>\n", Mat34ToXML(depthCameraFrame).c_str());
+		context.write("<colourToIRFrame %s></colourToIRFrame>\n", toXMLString(trn).c_str());
+		context.write("<extrinsic %s></extrinsic>\n", toXMLString(depthCameraFrame).c_str());
+		context.write("Done!\n");
+	}));
+
+	menuCmdMap.insert(std::make_pair("ZP", [=]() {
+		context.write("create arm configs for a set of camera frames\n");
+		double theta, phi1, phi2, phiStep, R, cx, cy, cz;
+		readNumber("theta", theta);
+		readNumber("phi1", phi1);
+		readNumber("phi2", phi2);
+		readNumber("phiStep", phiStep);
+		readNumber("R", R);
+		readNumber("cx", cx);
+		readNumber("cy", cy);
+		readNumber("cz", cz);
+
+		const Vec3 centre(cx, cy, cz), negZ(0.0,0.0,-1.0);
+		Vec3 cameraCentre, cameraXdir, cameraYdir, cameraZdir;
+		Mat34 cameraFrame;
+		const double degToRad = golem::REAL_PI / 180.0;
+		const double sintheta = sin(theta * degToRad);
+		const double costheta = cos(theta * degToRad);
+		for (double phi = phi1; phi <= phi2; phi += phiStep)
+		{
+			const double sinphi = sin(phi * degToRad);
+			const double cosphi = cos(phi * degToRad);
+			const Vec3 ray(cosphi*sintheta, sinphi*sintheta, costheta);
+			cameraCentre.multiply(R, ray);
+			cameraCentre.add(cameraCentre, centre);
+			cameraZdir.multiply(-1.0, ray);
+			cameraXdir.cross(cameraZdir, negZ);
+			cameraYdir.cross(cameraZdir, cameraXdir);
+			cameraFrame.R = Mat33(cameraXdir, cameraYdir, cameraZdir);
+			cameraFrame.p = cameraCentre;
+			objectRenderer.addAxes3D(cameraFrame, golem::Vec3(0.01));
+		}
+		
 		context.write("Done!\n");
 	}));
 
