@@ -155,6 +155,11 @@ void Demo::Data::load(const std::string& prefix, const golem::XMLContext* xmlcon
 			frs.read(*modelState);
 			training.clear();
 			frs.read(training, training.end(), std::make_pair(std::string(), Training(owner->controller->createState())));
+
+			densities.clear();
+			frs.read(densities, densities.end());
+			solutions.clear();
+			frs.read(solutions, solutions.end());
 		}
 	}
 	catch (const std::exception&) {
@@ -179,6 +184,9 @@ void Demo::Data::save(const std::string& prefix, golem::XMLContext* xmlcontext) 
 
 		fws.write(*modelState);
 		fws.write(training.begin(),training.end());
+
+		fws.write(densities.begin(), densities.end());
+		fws.write(solutions.begin(), solutions.end());
 	}
 }
 
@@ -230,6 +238,9 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 
 	queryDescMap.clear();
 	golem::XMLData(queryDescMap, queryDescMap.max_size(), xmlcontext->getContextFirst("query"), "query", false);
+
+	manipulatorDesc->load(xmlcontext->getContextFirst("manipulator"));
+	manipulatorAppearance.load(xmlcontext->getContextFirst("manipulator appearance"));
 }
 
 //------------------------------------------------------------------------------
@@ -529,6 +540,10 @@ void pacman::Demo::create(const Desc& desc) {
 	queryMap.clear();
 	for (Query::Desc::Map::const_iterator i = desc.queryDescMap.begin(); i != desc.queryDescMap.end(); ++i)
 		queryMap.insert(std::make_pair(i->first, i->second->create(context, i->first)));
+
+	// manipulator
+	manipulator = desc.manipulatorDesc->create(*planner, desc.controllerIDSeq);
+	manipulatorAppearance = desc.manipulatorAppearance;
 
 	// top menu help using global key '?'
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
@@ -1296,6 +1311,28 @@ template <> void golem::Stream::write(const pacman::Demo::Data::Training::Map::v
 	write(value.second.frame);
 	write(value.second.contacts.begin(), value.second.contacts.end());
 	write(value.second.locations.begin(), value.second.locations.end());
+}
+
+template <> void golem::Stream::read(pacman::Demo::Data::Density::Seq::value_type& value) const {
+	value.object.clear();
+	read(value.object, value.object.begin());
+	read(value.pose);
+}
+
+template <> void golem::Stream::write(const pacman::Demo::Data::Density::Seq::value_type& value) {
+	write(value.object.begin(), value.object.end());
+	write(value.pose);
+}
+
+template <> void golem::Stream::read(pacman::Demo::Data::Solution::Seq::value_type& value) const {
+	read(value.type);
+	value.path.clear();
+	read(value.path, value.path.begin());
+}
+
+template <> void golem::Stream::write(const pacman::Demo::Data::Solution::Seq::value_type& value) {
+	write(value.type);
+	write(value.path.begin(), value.path.end());
 }
 
 //------------------------------------------------------------------------------

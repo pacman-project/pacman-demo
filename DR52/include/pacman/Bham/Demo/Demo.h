@@ -15,6 +15,7 @@
 #include <Grasp/Core/Ctrl.h>
 #include <Grasp/Grasp/Model.h>
 #include <Grasp/Grasp/Query.h>
+#include <Grasp/Grasp/Manipulator.h>
 
 //------------------------------------------------------------------------------
 
@@ -63,6 +64,18 @@ public:
 			grasp::Query::Kernel pose;
 		};
 
+		/** Solution */
+		class Solution {
+		public:
+			/** Collection of solutions */
+			typedef std::vector<Solution> Seq;
+
+			/** Type */
+			std::string type;
+			/** Path */
+			grasp::Manipulator::Waypoint::Seq path;
+		};
+
 		/** Data bundle default name */
 		std::string dataName;
 
@@ -100,6 +113,9 @@ public:
 
 		/** Collection of distributions */
 		Density::Seq densities;
+
+		/** Solutions */
+		Solution::Seq solutions;
 
 		/** Data bundle description */
 		class Desc : public grasp::Player::Data::Desc {
@@ -209,6 +225,11 @@ public:
 		/** Query descriptions */
 		grasp::Query::Desc::Map queryDescMap;
 
+		/** Manipulator description */
+		grasp::Manipulator::Desc::Ptr manipulatorDesc;
+		/** Manipulator Appearance */
+		grasp::Manipulator::Appearance manipulatorAppearance;
+
 		/** Constructs from description object */
 		Desc() {
 			Desc::setToDefault();
@@ -258,6 +279,9 @@ public:
 			contactAppearance.setToDefault();
 
 			queryDescMap.clear();
+
+			manipulatorDesc.reset(new grasp::Manipulator::Desc);
+			manipulatorAppearance.setToDefault();
 		}
 		/** Assert that the description is valid. */
 		virtual void assertValid(const grasp::Assert::Context& ac) const {
@@ -311,6 +335,10 @@ public:
 				grasp::Assert::valid(i->second != nullptr, ac, "queryDescMap[]: null");
 				i->second->assertValid(grasp::Assert::Context(ac, "queryDescMap[]->"));
 			}
+
+			grasp::Assert::valid(manipulatorDesc != nullptr, ac, "manipulatorDesc: null");
+			manipulatorDesc->assertValid(grasp::Assert::Context(ac, "manipulatorDesc->"));
+			manipulatorAppearance.assertValid(grasp::Assert::Context(ac, "manipulatorAppearance."));
 		}
 		/** Load descritpion from xml context. */
 		virtual void load(golem::Context& context, const golem::XMLContext* xmlcontext);
@@ -318,14 +346,6 @@ public:
 	protected:
 		GRASP_CREATE_FROM_OBJECT_DESC1(Demo, golem::Object::Ptr, golem::Scene&)
 	};
-protected:
-	
-	/** Current viewHypothesis */
-	golem::I32 currentViewHypothesis;
-
-	/** Currently selected viewHypothesis */
-	golem::I32 selectedCamera;
-	
 
 protected:
 	/** Data bundle default name */
@@ -402,6 +422,11 @@ protected:
 	/** Query densities */
 	grasp::Query::Map queryMap;
 
+	/** Manipulator */
+	grasp::Manipulator::Ptr manipulator;
+	/** Manipulator Appearance */
+	grasp::Manipulator::Appearance manipulatorAppearance;
+
 	/** Item selection */
 	typedef std::function<void(Data::Training::Map&, Data::Training::Map::iterator&)> ItemSelectFunc;
 	typedef std::function<void(ItemSelectFunc)> ItemSelect;
@@ -444,6 +469,12 @@ protected:
 namespace golem {
 	template <> void Stream::read(pacman::Demo::Data::Training::Map::value_type& value) const;
 	template <> void Stream::write(const pacman::Demo::Data::Training::Map::value_type& value);
+
+	template <> void Stream::read(pacman::Demo::Data::Density::Seq::value_type& value) const;
+	template <> void Stream::write(const pacman::Demo::Data::Density::Seq::value_type& value);
+
+	template <> void Stream::read(pacman::Demo::Data::Solution::Seq::value_type& value) const;
+	template <> void Stream::write(const pacman::Demo::Data::Solution::Seq::value_type& value);
 };	// namespace
 
 //------------------------------------------------------------------------------

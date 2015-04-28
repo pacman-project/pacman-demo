@@ -82,6 +82,24 @@
         </colour>
       </frame_adjustment>
     </object>
+
+    <manipulator>
+      <config_map i1="0" i2="0" i3="0" i4="0" i5="0" i6="0" i7="0" i8="0" i9="0" i10="0" i11="10" i12="0" i13="0" i14="0" i15="14" i16="0" i17="0" i18="0" i19="18" i20="0" i21="0" i22="0" i23="22" i24="0" i25="0" i26="0" i27="26"/>
+      <trajectory lin="2000.0" ang="1000.0" collision="1" cluster_size="20" timeout="0.25"/>
+
+      <appearance show_bounds="1" show_frames="0">
+        <bounds show_solid="1" show_wire="1" wire_width="1.0">
+          <solid_colour R="255" G="255" B="0" A="150"/>
+          <wire_colour R="127" G="127" B="127" A="255"/>
+        </bounds>
+        <bounds_select show_solid="1" show_wire="0" wire_width="1.0">
+          <solid_colour R="0" G="0" B="255" A="150"/>
+          <wire_colour R="127" G="127" B="127" A="255"/>
+        </bounds_select>
+        <chains_frame_size v1="0.1" v2="0.1" v3="0.1"/>
+        <joints_frame_size v1="0.01" v2="0.01" v3="0.01"/>
+      </appearance>
+    </manipulator>
   </demo>
 
   <player>
