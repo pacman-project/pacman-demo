@@ -910,8 +910,8 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 
 	menuCmdMap.insert(std::make_pair("ZD", [=]() {
-		/*RBAdjust rba;
-		rba.setToDefault();
+		RBAdjust rba;
+		rba.increment.set(golem::Real(0.0005), golem::REAL_PI*golem::Real(0.001)); // small increments
 
 		select(sensorCurrentPtr, sensorMap.begin(), sensorMap.end(), "Select Sensor:\n",
 			[](Sensor::Map::const_iterator ptr) -> const std::string& {return ptr->second->getID();} );
@@ -922,7 +922,9 @@ void pacman::Demo::create(const Desc& desc) {
 		CameraDepth* camera = is<CameraDepth>(sensorCurrentPtr);
 		const Mat34 trn0 = camera->getColourToIRFrame();
 
-		context.write("Use adjustment keys %s %s or 0 for identity. To finish press <SPACE> or <ESC>\n", rba.linKeysLarge.c_str(), rba.angKeysLarge.c_str());
+		context.write(
+			"Use adjustment keys %s %s %s or 0 for identity. To finish press <SPACE> or <ESC>\n",
+			rba.linKeys.c_str(), rba.angKeys.c_str(), rba.incKeys.c_str());
 		for (;;)
 		{
 			const int k = waitKey(golem::MSEC_TM_U32_INF);
@@ -938,9 +940,15 @@ void pacman::Demo::create(const Desc& desc) {
 				camera->setColourToIRFrame(Mat34::identity());
 				continue;
 			}
+			if (rba.adjustIncrement(k))
+			{
+				const RBDist& incr = rba.getIncrement();
+				context.write("increment lin: %f, ang: %f\n", incr.lin, incr.ang);
+				continue;
+			}
 			
 			Mat34 trn = camera->getColourToIRFrame();
-			rba.adjust(k, trn);
+			rba.adjustFrame(k, trn);
 			camera->setColourToIRFrame(trn);
 		}
 
@@ -950,7 +958,7 @@ void pacman::Demo::create(const Desc& desc) {
 		depthCameraFrame.multiply(cameraFrame, trn);
 		context.write("<colourToIRFrame %s></colourToIRFrame>\n", Mat34ToXML(trn).c_str());
 		context.write("<extrinsic %s></extrinsic>\n", Mat34ToXML(depthCameraFrame).c_str());
-		context.write("Done!\n");*/
+		context.write("Done!\n");
 	}));
 
 	}
