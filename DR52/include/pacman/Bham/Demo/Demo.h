@@ -51,6 +51,18 @@ public:
 			grasp::data::Location3D::Point::Seq locations;
 		};
 
+		/** Query density */
+		class Density : public golem::Sample<golem::Real> {
+		public:
+			/** Collection of distributions */
+			typedef std::vector<Density> Seq;
+
+			/** Object density */
+			grasp::Query::Pose::Seq object;
+			/** Pose kernel */
+			grasp::Query::Kernel pose;
+		};
+
 		/** Data bundle default name */
 		std::string dataName;
 
@@ -85,6 +97,9 @@ public:
 		golem::U32 indexItem;
 		/** Contact relation */
 		grasp::Contact3D::Relation contactRelation;
+
+		/** Collection of distributions */
+		Density::Seq densities;
 
 		/** Data bundle description */
 		class Desc : public grasp::Player::Data::Desc {
@@ -191,6 +206,8 @@ public:
 		/** Contact appearance */
 		grasp::Contact3D::Appearance contactAppearance;
 
+		/** Query descriptions */
+		grasp::Query::Desc::Map queryDescMap;
 
 		/** Constructs from description object */
 		Desc() {
@@ -240,6 +257,7 @@ public:
 			modelDescMap.clear();
 			contactAppearance.setToDefault();
 
+			queryDescMap.clear();
 		}
 		/** Assert that the description is valid. */
 		virtual void assertValid(const grasp::Assert::Context& ac) const {
@@ -287,6 +305,12 @@ public:
 				i->second->assertValid(grasp::Assert::Context(ac, "modelDescMap[]->"));
 			}
 			contactAppearance.assertValid(grasp::Assert::Context(ac, "contactAppearance."));
+
+			grasp::Assert::valid(!queryDescMap.empty(), ac, "queryDescMap: empty");
+			for (grasp::Query::Desc::Map::const_iterator i = queryDescMap.begin(); i != queryDescMap.end(); ++i) {
+				grasp::Assert::valid(i->second != nullptr, ac, "queryDescMap[]: null");
+				i->second->assertValid(grasp::Assert::Context(ac, "queryDescMap[]->"));
+			}
 		}
 		/** Load descritpion from xml context. */
 		virtual void load(golem::Context& context, const golem::XMLContext* xmlcontext);
@@ -375,6 +399,9 @@ protected:
 	/** Contact appearance */
 	grasp::Contact3D::Appearance contactAppearance;
 
+	/** Query densities */
+	grasp::Query::Map queryMap;
+
 	/** Item selection */
 	typedef std::function<void(Data::Training::Map&, Data::Training::Map::iterator&)> ItemSelectFunc;
 	typedef std::function<void(ItemSelectFunc)> ItemSelect;
@@ -391,6 +418,8 @@ protected:
 	grasp::data::Item::Map::iterator objectProcess(grasp::data::Item::Map::iterator ptr);
 	/** Create trajectory name */
 	std::string getTrajectoryName(const std::string& type) const;
+	/** Create query densities */
+	void createQuery(grasp::data::Item::Map::iterator ptr);
 
 	grasp::Camera* getWristCamera() const;
 	golem::Mat34 getWristPose() const;

@@ -214,6 +214,9 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 	modelDescMap.clear();
 	golem::XMLData(modelDescMap, modelDescMap.max_size(), xmlcontext->getContextFirst("model"), "model", false);
 	contactAppearance.load(xmlcontext->getContextFirst("model appearance"));
+
+	queryDescMap.clear();
+	golem::XMLData(queryDescMap, queryDescMap.max_size(), xmlcontext->getContextFirst("query"), "query", false);
 }
 
 //------------------------------------------------------------------------------
@@ -435,6 +438,11 @@ void pacman::Demo::create(const Desc& desc) {
 	for (Model::Desc::Map::const_iterator i = desc.modelDescMap.begin(); i != desc.modelDescMap.end(); ++i)
 		modelMap.insert(std::make_pair(i->first, i->second->create(context, i->first)));
 	contactAppearance = desc.contactAppearance;
+
+	// query densities
+	queryMap.clear();
+	for (Query::Desc::Map::const_iterator i = desc.queryDescMap.begin(); i != desc.queryDescMap.end(); ++i)
+		queryMap.insert(std::make_pair(i->first, i->second->create(context, i->first)));
 
 	// top menu help using global key '?'
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
@@ -764,9 +772,31 @@ void pacman::Demo::create(const Desc& desc) {
 		context.write("Done!\n");
 	}));
 
+	// query operations
+	menuCtrlMap.insert(std::make_pair("PQ", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+		// set mode
+		to<Data>(dataCurrentPtr)->queryMode = true;
+		createRender();
+
+		desc = "Press a key to: create (D)ensities, generate (S)olutions ...";
+	}));
+	menuCmdMap.insert(std::make_pair("PQD", [=]() {
+		// load object item
+		data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(objectItem);
+		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
+			throw Message(Message::LEVEL_ERROR, "Object item has not been created");
+		// create query densities
+		createQuery(ptr);
+
+		context.write("Done!\n");
+	}));
+	menuCmdMap.insert(std::make_pair("PQS", [=]() {
+
+		context.write("Done!\n");
+	}));
+
 	// main demo
 	menuCmdMap.insert(std::make_pair("PD", [=]() {
-
 		// estimate pose
 		if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty())
 			estimatePose(true);
@@ -777,6 +807,8 @@ void pacman::Demo::create(const Desc& desc) {
 			grasp::data::Item::Map::iterator ptr = objectGraspAndCapture();
 			// compute features and add to data bundle
 			ptr = objectProcess(ptr);
+			// create query densities
+			createQuery(ptr);
 		}
 		context.write("Done!\n");
 
@@ -1166,6 +1198,13 @@ grasp::data::Item::Map::iterator pacman::Demo::objectProcess(grasp::data::Item::
 
 std::string pacman::Demo::getTrajectoryName(const std::string& type) const {
 	return modelItemTrj + "-" + type;
+}
+
+//------------------------------------------------------------------------------
+
+void pacman::Demo::createQuery(grasp::data::Item::Map::iterator ptr) {
+	if (to<Data>(dataCurrentPtr)->training.empty())
+		throw Message(Message::LEVEL_ERROR, "No model densities");
 }
 
 //------------------------------------------------------------------------------
