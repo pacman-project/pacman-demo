@@ -24,6 +24,11 @@ namespace pacman {
 
 //------------------------------------------------------------------------------
 
+/** RBDist map */
+typedef std::map<std::string, grasp::RBDist> RBDistMap;
+
+//------------------------------------------------------------------------------
+
 /** Demo. */
 class Demo : public grasp::Player {
 public:
@@ -58,6 +63,8 @@ public:
 			/** Collection of distributions */
 			typedef std::vector<Density> Seq;
 
+			/** Type */
+			std::string type;
 			/** Object density */
 			grasp::Query::Pose::Seq object;
 			/** Pose kernel */
@@ -224,6 +231,8 @@ public:
 
 		/** Query descriptions */
 		grasp::Query::Desc::Map queryDescMap;
+		/** Pose deviations */
+		RBDistMap poseStdDevMap;
 
 		/** Manipulator description */
 		grasp::Manipulator::Desc::Ptr manipulatorDesc;
@@ -279,6 +288,7 @@ public:
 			contactAppearance.setToDefault();
 
 			queryDescMap.clear();
+			poseStdDevMap.clear();
 
 			manipulatorDesc.reset(new grasp::Manipulator::Desc);
 			manipulatorAppearance.setToDefault();
@@ -334,6 +344,10 @@ public:
 			for (grasp::Query::Desc::Map::const_iterator i = queryDescMap.begin(); i != queryDescMap.end(); ++i) {
 				grasp::Assert::valid(i->second != nullptr, ac, "queryDescMap[]: null");
 				i->second->assertValid(grasp::Assert::Context(ac, "queryDescMap[]->"));
+			}
+			grasp::Assert::valid(!poseStdDevMap.empty(), ac, "poseStdDevMap: empty");
+			for (RBDistMap::const_iterator i = poseStdDevMap.begin(); i != poseStdDevMap.end(); ++i) {
+				grasp::Assert::valid(i->second.isValid(), ac, "poseStdDevMap[]: invalid");
 			}
 
 			grasp::Assert::valid(manipulatorDesc != nullptr, ac, "manipulatorDesc: null");
@@ -421,6 +435,8 @@ protected:
 
 	/** Query densities */
 	grasp::Query::Map queryMap;
+	/** Pose deviations */
+	RBDistMap poseStdDevMap;
 
 	/** Manipulator */
 	grasp::Manipulator::Ptr manipulator;
@@ -467,6 +483,8 @@ protected:
 //------------------------------------------------------------------------------
 
 namespace golem {
+	void XMLData(pacman::RBDistMap::value_type& val, golem::XMLContext* context, bool create = false);
+
 	template <> void Stream::read(pacman::Demo::Data::Training::Map::value_type& value) const;
 	template <> void Stream::write(const pacman::Demo::Data::Training::Map::value_type& value);
 

@@ -238,6 +238,8 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 
 	queryDescMap.clear();
 	golem::XMLData(queryDescMap, queryDescMap.max_size(), xmlcontext->getContextFirst("query"), "query", false);
+	poseStdDevMap.clear();
+	golem::XMLData(poseStdDevMap, poseStdDevMap.max_size(), xmlcontext->getContextFirst("query"), "query", false);
 
 	manipulatorDesc->load(xmlcontext->getContextFirst("manipulator"));
 	manipulatorAppearance.load(xmlcontext->getContextFirst("manipulator appearance"));
@@ -540,6 +542,7 @@ void pacman::Demo::create(const Desc& desc) {
 	queryMap.clear();
 	for (Query::Desc::Map::const_iterator i = desc.queryDescMap.begin(); i != desc.queryDescMap.end(); ++i)
 		queryMap.insert(std::make_pair(i->first, i->second->create(context, i->first)));
+	poseStdDevMap = desc.poseStdDevMap;
 
 	// manipulator
 	manipulator = desc.manipulatorDesc->create(*planner, desc.controllerIDSeq);
@@ -1281,6 +1284,8 @@ std::string pacman::Demo::getTrajectoryName(const std::string& type) const {
 void pacman::Demo::createQuery(grasp::data::Item::Map::iterator ptr) {
 	if (to<Data>(dataCurrentPtr)->training.empty())
 		throw Message(Message::LEVEL_ERROR, "No model densities");
+
+
 }
 
 //------------------------------------------------------------------------------
@@ -1291,6 +1296,13 @@ void pacman::Demo::render() const {
 	golem::CriticalSectionWrapper cswRenderer(csRenderer);
 	modelRenderer.render();
 	objectRenderer.render();
+}
+
+//------------------------------------------------------------------------------
+
+void golem::XMLData(pacman::RBDistMap::value_type& val, golem::XMLContext* xmlcontext, bool create) {
+	golem::XMLData("id", const_cast<std::string&>(val.first), xmlcontext, create);
+	grasp::XMLData(val.second, xmlcontext->getContextFirst("pose_std_dev", create), create);
 }
 
 //------------------------------------------------------------------------------
@@ -1314,12 +1326,14 @@ template <> void golem::Stream::write(const pacman::Demo::Data::Training::Map::v
 }
 
 template <> void golem::Stream::read(pacman::Demo::Data::Density::Seq::value_type& value) const {
+	read(value.type);
 	value.object.clear();
 	read(value.object, value.object.begin());
 	read(value.pose);
 }
 
 template <> void golem::Stream::write(const pacman::Demo::Data::Density::Seq::value_type& value) {
+	write(value.type);
 	write(value.object.begin(), value.object.end());
 	write(value.pose);
 }
