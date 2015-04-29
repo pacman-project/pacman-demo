@@ -358,7 +358,7 @@ void Demo::nudgeWrist()
 
 	grasp::ConfigMat34 cp;
 	getPose(0, cp);
-	context.debug("%s\n", toXMLString(cp, true));
+	context.debug("%s\n", toXMLString(cp, true).c_str());
 }
 
 void Demo::rotateObjectInHand()
@@ -429,7 +429,7 @@ void Demo::rotateObjectInHand()
 
 	grasp::ConfigMat34 cp;
 	getPose(0, cp);
-	context.debug("%s\n", toXMLString(cp, true));
+	context.debug("%s\n", toXMLString(cp, true).c_str());
 
 	//recordingStart(dataCurrentPtr->first, recordingLabel, false);
 	//context.write("taken snapshot\n");
