@@ -155,6 +155,11 @@ void Demo::Data::load(const std::string& prefix, const golem::XMLContext* xmlcon
 			frs.read(*modelState);
 			training.clear();
 			frs.read(training, training.end(), std::make_pair(std::string(), Training(owner->controller->createState())));
+
+			densities.clear();
+			frs.read(densities, densities.end());
+			solutions.clear();
+			frs.read(solutions, solutions.end());
 		}
 	}
 	catch (const std::exception&) {
@@ -179,6 +184,9 @@ void Demo::Data::save(const std::string& prefix, golem::XMLContext* xmlcontext) 
 
 		fws.write(*modelState);
 		fws.write(training.begin(),training.end());
+
+		fws.write(densities.begin(), densities.end());
+		fws.write(solutions.begin(), solutions.end());
 	}
 }
 
@@ -227,6 +235,12 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 	modelDescMap.clear();
 	golem::XMLData(modelDescMap, modelDescMap.max_size(), xmlcontext->getContextFirst("model"), "model", false);
 	contactAppearance.load(xmlcontext->getContextFirst("model appearance"));
+
+	queryDescMap.clear();
+	golem::XMLData(queryDescMap, queryDescMap.max_size(), xmlcontext->getContextFirst("query"), "query", false);
+
+	manipulatorDesc->load(xmlcontext->getContextFirst("manipulator"));
+	manipulatorAppearance.load(xmlcontext->getContextFirst("manipulator appearance"));
 }
 
 //------------------------------------------------------------------------------
@@ -537,6 +551,15 @@ void pacman::Demo::create(const Desc& desc) {
 	for (Model::Desc::Map::const_iterator i = desc.modelDescMap.begin(); i != desc.modelDescMap.end(); ++i)
 		modelMap.insert(std::make_pair(i->first, i->second->create(context, i->first)));
 	contactAppearance = desc.contactAppearance;
+
+	// query densities
+	queryMap.clear();
+	for (Query::Desc::Map::const_iterator i = desc.queryDescMap.begin(); i != desc.queryDescMap.end(); ++i)
+		queryMap.insert(std::make_pair(i->first, i->second->create(context, i->first)));
+
+	// manipulator
+	manipulator = desc.manipulatorDesc->create(*planner, desc.controllerIDSeq);
+	manipulatorAppearance = desc.manipulatorAppearance;
 
 	// top menu help using global key '?'
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
@@ -866,9 +889,31 @@ void pacman::Demo::create(const Desc& desc) {
 		context.write("Done!\n");
 	}));
 
+	// query operations
+	menuCtrlMap.insert(std::make_pair("PQ", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+		// set mode
+		to<Data>(dataCurrentPtr)->queryMode = true;
+		createRender();
+
+		desc = "Press a key to: create (D)ensities, generate (S)olutions ...";
+	}));
+	menuCmdMap.insert(std::make_pair("PQD", [=]() {
+		// load object item
+		data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(objectItem);
+		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
+			throw Message(Message::LEVEL_ERROR, "Object item has not been created");
+		// create query densities
+		createQuery(ptr);
+
+		context.write("Done!\n");
+	}));
+	menuCmdMap.insert(std::make_pair("PQS", [=]() {
+
+		context.write("Done!\n");
+	}));
+
 	// main demo
 	menuCmdMap.insert(std::make_pair("PD", [=]() {
-
 		// estimate pose
 		if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty())
 			estimatePose(true);
@@ -879,6 +924,8 @@ void pacman::Demo::create(const Desc& desc) {
 			grasp::data::Item::Map::iterator ptr = objectGraspAndCapture();
 			// compute features and add to data bundle
 			ptr = objectProcess(ptr);
+			// create query densities
+			createQuery(ptr);
 		}
 		context.write("Done!\n");
 
@@ -1251,6 +1298,13 @@ std::string pacman::Demo::getTrajectoryName(const std::string& type) const {
 
 //------------------------------------------------------------------------------
 
+void pacman::Demo::createQuery(grasp::data::Item::Map::iterator ptr) {
+	if (to<Data>(dataCurrentPtr)->training.empty())
+		throw Message(Message::LEVEL_ERROR, "No model densities");
+}
+
+//------------------------------------------------------------------------------
+
 void pacman::Demo::render() const {
 	Player::render();
 	
@@ -1277,6 +1331,28 @@ template <> void golem::Stream::write(const pacman::Demo::Data::Training::Map::v
 	write(value.second.frame);
 	write(value.second.contacts.begin(), value.second.contacts.end());
 	write(value.second.locations.begin(), value.second.locations.end());
+}
+
+template <> void golem::Stream::read(pacman::Demo::Data::Density::Seq::value_type& value) const {
+	value.object.clear();
+	read(value.object, value.object.begin());
+	read(value.pose);
+}
+
+template <> void golem::Stream::write(const pacman::Demo::Data::Density::Seq::value_type& value) {
+	write(value.object.begin(), value.object.end());
+	write(value.pose);
+}
+
+template <> void golem::Stream::read(pacman::Demo::Data::Solution::Seq::value_type& value) const {
+	read(value.type);
+	value.path.clear();
+	read(value.path, value.path.begin());
+}
+
+template <> void golem::Stream::write(const pacman::Demo::Data::Solution::Seq::value_type& value) {
+	write(value.type);
+	write(value.path.begin(), value.path.end());
 }
 
 //------------------------------------------------------------------------------
