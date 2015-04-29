@@ -301,12 +301,14 @@ golem::Controller::State::Seq Demo::getTrajectoryFromPose(const golem::Mat34& w)
 
 grasp::ConfigMat34 Demo::getConfigFromPose(const golem::Mat34& w)
 {
-#if DONE
 	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w);
-	return ConfigMat34(trajectory.back().cpos);
-#else
-	return ConfigMat34();
-#endif
+	const golem::Controller::State& last = trajectory.back();
+	ConfigMat34 cfg;
+	for (size_t i = 0; i < 7; ++i)
+	{
+		cfg.c[i] = last.cpos.data()[i];
+	}
+	return cfg;
 }
 
 void Demo::gotoWristPose(const golem::Mat34& w)
@@ -1084,7 +1086,18 @@ void pacman::Demo::create(const Desc& desc) {
 			grasp::ConfigMat34 cfg = getConfigFromPose(wristPose);
 			configs.push_back(cfg);
 		}
-		// write out configs in xml format to scan_poses.xml
+
+		// write out configs in xml format to file
+		std::string filePoses("scan_poses.xml");
+		readString("Filename for scan poses: ", filePoses);
+		FileWriteStream fws(filePoses.c_str());
+
+		XMLParser::Ptr pParser = XMLParser::Desc().create();
+		for (auto i = configs.begin(); i != configs.end(); ++i)
+		{
+			XMLData(*i, pParser->getContextRoot()->getContextFirst("pose", true), true);
+		}
+		pParser->store(fws);
 
 		context.write("Done!\n");
 	}));
