@@ -271,7 +271,7 @@ golem::Mat34 Demo::getWristPose() const
 	return pose.w;
 }
 
-void Demo::gotoWristPose(const golem::Mat34& w)
+golem::Controller::State::Seq Demo::getTrajectoryFromPose(const golem::Mat34& w)
 {
 	const golem::Mat34 R = controller->getChains()[armInfo.getChains().begin()]->getReferencePose();
 	const golem::Mat34 wR = w * R;
@@ -282,6 +282,22 @@ void Demo::gotoWristPose(const golem::Mat34& w)
 	golem::Controller::State::Seq trajectory;
 	const grasp::RBDist err = findTrajectory(begin, nullptr, &wR, trajectoryDuration, trajectory);
 
+	return trajectory;
+}
+
+grasp::ConfigMat34 Demo::getConfigFromPose(const golem::Mat34& w)
+{
+#if DONE
+	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w);
+	return ConfigMat34(trajectory.back().cpos);
+#else
+	return ConfigMat34();
+#endif
+}
+
+void Demo::gotoWristPose(const golem::Mat34& w)
+{
+	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w);
 	sendTrajectory(trajectory);
 	controller->waitForEnd();
 	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
@@ -1013,8 +1029,12 @@ void pacman::Demo::create(const Desc& desc) {
 			cameraPoses.push_back(cameraFrame);
 			objectRenderer.addAxes3D(cameraFrame, golem::Vec3(0.05));
 			// transform from camera to wrist frame
+			const Mat34& trn = getWristCamera()->getCurrentCalibration()->getParameters().pose;
+			Mat34 invTrn;
+			invTrn.setInverse(trn);
+			wristPose = cameraFrame * invTrn;
 			// get config from wrist pose, by planning trajectory from current pose!
-			grasp::ConfigMat34 cfg;
+			grasp::ConfigMat34 cfg = getConfigFromPose(wristPose);
 			configs.push_back(cfg);
 		}
 		// write out configs in xml format to scan_poses.xml
