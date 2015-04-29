@@ -459,8 +459,9 @@ protected:
 	grasp::data::Item::Map::iterator objectProcess(grasp::data::Item::Map::iterator ptr);
 	/** Create trajectory name */
 	std::string getTrajectoryName(const std::string& type) const;
+
 	/** Create query densities */
-	void createQuery(grasp::data::Item::Map::iterator ptr);
+	void createQuery(grasp::data::Item::Ptr item, const golem::Mat34& frame);
 
 	grasp::Camera* getWristCamera() const;
 	golem::Mat34 getWristPose() const;

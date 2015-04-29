@@ -889,8 +889,10 @@ void pacman::Demo::create(const Desc& desc) {
 		data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(objectItem);
 		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
 			throw Message(Message::LEVEL_ERROR, "Object item has not been created");
+		// wrist frame
+		const Mat34 frame = forwardTransformArm(lookupState());
 		// create query densities
-		createQuery(ptr);
+		createQuery(ptr->second, frame);
 
 		context.write("Done!\n");
 	}));
@@ -911,8 +913,10 @@ void pacman::Demo::create(const Desc& desc) {
 			grasp::data::Item::Map::iterator ptr = objectGraspAndCapture();
 			// compute features and add to data bundle
 			ptr = objectProcess(ptr);
+			// wrist frame
+			const Mat34 frame = forwardTransformArm(lookupState());
 			// create query densities
-			createQuery(ptr);
+			createQuery(ptr->second, frame);
 		}
 		context.write("Done!\n");
 
@@ -1281,11 +1285,82 @@ std::string pacman::Demo::getTrajectoryName(const std::string& type) const {
 
 //------------------------------------------------------------------------------
 
-void pacman::Demo::createQuery(grasp::data::Item::Map::iterator ptr) {
+void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& frame) {
+	// Features
+	const data::Feature3D* features = is<data::Feature3D>(item.get());
+	if (!features)
+		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): No query features");
+	// training data are required
 	if (to<Data>(dataCurrentPtr)->training.empty())
-		throw Message(Message::LEVEL_ERROR, "No model densities");
+		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): No model densities");
+	// model object pose
+	if (to<Data>(dataCurrentPtr)->modelVertices.empty() || to<Data>(dataCurrentPtr)->modelVertices.empty())
+		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): No model pose");
+	// query object pose
+	if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty())
+		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): No query pose");
 
+	// select query any
+	const grasp::Query::Map::const_iterator queryAny = queryMap.find(ID_ANY);
+	if (queryAny == queryMap.end())
+		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Unable to find Query %s", ID_ANY.c_str());
+	// select pose std dev any
+	const RBDistMap::const_iterator poseStdDevAny = poseStdDevMap.find(ID_ANY);
+	if (poseStdDevAny == poseStdDevMap.end())
+		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Unable to find poseStdDev %s", ID_ANY.c_str());
 
+	to<Data>(dataCurrentPtr)->densities.clear();
+	for (Data::Training::Map::const_iterator i = to<Data>(dataCurrentPtr)->training.begin(); i != to<Data>(dataCurrentPtr)->training.end(); ++i) {
+		// select query density
+		grasp::Query::Map::const_iterator query = queryMap.find(i->first);
+		if (query == queryMap.end()) query = queryAny;
+
+		try {
+			query->second->clear();
+			query->second->create(i->second.contacts, *features);
+		}
+		catch (const std::exception& ex) {
+			context.write("%s\n", ex.what());
+			continue;
+		}
+
+		Data::Density density;
+		density.type = i->first;
+
+		// object density
+		density.object = query->second->getPoses();
+		for (grasp::Query::Pose::Seq::iterator j = density.object.begin(); j != density.object.end(); ++j) {
+			// frame transform: eff_curr = frame, model = modelFrame
+			// model = trn * query |==> trn = model * query^-1
+			// eff_pred = trn * eff_curr |==> eff_pred = model * query^-1 * eff_curr
+			Mat34 trn;
+			trn.setInverse(j->toMat34());
+			trn.multiply(trn, frame);
+			trn.multiply(to<Data>(dataCurrentPtr)->modelFrame, trn);
+			j->fromMat34(trn);
+		}
+
+		// select pose std dev any
+		RBDistMap::const_iterator poseStdDev = poseStdDevMap.find(i->first);
+		if (poseStdDev == poseStdDevMap.end()) poseStdDev = poseStdDevAny;
+
+		// end-effector pose density
+		// model = trn * eff_model |==> eff_model = trn^-1 * model, trn = model * eff_model^-1, trn^-1 = eff_model * model^-1
+		Mat34 trnInv;
+		trnInv.setInverse(to<Data>(dataCurrentPtr)->modelFrame);
+		trnInv.multiply(forwardTransformArm(*to<Data>(dataCurrentPtr)->modelState), trnInv);
+		density.pose.fromMat34(trnInv * to<Data>(dataCurrentPtr)->queryFrame);
+		density.pose.stdDev = poseStdDev->second;
+		density.pose.cov.set(Math::sqr(density.pose.stdDev.lin), Math::sqr(density.pose.stdDev.ang));
+		density.pose.distFac.set(REAL_ONE / density.pose.cov.lin, REAL_ONE / density.pose.cov.ang); // == covInv
+		//const RBDist frameDistMax(poseDistanceMax * frameCov.lin, poseDistanceMax * frameCov.ang);
+
+		// done
+		to<Data>(dataCurrentPtr)->densities.push_back(density);
+	}
+
+	if (to<Data>(dataCurrentPtr)->densities.empty())
+		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): No query created");
 }
 
 //------------------------------------------------------------------------------
