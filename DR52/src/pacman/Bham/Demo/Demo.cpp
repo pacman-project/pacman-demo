@@ -119,8 +119,16 @@ void Demo::Data::createRender() {
 		owner->modelRenderer.addWire(vertices.data(), (U32)vertices.size(), triangles.data(), (U32)triangles.size());
 		if (!vertices.empty() && !triangles.empty())
 			owner->modelRenderer.addAxes3D(frame, Vec3(0.2));
+		// query data
+		if (queryMode) {
+			for (Density::Seq::const_iterator i = densities.begin(); i != densities.end(); ++i) {
+				for (grasp::Query::Pose::Seq::const_iterator j = i->object.begin(); j != i->object.end(); ++j)
+					owner->modelRenderer.addAxes(j->toMat34(), Vec3(0.005));
+				owner->modelRenderer.addAxes3D(i->pose.toMat34(), Vec3(0.2));
+			}
+		}
 		// training data
-		if (!queryMode) {
+		else {
 			owner->contactAppearance.relation = contactRelation;
 			Training::Map::iterator ptr = getTrainingItem();
 			if (ptr != training.end())
@@ -911,6 +919,7 @@ void pacman::Demo::create(const Desc& desc) {
 		const Mat34 frame = forwardTransformArm(lookupState());
 		// create query densities
 		createQuery(ptr->second, frame);
+		createRender();
 
 		context.write("Done!\n");
 	}));
@@ -1411,13 +1420,14 @@ void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 		// object density
 		density.object = query->second->getPoses();
 		for (grasp::Query::Pose::Seq::iterator j = density.object.begin(); j != density.object.end(); ++j) {
+			Mat34 trn;
+
 			// frame transform: eff_curr = frame, model = modelFrame
 			// model = trn * query |==> trn = model * query^-1
 			// eff_pred = trn * eff_curr |==> eff_pred = model * query^-1 * eff_curr
-			Mat34 trn;
 			trn.setInverse(j->toMat34());
 			trn.multiply(trn, frame);
-			trn.multiply(to<Data>(dataCurrentPtr)->modelFrame, trn);
+			trn.multiply(to<Data>(dataCurrentPtr)->queryFrame, trn);
 			j->fromMat34(trn);
 		}
 
@@ -1426,11 +1436,11 @@ void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 		if (poseStdDev == poseStdDevMap.end()) poseStdDev = poseStdDevAny;
 
 		// end-effector pose density
-		// model = trn * eff_model |==> eff_model = trn^-1 * model, trn = model * eff_model^-1, trn^-1 = eff_model * model^-1
-		Mat34 trnInv;
-		trnInv.setInverse(to<Data>(dataCurrentPtr)->modelFrame);
-		trnInv.multiply(forwardTransformArm(*to<Data>(dataCurrentPtr)->modelState), trnInv);
-		density.pose.fromMat34(trnInv * to<Data>(dataCurrentPtr)->queryFrame);
+		// query = trn * model |==> trn = query * model^-1
+		Mat34 trn;
+		trn.setInverse(to<Data>(dataCurrentPtr)->modelFrame);
+		trn.multiply(to<Data>(dataCurrentPtr)->queryFrame, trn);
+		density.pose.fromMat34(trn * forwardTransformArm(i->second.state));
 		density.pose.stdDev = poseStdDev->second;
 		density.pose.cov.set(Math::sqr(density.pose.stdDev.lin), Math::sqr(density.pose.stdDev.ang));
 		density.pose.distFac.set(REAL_ONE / density.pose.cov.lin, REAL_ONE / density.pose.cov.ang); // == covInv

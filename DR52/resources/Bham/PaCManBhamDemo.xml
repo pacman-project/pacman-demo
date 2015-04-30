@@ -44,6 +44,7 @@
       <model id="Any">
         <contact_3d curv_fac="100.0" min_num="50" subsample_size="0" distance="0.01" lambda="50.0" normal_slope="3.1415927"/>
       </model>
+      
       <appearance points_show="1" frames_show="0" bounds_frame_show="0">
         <colour R="0" G="0" B="0" A="0"/>
         <colour R="0" G="0" B="0" A="0"/>
