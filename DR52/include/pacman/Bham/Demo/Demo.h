@@ -446,7 +446,7 @@ protected:
 	/** Create query densities */
 	void createQuery(grasp::data::Item::Map::iterator ptr);
 
-	grasp::Camera* getWristCamera() const;
+	grasp::Camera* getWristCamera(const bool dontThrow = false) const;
 	golem::Mat34 getWristPose() const;
 	golem::Controller::State::Seq getTrajectoryFromPose(const golem::Mat34& w);
 	grasp::ConfigMat34 getConfigFromPose(const golem::Mat34& w);

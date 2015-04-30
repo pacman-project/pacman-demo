@@ -2,6 +2,7 @@
 
 #include <Golem/Math/Rand.h>
 #include <Grasp/Grasp/Model.h>
+#include <Grasp/Data/Image/Image.h>
 #include <Grasp/Core/Import.h>
 #include <Grasp/App/Player/Data.h>
 #include <Golem/Phys/Data.h>
@@ -26,10 +27,10 @@ std::string toXMLString(const grasp::ConfigMat34& cfg, const bool shortFormat = 
 {
 	std::ostringstream os;
 	os.precision(6);
-	for (size_t i = 0; i < cfg.c.size(); ++i)
+	const size_t n = shortFormat ? 7 : cfg.c.size();
+	for (size_t i = 0; i < n; ++i)
 	{
-		const double v = (shortFormat && i>6) ? 0.0 : cfg.c[i];
-		os << (i==0 ? "c" : " c") << i+1 << """" << v << """";
+		os << (i == 0 ? "c" : " c") << i + 1 << "=\"" << cfg.c[i] << "\"";
 	}
 
 	return os.str();
@@ -255,12 +256,13 @@ pacman::Demo::~Demo() {
 
 //------------------------------------------------------------------------------
 
-grasp::Camera* Demo::getWristCamera() const
+grasp::Camera* Demo::getWristCamera(const bool dontThrow) const
 {
 	const std::string id("OpenNI+OpenNI");
 	grasp::Sensor::Map::const_iterator i = sensorMap.find(id);
 	if (i == sensorMap.end())
 	{
+		if (dontThrow) return nullptr;
 		context.write("%s was not found\n", id.c_str());
 		throw Cancel("getWristCamera: wrist-mounted camera is not available");
 	}
@@ -270,6 +272,7 @@ grasp::Camera* Demo::getWristCamera() const
 	// want the wrist-mounted camera
 	if (!camera->hasVariableMounting())
 	{
+		if (dontThrow) return nullptr;
 		context.write("%s is a static camera\n", id.c_str());
 		throw Cancel("getWristCamera: wrist-mounted camera is not available");
 	}
@@ -372,9 +375,12 @@ void Demo::nudgeWrist()
 
 	golem::Mat34 pose;
 
-	grasp::Camera* camera = getWristCamera();
-	pose = camera->getFrame();
-	showPose("camera before", pose);
+	grasp::Camera* camera = getWristCamera(true);
+	if (camera != nullptr)
+	{
+		pose = camera->getFrame();
+		showPose("camera before", pose);
+	}
 
 	pose = getWristPose();
 	showPose("before", pose);
@@ -385,8 +391,11 @@ void Demo::nudgeWrist()
 	gotoWristPose(pose);
 
 	showPose("final wrist", getWristPose());
-	pose = camera->getFrame();
-	showPose("final camera", pose);
+	if (camera != nullptr)
+	{
+		pose = camera->getFrame();
+		showPose("final camera", pose);
+	}
 
 	grasp::ConfigMat34 cp;
 	getPose(0, cp);
@@ -1098,6 +1107,7 @@ void pacman::Demo::create(const Desc& desc) {
 		readString("Filename for scan poses: ", filePoses);
 		FileWriteStream fws(filePoses.c_str());
 
+		// TODO write out poses correctly!!!
 		XMLParser::Ptr pParser = XMLParser::Desc().create();
 		for (auto i = configs.begin(); i != configs.end(); ++i)
 		{
@@ -1119,7 +1129,9 @@ void pacman::Demo::create(const Desc& desc) {
 			throw Message(Message::LEVEL_ERROR, "No items");
 
 		// get current item as a data::Item::Map::iterator ptr
-		data::Item::Map::iterator ptr = itemMap.begin();
+		data::Item::Map::iterator ptr = itemMap.begin(); // @@@ should use current item @@@
+
+		data::ItemImage* itemImage = to<data::ItemImage>(ptr->second.get());
 
 		// generate features
 		data::Transform* transform = is<data::Transform>(&ptr->second->getHandler());
@@ -1144,6 +1156,44 @@ void pacman::Demo::create(const Desc& desc) {
 		model->model(robotPose, modelFrame);
 
 		context.write("Model pose is: %s\n", toXMLString(modelFrame).c_str());
+
+		const int k = option("MC", "Update (M)odel pose or (C)amera extrinsics for some .cal file, or (Q)uit");
+		if (k == 'C')
+		{
+			Mat34 cameraFrame, newCameraFrame, invModelFrame, trueModelFrame;
+			invModelFrame.setInverse(modelFrame);
+
+			// get camera frame of image F (should be extrinsics of depth camera)
+			cameraFrame = itemImage->parameters.pose;
+
+			std::string fileCal("GraspCameraOpenNIChest.cal");
+			readString("Calibration filename: ", fileCal);
+
+			// assume true model pose is in .cal file
+			XMLParser::Ptr pParser = XMLParser::load(fileCal);
+			XMLData(trueModelFrame, pParser->getContextRoot()->getContextFirst("grasp sensor extrinsic model pose"));
+
+			// new extrinsics = cameraFrame * modelFrame^-1 * trueModelFrame
+			newCameraFrame.multiply(invModelFrame, trueModelFrame);
+			newCameraFrame.multiply(cameraFrame, newCameraFrame);
+
+			// write new extrinsics into .cal xml
+			FileWriteStream fws(fileCal.c_str());
+			XMLData(newCameraFrame, pParser->getContextRoot()->getContextFirst("grasp sensor extrinsic", true), true);
+			pParser->store(fws);
+
+			context.write("Updated %s with\n<extrinsic %s></extrinsic>\n", fileCal.c_str(), toXMLString(newCameraFrame).c_str());
+		}
+		else if (k == 'M')
+		{
+			std::string fileCal("GraspCameraOpenNIChest.cal");
+			readString("Calibration filename: ", fileCal);
+
+			XMLParser::Ptr pParser = XMLParser::load(fileCal);
+			XMLData(modelFrame, pParser->getContextRoot()->getContextFirst("grasp sensor extrinsic model pose", true), true);
+			FileWriteStream fws(fileCal.c_str());
+			pParser->store(fws);
+		}
 
 		context.write("Done!\n");
 	}));
