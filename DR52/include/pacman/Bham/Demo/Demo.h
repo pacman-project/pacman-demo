@@ -465,6 +465,8 @@ protected:
 
 	grasp::Camera* getWristCamera() const;
 	golem::Mat34 getWristPose() const;
+	golem::Controller::State::Seq getTrajectoryFromPose(const golem::Mat34& w);
+	grasp::ConfigMat34 getConfigFromPose(const golem::Mat34& w);
 	void gotoWristPose(const golem::Mat34& w);
 	void gotoPose2(const grasp::ConfigMat34& pose, const golem::SecTmReal duration);
 

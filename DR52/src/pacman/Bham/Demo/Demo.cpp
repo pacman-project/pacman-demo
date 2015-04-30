@@ -287,7 +287,7 @@ golem::Mat34 Demo::getWristPose() const
 	return pose.w;
 }
 
-void Demo::gotoWristPose(const golem::Mat34& w)
+golem::Controller::State::Seq Demo::getTrajectoryFromPose(const golem::Mat34& w)
 {
 	const golem::Mat34 R = controller->getChains()[armInfo.getChains().begin()]->getReferencePose();
 	const golem::Mat34 wR = w * R;
@@ -298,6 +298,24 @@ void Demo::gotoWristPose(const golem::Mat34& w)
 	golem::Controller::State::Seq trajectory;
 	const grasp::RBDist err = findTrajectory(begin, nullptr, &wR, trajectoryDuration, trajectory);
 
+	return trajectory;
+}
+
+grasp::ConfigMat34 Demo::getConfigFromPose(const golem::Mat34& w)
+{
+	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w);
+	const golem::Controller::State& last = trajectory.back();
+	ConfigMat34 cfg(RealSeq(61,0.0));
+	for (size_t i = 0; i < 7; ++i)
+	{
+		cfg.c[i] = last.cpos.data()[i];
+	}
+	return cfg;
+}
+
+void Demo::gotoWristPose(const golem::Mat34& w)
+{
+	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w);
 	sendTrajectory(trajectory);
 	controller->waitForEnd();
 	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
@@ -923,7 +941,7 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 
 	menuCtrlMap.insert(std::make_pair("Z", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: run (R)otate, (N)udge, (O)bjectGraspAndCapture, rgb-to-ir (T)ranform, (D)epth camera adjust, create (P)oses...";
+		desc = "Press a key to: run (R)otate, (N)udge, (O)bjectGraspAndCapture, rgb-to-ir (T)ranform, (D)epth camera adjust, create (P)oses, (L)ocate object...";
 	}));
 
 	menuCmdMap.insert(std::make_pair("ZO", [=]() {
@@ -1032,7 +1050,7 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("ZP", [=]() {
 		context.write("create arm configs for a set of camera frames\n");
-		double theta(60), phi1(0), phi2(150), phiStep(10), R(0.50), cx(0.45), cy(-0.40), cz(-0.30);
+		double theta(60), phi1(40), phi2(200), phiStep(20), R(0.50), cx(0.50), cy(-0.45), cz(-0.30);
 		readNumber("theta ", theta);
 		readNumber("phi1 ", phi1);
 		readNumber("phi2 ", phi2);
@@ -1067,14 +1085,77 @@ void pacman::Demo::create(const Desc& desc) {
 			cameraPoses.push_back(cameraFrame);
 			objectRenderer.addAxes3D(cameraFrame, golem::Vec3(0.05));
 			// transform from camera to wrist frame
+#ifdef NOT_GOT_WRIST_CAMERA
+			const Mat34 trn(
+				Mat33(-0.015082, -0.0709979, 0.997362, 0.999767, 0.0143117, 0.0161371, -0.0154197, 0.997374, 0.0707655),
+				Vec3(0.0920632, -0.0388034, 0.161098));
+#else
+			const Mat34& trn = getWristCamera()->getCurrentCalibration()->getParameters().pose;
+#endif
+			Mat34 invTrn;
+			invTrn.setInverse(trn);
+			wristPose = cameraFrame * invTrn;
 			// get config from wrist pose, by planning trajectory from current pose!
-			grasp::ConfigMat34 cfg;
+			grasp::ConfigMat34 cfg = getConfigFromPose(wristPose);
 			configs.push_back(cfg);
 		}
-		// write out configs in xml format to scan_poses.xml
+
+		// write out configs in xml format to file
+		std::string filePoses("scan_poses.xml");
+		readString("Filename for scan poses: ", filePoses);
+		FileWriteStream fws(filePoses.c_str());
+
+		XMLParser::Ptr pParser = XMLParser::Desc().create();
+		for (auto i = configs.begin(); i != configs.end(); ++i)
+		{
+			XMLData(*i, pParser->getContextRoot()->getContextFirst("pose", true), true);
+		}
+		pParser->store(fws);
 
 		context.write("Done!\n");
 	}));
+
+	menuCmdMap.insert(std::make_pair("ZL", [=]() {
+		context.write("locate object\n");
+
+		std::string itemName("transformed_image_for_locate");
+		
+		data::Item::Map& itemMap = to<Data>(dataCurrentPtr)->itemMap;
+
+		if (itemMap.empty())
+			throw Message(Message::LEVEL_ERROR, "No items");
+
+		// get current item as a data::Item::Map::iterator ptr
+		data::Item::Map::iterator ptr = itemMap.begin();
+
+		// generate features
+		data::Transform* transform = is<data::Transform>(&ptr->second->getHandler());
+		if (!transform)
+			throw Message(Message::LEVEL_ERROR, "Current item does not support Transform interface");
+		data::Item::List list;
+		list.insert(list.end(), ptr);
+		data::Item::Ptr item = transform->transform(list);
+		{
+			golem::CriticalSectionWrapper cswData(csData);
+			itemMap.erase(itemName);
+			ptr = itemMap.insert(itemMap.end(), data::Item::Map::value_type(itemName, item));
+			Data::View::setItem(itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+		}
+
+		// estimate pose
+		data::Model* model = is<data::Model>(ptr);
+		if (!model)
+			throw Message(Message::LEVEL_ERROR, "Transformed item does not support Model interface");
+		grasp::ConfigMat34 robotPose;
+		golem::Mat34 modelFrame;
+		model->model(robotPose, modelFrame);
+
+		context.write("Model pose is: %s\n", toXMLString(modelFrame).c_str());
+
+		context.write("Done!\n");
+	}));
+
+
 
 	}
 
