@@ -1189,16 +1189,24 @@ void pacman::Demo::create(const Desc& desc) {
 			XMLParser::Ptr pParser = XMLParser::load(fileCal);
 			XMLData(trueModelFrame, pParser->getContextRoot()->getContextFirst("grasp sensor extrinsic model pose"));
 
-			// new extrinsics = cameraFrame * modelFrame^-1 * trueModelFrame
-			newCameraFrame.multiply(invModelFrame, trueModelFrame);
-			newCameraFrame.multiply(cameraFrame, newCameraFrame);
+			context.write("Camera frame for image was:  %s\n", toXMLString(cameraFrame).c_str());
+			context.write("Assuming true model pose is: %s\n", toXMLString(trueModelFrame).c_str());
+
+			// new extrinsics = trueModelFrame * modelFrame^-1 * cameraFrame
+			newCameraFrame.multiply(invModelFrame, cameraFrame);
+			context.write("transform from model to camera wrt model frame: %s\n", toXMLString(newCameraFrame).c_str());
+			newCameraFrame.multiply(trueModelFrame, newCameraFrame);
+
+			context.write("Updating %s with\n<extrinsic %s></extrinsic>\n", fileCal.c_str(), toXMLString(newCameraFrame).c_str());
+			
+			// current static camera on Boris:
+			// m11 = "-0.689817" m12 = "-0.351147" m13 = "0.633124" m21 = "-0.723807" m22 = "0.353741" m23 = "-0.592427" m31 = "-0.015934" m32 = "-0.866928" m33 = "-0.498180"
+			// v1 = "0.216904" v2 = "-0.058540" v3 = "0.281856"
 
 			// write new extrinsics into .cal xml
 			FileWriteStream fws(fileCal.c_str());
 			XMLData(newCameraFrame, pParser->getContextRoot()->getContextFirst("grasp sensor extrinsic", true), true);
-			pParser->store(fws);
-
-			context.write("Updated %s with\n<extrinsic %s></extrinsic>\n", fileCal.c_str(), toXMLString(newCameraFrame).c_str());
+			pParser->store(fws); // @@@ save does not work
 		}
 		else if (k == 'M')
 		{
@@ -1208,7 +1216,7 @@ void pacman::Demo::create(const Desc& desc) {
 			XMLParser::Ptr pParser = XMLParser::load(fileCal);
 			XMLData(modelFrame, pParser->getContextRoot()->getContextFirst("grasp sensor extrinsic model pose", true), true);
 			FileWriteStream fws(fileCal.c_str());
-			pParser->store(fws);
+			pParser->store(fws); // @@@ save does not work
 		}
 
 		context.write("Done!\n");
