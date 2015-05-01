@@ -235,6 +235,9 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 	golem::XMLData("item", queryItem, xmlcontext->getContextFirst("query"));
 	golem::XMLData("item_obj", queryItemObj, xmlcontext->getContextFirst("query"));
 
+	golem::XMLData("handler_trj", queryHandlerTrj, xmlcontext->getContextFirst("query"));
+	golem::XMLData("item_trj", queryItemTrj, xmlcontext->getContextFirst("query"));
+
 	golem::XMLData("sensor", graspSensorForce, xmlcontext->getContextFirst("grasp"));
 	golem::XMLData(graspThresholdForce, xmlcontext->getContextFirst("grasp threshold"));
 	golem::XMLData("event_time_wait", graspEventTimeWait, xmlcontext->getContextFirst("grasp"));
@@ -268,7 +271,7 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 
 pacman::Demo::Demo(Scene &scene) : 
 	Player(scene),
-	modelCamera(nullptr), queryCamera(nullptr), modelHandler(nullptr), queryHandler(nullptr), graspSensorForce(nullptr), objectCamera(nullptr), objectHandlerScan(nullptr), objectHandler(nullptr)
+	modelCamera(nullptr), queryCamera(nullptr), modelHandler(nullptr), modelHandlerTrj(nullptr), queryHandler(nullptr), queryHandlerTrj(nullptr), graspSensorForce(nullptr), objectCamera(nullptr), objectHandlerScan(nullptr), objectHandler(nullptr)
 {}
 
 pacman::Demo::~Demo() {
@@ -549,6 +552,12 @@ void pacman::Demo::create(const Desc& desc) {
 		throw Message(Message::LEVEL_CRIT, "pacman::Demo::create(): unknown query data handler: %s", desc.queryHandler.c_str());
 	queryItem = desc.queryItem;
 	queryItemObj = desc.queryItemObj;
+
+	grasp::data::Handler::Map::const_iterator queryHandlerTrjPtr = handlerMap.find(desc.queryHandlerTrj);
+	queryHandlerTrj = queryHandlerTrjPtr != handlerMap.end() ? queryHandlerTrjPtr->second.get() : nullptr;
+	if (!queryHandlerTrj)
+		throw Message(Message::LEVEL_CRIT, "pacman::Demo::create(): unknown query trajectory handler: %s", desc.queryHandlerTrj.c_str());
+	queryItemTrj = desc.queryItemTrj;
 
 	grasp::Sensor::Map::const_iterator graspSensorForcePtr = sensorMap.find(desc.graspSensorForce);
 	graspSensorForce = graspSensorForcePtr != sensorMap.end() ? is<FT>(graspSensorForcePtr->second.get()) : nullptr;
@@ -971,20 +980,47 @@ void pacman::Demo::create(const Desc& desc) {
 
 	// main demo
 	menuCmdMap.insert(std::make_pair("PD", [=]() {
+		// debug mode
+		const bool stopAtBreakPoint = option("YN", "Debug mode (Y/N)...") == 'Y';
+		const auto breakPoint = [=] (const char* str) {
+			if (stopAtBreakPoint) {
+				if (option("YN", makeString("%s: Continue (Y/N)...", str).c_str()) != 'Y')
+					throw Cancel("Demo cancelled");
+			}
+			else {
+				context.write("%s\n", str);
+				(void)waitKey(0);
+			}
+		};
+
 		// estimate pose
-		if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty())
+		if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty()) {
+			breakPoint("Dishwasher pose estimation");
 			estimatePose(Data::MODE_QUERY);
+		}
 
 		// run demo
 		for (;;) {
 			// grasp and scan object
+			breakPoint("Object grasp and point cloud capture");
 			grasp::data::Item::Map::iterator ptr = objectGraspAndCapture();
+
+			breakPoint("Action planning");
+
 			// compute features and add to data bundle
 			ptr = objectProcess(ptr);
 			// wrist frame
 			const Mat34 frame = forwardTransformArm(lookupState());
 			// create query densities
 			createQuery(ptr->second, frame);
+			// generate wrist pose solutions
+			generateSolutions();
+			// select best trajectory
+			const grasp::data::Item::Map::const_iterator trajectory = selectTrajectory();
+
+			breakPoint("Action execution");
+			// execute trajectory
+			performTrajectory(trajectory);
 		}
 		context.write("Done!\n");
 
@@ -1542,6 +1578,20 @@ void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 
 	if (to<Data>(dataCurrentPtr)->densities.empty())
 		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): No query created");
+}
+
+void pacman::Demo::generateSolutions() {
+
+}
+
+grasp::data::Item::Map::const_iterator pacman::Demo::selectTrajectory() {
+	grasp::data::Item::Map::const_iterator ptr = to<Data>(dataCurrentPtr)->itemMap.begin();
+
+	return ptr;
+}
+
+void pacman::Demo::performTrajectory(grasp::data::Item::Map::const_iterator ptr) {
+
 }
 
 //------------------------------------------------------------------------------

@@ -218,6 +218,11 @@ public:
 		/** Query data item object */
 		std::string queryItemObj;
 
+		/** Query trajectory handler */
+		std::string queryHandlerTrj;
+		/** Query trajectory item */
+		std::string queryItemTrj;
+
 		/** Grasp force sensor */
 		std::string graspSensorForce;
 		/** Grasp force threshold */
@@ -291,6 +296,9 @@ public:
 			queryItem.clear();
 			queryItemObj.clear();
 
+			queryHandlerTrj.clear();
+			queryItemTrj.clear();
+
 			graspSensorForce.clear();
 			graspThresholdForce.setZero();
 			graspEventTimeWait = golem::SecTmReal(2.0);
@@ -337,6 +345,9 @@ public:
 			grasp::Assert::valid(queryHandler.length() > 0, ac, "queryHandler: invalid");
 			grasp::Assert::valid(queryItem.length() > 0, ac, "queryItem: invalid");
 			grasp::Assert::valid(queryItemObj.length() > 0, ac, "queryItemObj: invalid");
+
+			grasp::Assert::valid(queryHandlerTrj.length() > 0, ac, "queryHandlerTrj: invalid");
+			grasp::Assert::valid(queryItemTrj.length() > 0, ac, "queryItemTrj: invalid");
 
 			grasp::Assert::valid(graspSensorForce.length() > 0, ac, "graspSensorForce: invalid");
 			grasp::Assert::valid(graspThresholdForce.isPositive(), ac, "graspThresholdForce: negative");
@@ -420,6 +431,11 @@ protected:
 	/** Query data item object */
 	std::string queryItemObj;
 
+	/** Query trajectory handler */
+	grasp::data::Handler* queryHandlerTrj;
+	/** Query trajectory item */
+	std::string queryItemTrj;
+
 	/** Grasp force sensor */
 	grasp::FT* graspSensorForce;
 	/** Grasp force threshold */
@@ -484,6 +500,15 @@ protected:
 
 	/** Create query densities */
 	void createQuery(grasp::data::Item::Ptr item, const golem::Mat34& frame);
+
+	/** Generate solutions */
+	void generateSolutions();
+
+	/** Select trajectory */
+	grasp::data::Item::Map::const_iterator selectTrajectory();
+
+	/** Perform trajectory */
+	void performTrajectory(grasp::data::Item::Map::const_iterator ptr);
 
 	grasp::Camera* getWristCamera(const bool dontThrow = false) const;
 	golem::Mat34 getWristPose() const;
