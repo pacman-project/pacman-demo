@@ -1136,7 +1136,7 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("ZP", [=]() {
 		context.write("create arm configs for a set of camera frames\n");
-		double theta(60), phi1(40), phi2(200), phiStep(20), R(0.50), cx(0.50), cy(-0.45), cz(-0.30);
+		double theta(50), phi1(-180), phi2(160), phiStep(20), R(0.45), cx(0.45), cy(-0.45), cz(-0.30);
 		readNumber("theta ", theta);
 		readNumber("phi1 ", phi1);
 		readNumber("phi2 ", phi2);
@@ -1165,24 +1165,34 @@ void pacman::Demo::create(const Desc& desc) {
 			cameraCentre += centre;
 			cameraZdir.multiply(-1.0, ray);
 			cameraXdir.cross(cameraZdir, Zaxis);
+			cameraXdir.normalise();
 			cameraYdir.cross(cameraZdir, cameraXdir);
 			cameraFrame.R = Mat33(cameraXdir, cameraYdir, cameraZdir);
 			cameraFrame.p = cameraCentre;
 			cameraPoses.push_back(cameraFrame);
 			objectRenderer.addAxes3D(cameraFrame, golem::Vec3(0.05));
+
+			//Mat33 m;
+			//m.setTransposed(cameraFrame.R);
+			//m.multiply(m, cameraFrame.R);
+			//context.debug("%s\n", toXMLString(Mat34(m,Vec3::zero())).c_str());
+
 			// transform from camera to wrist frame
-#ifdef NOT_GOT_WRIST_CAMERA
-			const Mat34 trn(
+			// default calibration for wrist extrinsics
+			Mat34 trn(
 				Mat33(-0.015082, -0.0709979, 0.997362, 0.999767, 0.0143117, 0.0161371, -0.0154197, 0.997374, 0.0707655),
 				Vec3(0.0920632, -0.0388034, 0.161098));
-#else
-			const Mat34& trn = getWristCamera()->getCurrentCalibration()->getParameters().pose;
-#endif
+			grasp::Camera* camera = getWristCamera(true);
+			if (camera != nullptr)
+				trn = getWristCamera()->getCurrentCalibration()->getParameters().pose;
+
 			Mat34 invTrn;
 			invTrn.setInverse(trn);
 			wristPose = cameraFrame * invTrn;
-			// get config from wrist pose, by planning trajectory from current pose!
-			grasp::ConfigMat34 cfg = getConfigFromPose(wristPose);
+			// get config from wrist pose, by executing trajectory from current pose!!!
+			gotoWristPose(wristPose);
+			grasp::ConfigMat34 cfg;
+			getPose(0, cfg);
 			configs.push_back(cfg);
 		}
 
@@ -1191,13 +1201,15 @@ void pacman::Demo::create(const Desc& desc) {
 		readString("Filename for scan poses: ", filePoses);
 		FileWriteStream fws(filePoses.c_str());
 
-		// TODO write out poses correctly!!!
-		XMLParser::Ptr pParser = XMLParser::Desc().create();
-		for (auto i = configs.begin(); i != configs.end(); ++i)
+		std::ostringstream os;
+		bool first(true);
+		for (auto i = configs.begin(); i != configs.end(); ++i, first=false)
 		{
-			XMLData(*i, pParser->getContextRoot()->getContextFirst("pose", true), true);
+			if (!first) os << "\n";
+			os << "  <pose name=\"scan_poses\" dim=\"61\" " << toXMLString(*i) << "/>";
 		}
-		pParser->store(fws);
+		os << std::ends;
+		fws.write(os.str().c_str(), os.str().size()-1);
 
 		context.write("Done!\n");
 	}));
