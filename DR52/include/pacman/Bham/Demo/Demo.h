@@ -38,6 +38,24 @@ public:
 	/** Data */
 	class Data : public grasp::Player::Data {
 	public:
+		/** Mode */
+		enum Mode {
+			/** Model data */
+			MODE_MODEL,
+			/** Query density */
+			MODE_QUERY,
+			/** Solution */
+			MODE_SOLUTION,
+
+			/** First */
+			MODE_FIRST = MODE_MODEL,
+			/** Last */
+			MODE_LAST = MODE_SOLUTION,
+		};
+
+		/** Mode name */
+		static const std::string ModeName[MODE_LAST + 1];
+
 		/** Model training data */
 		class Training {
 		public:
@@ -86,8 +104,8 @@ public:
 		/** Data bundle default name */
 		std::string dataName;
 
-		/** Query mode */
-		bool queryMode;
+		/** Current Mode */
+		Mode mode;
 
 		/** Model triangles */
 		grasp::Vec3Seq modelVertices;
@@ -115,14 +133,18 @@ public:
 		golem::U32 indexType;
 		/** Model training data item index */
 		golem::U32 indexItem;
-		/** Contact relation */
+		/** Model contact relation */
 		grasp::Contact3D::Relation contactRelation;
 
 		/** Collection of distributions */
 		Density::Seq densities;
+		/** Density index */
+		golem::U32 indexDensity;
 
 		/** Solutions */
 		Solution::Seq solutions;
+		/** Solution index */
+		golem::U32 indexSolution;
 
 		/** Data bundle description */
 		class Desc : public grasp::Player::Data::Desc {
@@ -452,7 +474,7 @@ protected:
 	virtual void render() const;
 
 	/** Pose estimation */
-	grasp::data::Item::Map::iterator estimatePose(bool query);
+	grasp::data::Item::Map::iterator estimatePose(Data::Mode mode);
 	/** Grasp and capture object */
 	grasp::data::Item::Map::iterator objectGraspAndCapture();
 	/** Process object image and add to data bundle */

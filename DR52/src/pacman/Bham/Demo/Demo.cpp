@@ -41,6 +41,12 @@ std::string toXMLString(const grasp::ConfigMat34& cfg, const bool shortFormat = 
 
 const std::string Demo::ID_ANY = "Any";
 
+const std::string Demo::Data::ModeName[MODE_LAST + 1] = {
+	"Model",
+	"Query",
+	"Solution",
+};
+
 data::Data::Ptr Demo::Data::Desc::create(golem::Context &context) const {
 	grasp::data::Data::Ptr data(new Demo::Data(context));
 	static_cast<Demo::Data*>(data.get())->create(*this);
@@ -65,7 +71,10 @@ void Demo::Data::create(const Desc& desc) {
 	indexItem = 0;
 	contactRelation = grasp::Contact3D::RELATION_DFLT;
 
-	queryMode = false;
+	indexDensity = 0;
+	indexSolution = 0;
+
+	mode = MODE_MODEL;
 }
 
 void Demo::Data::setOwner(Manager* owner) {
@@ -111,29 +120,30 @@ void Demo::Data::createRender() {
 		golem::CriticalSectionWrapper csw(owner->csRenderer);
 		owner->modelRenderer.reset();
 		// model/query
-		const grasp::Vec3Seq& vertices = queryMode ? queryVertices : modelVertices;
-		const grasp::TriangleSeq& triangles = queryMode ? queryTriangles : modelTriangles;
-		const golem::Mat34& frame = queryMode ? queryFrame : modelFrame;
+		const grasp::Vec3Seq& vertices = mode == MODE_MODEL ? modelVertices : queryVertices;
+		const grasp::TriangleSeq& triangles = mode == MODE_MODEL ? modelTriangles : queryTriangles;
+		const golem::Mat34& frame = mode == MODE_MODEL ? modelFrame : queryFrame;
 		owner->modelRenderer.setColour(owner->modelColourSolid);
 		owner->modelRenderer.addSolid(vertices.data(), (U32)vertices.size(), triangles.data(), (U32)triangles.size());
 		owner->modelRenderer.setColour(owner->modelColourWire);
 		owner->modelRenderer.addWire(vertices.data(), (U32)vertices.size(), triangles.data(), (U32)triangles.size());
 		if (!vertices.empty() && !triangles.empty())
 			owner->modelRenderer.addAxes3D(frame, Vec3(0.2));
-		// query data
-		if (queryMode) {
-			for (Density::Seq::const_iterator i = densities.begin(); i != densities.end(); ++i) {
-				for (grasp::Query::Pose::Seq::const_iterator j = i->object.begin(); j != i->object.end(); ++j)
-					owner->modelRenderer.addAxes(j->toMat34(), Vec3(0.005));
-				owner->modelRenderer.addAxes3D(i->pose.toMat34(), Vec3(0.2));
-			}
-		}
 		// training data
-		else {
+		if (mode == MODE_MODEL) {
 			owner->contactAppearance.relation = contactRelation;
 			Training::Map::iterator ptr = getTrainingItem();
 			if (ptr != training.end())
 				grasp::Contact3D::draw(owner->contactAppearance, ptr->second.contacts, modelFrame, owner->modelRenderer);
+		}
+		// query data
+		else if (mode == MODE_QUERY) {
+			const Density::Seq::iterator ptr = densities.begin() + indexDensity;
+			for (grasp::Query::Pose::Seq::const_iterator i = ptr->object.begin(); i != ptr->object.end(); ++i)
+				owner->modelRenderer.addAxes(i->toMat34(), Vec3(0.005));
+			owner->modelRenderer.addAxes3D(ptr->pose.toMat34(), Vec3(0.2));
+		}
+		else if (mode == MODE_SOLUTION) {
 		}
 	}
 }
@@ -591,32 +601,54 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("\t", [=]() {
 		// set mode
-		to<Data>(dataCurrentPtr)->queryMode = !to<Data>(dataCurrentPtr)->queryMode;
-		context.write("%s mode\n", to<Data>(dataCurrentPtr)->queryMode ? "Query" : "Model");
+		to<Data>(dataCurrentPtr)->mode = Data::Mode(to<Data>(dataCurrentPtr)->mode >= Data::MODE_LAST ? (U32)Data::MODE_FIRST : U32(to<Data>(dataCurrentPtr)->mode) + 1);
+		context.write("%s mode\n", Data::ModeName[to<Data>(dataCurrentPtr)->mode].c_str());
 		createRender();
 	}));
 	itemSelect = [&](ItemSelectFunc itemSelectFunc) {
-		if (!to<Data>(dataCurrentPtr)->queryMode) {
-			if (to<Data>(dataCurrentPtr)->training.empty()) {
-				context.write("No training data\n");
-				return;
-			}
-			Data::Training::Map::iterator ptr = to<Data>(dataCurrentPtr)->getTrainingItem();
-			itemSelectFunc(to<Data>(dataCurrentPtr)->training, ptr);
-			to<Data>(dataCurrentPtr)->setTrainingItem(ptr);
-			context.write("Type %s/%u, Item #%u\n", ptr->first.c_str(), to<Data>(dataCurrentPtr)->indexType + 1, to<Data>(dataCurrentPtr)->indexItem + 1);
-			createRender();
-		}
+		if (to<Data>(dataCurrentPtr)->training.empty())
+			throw Cancel("No training data");
+		Data::Training::Map::iterator ptr = to<Data>(dataCurrentPtr)->getTrainingItem();
+		itemSelectFunc(to<Data>(dataCurrentPtr)->training, ptr);
+		to<Data>(dataCurrentPtr)->setTrainingItem(ptr);
+		context.write("Model type %s/%u, Item #%u\n", ptr->first.c_str(), to<Data>(dataCurrentPtr)->indexType + 1, to<Data>(dataCurrentPtr)->indexItem + 1);
+		createRender();
 	};
 	menuCmdMap.insert(std::make_pair("(", [&]() {
-		itemSelect([] (Data::Training::Map& map, Data::Training::Map::iterator& ptr) {
-			if (ptr == map.begin()) ptr = --map.end(); else --ptr;
-		});
+		if (to<Data>(dataCurrentPtr)->mode == Data::MODE_MODEL)
+			itemSelect([] (Data::Training::Map& map, Data::Training::Map::iterator& ptr) {
+				if (ptr == map.begin()) ptr = --map.end(); else --ptr;
+			});
+		else if (to<Data>(dataCurrentPtr)->mode == Data::MODE_QUERY) {
+			if (to<Data>(dataCurrentPtr)->densities.empty())
+				throw Cancel("No query densities created");
+			to<Data>(dataCurrentPtr)->indexDensity = to<Data>(dataCurrentPtr)->indexDensity <= 0 ? to<Data>(dataCurrentPtr)->densities.size() - 1 : to<Data>(dataCurrentPtr)->indexDensity - 1;
+			context.write("Query type %s, Item #%u\n", to<Data>(dataCurrentPtr)->densities[to<Data>(dataCurrentPtr)->indexDensity].type.c_str(), to<Data>(dataCurrentPtr)->indexDensity + 1);
+		}
+		else if (to<Data>(dataCurrentPtr)->mode == Data::MODE_SOLUTION) {
+			if (to<Data>(dataCurrentPtr)->solutions.empty())
+				throw Cancel("No solutions created");
+			to<Data>(dataCurrentPtr)->indexSolution = to<Data>(dataCurrentPtr)->indexSolution <= 0 ? to<Data>(dataCurrentPtr)->solutions.size() - 1 : to<Data>(dataCurrentPtr)->indexSolution - 1;
+			context.write("Query type %s, Item #%u\n", to<Data>(dataCurrentPtr)->solutions[to<Data>(dataCurrentPtr)->indexSolution].type.c_str(), to<Data>(dataCurrentPtr)->indexSolution + 1);
+		}
 	}));
 	menuCmdMap.insert(std::make_pair(")", [&]() {
-		itemSelect([] (Data::Training::Map& map, Data::Training::Map::iterator& ptr) {
-			if (ptr == --map.end()) ptr = map.begin(); else ++ptr;
-		});
+		if (to<Data>(dataCurrentPtr)->mode == Data::MODE_MODEL)
+			itemSelect([](Data::Training::Map& map, Data::Training::Map::iterator& ptr) {
+				if (ptr == --map.end()) ptr = map.begin(); else ++ptr;
+			});
+		else if (to<Data>(dataCurrentPtr)->mode == Data::MODE_QUERY) {
+			if (to<Data>(dataCurrentPtr)->densities.empty())
+				throw Cancel("No query densities created");
+			to<Data>(dataCurrentPtr)->indexDensity = to<Data>(dataCurrentPtr)->indexDensity < to<Data>(dataCurrentPtr)->densities.size() - 1 ? to<Data>(dataCurrentPtr)->indexDensity + 1 : 0;
+			context.write("Query type %s, Item #%u\n", to<Data>(dataCurrentPtr)->densities[to<Data>(dataCurrentPtr)->indexDensity].type.c_str(), to<Data>(dataCurrentPtr)->indexDensity + 1);
+		}
+		else if (to<Data>(dataCurrentPtr)->mode == Data::MODE_SOLUTION) {
+			if (to<Data>(dataCurrentPtr)->solutions.empty())
+				throw Cancel("No solutions created");
+			to<Data>(dataCurrentPtr)->indexSolution = to<Data>(dataCurrentPtr)->indexSolution < to<Data>(dataCurrentPtr)->solutions.size() - 1 ? to<Data>(dataCurrentPtr)->indexSolution + 1 : 0;
+			context.write("Query type %s, Item #%u\n", to<Data>(dataCurrentPtr)->solutions[to<Data>(dataCurrentPtr)->indexSolution].type.c_str(), to<Data>(dataCurrentPtr)->indexSolution + 1);
+		}
 	}));
 
 	// data menu control and commands
@@ -630,13 +662,13 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 	menuCmdMap.insert(std::make_pair("PEM", [=]() {
 		// estimate
-		(void)estimatePose(false);
+		(void)estimatePose(Data::MODE_MODEL);
 		// finish
 		context.write("Done!\n");
 	}));
 	menuCmdMap.insert(std::make_pair("PEQ", [=]() {
 		// estimate
-		(void)estimatePose(true);
+		(void)estimatePose(Data::MODE_QUERY);
 		// finish
 		context.write("Done!\n");
 	}));
@@ -725,7 +757,7 @@ void pacman::Demo::create(const Desc& desc) {
 	// model operations
 	menuCtrlMap.insert(std::make_pair("PM", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
 		// set mode
-		to<Data>(dataCurrentPtr)->queryMode = false;
+		to<Data>(dataCurrentPtr)->mode = Data::MODE_MODEL;
 		createRender();
 
 		desc = "Press a key to: (S)et/(G)oto initial object model pose, (A)dd/(R)emove training data...";
@@ -914,7 +946,7 @@ void pacman::Demo::create(const Desc& desc) {
 	// query operations
 	menuCtrlMap.insert(std::make_pair("PQ", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
 		// set mode
-		to<Data>(dataCurrentPtr)->queryMode = true;
+		to<Data>(dataCurrentPtr)->mode = Data::MODE_QUERY;
 		createRender();
 
 		desc = "Press a key to: create (D)ensities, generate (S)olutions ...";
@@ -941,7 +973,7 @@ void pacman::Demo::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("PD", [=]() {
 		// estimate pose
 		if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty())
-			estimatePose(true);
+			estimatePose(Data::MODE_QUERY);
 
 		// run demo
 		for (;;) {
@@ -1228,19 +1260,19 @@ void pacman::Demo::create(const Desc& desc) {
 
 //------------------------------------------------------------------------------
 
-grasp::data::Item::Map::iterator pacman::Demo::estimatePose(bool queryMode) {
-	if (queryMode && (to<Data>(dataCurrentPtr)->modelVertices.empty() || to<Data>(dataCurrentPtr)->modelTriangles.empty()))
+grasp::data::Item::Map::iterator pacman::Demo::estimatePose(Data::Mode mode) {
+	if (mode != Data::MODE_MODEL && (to<Data>(dataCurrentPtr)->modelVertices.empty() || to<Data>(dataCurrentPtr)->modelTriangles.empty()))
 		throw Cancel("Model has not been estimated");
 
-	grasp::Vec3Seq& vertices = queryMode ? to<Data>(dataCurrentPtr)->queryVertices : to<Data>(dataCurrentPtr)->modelVertices;
-	grasp::TriangleSeq& triangles = queryMode ? to<Data>(dataCurrentPtr)->queryTriangles : to<Data>(dataCurrentPtr)->modelTriangles;
-	golem::Mat34& frame = queryMode ? to<Data>(dataCurrentPtr)->queryFrame : to<Data>(dataCurrentPtr)->modelFrame;
-	const std::string itemName = queryMode ? queryItem : modelItem;
-	grasp::data::Handler* handler = queryMode ? queryHandler : modelHandler;
-	grasp::Camera* camera = queryMode ? queryCamera : modelCamera;
+	grasp::Vec3Seq& vertices = mode != Data::MODE_MODEL ? to<Data>(dataCurrentPtr)->queryVertices : to<Data>(dataCurrentPtr)->modelVertices;
+	grasp::TriangleSeq& triangles = mode != Data::MODE_MODEL ? to<Data>(dataCurrentPtr)->queryTriangles : to<Data>(dataCurrentPtr)->modelTriangles;
+	golem::Mat34& frame = mode != Data::MODE_MODEL ? to<Data>(dataCurrentPtr)->queryFrame : to<Data>(dataCurrentPtr)->modelFrame;
+	const std::string itemName = mode != Data::MODE_MODEL ? queryItem : modelItem;
+	grasp::data::Handler* handler = mode != Data::MODE_MODEL ? queryHandler : modelHandler;
+	grasp::Camera* camera = mode != Data::MODE_MODEL ? queryCamera : modelCamera;
 
 	// set mode
-	to<Data>(dataCurrentPtr)->queryMode = queryMode;
+	to<Data>(dataCurrentPtr)->mode = mode;
 
 	// run robot
 	gotoPose(modelScanPose);
@@ -1292,7 +1324,7 @@ grasp::data::Item::Map::iterator pacman::Demo::estimatePose(bool queryMode) {
 	model->model(robotPose, modelFrame, &modelVertices, &modelTriangles);
 
 	// compute a new frame
-	if (!queryMode) {
+	if (mode == Data::MODE_MODEL) {
 		Vec3Seq modelPoints;
 		Rand rand(context.getRandSeed());
 		Import().generate(rand, modelVertices, modelTriangles, [&](const golem::Vec3& p, const golem::Vec3&) { modelPoints.push_back(p); });
@@ -1305,14 +1337,14 @@ grasp::data::Item::Map::iterator pacman::Demo::estimatePose(bool queryMode) {
 		golem::CriticalSectionWrapper cswData(csData);
 		vertices = modelVertices;
 		triangles = modelTriangles;
-		if (queryMode)
-			frame = modelFrame * to<Data>(dataCurrentPtr)->modelFrameOffset;
-		else {
+		if (mode == Data::MODE_MODEL) {
 			// newFrame = modelFrame * offset ==> offset = modelFrame^-1 * newFrame
 			frame = modelNewFrame;
 			to<Data>(dataCurrentPtr)->modelFrameOffset.setInverse(modelFrame);
 			to<Data>(dataCurrentPtr)->modelFrameOffset.multiply(to<Data>(dataCurrentPtr)->modelFrameOffset, modelNewFrame);
 		}
+		else
+			frame = modelFrame * to<Data>(dataCurrentPtr)->modelFrameOffset;
 	}
 
 	return ptr;
