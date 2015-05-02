@@ -170,13 +170,15 @@ void pacman::Demo::create(const Desc& desc) {
 
 
 	menuCtrlMap.insert(std::make_pair("C", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: (CP)Active Sense Parameters\n(D)Demo ActiveSense\n(E)Goto to Camera Hypothesis Pose\n(V)Set OpenGL View Point to Camera Hypothesis View\n(N)View from Next ViewHypothesis\n(K)View from Mounted Sensor\n(H)Print Sensor Hypothesis Matrices";
+		desc = "Press a key to:\nchange ActiveSense (P)arameters\n(G)enerate possible camera poses\n(D)emo ActiveSense\n"
+			"(E) Goto to Camera Hypothesis Pose\n"
+			"(V) Set OpenGL View Point to Camera Hypothesis View\n(N) View from Next-Best-View Hypothesis\n(K) View from wrist-mounted sensor\n(H) Print Sensor Hypothesis Matrices";
 		//menuCmdMap.erase("CE");
 		//menuCmdMap.erase("CV");
 	}));
 
 	menuCtrlMap.insert(std::make_pair("CP", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: (S)Choose Selection Method\n(G)Choose Generation Method\n(M)Choose Coverage Method\n(C)Choose Stopping Criteria";
+		desc = "Press a key to:\n(S) Choose Selection Method\n(G) Choose Generation Method\n(M) Choose Coverage Method\n(C) Choose Stopping Criteria";
 	
 	}));
 
@@ -354,7 +356,7 @@ void pacman::Demo::create(const Desc& desc) {
 		select(selectionPtr, selectionMethodMap.begin(), selectionMethodMap.end(), "Select Selection Method:\n", [](std::map<std::string, ActiveSense::ESelectionMethod>::iterator ptr) -> std::string{
 			return ptr->first;
 		});
-		context.write("Selected: %s", selectionPtr->first.c_str());
+		context.write("Selected: %s\n", selectionPtr->first.c_str());
 		activeSense->getParameters().selectionMethod = selectionPtr->second;
 
 		context.write("Done!\n");
@@ -367,7 +369,7 @@ void pacman::Demo::create(const Desc& desc) {
 		select(selectionPtr, selectionMap.begin(), selectionMap.end(), "Select Generation Method:\n", [](std::map<std::string, ActiveSense::EGenerationMethod>::iterator ptr) -> std::string{
 			return ptr->first;
 		});
-		context.write("Selected: %s",selectionPtr->first.c_str());
+		context.write("Selected: %s\n",selectionPtr->first.c_str());
 		activeSense->getParameters().generationMethod = selectionPtr->second;
 
 
@@ -381,7 +383,7 @@ void pacman::Demo::create(const Desc& desc) {
 		select(selectionPtr, selectionMap.begin(), selectionMap.end(), "Select Coverage Method:\n", [](std::map<std::string, ActiveSense::ECoverageMethod>::iterator ptr) -> std::string{
 			return ptr->first;
 		});
-		context.write("Selected: %s", selectionPtr->first.c_str());
+		context.write("Selected: %s\n", selectionPtr->first.c_str());
 		activeSense->getParameters().coverageMethod = selectionPtr->second;
 
 		context.write("Done!\n");
@@ -394,8 +396,12 @@ void pacman::Demo::create(const Desc& desc) {
 		select(selectionPtr, selectionMap.begin(), selectionMap.end(), "Select Stopping Criteria:\n", [](std::map<std::string, ActiveSense::EStoppingCriteria>::iterator ptr) -> std::string{
 			return ptr->first;
 		});
-		context.write("Selected: %s", selectionPtr->first.c_str());
-		activeSense->getParameters().stoppingCriteria = selectionPtr->second;
+		context.write("Selected: %s\n", selectionPtr->first.c_str());
+		const golem::U32 stoppingCriteria = selectionPtr->second;
+		activeSense->getParameters().stoppingCriteria = stoppingCriteria;
+
+		if (stoppingCriteria == ActiveSense::C_COVERAGE || stoppingCriteria == ActiveSense::C_NVIEWS_COVERAGE)
+			readNumber("coverage threshold: ", activeSense->getParameters().coverageThr);
 
 		context.write("Done!\n");
 	}));
