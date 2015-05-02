@@ -133,8 +133,11 @@ void Demo::Data::createRender() {
 		if (mode == MODE_MODEL) {
 			owner->contactAppearance.relation = contactRelation;
 			Training::Map::iterator ptr = getTrainingItem();
-			if (ptr != training.end())
+			if (ptr != training.end()) {
 				grasp::Contact3D::draw(owner->contactAppearance, ptr->second.contacts, modelFrame, owner->modelRenderer);
+				for (auto &i : ptr->second.locations)
+					owner->modelRenderer.addPoint(i, RGBA::BLACK);
+			}
 		}
 		// query data
 		else if (mode == MODE_QUERY) {
@@ -150,6 +153,18 @@ void Demo::Data::createRender() {
 			if (!solutions.empty()) {
 				const Solution::Seq::iterator ptr = solutions.begin() + indexSolution;
 				owner->modelRenderer.addAxes3D(ptr->pose.toMat34(), Vec3(0.1));
+				if (ptr->path.size() > 0) owner->manipulatorAppearance.draw(*owner->manipulator, ptr->path[0], owner->modelRenderer);
+				//if (ptr->path.size() > 1) owner->manipulatorAppearance.draw(*owner->manipulator, ptr->path[1], owner->modelRenderer);
+				if (ptr->queryIndex < densities.size()) {
+					Mat34 trn;
+					trn.setInverse(densities[ptr->queryIndex].frame);
+					trn.multiply(ptr->pose.toMat34(), trn);
+					for (auto &i : densities[ptr->queryIndex].locations) {
+						Vec3 p;
+						trn.multiply(p, i);
+						owner->modelRenderer.addPoint(p, RGBA::BLACK);
+					}
+				}
 			}
 		}
 	}
@@ -293,6 +308,7 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 
 	manipulatorDesc->load(xmlcontext->getContextFirst("manipulator"));
 	manipulatorAppearance.load(xmlcontext->getContextFirst("manipulator appearance"));
+	grasp::XMLData(manipulatorPoseStdDev, xmlcontext->getContextFirst("manipulator pose_stddev"), false);
 }
 
 //------------------------------------------------------------------------------
@@ -631,6 +647,9 @@ void pacman::Demo::create(const Desc& desc) {
 	// manipulator
 	manipulator = desc.manipulatorDesc->create(*planner, desc.controllerIDSeq);
 	manipulatorAppearance = desc.manipulatorAppearance;
+
+	poseCovInv.lin = REAL_ONE / (poseCov.lin = Math::sqr(desc.manipulatorPoseStdDev.lin));
+	poseCovInv.ang = REAL_ONE / (poseCov.ang = Math::sqr(desc.manipulatorPoseStdDev.ang));
 
 	// top menu help using global key '?'
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
@@ -1688,6 +1707,15 @@ void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 		if (!golem::Sample<Real>::normalise<golem::Ref1>(density.pose))
 			throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Unable to normalise pose distribution");
 
+		// create path
+		density.path = manipulator->create(waypoints, [=](const Manipulator::Waypoint& l, const Manipulator::Waypoint& r) -> Real { return poseCovInv.dot(RBDist(l, r)); });
+		
+		// locations
+		density.locations = i->second.locations;
+
+		// end-effector frame
+		density.frame = trajectoryFrame;
+		
 		// likelihood
 		density.weight = query->second->weight;
 
@@ -1706,6 +1734,9 @@ void pacman::Demo::generateSolutions() {
 	// training data are required
 	if (to<Data>(dataCurrentPtr)->densities.empty())
 		throw Message(Message::LEVEL_ERROR, "Demo::generateSolutions(): No query densities");
+
+	Mat34 referencePose;
+	referencePose.setInverse(manipulator->getBaseFrame());
 
 	size_t acceptGreedy = 0, acceptSA = 0;
 
@@ -1732,8 +1763,8 @@ void pacman::Demo::generateSolutions() {
 			for (;;) {
 				query = golem::Sample<golem::Real>::sample<golem::Ref1, Data::Density::Seq::const_iterator>(to<Data>(dataCurrentPtr)->densities, rand);
 				if (query == to<Data>(dataCurrentPtr)->densities.end()) {
-					context.notice("Demo::generateSolutions(): Query density sampling error\n");
-					continue;
+					context.error("Demo::generateSolutions(): Query density sampling error\n");
+					return;
 				}
 				break;
 			}
@@ -1742,11 +1773,13 @@ void pacman::Demo::generateSolutions() {
 			for (;;) {
 				pose = golem::Sample<golem::Real>::sample<golem::Ref1, grasp::Query::Pose::Seq::const_iterator>(query->pose, rand);
 				if (pose == query->pose.end()) {
-					context.notice("Demo::generateSolutions(): Pose density sampling error\n");
-					continue;
+					context.error("Demo::generateSolutions(): Pose density sampling error\n");
+					return;
 				}
 				break;
 			}
+			// set index
+			test.queryIndex = (U32)(query - to<Data>(dataCurrentPtr)->densities.begin());
 
 			// local search: try to find better solution using simulated annealing
 			for (size_t s = 0; s <= optimisation.steps; ++s) {
@@ -1767,6 +1800,17 @@ void pacman::Demo::generateSolutions() {
 				Quat q;
 				q.next(rand, poseCovAng);
 				test.pose.q.multiply(init ? pose->q : solution->pose.q, q);
+
+				// create path
+				test.path = query->path;
+
+				// transform to the new frame
+				RBCoord inv;
+				inv.setInverse(test.path[0]);
+				for (Manipulator::Waypoint::Seq::iterator i = test.path.begin(); i != test.path.end(); ++i) {
+					i->multiply(inv, *i);
+					i->multiply(test.pose * referencePose, *i);
+				}
 
 				*solution = test;
 				break;
@@ -1845,6 +1889,11 @@ template <> void golem::Stream::read(pacman::Demo::Data::Density::Seq::value_typ
 	read(value.object, value.object.begin());
 	value.pose.clear();
 	read(value.pose, value.pose.begin());
+	value.path.clear();
+	read(value.path, value.path.begin());
+	value.locations.clear();
+	read(value.locations, value.locations.begin());
+	read(value.frame);
 	read(value.weight);
 	read(value.cdf);
 }
@@ -1853,6 +1902,9 @@ template <> void golem::Stream::write(const pacman::Demo::Data::Density::Seq::va
 	write(value.type);
 	write(value.object.begin(), value.object.end());
 	write(value.pose.begin(), value.pose.end());
+	write(value.path.begin(), value.path.end());
+	write(value.locations.begin(), value.locations.end());
+	write(value.frame);
 	write(value.weight);
 	write(value.cdf);
 }
@@ -1863,6 +1915,7 @@ template <> void golem::Stream::read(pacman::Demo::Data::Solution::Seq::value_ty
 	value.path.clear();
 	read(value.path, value.path.begin());
 	read(value.likelihood);
+	read(value.queryIndex);
 }
 
 template <> void golem::Stream::write(const pacman::Demo::Data::Solution::Seq::value_type& value) {
@@ -1870,6 +1923,7 @@ template <> void golem::Stream::write(const pacman::Demo::Data::Solution::Seq::v
 	write(value.pose);
 	write(value.path.begin(), value.path.end());
 	write(value.likelihood);
+	write(value.queryIndex);
 }
 
 //------------------------------------------------------------------------------

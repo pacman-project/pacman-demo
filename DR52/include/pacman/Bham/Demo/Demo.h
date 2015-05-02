@@ -62,7 +62,7 @@ public:
 
 			/** Robot state */
 			golem::Controller::State state;
-			/** End-effector frame */
+			/** Model frame */
 			golem::Mat34 frame;
 			/** Contacts */
 			grasp::Contact3D::Seq contacts;
@@ -82,6 +82,12 @@ public:
 			grasp::Query::Pose::Seq object;
 			/** Pose density */
 			grasp::Query::Pose::Seq pose;
+			/** Path */
+			grasp::Manipulator::Waypoint::Seq path;
+			/** Locations */
+			grasp::data::Location3D::Point::Seq locations;
+			/** End-effector frame */
+			golem::Mat34 frame;
 		};
 
 		/** Solution */
@@ -96,8 +102,12 @@ public:
 			grasp::RBCoord pose;
 			/** Path */
 			grasp::Manipulator::Waypoint::Seq path;
+
 			/** Likelihood */
 			golem::Real likelihood;
+
+			/** Query index */
+			golem::U32 queryIndex;
 		};
 
 		/** Data bundle default name */
@@ -343,6 +353,8 @@ public:
 		grasp::Manipulator::Desc::Ptr manipulatorDesc;
 		/** Manipulator Appearance */
 		grasp::Manipulator::Appearance manipulatorAppearance;
+		/** Manipulator pose distribution standard deviation */
+		grasp::RBDist manipulatorPoseStdDev;
 
 		/** Constructs from description object */
 		Desc() {
@@ -402,6 +414,7 @@ public:
 
 			manipulatorDesc.reset(new grasp::Manipulator::Desc);
 			manipulatorAppearance.setToDefault();
+			manipulatorPoseStdDev.set(golem::Real(0.002), golem::Real(1000.0));
 		}
 		/** Assert that the description is valid. */
 		virtual void assertValid(const grasp::Assert::Context& ac) const {
@@ -468,6 +481,7 @@ public:
 			grasp::Assert::valid(manipulatorDesc != nullptr, ac, "manipulatorDesc: null");
 			manipulatorDesc->assertValid(grasp::Assert::Context(ac, "manipulatorDesc->"));
 			manipulatorAppearance.assertValid(grasp::Assert::Context(ac, "manipulatorAppearance."));
+			grasp::Assert::valid(manipulatorPoseStdDev.isValid(), ac, "manipulatorPoseStdDev: invalid");
 		}
 		/** Load descritpion from xml context. */
 		virtual void load(golem::Context& context, const golem::XMLContext* xmlcontext);
@@ -565,6 +579,8 @@ protected:
 	grasp::Manipulator::Ptr manipulator;
 	/** Manipulator Appearance */
 	grasp::Manipulator::Appearance manipulatorAppearance;
+	/** Manipulator pose distribution covariance */
+	grasp::RBDist poseCov, poseCovInv;
 
 	/** Item selection */
 	typedef std::function<void(Data::Training::Map&, Data::Training::Map::iterator&)> ItemSelectFunc;
