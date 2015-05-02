@@ -24,11 +24,6 @@ namespace pacman {
 
 //------------------------------------------------------------------------------
 
-/** RBDist map */
-typedef std::map<std::string, grasp::RBDist> RBDistMap;
-
-//------------------------------------------------------------------------------
-
 /** Demo. */
 class Demo : public grasp::Player {
 public:
@@ -85,8 +80,8 @@ public:
 			std::string type;
 			/** Object density */
 			grasp::Query::Pose::Seq object;
-			/** Pose kernel */
-			grasp::Query::Kernel pose;
+			/** Pose density */
+			grasp::Query::Pose::Seq pose;
 		};
 
 		/** Solution */
@@ -184,6 +179,43 @@ public:
 	};
 
 	friend class Data;
+
+	/** Pose density description */
+	class PoseDensity {
+	public:
+		/** map */
+		typedef std::map<std::string, PoseDensity> Map;
+
+		/** Std dev */
+		grasp::RBDist stdDev;
+		/** Kernels */
+		golem::U32 kernels;
+		/** Path distance */
+		grasp::RBDist pathDist;
+		/** Path distance std dev */
+		golem::Real pathDistStdDev;
+
+		/** Constructs from description object */
+		PoseDensity() {
+			PoseDensity::setToDefault();
+		}
+		/** Sets the parameters to the default values */
+		void setToDefault() {
+			stdDev.set(golem::Real(0.01), golem::Real(50.0));
+			kernels = 100;
+			pathDist.set(golem::Real(0.1), golem::Real(20.0));
+			pathDistStdDev = golem::Real(1.0);
+		};
+		/** Assert that the description is valid. */
+		void assertValid(const grasp::Assert::Context& ac) const {
+			grasp::Assert::valid(stdDev.isValid(), ac, "stdDev: invalid");
+			grasp::Assert::valid(kernels > 0, ac, "kernels: <= 0");
+			grasp::Assert::valid(pathDist.isValid(), ac, "pathDist: invalid");
+			grasp::Assert::valid(pathDistStdDev > golem::REAL_EPS, ac, "pathDistStdDev: < eps");
+		}
+		/** Load descritpion from xml context. */
+		void load(const golem::XMLContext* xmlcontext);
+	};
 
 	/** Optimisation description */
 	class Optimisation {
@@ -301,8 +333,8 @@ public:
 
 		/** Query descriptions */
 		grasp::Query::Desc::Map queryDescMap;
-		/** Pose deviations */
-		RBDistMap poseStdDevMap;
+		/** Pose descriptions */
+		PoseDensity::Map poseMap;
 
 		/** Optimisation description */
 		Optimisation optimisation;
@@ -364,7 +396,7 @@ public:
 			contactAppearance.setToDefault();
 
 			queryDescMap.clear();
-			poseStdDevMap.clear();
+			poseMap.clear();
 
 			optimisation.setToDefault();
 
@@ -426,9 +458,9 @@ public:
 				grasp::Assert::valid(i->second != nullptr, ac, "queryDescMap[]: null");
 				i->second->assertValid(grasp::Assert::Context(ac, "queryDescMap[]->"));
 			}
-			grasp::Assert::valid(!poseStdDevMap.empty(), ac, "poseStdDevMap: empty");
-			for (RBDistMap::const_iterator i = poseStdDevMap.begin(); i != poseStdDevMap.end(); ++i) {
-				grasp::Assert::valid(i->second.isValid(), ac, "poseStdDevMap[]: invalid");
+			grasp::Assert::valid(!poseMap.empty(), ac, "poseMap: empty");
+			for (PoseDensity::Map::const_iterator i = poseMap.begin(); i != poseMap.end(); ++i) {
+				i->second.assertValid(grasp::Assert::Context(ac, "poseMap[]->"));
 			}
 
 			optimisation.assertValid(grasp::Assert::Context(ac, "optimisation."));
@@ -523,8 +555,8 @@ protected:
 
 	/** Query densities */
 	grasp::Query::Map queryMap;
-	/** Pose deviations */
-	RBDistMap poseStdDevMap;
+	/** Pose descriptions */
+	PoseDensity::Map poseMap;
 
 	/** Optimisation description */
 	Optimisation optimisation;
@@ -586,7 +618,7 @@ protected:
 //------------------------------------------------------------------------------
 
 namespace golem {
-	void XMLData(pacman::RBDistMap::value_type& val, golem::XMLContext* context, bool create = false);
+	void XMLData(pacman::Demo::PoseDensity::Map::value_type& val, golem::XMLContext* context, bool create = false);
 
 	template <> void Stream::read(pacman::Demo::Data::Training::Map::value_type& value) const;
 	template <> void Stream::write(const pacman::Demo::Data::Training::Map::value_type& value);

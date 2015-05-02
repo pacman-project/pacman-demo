@@ -142,7 +142,8 @@ void Demo::Data::createRender() {
 				const Density::Seq::iterator ptr = densities.begin() + indexDensity;
 				for (grasp::Query::Pose::Seq::const_iterator i = ptr->object.begin(); i != ptr->object.end(); ++i)
 					owner->modelRenderer.addAxes(i->toMat34(), Vec3(0.005));
-				owner->modelRenderer.addAxes3D(ptr->pose.toMat34(), Vec3(0.2));
+				for (grasp::Query::Pose::Seq::const_iterator i = ptr->pose.begin(); i != ptr->pose.end(); ++i)
+					owner->modelRenderer.addAxes(i->toMat34(), Vec3(0.02));
 			}
 		}
 		else if (mode == MODE_SOLUTION) {
@@ -217,6 +218,15 @@ void Demo::Data::save(const std::string& prefix, golem::XMLContext* xmlcontext) 
 
 //------------------------------------------------------------------------------
 
+void Demo::PoseDensity::load(const golem::XMLContext* xmlcontext) {
+	grasp::XMLData(stdDev, xmlcontext->getContextFirst("std_dev"));
+	golem::XMLData("kernels", kernels, const_cast<golem::XMLContext*>(xmlcontext));
+	grasp::XMLData(pathDist, xmlcontext->getContextFirst("path_dist"));
+	golem::XMLData("std_dev", pathDistStdDev, xmlcontext->getContextFirst("path_dist"));
+}
+
+//------------------------------------------------------------------------------
+
 void Demo::Optimisation::load(const golem::XMLContext* xmlcontext) {
 	golem::XMLData("runs", runs, const_cast<golem::XMLContext*>(xmlcontext));
 	golem::XMLData("steps", steps, const_cast<golem::XMLContext*>(xmlcontext));
@@ -276,8 +286,8 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 
 	queryDescMap.clear();
 	golem::XMLData(queryDescMap, queryDescMap.max_size(), xmlcontext->getContextFirst("query"), "query", false);
-	poseStdDevMap.clear();
-	golem::XMLData(poseStdDevMap, poseStdDevMap.max_size(), xmlcontext->getContextFirst("query"), "query", false);
+	poseMap.clear();
+	golem::XMLData(poseMap, poseMap.max_size(), xmlcontext->getContextFirst("query"), "query", false);
 
 	optimisation.load(xmlcontext->getContextFirst("query optimisation"));
 
@@ -614,7 +624,7 @@ void pacman::Demo::create(const Desc& desc) {
 	queryMap.clear();
 	for (Query::Desc::Map::const_iterator i = desc.queryDescMap.begin(); i != desc.queryDescMap.end(); ++i)
 		queryMap.insert(std::make_pair(i->first, i->second->create(context, i->first)));
-	poseStdDevMap = desc.poseStdDevMap;
+	poseMap = desc.poseMap;
 
 	optimisation = desc.optimisation;
 
@@ -1568,9 +1578,9 @@ void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 	if (queryAny == queryMap.end())
 		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Unable to find Query %s", ID_ANY.c_str());
 	// select pose std dev any
-	const RBDistMap::const_iterator poseStdDevAny = poseStdDevMap.find(ID_ANY);
-	if (poseStdDevAny == poseStdDevMap.end())
-		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Unable to find poseStdDev %s", ID_ANY.c_str());
+	const PoseDensity::Map::const_iterator poseAny = poseMap.find(ID_ANY);
+	if (poseAny == poseMap.end())
+		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Unable to find pose density %s", ID_ANY.c_str());
 
 	to<Data>(dataCurrentPtr)->densities.clear();
 	for (Data::Training::Map::const_iterator i = to<Data>(dataCurrentPtr)->training.begin(); i != to<Data>(dataCurrentPtr)->training.end(); ++i) {
@@ -1606,20 +1616,77 @@ void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 			j->fromMat34(trn);
 		}
 
-		// select pose std dev any
-		RBDistMap::const_iterator poseStdDev = poseStdDevMap.find(i->first);
-		if (poseStdDev == poseStdDevMap.end()) poseStdDev = poseStdDevAny;
+		// select pose any
+		PoseDensity::Map::const_iterator pose = poseMap.find(i->first);
+		if (pose == poseMap.end()) pose = poseAny;
 
-		// end-effector pose density
+		// trajectory
+		const std::string trjName = getTrajectoryName(i->first);
+		grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(trjName);
+		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
+			throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Empty trajectory");
+		data::Trajectory* trajectory = is<data::Trajectory>(ptr);
+		if (!trajectory)
+			throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Trajectory handler does not implement data::Trajectory");
+		// waypoints
+		const golem::Controller::State::Seq waypoints = trajectory->getWaypoints();
+		if (waypoints.size() < 2)
+			throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Trajectory must have at least two waypoints");
+
+		// Desired trajectory frame at contact pose
+		const golem::Mat34 trajectoryFrame = forwardTransformArm(i->second.state);
+		// Contact and approach poses as recorded
+		const golem::Mat34 contactPose(forwardTransformArm(waypoints[0])), approachPose(forwardTransformArm(waypoints[1]));
+		// trajectoryFrame = trn * contactPose |==> trn = trajectoryFrame * contactPose^-1
+		golem::Mat34 trnTrj;
+		trnTrj.setInverse(contactPose);
+		trnTrj.multiply(trajectoryFrame, trnTrj);
+
 		// query = trn * model |==> trn = query * model^-1
-		Mat34 trn;
+		golem::Mat34 trn;
 		trn.setInverse(to<Data>(dataCurrentPtr)->modelFrame);
 		trn.multiply(to<Data>(dataCurrentPtr)->queryFrame, trn);
-		density.pose.fromMat34(trn * forwardTransformArm(i->second.state));
-		density.pose.stdDev = poseStdDev->second;
-		density.pose.cov.set(Math::sqr(density.pose.stdDev.lin), Math::sqr(density.pose.stdDev.ang));
-		density.pose.distFac.set(REAL_ONE / density.pose.cov.lin, REAL_ONE / density.pose.cov.ang); // == covInv
-		//const RBDist frameDistMax(poseDistanceMax * frameCov.lin, poseDistanceMax * frameCov.ang);
+
+		// Contact and approach poses in the desired frame
+		const grasp::RBCoord contactFrame(trn * trajectoryFrame), approachFrame(trn * trnTrj * approachPose);
+
+		// distance
+		const RBDist frameDist(contactFrame.p.distance(approachFrame.p), contactFrame.q.distance(approachFrame.q));
+		if (frameDist.lin < REAL_EPS || frameDist.ang < REAL_EPS)
+			throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Invalid distance between waypoints");
+
+		// create pose distribution
+		const I32 range = pose->second.kernels / 2 + 1;
+		density.pose.reserve(2 * range + 1);
+		for (I32 j = -range; j <= range; ++j) {
+			const Real dist = Real(j)/range;
+
+			// kernel
+			grasp::Query::Pose qp;
+			
+			// interpolation factor
+			const grasp::RBDist interpol(dist * pose->second.pathDist.lin / frameDist.lin, dist * pose->second.pathDist.ang / frameDist.ang);
+
+			// linear interpolation/extrapolation
+			qp.p.interpolate(contactFrame.p, approachFrame.p, interpol.lin);
+			// angular interpolation/extrapolation, TODO use angular distance scaling
+			qp.q.slerp(contactFrame.q, approachFrame.q, interpol.lin);
+
+			// kernel parameters
+			qp.stdDev = pose->second.stdDev;
+			qp.cov.set(Math::sqr(qp.stdDev.lin), Math::sqr(qp.stdDev.ang));
+			qp.distFac.set(REAL_ONE / qp.cov.lin, REAL_ONE / qp.cov.ang); // == covInv
+			//const RBDist frameDistMax(poseDistanceMax * frameCov.lin, poseDistanceMax * frameCov.ang);
+			// kernel weight
+			qp.weight = Math::exp( - Math::abs(dist)*pose->second.pathDistStdDev);
+
+			// add to pose ditribution
+			density.pose.push_back(qp);
+		}
+
+		// normalise pose ditribution
+		if (!golem::Sample<Real>::normalise<golem::Ref1>(density.pose))
+			throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Unable to normalise pose distribution");
 
 		// likelihood
 		density.weight = query->second->weight;
@@ -1661,11 +1728,21 @@ void pacman::Demo::generateSolutions() {
 			}
 
 			// sample query density
-			Data::Density::Seq::const_iterator density;
+			Data::Density::Seq::const_iterator query;
 			for (;;) {
-				density = golem::Sample<golem::Real>::sample<golem::Ref1, Data::Density::Seq::const_iterator>(to<Data>(dataCurrentPtr)->densities, rand);
-				if (density == to<Data>(dataCurrentPtr)->densities.end()) {
+				query = golem::Sample<golem::Real>::sample<golem::Ref1, Data::Density::Seq::const_iterator>(to<Data>(dataCurrentPtr)->densities, rand);
+				if (query == to<Data>(dataCurrentPtr)->densities.end()) {
 					context.notice("Demo::generateSolutions(): Query density sampling error\n");
+					continue;
+				}
+				break;
+			}
+			// sample pose density
+			grasp::Query::Pose::Seq::const_iterator pose;
+			for (;;) {
+				pose = golem::Sample<golem::Real>::sample<golem::Ref1, grasp::Query::Pose::Seq::const_iterator>(query->pose, rand);
+				if (pose == query->pose.end()) {
+					context.notice("Demo::generateSolutions(): Pose density sampling error\n");
 					continue;
 				}
 				break;
@@ -1683,13 +1760,13 @@ void pacman::Demo::generateSolutions() {
 				// Linear component
 				Vec3 v;
 				v.next(rand); // |v|==1
-				v.multiply(Math::abs(rand.nextGaussian<Real>(REAL_ZERO, Delta*density->pose.stdDev.lin)), v);
-				test.pose.p.add(init ? density->pose.p : solution->pose.p, v);
+				v.multiply(Math::abs(rand.nextGaussian<Real>(REAL_ZERO, Delta*pose->stdDev.lin)), v);
+				test.pose.p.add(init ? pose->p : solution->pose.p, v);
 				// Angular component
-				const Real poseCovAng = Math::sqr(Delta*density->pose.stdDev.ang);
+				const Real poseCovAng = Math::sqr(Delta*pose->stdDev.ang);
 				Quat q;
 				q.next(rand, poseCovAng);
-				test.pose.q.multiply(init ? density->pose.q : solution->pose.q, q);
+				test.pose.q.multiply(init ? pose->q : solution->pose.q, q);
 
 				*solution = test;
 				break;
@@ -1737,9 +1814,9 @@ void pacman::Demo::render() const {
 
 //------------------------------------------------------------------------------
 
-void golem::XMLData(pacman::RBDistMap::value_type& val, golem::XMLContext* xmlcontext, bool create) {
+void golem::XMLData(pacman::Demo::PoseDensity::Map::value_type& val, golem::XMLContext* xmlcontext, bool create) {
 	golem::XMLData("id", const_cast<std::string&>(val.first), xmlcontext, create);
-	grasp::XMLData(val.second, xmlcontext->getContextFirst("pose_std_dev", create), create);
+	val.second.load(xmlcontext->getContextFirst("pose", create));
 }
 
 //------------------------------------------------------------------------------
@@ -1766,7 +1843,8 @@ template <> void golem::Stream::read(pacman::Demo::Data::Density::Seq::value_typ
 	read(value.type);
 	value.object.clear();
 	read(value.object, value.object.begin());
-	read(value.pose);
+	value.pose.clear();
+	read(value.pose, value.pose.begin());
 	read(value.weight);
 	read(value.cdf);
 }
@@ -1774,7 +1852,7 @@ template <> void golem::Stream::read(pacman::Demo::Data::Density::Seq::value_typ
 template <> void golem::Stream::write(const pacman::Demo::Data::Density::Seq::value_type& value) {
 	write(value.type);
 	write(value.object.begin(), value.object.end());
-	write(value.pose);
+	write(value.pose.begin(), value.pose.end());
 	write(value.weight);
 	write(value.cdf);
 }
