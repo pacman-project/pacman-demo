@@ -308,6 +308,7 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 
 	manipulatorDesc->load(xmlcontext->getContextFirst("manipulator"));
 	manipulatorAppearance.load(xmlcontext->getContextFirst("manipulator appearance"));
+	golem::XMLData("item_trj", manipulatorItemTrj, xmlcontext->getContextFirst("manipulator"));
 	grasp::XMLData(manipulatorPoseStdDev, xmlcontext->getContextFirst("manipulator pose_stddev"), false);
 }
 
@@ -647,6 +648,7 @@ void pacman::Demo::create(const Desc& desc) {
 	// manipulator
 	manipulator = desc.manipulatorDesc->create(*planner, desc.controllerIDSeq);
 	manipulatorAppearance = desc.manipulatorAppearance;
+	manipulatorItemTrj = desc.manipulatorItemTrj;
 
 	poseCovInv.lin = REAL_ONE / (poseCov.lin = Math::sqr(desc.manipulatorPoseStdDev.lin));
 	poseCovInv.ang = REAL_ONE / (poseCov.ang = Math::sqr(desc.manipulatorPoseStdDev.ang));
@@ -1052,7 +1054,7 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 	menuCmdMap.insert(std::make_pair("PTP", [=]() {
 		// perform trajectory
-		performTrajectory();
+		performTrajectory(true);
 		createRender();
 
 		context.write("Done!\n");
@@ -1100,7 +1102,7 @@ void pacman::Demo::create(const Desc& desc) {
 
 			breakPoint("Action execution");
 			// execute trajectory
-			performTrajectory();
+			performTrajectory(stopAtBreakPoint);
 		}
 		context.write("Done!\n");
 
@@ -1588,7 +1590,7 @@ grasp::data::Item::Map::iterator pacman::Demo::objectProcess(grasp::data::Item::
 //------------------------------------------------------------------------------
 
 std::string pacman::Demo::getTrajectoryName(const std::string& prefix, const std::string& type) const {
-	return prefix + "-" + type;
+	return prefix + dataDesc->sepName + type;
 }
 
 //------------------------------------------------------------------------------
@@ -1915,27 +1917,112 @@ void pacman::Demo::selectTrajectory() {
 	manipulator->copy(to<Data>(dataCurrentPtr)->solutions[val.first].path, seq);
 
 	// add trajectory waypoint
-	grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(queryItemTrj);
 	{
 		RenderBlock renderBlock(*this);
 		golem::CriticalSectionWrapper cswData(csData);
-		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
-			ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(queryItemTrj, modelHandlerTrj->create()));
+		to<Data>(dataCurrentPtr)->itemMap.erase(queryItemTrj);
+		grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(queryItemTrj, modelHandlerTrj->create()));
+		data::Trajectory* trajectory = is<data::Trajectory>(ptr);
+		if (!trajectory)
+			throw Message(Message::LEVEL_ERROR, "Demo::selectTrajectory(): Trajectory handler does not implement data::Trajectory");
+		// add current state
+		trajectory->setWaypoints(seq);
 		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
 	}
-	data::Trajectory* trajectory = is<data::Trajectory>(ptr);
-	if (!trajectory)
-		throw Message(Message::LEVEL_ERROR, "Trajectory handler does not implement data::Trajectory");
-	// add current state
-	trajectory->setWaypoints(seq);
 }
 
-void pacman::Demo::performTrajectory() {
+void pacman::Demo::performTrajectory(bool testTrajectory) {
 	grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(queryItemTrj);
 	if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
 		throw Message(Message::LEVEL_ERROR, "Demo::performTrajectory(): Unable to find query trajectory");
+	data::Trajectory* trajectory = is<data::Trajectory>(ptr);
+	if (!trajectory)
+		throw Message(Message::LEVEL_ERROR, "Demo::performTrajectory(): Trajectory handler does not implement data::Trajectory");
 
+	Controller::State::Seq seqInv = trajectory->getWaypoints();
+	if (seqInv.size() < 2)
+		throw Message(Message::LEVEL_ERROR, "Demo::performTrajectory(): At least two waypoints required");
+	// reverse
+	Controller::State::Seq seq;
+	for (Controller::State::Seq::const_reverse_iterator i = seqInv.rbegin(); i != seqInv.rend(); ++i) seq.push_back(*i);
 
+	golem::Controller::State::Seq initTrajectory;
+	findTrajectory(lookupState(), &seq.front(), nullptr, SEC_TM_REAL_ZERO, initTrajectory);
+
+	golem::Controller::State::Seq completeTrajectory = initTrajectory;
+	completeTrajectory.insert(completeTrajectory.end(), seq.begin(), seq.end());
+
+	// create trajectory item
+	data::Item::Ptr itemTrajectory;
+	data::Handler::Map::const_iterator handlerPtr = handlerMap.find(trajectoryHandler);
+	if (handlerPtr == handlerMap.end())
+		throw Message(Message::LEVEL_ERROR, "Demo::performTrajectory(): unknown default trajectory handler %s", trajectoryHandler.c_str());
+	data::Handler* handler = is<data::Handler>(handlerPtr);
+	if (!handler)
+		throw Message(Message::LEVEL_ERROR, "Demo::performTrajectory(): invalid default trajectory handler %s", trajectoryHandler.c_str());
+	itemTrajectory = handler->create();
+	data::Trajectory* trajectoryIf = is<data::Trajectory>(itemTrajectory.get());
+	if (!trajectoryIf)
+		throw Message(Message::LEVEL_ERROR, "Demo::performTrajectory(): unable to create trajectory using handler %s", trajectoryHandler.c_str());
+	trajectoryIf->setWaypoints(completeTrajectory);
+
+	// block displaying the current item
+	RenderBlock renderBlock(*this);
+
+	// test trajectory
+	if (testTrajectory) {
+		// insert trajectory to data with temporary name
+		const std::string itemLabelTmp = makeString("%6.6f", context.getTimer().elapsed());
+		ScopeGuard removeItem([&]() {
+			UI::removeCallback(*this, getCurrentHandler());
+			{
+				golem::CriticalSectionWrapper csw(csData);
+				to<Data>(dataCurrentPtr)->itemMap.erase(itemLabelTmp);
+			}
+			createRender();
+		});
+		{
+			golem::CriticalSectionWrapper csw(csData);
+			const data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(itemLabelTmp, itemTrajectory));
+			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+		}
+		// enable GUI interaction and refresh
+		UI::addCallback(*this, getCurrentHandler());
+		createRender();
+		// prompt user
+		EnableKeyboardMouse enableKeyboardMouse(*this);
+		option("\x0D", "Press <Enter> to accept trajectory...");
+	}
+
+	// go to initial state
+	sendTrajectory(initTrajectory);
+	// wait until the last trajectory segment is sent
+	controller->waitForEnd();
+
+	// send trajectory
+	sendTrajectory(seq);
+
+	// repeat every send waypoint until trajectory end
+	for (U32 i = 0; controller->waitForBegin(); ++i) {
+		if (universe.interrupted())
+			throw Exit();
+		if (controller->waitForEnd(0))
+			break;
+
+		// print every 10th robot state
+		if (i % 10 == 0)
+			context.write("State #%d\r", i);
+	}
+
+	// insert trajectory
+	{
+		golem::CriticalSectionWrapper csw(csData);
+		to<Data>(dataCurrentPtr)->itemMap.erase(manipulatorItemTrj);
+		const data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(manipulatorItemTrj, itemTrajectory));
+		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+	}
+
+	context.write("Performance finished!\n");
 }
 
 //------------------------------------------------------------------------------
