@@ -97,8 +97,12 @@ public:
 
 			/** Type */
 			std::string type;
+			/** Pose */
+			grasp::RBCoord pose;
 			/** Path */
 			grasp::Manipulator::Waypoint::Seq path;
+			/** Likelihood */
+			golem::Real likelihood;
 		};
 
 		/** Data bundle default name */
@@ -181,8 +185,47 @@ public:
 
 	friend class Data;
 
-	/** Demo description */
+	/** Optimisation description */
+	class Optimisation {
+	public:
+		/** number of runs */
+		size_t runs;
+		/** number of steps per run */
+		size_t steps;
 
+		/** Simulated annealing minimum temperature */
+		golem::Real saTemp;
+		/** Simulated annealing temperature to local coordinate scaling factor */
+		golem::Real saDelta;
+		/** Simulated annealing temperature to energy scaling factor */
+		golem::Real saEnergy;
+
+		/** Constructs description object */
+		Optimisation() {
+			Optimisation::setToDefault();
+		}
+		/** Sets the parameters to the default values */
+		void setToDefault() {
+			runs = 1000;
+			steps = 1000;
+
+			saTemp = golem::Real(0.1);
+			saDelta = golem::Real(1.0);
+			saEnergy = golem::Real(0.5);
+		}
+		/** Assert that the description is valid. */
+		void assertValid(const grasp::Assert::Context& ac) const {
+			grasp::Assert::valid(runs > 0, ac, "runs: <= 0");
+			grasp::Assert::valid(steps > 0, ac, "steps: <= 0");
+			grasp::Assert::valid(saTemp >= golem::REAL_ZERO, ac, "saTemp: < 0");
+			grasp::Assert::valid(saDelta > golem::REAL_ZERO, ac, "saDelta: <= 0");
+			grasp::Assert::valid(saEnergy > golem::REAL_ZERO, ac, "saEnergy: <= 0");
+		}
+		/** Load descritpion from xml context. */
+		void load(const golem::XMLContext* xmlcontext);
+	};
+
+	/** Demo description */
 	class Desc : public grasp::Player::Desc {
 	public:
 		/** Data bundle default name */
@@ -261,6 +304,9 @@ public:
 		/** Pose deviations */
 		RBDistMap poseStdDevMap;
 
+		/** Optimisation description */
+		Optimisation optimisation;
+
 		/** Manipulator description */
 		grasp::Manipulator::Desc::Ptr manipulatorDesc;
 		/** Manipulator Appearance */
@@ -319,6 +365,8 @@ public:
 
 			queryDescMap.clear();
 			poseStdDevMap.clear();
+
+			optimisation.setToDefault();
 
 			manipulatorDesc.reset(new grasp::Manipulator::Desc);
 			manipulatorAppearance.setToDefault();
@@ -382,6 +430,8 @@ public:
 			for (RBDistMap::const_iterator i = poseStdDevMap.begin(); i != poseStdDevMap.end(); ++i) {
 				grasp::Assert::valid(i->second.isValid(), ac, "poseStdDevMap[]: invalid");
 			}
+
+			optimisation.assertValid(grasp::Assert::Context(ac, "optimisation."));
 
 			grasp::Assert::valid(manipulatorDesc != nullptr, ac, "manipulatorDesc: null");
 			manipulatorDesc->assertValid(grasp::Assert::Context(ac, "manipulatorDesc->"));
@@ -475,6 +525,9 @@ protected:
 	grasp::Query::Map queryMap;
 	/** Pose deviations */
 	RBDistMap poseStdDevMap;
+
+	/** Optimisation description */
+	Optimisation optimisation;
 
 	/** Manipulator */
 	grasp::Manipulator::Ptr manipulator;

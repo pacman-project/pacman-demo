@@ -138,12 +138,18 @@ void Demo::Data::createRender() {
 		}
 		// query data
 		else if (mode == MODE_QUERY) {
-			const Density::Seq::iterator ptr = densities.begin() + indexDensity;
-			for (grasp::Query::Pose::Seq::const_iterator i = ptr->object.begin(); i != ptr->object.end(); ++i)
-				owner->modelRenderer.addAxes(i->toMat34(), Vec3(0.005));
-			owner->modelRenderer.addAxes3D(ptr->pose.toMat34(), Vec3(0.2));
+			if (!densities.empty()) {
+				const Density::Seq::iterator ptr = densities.begin() + indexDensity;
+				for (grasp::Query::Pose::Seq::const_iterator i = ptr->object.begin(); i != ptr->object.end(); ++i)
+					owner->modelRenderer.addAxes(i->toMat34(), Vec3(0.005));
+				owner->modelRenderer.addAxes3D(ptr->pose.toMat34(), Vec3(0.2));
+			}
 		}
 		else if (mode == MODE_SOLUTION) {
+			if (!solutions.empty()) {
+				const Solution::Seq::iterator ptr = solutions.begin() + indexSolution;
+				owner->modelRenderer.addAxes3D(ptr->pose.toMat34(), Vec3(0.1));
+			}
 		}
 	}
 }
@@ -211,6 +217,16 @@ void Demo::Data::save(const std::string& prefix, golem::XMLContext* xmlcontext) 
 
 //------------------------------------------------------------------------------
 
+void Demo::Optimisation::load(const golem::XMLContext* xmlcontext) {
+	golem::XMLData("runs", runs, const_cast<golem::XMLContext*>(xmlcontext));
+	golem::XMLData("steps", steps, const_cast<golem::XMLContext*>(xmlcontext));
+	golem::XMLData("sa_temp", saTemp, const_cast<golem::XMLContext*>(xmlcontext));
+	golem::XMLData("sa_delta", saDelta, const_cast<golem::XMLContext*>(xmlcontext));
+	golem::XMLData("sa_energy", saEnergy, const_cast<golem::XMLContext*>(xmlcontext));
+}
+
+//------------------------------------------------------------------------------
+
 void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlcontext) {
 	Player::Desc::load(context, xmlcontext);
 
@@ -262,6 +278,8 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 	golem::XMLData(queryDescMap, queryDescMap.max_size(), xmlcontext->getContextFirst("query"), "query", false);
 	poseStdDevMap.clear();
 	golem::XMLData(poseStdDevMap, poseStdDevMap.max_size(), xmlcontext->getContextFirst("query"), "query", false);
+
+	optimisation.load(xmlcontext->getContextFirst("query optimisation"));
 
 	manipulatorDesc->load(xmlcontext->getContextFirst("manipulator"));
 	manipulatorAppearance.load(xmlcontext->getContextFirst("manipulator appearance"));
@@ -598,6 +616,8 @@ void pacman::Demo::create(const Desc& desc) {
 		queryMap.insert(std::make_pair(i->first, i->second->create(context, i->first)));
 	poseStdDevMap = desc.poseStdDevMap;
 
+	optimisation = desc.optimisation;
+
 	// manipulator
 	manipulator = desc.manipulatorDesc->create(*planner, desc.controllerIDSeq);
 	manipulatorAppearance = desc.manipulatorAppearance;
@@ -621,7 +641,6 @@ void pacman::Demo::create(const Desc& desc) {
 		itemSelectFunc(to<Data>(dataCurrentPtr)->training, ptr);
 		to<Data>(dataCurrentPtr)->setTrainingItem(ptr);
 		context.write("Model type %s/%u, Item #%u\n", ptr->first.c_str(), to<Data>(dataCurrentPtr)->indexType + 1, to<Data>(dataCurrentPtr)->indexItem + 1);
-		createRender();
 	};
 	menuCmdMap.insert(std::make_pair("(", [&]() {
 		if (to<Data>(dataCurrentPtr)->mode == Data::MODE_MODEL)
@@ -640,6 +659,7 @@ void pacman::Demo::create(const Desc& desc) {
 			to<Data>(dataCurrentPtr)->indexSolution = to<Data>(dataCurrentPtr)->indexSolution <= 0 ? to<Data>(dataCurrentPtr)->solutions.size() - 1 : to<Data>(dataCurrentPtr)->indexSolution - 1;
 			context.write("Query type %s, Item #%u\n", to<Data>(dataCurrentPtr)->solutions[to<Data>(dataCurrentPtr)->indexSolution].type.c_str(), to<Data>(dataCurrentPtr)->indexSolution + 1);
 		}
+		createRender();
 	}));
 	menuCmdMap.insert(std::make_pair(")", [&]() {
 		if (to<Data>(dataCurrentPtr)->mode == Data::MODE_MODEL)
@@ -658,6 +678,7 @@ void pacman::Demo::create(const Desc& desc) {
 			to<Data>(dataCurrentPtr)->indexSolution = to<Data>(dataCurrentPtr)->indexSolution < to<Data>(dataCurrentPtr)->solutions.size() - 1 ? to<Data>(dataCurrentPtr)->indexSolution + 1 : 0;
 			context.write("Query type %s, Item #%u\n", to<Data>(dataCurrentPtr)->solutions[to<Data>(dataCurrentPtr)->indexSolution].type.c_str(), to<Data>(dataCurrentPtr)->indexSolution + 1);
 		}
+		createRender();
 	}));
 
 	// data menu control and commands
@@ -958,7 +979,7 @@ void pacman::Demo::create(const Desc& desc) {
 		to<Data>(dataCurrentPtr)->mode = Data::MODE_QUERY;
 		createRender();
 
-		desc = "Press a key to: create (D)ensities, generate (S)olutions ...";
+		desc = "Press a key to: create (D)ensities, generate (S)olutions, select (T)rajectory ...";
 	}));
 	menuCmdMap.insert(std::make_pair("PQD", [=]() {
 		// load object item
@@ -974,6 +995,20 @@ void pacman::Demo::create(const Desc& desc) {
 		context.write("Done!\n");
 	}));
 	menuCmdMap.insert(std::make_pair("PQS", [=]() {
+		// generate wrist pose solutions
+		generateSolutions();
+
+		to<Data>(dataCurrentPtr)->mode = Data::MODE_SOLUTION;
+		createRender();
+
+		context.write("Done!\n");
+	}));
+	menuCmdMap.insert(std::make_pair("PQT", [=]() {
+		// select best trajectory
+		(void)selectTrajectory();
+
+		to<Data>(dataCurrentPtr)->mode = Data::MODE_SOLUTION;
+		createRender();
 
 		context.write("Done!\n");
 	}));
@@ -1545,6 +1580,8 @@ void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 
 		try {
 			query->second->clear();
+			//if (!golem::Sample<golem::Real>::normalise<golem::Ref1>(const_cast<grasp::Contact3D::Seq&>(i->second.contacts)))
+			//	throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Unable to normalise model distribution");
 			query->second->create(i->second.contacts, *features);
 		}
 		catch (const std::exception& ex) {
@@ -1584,16 +1621,98 @@ void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 		density.pose.distFac.set(REAL_ONE / density.pose.cov.lin, REAL_ONE / density.pose.cov.ang); // == covInv
 		//const RBDist frameDistMax(poseDistanceMax * frameCov.lin, poseDistanceMax * frameCov.ang);
 
+		// likelihood
+		density.weight = query->second->weight;
+
 		// done
 		to<Data>(dataCurrentPtr)->densities.push_back(density);
 	}
 
 	if (to<Data>(dataCurrentPtr)->densities.empty())
 		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): No query created");
+
+	if (!golem::Sample<Real>::normalise<golem::Ref1>(to<Data>(dataCurrentPtr)->densities))
+		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Unable to normalise query distributions");
 }
 
 void pacman::Demo::generateSolutions() {
+	// training data are required
+	if (to<Data>(dataCurrentPtr)->densities.empty())
+		throw Message(Message::LEVEL_ERROR, "Demo::generateSolutions(): No query densities");
 
+	size_t acceptGreedy = 0, acceptSA = 0;
+
+	to<Data>(dataCurrentPtr)->solutions.resize(optimisation.runs);
+	Data::Solution::Seq::iterator ptr = to<Data>(dataCurrentPtr)->solutions.begin();
+	CriticalSection cs;
+	ParallelsTask(context.getParallels(), [&](ParallelsTask*) {
+		const U32 jobId = context.getParallels()->getCurrentJob()->getJobId();
+		Rand rand(RandSeed(this->context.getRandSeed()._U32[0] + jobId, (U32)0));
+
+		Data::Solution *solution = nullptr, test;
+
+		for (;;) {
+			// select next pointer
+			{
+				CriticalSectionWrapper csw(cs);
+				if (ptr == to<Data>(dataCurrentPtr)->solutions.end())
+					break;
+				solution = &*ptr++;
+			}
+
+			// sample query density
+			Data::Density::Seq::const_iterator density;
+			for (;;) {
+				density = golem::Sample<golem::Real>::sample<golem::Ref1, Data::Density::Seq::const_iterator>(to<Data>(dataCurrentPtr)->densities, rand);
+				if (density == to<Data>(dataCurrentPtr)->densities.end()) {
+					context.notice("Demo::generateSolutions(): Query density sampling error\n");
+					continue;
+				}
+				break;
+			}
+
+			// local search: try to find better solution using simulated annealing
+			for (size_t s = 0; s <= optimisation.steps; ++s) {
+				const bool init = s == 0;
+
+				// linear schedule
+				const Real Temp = optimisation.saTemp + Real(optimisation.steps - s) / optimisation.steps;
+				const Real Delta = optimisation.saDelta*Temp;
+				const Real Energy = optimisation.saEnergy*Temp;
+
+				// Linear component
+				Vec3 v;
+				v.next(rand); // |v|==1
+				v.multiply(Math::abs(rand.nextGaussian<Real>(REAL_ZERO, Delta*density->pose.stdDev.lin)), v);
+				test.pose.p.add(init ? density->pose.p : solution->pose.p, v);
+				// Angular component
+				const Real poseCovAng = Math::sqr(Delta*density->pose.stdDev.ang);
+				Quat q;
+				q.next(rand, poseCovAng);
+				test.pose.q.multiply(init ? density->pose.q : solution->pose.q, q);
+
+				*solution = test;
+				break;
+
+				/*
+				// path
+				// TODO
+				configuration.sample(rand, pose, test.path);
+
+				// evaluate test
+				evaluate(jobId, test.path, test.likelihood, desc.collisionAll);
+
+				// accept if better or
+				if (test.likelihood.value > config->likelihood.value || Math::exp((test.likelihood.value - config->likelihood.value) / Energy) > rand.nextUniform<Real>()) {
+					// debug
+					test.likelihood.value > config->likelihood.value ? ++acceptGreedy : ++acceptSA;
+					// update
+					config->path = test.path;
+					config->likelihood = test.likelihood;
+				}*/
+			}
+		}
+	});
 }
 
 grasp::data::Item::Map::const_iterator pacman::Demo::selectTrajectory() {
@@ -1648,23 +1767,31 @@ template <> void golem::Stream::read(pacman::Demo::Data::Density::Seq::value_typ
 	value.object.clear();
 	read(value.object, value.object.begin());
 	read(value.pose);
+	read(value.weight);
+	read(value.cdf);
 }
 
 template <> void golem::Stream::write(const pacman::Demo::Data::Density::Seq::value_type& value) {
 	write(value.type);
 	write(value.object.begin(), value.object.end());
 	write(value.pose);
+	write(value.weight);
+	write(value.cdf);
 }
 
 template <> void golem::Stream::read(pacman::Demo::Data::Solution::Seq::value_type& value) const {
 	read(value.type);
+	read(value.pose);
 	value.path.clear();
 	read(value.path, value.path.begin());
+	read(value.likelihood);
 }
 
 template <> void golem::Stream::write(const pacman::Demo::Data::Solution::Seq::value_type& value) {
 	write(value.type);
+	write(value.pose);
 	write(value.path.begin(), value.path.end());
+	write(value.likelihood);
 }
 
 //------------------------------------------------------------------------------

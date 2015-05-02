@@ -61,9 +61,10 @@
       <query id="Any" weight="1.0">
         <contact_3d kernels="5000" epsilon="1e-10" feature_std_dev_max="5.0" pose_std_dev_max="5.0"/>
         <nn_search neighbours="0" search_checks="32" search_kdtrees="1" search_leaf_max_size="10"/>
-        <pose_std_dev lin="0.05" ang="200.0"/>
+        <pose_std_dev lin="0.02" ang="20.0"/>
       </query>
 
+      <optimisation runs="1000" steps="1000" sa_temp="0.1" sa_delta="1.0" sa_energy="0.1" epsilon="1.e-10"/>
     </query>
 
     <grasp sensor="FTClient+FTClient" event_time_wait="2.0" close_duration="2.0">
