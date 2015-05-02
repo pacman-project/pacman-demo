@@ -714,7 +714,7 @@ void pacman::Demo::create(const Desc& desc) {
 
 	// data menu control and commands
 	menuCtrlMap.insert(std::make_pair("P", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: (E)stimate pose, (C)apture object, (M)odel/(Q)uery menu, run (D)emo ...";
+		desc = "Press a key to: (E)stimate pose, (C)apture object, (M)odel, (Q)uery, (T)rajectory, run (D)emo ...";
 	}));
 
 	// model pose estimation
@@ -1010,7 +1010,7 @@ void pacman::Demo::create(const Desc& desc) {
 		to<Data>(dataCurrentPtr)->mode = Data::MODE_QUERY;
 		createRender();
 
-		desc = "Press a key to: create (D)ensities, generate (S)olutions, select (T)rajectory ...";
+		desc = "Press a key to: create (D)ensities, generate (S)olutions ...";
 	}));
 	menuCmdMap.insert(std::make_pair("PQD", [=]() {
 		// load object item
@@ -1034,11 +1034,25 @@ void pacman::Demo::create(const Desc& desc) {
 
 		context.write("Done!\n");
 	}));
-	menuCmdMap.insert(std::make_pair("PQT", [=]() {
-		// select best trajectory
-		(void)selectTrajectory();
 
+	// trajectory operations
+	menuCtrlMap.insert(std::make_pair("PT", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+		// set mode
 		to<Data>(dataCurrentPtr)->mode = Data::MODE_SOLUTION;
+		createRender();
+
+		desc = "Press a key to: trajectory (S)elect/(P)erform...";
+	}));
+	menuCmdMap.insert(std::make_pair("PTS", [=]() {
+		// select best trajectory
+		selectTrajectory();
+		createRender();
+
+		context.write("Done!\n");
+	}));
+	menuCmdMap.insert(std::make_pair("PTP", [=]() {
+		// perform trajectory
+		performTrajectory();
 		createRender();
 
 		context.write("Done!\n");
@@ -1082,11 +1096,11 @@ void pacman::Demo::create(const Desc& desc) {
 			// generate wrist pose solutions
 			generateSolutions();
 			// select best trajectory
-			const grasp::data::Item::Map::const_iterator trajectory = selectTrajectory();
+			selectTrajectory();
 
 			breakPoint("Action execution");
 			// execute trajectory
-			performTrajectory(trajectory);
+			performTrajectory();
 		}
 		context.write("Done!\n");
 
@@ -1867,7 +1881,7 @@ void pacman::Demo::sortSolutions(Data::Solution::Seq& seq) {
 	seq = seqSorted;
 }
 
-grasp::data::Item::Map::const_iterator pacman::Demo::selectTrajectory() {
+void pacman::Demo::selectTrajectory() {
 	if (to<Data>(dataCurrentPtr)->solutions.empty())
 		throw Message(Message::LEVEL_ERROR, "Demo::selectTrajectory(): No solutions");
 
@@ -1901,26 +1915,26 @@ grasp::data::Item::Map::const_iterator pacman::Demo::selectTrajectory() {
 	manipulator->copy(to<Data>(dataCurrentPtr)->solutions[val.first].path, seq);
 
 	// add trajectory waypoint
-	const std::string trjName = getTrajectoryName(queryItemTrj, to<Data>(dataCurrentPtr)->solutions[val.first].type);
-	grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(trjName);
+	grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(queryItemTrj);
 	{
 		RenderBlock renderBlock(*this);
 		golem::CriticalSectionWrapper cswData(csData);
 		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
-			ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(trjName, modelHandlerTrj->create()));
+			ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(queryItemTrj, modelHandlerTrj->create()));
 		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
-
 	}
 	data::Trajectory* trajectory = is<data::Trajectory>(ptr);
 	if (!trajectory)
 		throw Message(Message::LEVEL_ERROR, "Trajectory handler does not implement data::Trajectory");
 	// add current state
 	trajectory->setWaypoints(seq);
-
-	return ptr;
 }
 
-void pacman::Demo::performTrajectory(grasp::data::Item::Map::const_iterator ptr) {
+void pacman::Demo::performTrajectory() {
+	grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(queryItemTrj);
+	if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
+		throw Message(Message::LEVEL_ERROR, "Demo::performTrajectory(): Unable to find query trajectory");
+
 
 }
 

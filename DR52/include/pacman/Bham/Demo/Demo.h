@@ -608,10 +608,10 @@ protected:
 	static void sortSolutions(Data::Solution::Seq& seq);
 
 	/** Select trajectory */
-	grasp::data::Item::Map::const_iterator selectTrajectory();
+	void selectTrajectory();
 
 	/** Perform trajectory */
-	void performTrajectory(grasp::data::Item::Map::const_iterator ptr);
+	void performTrajectory();
 
 	grasp::Camera* getWristCamera(const bool dontThrow = false) const;
 	golem::Mat34 getWristPose() const;
