@@ -686,7 +686,8 @@ void pacman::Demo::create(const Desc& desc) {
 			if (to<Data>(dataCurrentPtr)->solutions.empty())
 				throw Cancel("No solutions created");
 			to<Data>(dataCurrentPtr)->indexSolution = to<Data>(dataCurrentPtr)->indexSolution <= 0 ? to<Data>(dataCurrentPtr)->solutions.size() - 1 : to<Data>(dataCurrentPtr)->indexSolution - 1;
-			context.write("Query type %s, Item #%u\n", to<Data>(dataCurrentPtr)->solutions[to<Data>(dataCurrentPtr)->indexSolution].type.c_str(), to<Data>(dataCurrentPtr)->indexSolution + 1);
+			const Data::Solution& solution = to<Data>(dataCurrentPtr)->solutions[to<Data>(dataCurrentPtr)->indexSolution];
+			context.write("Solution type %s, Item #%u, Likelihood=%.9f\n", solution.type.c_str(), to<Data>(dataCurrentPtr)->indexSolution + 1, solution.likelihood);
 		}
 		createRender();
 	}));
@@ -705,7 +706,8 @@ void pacman::Demo::create(const Desc& desc) {
 			if (to<Data>(dataCurrentPtr)->solutions.empty())
 				throw Cancel("No solutions created");
 			to<Data>(dataCurrentPtr)->indexSolution = to<Data>(dataCurrentPtr)->indexSolution < to<Data>(dataCurrentPtr)->solutions.size() - 1 ? to<Data>(dataCurrentPtr)->indexSolution + 1 : 0;
-			context.write("Query type %s, Item #%u\n", to<Data>(dataCurrentPtr)->solutions[to<Data>(dataCurrentPtr)->indexSolution].type.c_str(), to<Data>(dataCurrentPtr)->indexSolution + 1);
+			const Data::Solution& solution = to<Data>(dataCurrentPtr)->solutions[to<Data>(dataCurrentPtr)->indexSolution];
+			context.write("Solution type %s, Item #%u, Likelihood=%.9f\n", solution.type.c_str(), to<Data>(dataCurrentPtr)->indexSolution + 1, solution.likelihood);
 		}
 		createRender();
 	}));
@@ -954,7 +956,7 @@ void pacman::Demo::create(const Desc& desc) {
 			case 'T': {
 				context.write("%s )T(\n", options.c_str());
 				// add trajectory waypoint
-				const std::string trjName = getTrajectoryName(modelType);
+				const std::string trjName = getTrajectoryName(modelItemTrj, modelType);
 				grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(trjName);
 				if (ptr == to<Data>(dataCurrentPtr)->itemMap.end()) {
 					golem::CriticalSectionWrapper cswData(csData);
@@ -995,7 +997,7 @@ void pacman::Demo::create(const Desc& desc) {
 				to<Data>(dataCurrentPtr)->training.erase(ptr);
 			// remove trajectory if no items of a given type are present
 			//if (to<Data>(dataCurrentPtr)->training.end() == to<Data>(dataCurrentPtr)->training.find(modelType))
-			//	to<Data>(dataCurrentPtr)->itemMap.erase(getTrajectoryName(modelType));
+			//	to<Data>(dataCurrentPtr)->itemMap.erase(getTrajectoryName(modelItemTrj, modelType));
 			createRender();
 		}
 
@@ -1571,8 +1573,8 @@ grasp::data::Item::Map::iterator pacman::Demo::objectProcess(grasp::data::Item::
 
 //------------------------------------------------------------------------------
 
-std::string pacman::Demo::getTrajectoryName(const std::string& type) const {
-	return modelItemTrj + "-" + type;
+std::string pacman::Demo::getTrajectoryName(const std::string& prefix, const std::string& type) const {
+	return prefix + "-" + type;
 }
 
 //------------------------------------------------------------------------------
@@ -1640,7 +1642,7 @@ void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 		if (pose == poseMap.end()) pose = poseAny;
 
 		// trajectory
-		const std::string trjName = getTrajectoryName(i->first);
+		const std::string trjName = getTrajectoryName(modelItemTrj, i->first);
 		grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(trjName);
 		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
 			throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Empty trajectory");
@@ -1778,8 +1780,10 @@ void pacman::Demo::generateSolutions() {
 				}
 				break;
 			}
-			// set index
+			// set
+			test.type = query->type;
 			test.queryIndex = (U32)(query - to<Data>(dataCurrentPtr)->densities.begin());
+			test.likelihood = pose->weight;
 
 			// local search: try to find better solution using simulated annealing
 			for (size_t s = 0; s <= optimisation.steps; ++s) {
@@ -1834,10 +1838,84 @@ void pacman::Demo::generateSolutions() {
 			}
 		}
 	});
+
+	// sort
+	sortSolutions(to<Data>(dataCurrentPtr)->solutions);
+}
+
+void pacman::Demo::sortSolutions(Data::Solution::Seq& seq) {
+	if (seq.empty())
+		throw Message(Message::LEVEL_ERROR, "Demo::sortSolutions(): No solutions");
+
+	// create pointers
+	typedef std::vector<const Data::Solution*> PtrSeq;
+	PtrSeq ptrSeq;
+	ptrSeq.reserve(seq.size());
+	for (Data::Solution::Seq::const_iterator i = seq.begin(); i != seq.end(); ++i)
+		ptrSeq.push_back(&*i);
+
+	// sort
+	std::sort(ptrSeq.begin(), ptrSeq.end(), [] (const Data::Solution* l, const Data::Solution* r) -> bool {return l->likelihood > r->likelihood; });
+
+	// copy
+	Data::Solution::Seq seqSorted;
+	seqSorted.reserve(ptrSeq.size());
+	for (PtrSeq::const_iterator i = ptrSeq.begin(); i != ptrSeq.end(); ++i)
+		seqSorted.push_back(**i);
+
+	// replace
+	seq = seqSorted;
 }
 
 grasp::data::Item::Map::const_iterator pacman::Demo::selectTrajectory() {
-	grasp::data::Item::Map::const_iterator ptr = to<Data>(dataCurrentPtr)->itemMap.begin();
+	if (to<Data>(dataCurrentPtr)->solutions.empty())
+		throw Message(Message::LEVEL_ERROR, "Demo::selectTrajectory(): No solutions");
+
+	const U32 testTrajectories = std::min((U32)to<Data>(dataCurrentPtr)->solutions.size(), manipulator->getDesc().trajectoryClusterSize);
+
+	// TODO collision detection
+	// collision bounds
+	//CollisionBounds collisionBounds(const_cast<golem::Planner&>(manipulator->getPlanner()), [=] (size_t i, Vec3& p)->bool {
+	//	return false;
+	//}, &objectRenderer, &csRenderer);
+	//collisionBounds.setLocal();
+
+	// search
+	const std::pair<U32, RBDistEx> val = manipulator->find<U32>(0, testTrajectories, [&](U32 index) -> RBDistEx {
+		to<Data>(dataCurrentPtr)->indexSolution = index;
+		createRender();
+		Manipulator::Waypoint::Seq& path = to<Data>(dataCurrentPtr)->solutions[index].path;
+		const RBDist dist(manipulator->find(path));
+		const golem::ConfigspaceCoord approach = manipulator->getConfig(path.back());
+		const bool collides = false;// collisionBounds.collides(approach, manipulator->getArm()->getStateInfo().getJoints().end() - 1); // TODO test approach config using locations
+		const RBDistEx distex(dist, manipulator->getDesc().trajectoryErr.collision && collides);
+		context.write("#%03u/%u: Trajectory error: lin=%.9f, ang=%.9f, collision=%s\n", index + 1, testTrajectories, distex.lin, distex.ang, distex.collision ? "yes" : "no");
+		//if (getUICallback() && getUICallback()->hasInputEnabled()) Menu(context, *getUICallback()).option("\x0D", "Press <Enter> to continue...");
+		return distex;
+	});
+
+	to<Data>(dataCurrentPtr)->indexSolution = val.first;
+	context.write("#%03u: Best trajectory\n", val.first + 1);
+	createRender();
+	Controller::State::Seq seq;
+	manipulator->copy(to<Data>(dataCurrentPtr)->solutions[val.first].path, seq);
+
+	// add trajectory waypoint
+	const std::string trjName = getTrajectoryName(queryItemTrj, to<Data>(dataCurrentPtr)->solutions[val.first].type);
+	grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(trjName);
+	{
+		RenderBlock renderBlock(*this);
+		golem::CriticalSectionWrapper cswData(csData);
+		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
+			ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(trjName, modelHandlerTrj->create()));
+		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+
+	}
+	data::Trajectory* trajectory = is<data::Trajectory>(ptr);
+	if (!trajectory)
+		throw Message(Message::LEVEL_ERROR, "Trajectory handler does not implement data::Trajectory");
+	// add current state
+	trajectory->setWaypoints(seq);
 
 	return ptr;
 }

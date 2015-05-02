@@ -597,13 +597,15 @@ protected:
 	/** Process object image and add to data bundle */
 	grasp::data::Item::Map::iterator objectProcess(grasp::data::Item::Map::iterator ptr);
 	/** Create trajectory name */
-	std::string getTrajectoryName(const std::string& type) const;
+	std::string getTrajectoryName(const std::string& prefix, const std::string& type) const;
 
 	/** Create query densities */
 	void createQuery(grasp::data::Item::Ptr item, const golem::Mat34& frame);
 
 	/** Generate solutions */
 	void generateSolutions();
+	/** Sort solutions */
+	static void sortSolutions(Data::Solution::Seq& seq);
 
 	/** Select trajectory */
 	grasp::data::Item::Map::const_iterator selectTrajectory();
