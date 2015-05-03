@@ -310,6 +310,8 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 	manipulatorAppearance.load(xmlcontext->getContextFirst("manipulator appearance"));
 	golem::XMLData("item_trj", manipulatorItemTrj, xmlcontext->getContextFirst("manipulator"));
 	grasp::XMLData(manipulatorPoseStdDev, xmlcontext->getContextFirst("manipulator pose_stddev"), false);
+
+	golem::XMLData("duration", trajectoryDuration, xmlcontext->getContextFirst("manipulator trajectory"));
 }
 
 //------------------------------------------------------------------------------
@@ -652,6 +654,8 @@ void pacman::Demo::create(const Desc& desc) {
 
 	poseCovInv.lin = REAL_ONE / (poseCov.lin = Math::sqr(desc.manipulatorPoseStdDev.lin));
 	poseCovInv.ang = REAL_ONE / (poseCov.ang = Math::sqr(desc.manipulatorPoseStdDev.ang));
+
+	trajectoryDuration = desc.trajectoryDuration;
 
 	// top menu help using global key '?'
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
@@ -1945,6 +1949,32 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 	// reverse
 	Controller::State::Seq seq;
 	for (Controller::State::Seq::const_reverse_iterator i = seqInv.rbegin(); i != seqInv.rend(); ++i) seq.push_back(*i);
+	
+	// profile
+	struct ProfileCallback : Profile::CallbackDist {
+		const Demo* demo;
+		ProfileCallback(const Demo* demo) : demo(demo) {}
+		Real distConfigspaceCoord(const ConfigspaceCoord& prev, const ConfigspaceCoord& next) const {
+			RBCoord cprev(demo->forwardTransformArm(prev)), cnext(demo->forwardTransformArm(next));
+			return Math::sqrt(demo->poseCovInv.dot(RBDist(cprev, cnext)));
+		}
+		Real distCoord(Real prev, Real next) const {
+			return Math::abs(prev - next);
+		}
+		bool distCoordEnabled(const Configspace::Index& index) const {
+			return true;
+		}
+	} profileCallback(this);
+	Profile::Desc desc;
+	desc.pCallbackDist = &profileCallback;
+	//auto pDesc = new Polynomial4::Desc; // 4-th deg polynomial - quadratic velocity
+	auto pDesc = new Polynomial1::Desc; // 1-st deg polynomial - constant velocity
+	desc.pTrajectoryDesc.reset(pDesc);
+	Profile::Ptr profile = desc.create(*controller);
+	if (profile == nullptr)
+		throw Message(Message::LEVEL_ERROR, "Demo::performTrajectory(): unable to create profile");
+	seq.back().t = seq.front().t + trajectoryDuration;
+	profile->profile(seq);
 
 	golem::Controller::State::Seq initTrajectory;
 	findTrajectory(lookupState(), &seq.front(), nullptr, SEC_TM_REAL_ZERO, initTrajectory);

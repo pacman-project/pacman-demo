@@ -358,6 +358,9 @@ public:
 		/** Manipulator trajectory item */
 		std::string manipulatorItemTrj;
 
+		/** Trajectory duration */
+		golem::SecTmReal trajectoryDuration;
+
 		/** Constructs from description object */
 		Desc() {
 			Desc::setToDefault();
@@ -418,6 +421,8 @@ public:
 			manipulatorAppearance.setToDefault();
 			manipulatorPoseStdDev.set(golem::Real(0.002), golem::Real(1000.0));
 			manipulatorItemTrj.clear();
+
+			trajectoryDuration = golem::SecTmReal(5.0);
 		}
 		/** Assert that the description is valid. */
 		virtual void assertValid(const grasp::Assert::Context& ac) const {
@@ -486,6 +491,8 @@ public:
 			manipulatorAppearance.assertValid(grasp::Assert::Context(ac, "manipulatorAppearance."));
 			grasp::Assert::valid(manipulatorPoseStdDev.isValid(), ac, "manipulatorPoseStdDev: invalid");
 			grasp::Assert::valid(manipulatorItemTrj.length() > 0, ac, "manipulatorItemTrj: invalid");
+
+			grasp::Assert::valid(trajectoryDuration > golem::SEC_TM_REAL_ZERO, ac, "trajectoryDuration: <= 0");
 		}
 		/** Load descritpion from xml context. */
 		virtual void load(golem::Context& context, const golem::XMLContext* xmlcontext);
@@ -587,6 +594,9 @@ protected:
 	std::string manipulatorItemTrj;
 	/** Manipulator pose distribution covariance */
 	grasp::RBDist poseCov, poseCovInv;
+
+	/** Trajectory duration */
+	golem::SecTmReal trajectoryDuration;
 
 	/** Item selection */
 	typedef std::function<void(Data::Training::Map&, Data::Training::Map::iterator&)> ItemSelectFunc;
