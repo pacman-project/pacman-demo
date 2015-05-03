@@ -6,6 +6,7 @@
   <active_sense>
     <!-- selection_method = "random" -->
     <!-- selection_method = "contact_based" -->
+    <!-- selection_method = "contact_based_v2" -->
     <!-- selection_method = "sequential" -->
     <!-- generation_method = "random_sphere" -->
     <!-- generation_method = "fixed"  (This loads <pose></pose> tags as a sequence of fixed poses (pre-generated) and use them for next best view selection)-->

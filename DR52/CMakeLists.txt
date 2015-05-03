@@ -255,9 +255,14 @@ INCLUDE_DIRECTORIES(
 
 SET(PACMAN_BHAM_ACTIVESENS_HEADERS
 	${PROJECT_ROOT}/include/pacman/Bham/ActiveSens/ActiveSens.h
+	${PROJECT_ROOT}/include/pacman/Bham/ActiveSens/ActiveSensOM.h
+	${PROJECT_ROOT}/include/pacman/Bham/ActiveSens/HypothesisSensor.h
 )
 SET(PACMAN_BHAM_ACTIVESENS_SOURCES
 	${PROJECT_ROOT}/src/pacman/Bham/ActiveSens/ActiveSens.cpp
+	${PROJECT_ROOT}/src/pacman/Bham/ActiveSens/ActiveSensOM.cpp
+	${PROJECT_ROOT}/src/pacman/Bham/ActiveSens/HypothesisSensor.cpp
+
 )
 SET(PACMAN_BHAM_ACTIVESENS_FILES
 )
