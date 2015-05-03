@@ -358,8 +358,10 @@ public:
 		/** Manipulator trajectory item */
 		std::string manipulatorItemTrj;
 
-		/** Trajectory duration */
+		/** Manipulation trajectory duration */
 		golem::SecTmReal trajectoryDuration;
+		/** Manipulation trajectory force threshold */
+		golem::Twist trajectoryThresholdForce;
 
 		/** Constructs from description object */
 		Desc() {
@@ -423,6 +425,7 @@ public:
 			manipulatorItemTrj.clear();
 
 			trajectoryDuration = golem::SecTmReal(5.0);
+			trajectoryThresholdForce.setZero();
 		}
 		/** Assert that the description is valid. */
 		virtual void assertValid(const grasp::Assert::Context& ac) const {
@@ -493,6 +496,7 @@ public:
 			grasp::Assert::valid(manipulatorItemTrj.length() > 0, ac, "manipulatorItemTrj: invalid");
 
 			grasp::Assert::valid(trajectoryDuration > golem::SEC_TM_REAL_ZERO, ac, "trajectoryDuration: <= 0");
+			grasp::Assert::valid(trajectoryThresholdForce.isPositive(), ac, "trajectoryThresholdForce: negative");
 		}
 		/** Load descritpion from xml context. */
 		virtual void load(golem::Context& context, const golem::XMLContext* xmlcontext);
@@ -595,8 +599,11 @@ protected:
 	/** Manipulator pose distribution covariance */
 	grasp::RBDist poseCov, poseCovInv;
 
-	/** Trajectory duration */
+	/** Manipulation trajectory duration */
 	golem::SecTmReal trajectoryDuration;
+
+	/** Manipulation trajectory force threshold */
+	golem::Twist trajectoryThresholdForce;
 
 	/** Item selection */
 	typedef std::function<void(Data::Training::Map&, Data::Training::Map::iterator&)> ItemSelectFunc;

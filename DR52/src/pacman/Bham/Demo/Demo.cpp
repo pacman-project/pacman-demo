@@ -312,6 +312,7 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 	grasp::XMLData(manipulatorPoseStdDev, xmlcontext->getContextFirst("manipulator pose_stddev"), false);
 
 	golem::XMLData("duration", trajectoryDuration, xmlcontext->getContextFirst("manipulator trajectory"));
+	golem::XMLData(trajectoryThresholdForce, xmlcontext->getContextFirst("manipulator threshold"));
 }
 
 //------------------------------------------------------------------------------
@@ -656,6 +657,7 @@ void pacman::Demo::create(const Desc& desc) {
 	poseCovInv.ang = REAL_ONE / (poseCov.ang = Math::sqr(desc.manipulatorPoseStdDev.ang));
 
 	trajectoryDuration = desc.trajectoryDuration;
+	trajectoryThresholdForce = desc.trajectoryThresholdForce;
 
 	// top menu help using global key '?'
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
@@ -1995,34 +1997,35 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 	if (!trajectoryIf)
 		throw Message(Message::LEVEL_ERROR, "Demo::performTrajectory(): unable to create trajectory using handler %s", trajectoryHandler.c_str());
 	trajectoryIf->setWaypoints(completeTrajectory);
-
-	// block displaying the current item
-	RenderBlock renderBlock(*this);
+	
+	// remove if failed
+	bool finished = false;
+	const Data::View view = to<Data>(dataCurrentPtr)->getView();
+	ScopeGuard removeItem([&]() {
+		if (!finished) {
+			RenderBlock renderBlock(*this);
+			golem::CriticalSectionWrapper csw(csData);
+			to<Data>(dataCurrentPtr)->itemMap.erase(manipulatorItemTrj);
+			to<Data>(dataCurrentPtr)->getView() = view;
+		}
+	});
+	// add trajectory item
+	{
+		RenderBlock renderBlock(*this);
+		golem::CriticalSectionWrapper csw(csData);
+		const data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(manipulatorItemTrj, itemTrajectory));
+		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+	}
 
 	// test trajectory
 	if (testTrajectory) {
-		// insert trajectory to data with temporary name
-		const std::string itemLabelTmp = makeString("%6.6f", context.getTimer().elapsed());
-		ScopeGuard removeItem([&]() {
-			UI::removeCallback(*this, getCurrentHandler());
-			{
-				golem::CriticalSectionWrapper csw(csData);
-				to<Data>(dataCurrentPtr)->itemMap.erase(itemLabelTmp);
-			}
-			createRender();
-		});
-		{
-			golem::CriticalSectionWrapper csw(csData);
-			const data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(itemLabelTmp, itemTrajectory));
-			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
-		}
-		// enable GUI interaction and refresh
-		UI::addCallback(*this, getCurrentHandler());
-		createRender();
 		// prompt user
 		EnableKeyboardMouse enableKeyboardMouse(*this);
 		option("\x0D", "Press <Enter> to accept trajectory...");
 	}
+
+	// block displaying the current item
+	RenderBlock renderBlock(*this);
 
 	// go to initial state
 	sendTrajectory(initTrajectory);
@@ -2039,19 +2042,17 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 		if (controller->waitForEnd(0))
 			break;
 
+		// TODO wait for force event given trajectoryThresholdForce
+
 		// print every 10th robot state
 		if (i % 10 == 0)
 			context.write("State #%d\r", i);
 	}
 
-	// insert trajectory
-	{
-		golem::CriticalSectionWrapper csw(csData);
-		to<Data>(dataCurrentPtr)->itemMap.erase(manipulatorItemTrj);
-		const data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(manipulatorItemTrj, itemTrajectory));
-		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
-	}
+	// TODO open hand and perform withdraw action to a safe pose
 
+	// done
+	finished = true;
 	context.write("Performance finished!\n");
 }
 
