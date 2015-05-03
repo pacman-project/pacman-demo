@@ -197,8 +197,8 @@ void pacman::Demo::create(const Desc& desc) {
 
 
 	//ActiveSense Demo 
-	menuCmdMap.insert(std::make_pair("CD", [=]() {
-
+	menuCmdMap.insert(std::make_pair("CD", [=]()
+	{
 		grasp::data::Item::Map predModelMap;
 		grasp::data::Item::Map::iterator itemPredModelPtr;
 
@@ -211,21 +211,38 @@ void pacman::Demo::create(const Desc& desc) {
 				}
 			}
 		};
-
-		
 		//Filter by PredictorModel+PredictorModel HandlerID
 		filter(dataCurrentPtr->second->itemMap, "PredictorModel+PredictorModel", predModelMap);
 		itemPredModelPtr = predModelMap.begin();
-		select(itemPredModelPtr, predModelMap.begin(), predModelMap.end(), "Select PredModel:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
-		return ptr->first + ": " + ptr->second->getHandler().getID();
-		});
+		select(
+			itemPredModelPtr,
+			predModelMap.begin(),
+			predModelMap.end(),
+			"Select PredModel:\n",
+			[](grasp::data::Item::Map::iterator ptr) -> std::string{ return ptr->first + ": " + ptr->second->getHandler().getID(); });
 
 		activeSense->setPredModelItem(itemPredModelPtr);
+
+		activeSense->resetNextBestViewSequential(); // always start from first fixed pose when using sequential selection method
+
+		if (!activeSense->getParameters().configSeq.empty())
+		{
+			const int k = option("CF", "For the first view, use (C)urrent camera pose, or first (F)ixed pose?");
+			if (k == 'F')
+			{
+				context.write("pacman::Demo: moving to first fixed NBV pose\n");
+				const grasp::ConfigMat34& pose = activeSense->getParameters().configSeq.front();
+				gotoPoseConfig(pose);
+				// then throw this pose away if using sequential selection method
+				if (activeSense->getParameters().selectionMethod == ActiveSense::ESelectionMethod::S_SEQUENTIAL)
+					activeSense->incrNextBestViewSequential();
+			}
+		}
+
 		activeSense->nextBestView();
+
 		context.write("Executing Trajectory...\n");
 		activeSense->executeTrajectory();
-
-
 	}));
 	menuCmdMap.insert(std::make_pair("CH", [=]() {
 

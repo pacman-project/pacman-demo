@@ -130,7 +130,7 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 		configSeq.clear();
 		XMLData(configSeq, configSeq.max_size(), const_cast<golem::XMLContext*>(pxmlcontext), "pose");
 
-		printf("Loaded NPoses %d\n", configSeq.size());
+		printf("Loaded %d fixed poses:\n", configSeq.size());
 
 		for (int i = 0; i < configSeq.size(); i++)
 		{
@@ -151,21 +151,13 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 				printf("%f ", static_cast<float>(config.c[j]));
 			printf("\n");
 		}
-
 	}
-
-
-
-
-	printf("ActiveSense: Loaded Everything!\n");
 
 	printf("ActiveSense: method %d usmc %d ushb %d radius %f nsamples %d nviews %d\n", this->selectionMethod, this->useManualCentroid, this->useHeightBias, this->radius, this->nsamples, this->nviews);
 	printf("ActiveSense: minPhi %f maxPhi %f minTheta %f maxTheta %f!\n", this->minPhi, this->maxPhi, this->minTheta, this->maxTheta);
 	printf("ActiveSense: centroid %f %f %f\n", this->centroid.v1, this->centroid.v2, this->centroid.v3);
-	//system("pause");
-
-
 }
+
 /** Load from xml context */
 void ActiveSense::load(const golem::XMLContext* xmlcontext)
 {
@@ -525,8 +517,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 
 	grasp::data::Item::List scannedImageItems; // scanned Items List
 	
-	// TODO performs first scan using first pose from fixed list
-
+	// performs first scan using current wrist pose
 	demoOwner->scanPoseActive(scannedImageItems); 
 
 	if (!this->params.useManualCentroid)
@@ -554,7 +545,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 
 	grasp::data::ItemPredictorModel::Map::iterator ptr;
 	bool stop = false;
-	int numViewsAcquired = 0;
+	int numViewsAcquired = 1; // we count the initial view
 	while (!stop)
 	{
 		if (params.selectionMethod == ESelectionMethod::S_CONTACT_BASED ||
@@ -605,7 +596,11 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 		//Checking stopping criteria
 		if (params.stoppingCriteria == EStoppingCriteria::C_NVIEWS)
 		{
-			stop = numViewsAcquired >= maxNumViews;
+			if (numViewsAcquired >= maxNumViews)
+			{
+				stop = true;
+				demoOwner->context.write("ActiveSense: Stopping because used max number of views\n");
+			}
 		}	
 		else if (params.stoppingCriteria == EStoppingCriteria::C_COVERAGE || params.stoppingCriteria == EStoppingCriteria::C_NVIEWS_COVERAGE)
 		{
@@ -617,10 +612,16 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 			else
 				demoOwner->context.write("ActiveSense: This is not an ItemImage.\n");
 			
-			stop = coverage >= params.coverageThr;
-			
-			if (params.stoppingCriteria == EStoppingCriteria::C_NVIEWS_COVERAGE)
-				stop = stop || numViewsAcquired >= maxNumViews;
+			if (coverage >= params.coverageThr)
+			{
+				stop = true;
+				demoOwner->context.write("ActiveSense: Stopping because exceeded coverage threshold\n");
+			}
+			else if (params.stoppingCriteria == EStoppingCriteria::C_NVIEWS_COVERAGE && numViewsAcquired >= maxNumViews)
+			{
+				stop = true;
+				demoOwner->context.write("ActiveSense: Stopping because used max number of views\n");
+			}
 		}
 		else
 		{
@@ -696,7 +697,7 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewSequential(
 
 	this->seqIndex = (this->seqIndex + 1) % this->viewHypotheses.size();
 
-	demoOwner->context.write("\nActiveSense: Next Sequential View is %d\n\n", seqIndex+1);
+	demoOwner->context.write("\nActiveSense: Sequential View #%d\n\n", seqIndex);
 
 	return ret;
 }
@@ -939,7 +940,7 @@ pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSens
 	typedef std::vector<const grasp::data::ItemPredictorModel::Data::Map*> TrainingData;
 	TrainingData trainingData;
 
-	demoOwner->context.write("ActiveSense: Getting ItemPredictorModel\n");
+	//demoOwner->context.write("ActiveSense: Getting ItemPredictorModel\n");
 	// collect data (TODO: Receive a list of ItemPredictorModel
 	const grasp::data::ItemPredictorModel* model = is<const grasp::data::ItemPredictorModel>(input);
 	if (model)
