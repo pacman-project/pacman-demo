@@ -17,7 +17,6 @@
 #include <Grasp/Grasp/Model.h>
 #include <Grasp/Core/RBPose.h>
 #include <Grasp/Core/Ctrl.h>
-#include <Grasp/Grasp/Model.h>
 #include <Grasp/Grasp/Query.h>
 
 //------------------------------------------------------------------------------
