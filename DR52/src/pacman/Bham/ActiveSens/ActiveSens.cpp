@@ -520,14 +520,14 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 	//Creating new Data Bundle
 	//grasp::Manager::Data::Map::iterator data = createData();
 
-	size_t index = 0, size = this->params.nviews;
+	size_t index = 0, maxNumViews = this->params.nviews;
 	pacman::HypothesisSensor::Ptr hypothesis(nullptr);
 
-	//Scanned Items List
-	grasp::data::Item::List scannedImageItems;
+	grasp::data::Item::List scannedImageItems; // scanned Items List
+	
+	// TODO performs first scan using first pose from fixed list
 
-	//Performs first scan using current robot pose
-	demoOwner->scanPoseActive(scannedImageItems);
+	demoOwner->scanPoseActive(scannedImageItems); 
 
 	if (!this->params.useManualCentroid)
 	{
@@ -554,97 +554,41 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 
 	grasp::data::ItemPredictorModel::Map::iterator ptr;
 	bool stop = false;
-	int i = 0;
+	int numViewsAcquired = 0;
 	while (!stop)
 	{
-
-		if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED)
+		if (params.selectionMethod == ESelectionMethod::S_CONTACT_BASED ||
+			params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2)
 		{
-			ptr = this->computeFeedBackTransform(predModelItem, pointCurvItem);
-			//this->setPredModelItem(ptr);
-			hypothesis = this->selectNextBestViewContactBased(ptr);
-		}
-		else if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2)
-		{
-			ptr = this->computeFeedBackTransform(predModelItem, pointCurvItem);
-			//this->setPredModelItem(ptr);
-			hypothesis = this->selectNextBestViewContactBased2(ptr);
-		}
-		else if (this->params.selectionMethod == ESelectionMethod::S_RANDOM)
-		{
-			hypothesis = this->selectNextBestViewRandom();
-		}
-		else if (this->params.selectionMethod == ESelectionMethod::S_SEQUENTIAL)
-		{
-			hypothesis = this->selectNextBestViewSequential();
+			ptr = computeFeedBackTransform(predModelItem, pointCurvItem);
 		}
 
-
-		if (hypothesis.get())
+		Mat34 goal;
+		goal.setId();
+		collisionBounds = this->selectCollisionBounds(true, *scannedImageItems.begin());
+		bool gotToHypothesis = false;
+		while (!gotToHypothesis)
 		{
-			Mat34 goal;
-			goal.setId();
-			collisionBounds = this->selectCollisionBounds(true, *scannedImageItems.begin());
-			bool success = false;
-			while (hypothesis.get() && !success)
+			hypothesis = selectNextBestView(ptr);
+
+			goal = this->computeGoal(hypothesis->getFrame(), camera);
+
+			try
 			{
-				goal = this->computeGoal(hypothesis->getFrame(), camera);
+				if (this->params.generationMethod == EGenerationMethod::G_RANDOM_SPHERE)
+					gotToHypothesis = demoOwner->gotoPoseWS(goal);
+				if (this->params.generationMethod == EGenerationMethod::G_FIXED)
+					gotToHypothesis = demoOwner->gotoPoseConfig(hypothesis->getConfig());
 
-				try {
-
-					if (this->params.generationMethod == EGenerationMethod::G_RANDOM_SPHERE)
-						success = demoOwner->gotoPoseWS(goal);
-					if (this->params.generationMethod == EGenerationMethod::G_FIXED)
-						success = demoOwner->gotoPoseConfig(hypothesis->getConfig());
-
-					if (!success)
-					{
-						demoOwner->context.write("ActiveSense: Couldnt go to selected hypothesis due to large final pose error, sampling again.\n");
-						if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED)
-						{
-							hypothesis = this->selectNextBestViewContactBased(ptr);
-						}
-						else if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2)
-						{
-							hypothesis = this->selectNextBestViewContactBased2(ptr);
-						}
-						else if (this->params.selectionMethod == ESelectionMethod::S_RANDOM)
-						{
-							hypothesis = this->selectNextBestViewRandom();
-						}
-						else if (this->params.selectionMethod == ESelectionMethod::S_SEQUENTIAL)
-						{
-							hypothesis = this->selectNextBestViewSequential();
-						}
-					}
-				}
-				catch (const golem::Message& e)
-				{
-					demoOwner->context.write("ActiveSense: Couldnt go to selected hypothesis due exception %s, sampling again...\n", e.what());
-					if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED)
-					{
-						hypothesis = this->selectNextBestViewContactBased(ptr);
-					}
-					else if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2)
-					{
-						hypothesis = this->selectNextBestViewContactBased2(ptr);
-					}
-					else if (this->params.selectionMethod == ESelectionMethod::S_RANDOM)
-					{
-						hypothesis = this->selectNextBestViewRandom();
-					}
-					else if (this->params.selectionMethod == ESelectionMethod::S_SEQUENTIAL)
-					{
-						hypothesis = this->selectNextBestViewSequential();
-					}
-				}
-
-
-
+				if (!gotToHypothesis)
+					demoOwner->context.write("ActiveSense: Couldnt go to selected hypothesis due to large final pose error, trying next NBV.\n");
 			}
-			collisionBounds.release();
+			catch (const golem::Message& e)
+			{
+				demoOwner->context.write("ActiveSense: Couldnt go to selected hypothesis due exception %s, trying next NBV.\n", e.what());
+			}
 		}
-
+		collisionBounds.release();
 
 		//Adding hypotheses to the set of visited hypotheses so far (used for not going to this hypothesis again later)
 		hypothesis->visited = true;
@@ -652,17 +596,16 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 
 		demoOwner->scanPoseActive(scannedImageItems);
 
-
 		//Integrate views into the current pointCurv
 		this->pointCurvItem = processItems(scannedImageItems);
 
 		//Number of views increment
-		i++;
+		++numViewsAcquired;
 
 		//Checking stopping criteria
 		if (params.stoppingCriteria == EStoppingCriteria::C_NVIEWS)
 		{
-			stop = i >= size;
+			stop = numViewsAcquired >= maxNumViews;
 		}	
 		else if (params.stoppingCriteria == EStoppingCriteria::C_COVERAGE || params.stoppingCriteria == EStoppingCriteria::C_NVIEWS_COVERAGE)
 		{
@@ -670,29 +613,21 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 			grasp::data::ItemPointsCurv* image = grasp::is<grasp::data::ItemPointsCurv>(this->pointCurvItem);
 			golem::Real coverage = 0.0;
 			if (image)
-			{
-				
 				coverage = computeCoverage(image->cloud, polygons);
-			}
 			else
-			{
 				demoOwner->context.write("ActiveSense: This is not an ItemImage.\n");
-			}
 			
 			stop = coverage >= params.coverageThr;
 			
 			if (params.stoppingCriteria == EStoppingCriteria::C_NVIEWS_COVERAGE)
-				stop = stop || i >= size;
-
+				stop = stop || numViewsAcquired >= maxNumViews;
 		}
 		else
 		{
 			demoOwner->context.write("ActiveSense: Unknown stopping criteria, stopping now.\n");
 			stop = true;
 		}
-			
-
-	}
+	} // loop over views
 
 	//If we are using a selection method different from contact_based then we generate a queryModel, trajectory and a disposable (feedback)predictorModel as a final result
 	if (this->params.selectionMethod != ESelectionMethod::S_CONTACT_BASED)
@@ -701,10 +636,39 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 	}
 
 	demoOwner->context.write("\nActiveSense: NextBestView Finished! Check this->result attribute member for: %d pointCurvs, %d predQueries and %d best trajectories\n", result.pointCurvs.size(), result.predQueries.size(), result.trajectories.size());
+
 	return this->pointCurvItem;
-
-
 }
+
+pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestView(grasp::data::Item::Map::iterator predModelPtr)
+{
+	HypothesisSensor::Ptr hypothesis;
+
+	if (params.selectionMethod == ESelectionMethod::S_CONTACT_BASED)
+	{
+		hypothesis = selectNextBestViewContactBased(predModelPtr);
+	}
+	else if (params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2)
+	{
+		hypothesis = selectNextBestViewContactBased2(predModelPtr);
+	}
+	else if (params.selectionMethod == ESelectionMethod::S_RANDOM)
+	{
+		hypothesis = selectNextBestViewRandom();
+	}
+	else if (params.selectionMethod == ESelectionMethod::S_SEQUENTIAL)
+	{
+		hypothesis = selectNextBestViewSequential();
+	}
+	else
+		throw Cancel("pacman::ActiveSense::selectNextBestView: unknown selectionMethod");
+
+	if (hypothesis == nullptr)
+		throw Cancel("ActiveSense::selectNextBestView: unable to get hypothesis for next best view");
+
+	return hypothesis;
+}
+
 
 pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewRandom()
 {
@@ -732,6 +696,8 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewSequential(
 
 	this->seqIndex = (this->seqIndex + 1) % this->viewHypotheses.size();
 
+	demoOwner->context.write("\nActiveSense: Next Sequential View is %d\n\n", seqIndex+1);
+
 	return ret;
 }
 
@@ -739,22 +705,27 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBase
 {
 	golem::CriticalSectionWrapper csw(this->csViewHypotheses);
 
-
-
 	if (this->params.regenerateViews) this->generateViews();
-
 
 	int index = 0;
 
 	Real maxValue(-golem::REAL_MAX);
 	for (int i = 0; i < this->viewHypotheses.size(); i++)
 	{
-		if (this->viewHypotheses[i]->visited || hasViewed(this->viewHypotheses[i]))
+		if (this->viewHypotheses[i]->visited)
+		{
+			demoOwner->context.write("ActiveSense: H[%d] Value: ALREADY VISITED\n", i + 1);
 			continue;
+		}
+		if (hasViewed(this->viewHypotheses[i]))
+		{
+			demoOwner->context.write("ActiveSense: H[%d] Value: ALREADY VISITED WITHIN 5CM\n", i + 1);
+			continue;
+		}
 
 		ActiveSense::ValueTuple valueTuple = this->computeValue(this->viewHypotheses[i], predModelPtr);
 
-		demoOwner->context.write("ActiveSense: H[%d] Value: %f\n", i, valueTuple.second);
+		demoOwner->context.write("ActiveSense: H[%d] Value: %f\n", i+1, valueTuple.second);
 
 		if (valueTuple.second > maxValue)
 		{
@@ -763,8 +734,7 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBase
 		}
 	}
 
-	demoOwner->context.write("\nActiveSense: Best View Was H[%d] Value: %f\n\n", index, maxValue);
-
+	demoOwner->context.write("\nActiveSense: Best View Was H[%d] Value: %f\n\n", index+1, maxValue);
 
 	return this->getViewHypothesis(index);
 }
@@ -793,7 +763,7 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBase
 
 		value = onlineModel.computeValue(this->viewHypotheses[i]);
 
-		demoOwner->context.write("ActiveSense: H[%d] Value: %f\n", i, value);
+		demoOwner->context.write("ActiveSense: H[%d] Value: %f\n", i+1, value);
 
 		if (value > maxValue)
 		{
@@ -802,7 +772,7 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBase
 		}
 	}
 
-	demoOwner->context.write("\nActiveSense: Best View Was H[%d] Value: %f\n\n", index, maxValue);
+	demoOwner->context.write("\nActiveSense: Best View Was H[%d] Value: %f\n\n", index+1, maxValue);
 
 
 	return this->getViewHypothesis(index);

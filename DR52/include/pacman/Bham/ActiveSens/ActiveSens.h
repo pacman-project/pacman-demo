@@ -281,6 +281,7 @@ namespace pacman {
 		*/
 		//grasp::data::Item::Map::iterator nextBestViewRandom();
 		
+		pacman::HypothesisSensor::Ptr selectNextBestView(grasp::data::Item::Map::iterator predModelPtr);
 
 		/** Greedy selection for next best view based on contact point information */
 		pacman::HypothesisSensor::Ptr selectNextBestViewContactBased(grasp::data::Item::Map::iterator predModelPtr);
