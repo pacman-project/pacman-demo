@@ -9,7 +9,20 @@ using namespace pacman;
 using namespace golem;
 using namespace grasp;
 
+
 //-----------------------------------------------------------------------------
+
+namespace
+{
+
+	template <typename E> std::string enumToString(const golem::U32 i, const std::map<std::string, E>& emap)
+	{
+		for (auto j = emap.begin(); j != emap.end(); ++j)
+			if (j->second == i) return j->first;
+		return std::string("enumToString: enum code not found");
+	}
+
+}
 
 void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlcontext) {
 	Player::Desc::load(context, xmlcontext);
@@ -178,7 +191,7 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 
 	menuCtrlMap.insert(std::make_pair("CP", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to:\n(S) Choose Selection Method\n(G) Choose Generation Method\n(M) Choose Coverage Method\n(C) Choose Stopping Criteria";
+		desc = "Press a key to:\n(L) List parameters\n(S) Choose Selection Method\n(G) Choose Generation Method\n(M) Choose Coverage Method\n(C) Choose Stopping Criteria";
 	
 	}));
 
@@ -186,8 +199,8 @@ void pacman::Demo::create(const Desc& desc) {
 	//ActiveSense Demo 
 	menuCmdMap.insert(std::make_pair("CD", [=]() {
 
-		grasp::data::Item::Map predModelMap, trajMap, predQueryMap, imageMap, pointCurvMap;
-		grasp::data::Item::Map::iterator itemPredModelPtr, itemTrajPtr, itemPredQueryPtr, itemImagePtr, itemPointCurvPtr;
+		grasp::data::Item::Map predModelMap;
+		grasp::data::Item::Map::iterator itemPredModelPtr;
 
 		auto filter = [&](const grasp::data::Item::Map& itemMap, const std::string& filterID, grasp::data::Item::Map& outMap) {
 			for (grasp::data::Item::Map::const_iterator it = itemMap.begin(); it != itemMap.end(); it++)
@@ -202,6 +215,7 @@ void pacman::Demo::create(const Desc& desc) {
 		
 		//Filter by PredictorModel+PredictorModel HandlerID
 		filter(dataCurrentPtr->second->itemMap, "PredictorModel+PredictorModel", predModelMap);
+		itemPredModelPtr = predModelMap.begin();
 		select(itemPredModelPtr, predModelMap.begin(), predModelMap.end(), "Select PredModel:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
 		return ptr->first + ": " + ptr->second->getHandler().getID();
 		});
@@ -351,10 +365,21 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 
 
+	menuCmdMap.insert(std::make_pair("CPL", [&]() {
+		const ActiveSense::Parameters& params = activeSense->getParameters();
+		context.write("view generation method: %s\n", enumToString(params.generationMethod, params.getGenerationMethodMap()).c_str());
+		context.write("selection method:       %s\n", enumToString(params.selectionMethod, params.getSelectionMethodMap()).c_str());
+		context.write("stopping criteria:      %s\n", enumToString(params.stoppingCriteria, params.getStoppingCriteriaMap()).c_str());
+		context.write("coverage method:        %s\n", enumToString(params.coverageMethod, params.getCoverageMethodMap()).c_str());
+		context.write("max numbers of views:   %d\n", params.nviews);
+		context.write("coverage threshold:     %g\n", params.coverageThr);
+		context.write("centroid calc:          %s\n", params.useManualCentroid ? "manual" : "auto from captured point cloud");
+	}));
+
 	menuCmdMap.insert(std::make_pair("CPS", [&]() {
 
 		std::map<std::string, ActiveSense::ESelectionMethod> selectionMethodMap = activeSense->getParameters().getSelectionMethodMap();
-		std::map<std::string, ActiveSense::ESelectionMethod>::iterator selectionPtr;
+		std::map<std::string, ActiveSense::ESelectionMethod>::iterator selectionPtr(selectionMethodMap.begin());
 		select(selectionPtr, selectionMethodMap.begin(), selectionMethodMap.end(), "Select Selection Method:\n", [](std::map<std::string, ActiveSense::ESelectionMethod>::iterator ptr) -> std::string{
 			return ptr->first;
 		});
@@ -367,7 +392,7 @@ void pacman::Demo::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("CPG", [&]() {
 
 		std::map<std::string, ActiveSense::EGenerationMethod> selectionMap = activeSense->getParameters().getGenerationMethodMap();
-		std::map<std::string, ActiveSense::EGenerationMethod>::iterator selectionPtr;
+		std::map<std::string, ActiveSense::EGenerationMethod>::iterator selectionPtr(selectionMap.begin());
 		select(selectionPtr, selectionMap.begin(), selectionMap.end(), "Select Generation Method:\n", [](std::map<std::string, ActiveSense::EGenerationMethod>::iterator ptr) -> std::string{
 			return ptr->first;
 		});
@@ -381,7 +406,7 @@ void pacman::Demo::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("CPM", [&]() {
 
 		std::map<std::string, ActiveSense::ECoverageMethod> selectionMap = activeSense->getParameters().getCoverageMethodMap();
-		std::map<std::string, ActiveSense::ECoverageMethod>::iterator selectionPtr;
+		std::map<std::string, ActiveSense::ECoverageMethod>::iterator selectionPtr(selectionMap.begin());
 		select(selectionPtr, selectionMap.begin(), selectionMap.end(), "Select Coverage Method:\n", [](std::map<std::string, ActiveSense::ECoverageMethod>::iterator ptr) -> std::string{
 			return ptr->first;
 		});
@@ -394,13 +419,16 @@ void pacman::Demo::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("CPC", [&]() {
 
 		std::map<std::string, ActiveSense::EStoppingCriteria> selectionMap = activeSense->getParameters().getStoppingCriteriaMap();
-		std::map<std::string, ActiveSense::EStoppingCriteria>::iterator selectionPtr;
+		std::map<std::string, ActiveSense::EStoppingCriteria>::iterator selectionPtr(selectionMap.begin());
 		select(selectionPtr, selectionMap.begin(), selectionMap.end(), "Select Stopping Criteria:\n", [](std::map<std::string, ActiveSense::EStoppingCriteria>::iterator ptr) -> std::string{
 			return ptr->first;
 		});
 		context.write("Selected: %s\n", selectionPtr->first.c_str());
 		const golem::U32 stoppingCriteria = selectionPtr->second;
 		activeSense->getParameters().stoppingCriteria = stoppingCriteria;
+
+		if (stoppingCriteria == ActiveSense::C_NVIEWS || stoppingCriteria == ActiveSense::C_NVIEWS_COVERAGE)
+			readNumber("max number of views: ", activeSense->getParameters().nviews);
 
 		if (stoppingCriteria == ActiveSense::C_COVERAGE || stoppingCriteria == ActiveSense::C_NVIEWS_COVERAGE)
 			readNumber("coverage threshold: ", activeSense->getParameters().coverageThr);

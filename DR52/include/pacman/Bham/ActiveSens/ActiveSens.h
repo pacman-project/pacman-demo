@@ -91,7 +91,7 @@ namespace pacman {
 				this->setToDefault();
 			}
 
-			std::map<std::string, ESelectionMethod> getSelectionMethodMap(){
+			std::map<std::string, ESelectionMethod> getSelectionMethodMap() const {
 
 				std::map<std::string, ESelectionMethod> retMap;
 
@@ -104,7 +104,7 @@ namespace pacman {
 
 			}
 
-			std::map<std::string, EGenerationMethod> getGenerationMethodMap(){
+			std::map<std::string, EGenerationMethod> getGenerationMethodMap() const {
 
 				std::map<std::string, EGenerationMethod> retMap;
 
@@ -116,7 +116,7 @@ namespace pacman {
 
 			}
 
-			std::map<std::string, ECoverageMethod> getCoverageMethodMap(){
+			std::map<std::string, ECoverageMethod> getCoverageMethodMap() const {
 
 				std::map<std::string, ECoverageMethod> retMap;
 
@@ -128,7 +128,7 @@ namespace pacman {
 
 			}
 
-			std::map<std::string, EStoppingCriteria> getStoppingCriteriaMap(){
+			std::map<std::string, EStoppingCriteria> getStoppingCriteriaMap() const {
 				std::map<std::string, EStoppingCriteria> retMap;
 
 				retMap["number_of_views"] = EStoppingCriteria::C_NVIEWS;
@@ -138,8 +138,6 @@ namespace pacman {
 
 				return retMap;
 			}
-
-
 
 			/** Number of hypothesis samples */
 			golem::U32 nsamples, nviews;

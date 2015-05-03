@@ -45,7 +45,7 @@ void ActiveSense::init(pacman::Demo* demoOwner)
 	}
 	else
 	{
-		demoOwner->context.write("ActiveSense: All transforms good!");
+		demoOwner->context.write("ActiveSense: All transforms good!\n");
 	}
 
 
@@ -73,7 +73,7 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 	XMLData("sensor_id", this->sensorId, pxmlcontext);
 	XMLData("selection_method", selectionMethodStr, pxmlcontext);
 	XMLData("generation_method", generationMethodStr, pxmlcontext);
-	XMLData("enable_regeration", this->regenerateViews, pxmlcontext);
+	XMLData("enable_regeneration", this->regenerateViews, pxmlcontext);
 	XMLData("use_manual_centroid", this->useManualCentroid, pxmlcontext);
 	XMLData("use_height_bias", this->useHeightBias, pxmlcontext);
 	XMLData("radius", this->radius, pxmlcontext);
@@ -136,11 +136,19 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 		{
 			HypothesisSensor::Config config;
 			config = configSeq[i];
-			printf("Printing config %d\n", i);
-			for (int j = 0; j < config.c.size(); j++)
+			printf("pose%3d: ", i+1);
+			const size_t n = config.c.size();
+			size_t n0 = n;
+			for (size_t j = n - 1; j >= 0; --j)
 			{
-				printf("%f ", static_cast<float>(config.c[j]));
+				if (config.c[j] != 0)
+				{
+					n0 = j+1;
+					break;
+				}
 			}
+			for (size_t j = 0; j < n0; ++j)
+				printf("%f ", static_cast<float>(config.c[j]));
 			printf("\n");
 		}
 
@@ -813,7 +821,7 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::generateViewFrom(const Hypoth
 
 	golem::U8 r, g, b, a;
 	//Generate random color
-	r = 125, g = 122, b = 200, a = 255;
+	r = 125, g = 122, b = 200, a = 32;
 
 	golem::Controller::State state = demoOwner->controller->createState();
 	state.cpos.set(config.c.data(), config.c.data() + std::min(config.c.size(), (size_t)demoOwner->info.getJoints().size()));
@@ -834,8 +842,8 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::generateViewFrom(const Hypoth
 
 
 
-	showPose("Generated SensorPose:", sensorConfig.w);
-	//Creating uniformly generated random hypothesis sensor
+	showPose("sensor pose", sensorConfig.w);
+
 	pacman::HypothesisSensor::Ptr s(new HypothesisSensor(sensorConfig, golem::RGBA(r, g, b, a)));
 
 	return s;
@@ -843,6 +851,7 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::generateViewFrom(const Hypoth
 }
 void pacman::ActiveSense::generateViewsFromSeq(const HypothesisSensor::Config::Seq& configSeq)
 {
+	demoOwner->context.write("Generating %d sensor poses from fixed sequence...\n", configSeq.size());
 	this->viewHypotheses.clear();
 	for (int i = 0; i < configSeq.size(); i++)
 	{
