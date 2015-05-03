@@ -208,6 +208,8 @@ void pacman::Demo::create(const Desc& desc) {
 
 		activeSense->setPredModelItem(itemPredModelPtr);
 		activeSense->nextBestView();
+		context.write("Executing Trajectory...\n");
+		activeSense->executeTrajectory();
 
 
 	}));

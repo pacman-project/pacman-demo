@@ -2,8 +2,6 @@
 #include <Golem/Tools/XMLData.h>
 #include <pacman/Bham/ActiveSensDemo/ActiveSensDemo.h>
 #include <Grasp/Data/Image/Image.h>
-#include <pcl/common/centroid.h>
-#include <pcl/filters/filter.h>
 #include <Grasp/Data/PredictorModel/PredictorModel.h>
 #include <Grasp/Data/PointsCurv/PointsCurv.h>
 
@@ -13,134 +11,6 @@ using namespace grasp;
 
 
 //------------------------------------------------------------------------------
-
-void pacman::HypothesisSensor::Appearance::load(const golem::XMLContext* xmlcontext) {
-
-
-	golem::XMLData(frameSize, xmlcontext->getContextFirst("frame"), false);
-	golem::XMLData("show", frameShow, xmlcontext->getContextFirst("frame"), false);
-	golem::XMLData(shapeColour, xmlcontext->getContextFirst("shape"), false);
-	golem::XMLData("show", shapeShow, xmlcontext->getContextFirst("shape"), false);
-
-
-}
-
-//------------------------------------------------------------------------------
-
-void pacman::HypothesisSensor::Desc::load(golem::Context& context, const golem::XMLContext* xmlcontext) {
-
-
-	appearance.load(xmlcontext->getContextFirst("appearance"));
-	try {
-		golem::XMLData(shapeDesc, shapeDesc.max_size(), xmlcontext->getContextFirst("appearance shape"), "bounds", false);
-	}
-	catch (const MsgXMLParserNameNotFound&) {
-	}
-
-
-
-}
-
-//------------------------------------------------------------------------------
-pacman::HypothesisSensor::HypothesisSensor(HypothesisSensor::Config config, golem::RGBA shapeColour) : config(config.c, config.w), visited(false) {
-
-
-	pacman::HypothesisSensor::Desc desc;
-
-	//Appearance of the Hypothesis Sensor
-	desc.appearance.frameSize.set(0.05, 0.05, 0.05);
-	desc.appearance.frameShow = true;
-	desc.appearance.shapeShow = true;
-	desc.appearance.shapeColour = shapeColour;
-
-	//Bounds description
-	golem::BoundingBox::Desc boundDesc;
-	boundDesc.dimensions.set(0.025, 0.025, 0.025);
-	boundDesc.pose.setId();
-	boundDesc.pose.p.z -= 0.025;
-	golem::BoundingBox::Desc::Ptr descBox(new golem::BoundingBox::Desc(boundDesc));
-
-	desc.shapeDesc.push_back(descBox);
-
-	//Local view frame 
-	//Frame is attached on the frontal face of the cube representing this Hypothesis Sensor
-	desc.viewFrame.setId();
-	desc.viewFrame.p.z = 0.05;
-
-	//Pose with respect to base frame
-	//this->config = config;
-	this->create(desc);
-
-
-}
-pacman::HypothesisSensor::HypothesisSensor(golem::Context& context) : config(Mat34::identity()), viewFrame(Mat34::identity()), visited(false) {
-
-}
-
-pacman::HypothesisSensor::HypothesisSensor(const pacman::HypothesisSensor::Desc& desc) : config(Mat34::identity()), viewFrame(Mat34::identity()), visited(false)
-{
-	this->create(desc);
-}
-
-void pacman::HypothesisSensor::create(const pacman::HypothesisSensor::Desc& desc) {
-
-	this->viewFrame = desc.viewFrame;
-	
-	appearance = desc.appearance;
-	shape.clear();
-	shapeFrame.clear();
-	for (golem::Bounds::Desc::Seq::const_iterator i = desc.shapeDesc.begin(); i != desc.shapeDesc.end(); ++i) {
-		shape.push_back((*i)->create());
-		shapeFrame.push_back(shape.back()->getPose());
-	}
-}
-
-
-//------------------------------------------------------------------------------
-
-void pacman::HypothesisSensor::draw(const Appearance& appearance, golem::DebugRenderer& renderer) const {
-
-
-	const Mat34 frame = this->getFrame();
-	if (appearance.shapeShow){
-		for (size_t i = 0; i < shape.size(); ++i) {
-			shape[i]->setPose(frame*shapeFrame[i]);
-			renderer.setColour(appearance.shapeColour);
-			renderer.addSolid(*shape[i]);
-		}
-	}
-	if (appearance.frameShow) {
-		renderer.addAxes3D(frame, appearance.frameSize);
-	}
-}
-
-void pacman::HypothesisSensor::setGLView(golem::Scene& scene)
-{
-
-	this->setGLView(scene, this->getFrame());
-}
-
-void pacman::HypothesisSensor::setGLView(golem::Scene& scene, const golem::Mat34& sensorFrame)
-{
-	golem::CriticalSectionWrapper csw(scene.getCSOpenGL());
-	OpenGL::Seq openGL = scene.getOpenGL();
-
-	const golem::Mat34 frame = sensorFrame;
-	OpenGL opengl = openGL[0];
-
-	frame.p.get(opengl.viewPoint.v);
-	frame.R.getColumn(2, opengl.viewDir);
-	//frame.R.getColumn(0, opengl.viewUp); //Up right sensor
-	frame.R.getColumn(0, -opengl.viewUp); //Upside down sensor
-
-	opengl.viewDir.normalise();
-	opengl.viewUp.normalise();
-
-
-	scene.setOpenGL(opengl);
-}
-
-
 
 //ActiveSense------------------------------------------------------------------------------
 
@@ -160,7 +30,6 @@ void ActiveSense::init(pacman::Demo* demoOwner)
 {
 	this->demoOwner = demoOwner;
 	rand.setRandSeed(this->demoOwner->context.getRandSeed());
-
 	grasp::data::Handler::Map::iterator itImage = demoOwner->handlerMap.find("Image+Image");
 	grasp::data::Handler::Map::iterator itPointCurv = demoOwner->handlerMap.find("PointsCurv+PointsCurv");
 	grasp::data::Handler::Map::iterator itPredModel = demoOwner->handlerMap.find("PredictorModel+PredictorModel");
@@ -239,6 +108,8 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 
 	if (!selectionMethodStr.compare("contact_based"))
 		this->selectionMethod = ESelectionMethod::S_CONTACT_BASED;
+	else if (!selectionMethodStr.compare("contact_based_v2"))
+		this->selectionMethod = ESelectionMethod::S_CONTACT_BASED2;
 	else if (!selectionMethodStr.compare("random"))
 		this->selectionMethod = ESelectionMethod::S_RANDOM;
 	else if (!selectionMethodStr.compare("sequential"))
@@ -323,9 +194,10 @@ void pacman::ActiveSense::removeItems(grasp::data::Item::List& list)
 
 grasp::data::Item::Map::iterator ActiveSense::addItem(const std::string& label, grasp::data::Item::Ptr item)
 {
+	Manager::RenderBlock renderBlock(*demoOwner);
 	golem::CriticalSectionWrapper cswData(demoOwner->csData);
 	grasp::data::Item::Map::iterator ptr = to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap.insert(to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap.end(), grasp::data::Item::Map::value_type(label, item));
-	Manager::RenderBlock renderBlock(*demoOwner);
+	
 	{
 		grasp::Manager::Data::View::setItem(to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap, ptr, to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->getView());
 	}
@@ -346,7 +218,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::processItems(grasp::data::
 
 		
 		grasp::Manager::InputBlock inputBlock(*demoOwner);
-		//UI::addCallback(*demoOwner, transformPtr.first);
+		UI::addCallback(*demoOwner, transformPtr.first);
 		data::Item::Map::iterator ptr;
 		grasp::data::Item::Ptr item = transformPtr.second->transform(list);
 		{
@@ -684,6 +556,12 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 			//this->setPredModelItem(ptr);
 			hypothesis = this->selectNextBestViewContactBased(ptr);
 		}
+		else if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2)
+		{
+			ptr = this->computeFeedBackTransform(predModelItem, pointCurvItem);
+			//this->setPredModelItem(ptr);
+			hypothesis = this->selectNextBestViewContactBased2(ptr);
+		}
 		else if (this->params.selectionMethod == ESelectionMethod::S_RANDOM)
 		{
 			hypothesis = this->selectNextBestViewRandom();
@@ -718,6 +596,10 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 						{
 							hypothesis = this->selectNextBestViewContactBased(ptr);
 						}
+						else if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2)
+						{
+							hypothesis = this->selectNextBestViewContactBased2(ptr);
+						}
 						else if (this->params.selectionMethod == ESelectionMethod::S_RANDOM)
 						{
 							hypothesis = this->selectNextBestViewRandom();
@@ -734,6 +616,10 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 					if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED)
 					{
 						hypothesis = this->selectNextBestViewContactBased(ptr);
+					}
+					else if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2)
+					{
+						hypothesis = this->selectNextBestViewContactBased2(ptr);
 					}
 					else if (this->params.selectionMethod == ESelectionMethod::S_RANDOM)
 					{
@@ -866,6 +752,45 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBase
 		{
 			index = i;
 			maxValue = valueTuple.second;
+		}
+	}
+
+	demoOwner->context.write("\nActiveSense: Best View Was H[%d] Value: %f\n\n", index, maxValue);
+
+
+	return this->getViewHypothesis(index);
+}
+
+pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBased2(grasp::data::Item::Map::iterator predModelPtr)
+{
+	golem::CriticalSectionWrapper csw(this->csViewHypotheses);
+
+
+
+	if (this->params.regenerateViews) this->generateViews();
+
+	onlineModel.setTrainingData(predModelPtr);
+	onlineModel.updateContacts();
+	onlineModel.updateViewingAngles(visitedHypotheses);
+
+	int index = 0;
+
+	Real maxValue(-golem::REAL_MAX);
+	Real value(0.0);
+	demoOwner->context.write("ActiveSense: Next Best View Contact Based V2\n");
+	for (int i = 0; i < this->viewHypotheses.size(); i++)
+	{
+		if (this->viewHypotheses[i]->visited || hasViewed(this->viewHypotheses[i]))
+			continue;
+
+		value = onlineModel.computeValue(this->viewHypotheses[i]);
+
+		demoOwner->context.write("ActiveSense: H[%d] Value: %f\n", i, value);
+
+		if (value > maxValue)
+		{
+			index = i;
+			maxValue = value;
 		}
 	}
 
@@ -1182,7 +1107,7 @@ grasp::CollisionBounds::Ptr pacman::ActiveSense::selectCollisionBounds(bool draw
 
 grasp::data::Item::Map::iterator ActiveSense::convertToTrajectory(grasp::data::Item::Map::iterator predQueryModel)
 {
-
+	grasp::Manager::RenderBlock renderBlock(*demoOwner);
 	grasp::data::Convert* convert = grasp::is<grasp::data::Convert>(predQueryModel);
 	if (!convert)
 		throw Message(Message::LEVEL_ERROR, "Input item does not support Convert interface");
@@ -1218,7 +1143,7 @@ grasp::data::Item::Map::iterator ActiveSense::computeFeedBackTransform(grasp::da
 		grasp::Manager::InputBlock inputBlock(*demoOwner);
 		Manager::RenderBlock renderBlock(*demoOwner);
 
-		//UI::addCallback(*demoOwner, transformPtr.first);
+		UI::addCallback(*demoOwner, transformPtr.first);
 		data::Item::Map::iterator ptr;
 		grasp::data::Item::Ptr item = transformPtr.second->transform(list);
 		{
@@ -1270,6 +1195,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::computeTransformPredModel(
 
 		demoOwner->context.write("\nActiveSense: [TransformPredModel]---List Size: %d---\n", list.size());
 		// transform
+		grasp::Manager::InputBlock inputBlock(*demoOwner);
 		Manager::RenderBlock renderBlock(*demoOwner);
 
 		UI::addCallback(*demoOwner, transformPtr.first);
@@ -1431,6 +1357,20 @@ golem::Real pacman::ActiveSense::computeCoverage(grasp::Cloud::PointCurvSeq::Ptr
 }
 
 
+void pacman::ActiveSense::executeTrajectory(){
+	data::Trajectory* trajectory = is<data::Trajectory>(this->result.trajectories.back());
+	// play
+	Controller::State::Seq seq;
+	trajectory->createTrajectory(seq);
+	// select collision object
+	CollisionBounds::Ptr collisionBounds = this->selectCollisionBounds(true, this->result.pointCurvs.back());
+	demoOwner->context.write("Performing trajectory! \n");
+	// perform
+	this->demoOwner->perform(this->demoOwner->dataCurrentPtr->first, "Testing", seq);
+	// done!
+	this->demoOwner->createRender();
+}
+
 //--------------------------------------------------------------------------------
 void pacman::ActiveSenseController::initActiveSense(pacman::Demo* demoOwner)
 {
@@ -1453,3 +1393,5 @@ void pacman::ActiveSenseController::initActiveSense(pacman::Demo* demoOwner)
 	//sensorPose.p.set(0.5, -0.5, 0.025);
 
 }
+
+
