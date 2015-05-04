@@ -45,7 +45,7 @@ void ActiveSense::init(pacman::Demo* demoOwner)
 	}
 	else
 	{
-		demoOwner->context.write("ActiveSense: All transforms good!");
+		demoOwner->context.write("ActiveSense: All transforms good!\n");
 	}
 
 
@@ -73,7 +73,7 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 	XMLData("sensor_id", this->sensorId, pxmlcontext);
 	XMLData("selection_method", selectionMethodStr, pxmlcontext);
 	XMLData("generation_method", generationMethodStr, pxmlcontext);
-	XMLData("enable_regeration", this->regenerateViews, pxmlcontext);
+	XMLData("enable_regeneration", this->regenerateViews, pxmlcontext);
 	XMLData("use_manual_centroid", this->useManualCentroid, pxmlcontext);
 	XMLData("use_height_bias", this->useHeightBias, pxmlcontext);
 	XMLData("radius", this->radius, pxmlcontext);
@@ -130,34 +130,34 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 		configSeq.clear();
 		XMLData(configSeq, configSeq.max_size(), const_cast<golem::XMLContext*>(pxmlcontext), "pose");
 
-		printf("Loaded NPoses %d\n", configSeq.size());
+		printf("Loaded %d fixed poses:\n", configSeq.size());
 
 		for (int i = 0; i < configSeq.size(); i++)
 		{
 			HypothesisSensor::Config config;
 			config = configSeq[i];
-			printf("Printing config %d\n", i);
-			for (int j = 0; j < config.c.size(); j++)
+			printf("pose%3d: ", i+1);
+			const size_t n = config.c.size();
+			size_t n0 = n;
+			for (size_t j = n - 1; j >= 0; --j)
 			{
-				printf("%f ", static_cast<float>(config.c[j]));
+				if (config.c[j] != 0)
+				{
+					n0 = j+1;
+					break;
+				}
 			}
+			for (size_t j = 0; j < n0; ++j)
+				printf("%f ", static_cast<float>(config.c[j]));
 			printf("\n");
 		}
-
 	}
-
-
-
-
-	printf("ActiveSense: Loaded Everything!\n");
 
 	printf("ActiveSense: method %d usmc %d ushb %d radius %f nsamples %d nviews %d\n", this->selectionMethod, this->useManualCentroid, this->useHeightBias, this->radius, this->nsamples, this->nviews);
 	printf("ActiveSense: minPhi %f maxPhi %f minTheta %f maxTheta %f!\n", this->minPhi, this->maxPhi, this->minTheta, this->maxTheta);
 	printf("ActiveSense: centroid %f %f %f\n", this->centroid.v1, this->centroid.v2, this->centroid.v3);
-	//system("pause");
-
-
 }
+
 /** Load from xml context */
 void ActiveSense::load(const golem::XMLContext* xmlcontext)
 {
@@ -504,6 +504,14 @@ return processItems(scannedImageItems);
 
 grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 {
+	this->visitedHypotheses.clear();
+	this->result.pointCurvs.clear();
+	this->result.predQueries.clear();
+	this->result.trajectories.clear();
+
+	for (int i = 0; i < this->viewHypotheses.size(); i++)
+		this->viewHypotheses[i]->visited = false;
+
 	grasp::Camera* camera = this->getOwnerSensor(this->params.sensorId);
 
 	if (camera)
@@ -512,14 +520,13 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 	//Creating new Data Bundle
 	//grasp::Manager::Data::Map::iterator data = createData();
 
-	size_t index = 0, size = this->params.nviews;
+	size_t index = 0, maxNumViews = this->params.nviews;
 	pacman::HypothesisSensor::Ptr hypothesis(nullptr);
 
-	//Scanned Items List
-	grasp::data::Item::List scannedImageItems;
-
-	//Performs first scan using current robot pose
-	demoOwner->scanPoseActive(scannedImageItems);
+	grasp::data::Item::List scannedImageItems; // scanned Items List
+	
+	// performs first scan using current wrist pose
+	demoOwner->scanPoseActive(scannedImageItems); 
 
 	if (!this->params.useManualCentroid)
 	{
@@ -546,97 +553,45 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 
 	grasp::data::ItemPredictorModel::Map::iterator ptr;
 	bool stop = false;
-	int i = 0;
+	int numViewsAcquired = 1; // we count the initial view
 	while (!stop)
 	{
+		demoOwner->context.write(
+			"ActiveSense: ************************ STARTING OBSERVATION #%d ************************\n",
+			numViewsAcquired+1);
 
-		if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED)
+		if (params.selectionMethod == ESelectionMethod::S_CONTACT_BASED ||
+			params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2)
 		{
-			ptr = this->computeFeedBackTransform(predModelItem, pointCurvItem);
-			//this->setPredModelItem(ptr);
-			hypothesis = this->selectNextBestViewContactBased(ptr);
-		}
-		else if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2)
-		{
-			ptr = this->computeFeedBackTransform(predModelItem, pointCurvItem);
-			//this->setPredModelItem(ptr);
-			hypothesis = this->selectNextBestViewContactBased2(ptr);
-		}
-		else if (this->params.selectionMethod == ESelectionMethod::S_RANDOM)
-		{
-			hypothesis = this->selectNextBestViewRandom();
-		}
-		else if (this->params.selectionMethod == ESelectionMethod::S_SEQUENTIAL)
-		{
-			hypothesis = this->selectNextBestViewSequential();
+			ptr = computeFeedBackTransform(predModelItem, pointCurvItem);
 		}
 
-
-		if (hypothesis.get())
+		Mat34 goal;
+		goal.setId();
+		collisionBounds = this->selectCollisionBounds(true, *scannedImageItems.begin());
+		bool gotToHypothesis = false;
+		while (!gotToHypothesis)
 		{
-			Mat34 goal;
-			goal.setId();
-			collisionBounds = this->selectCollisionBounds(true, *scannedImageItems.begin());
-			bool success = false;
-			while (hypothesis.get() && !success)
+			hypothesis = selectNextBestView(ptr);
+
+			goal = this->computeGoal(hypothesis->getFrame(), camera);
+
+			try
 			{
-				goal = this->computeGoal(hypothesis->getFrame(), camera);
+				if (this->params.generationMethod == EGenerationMethod::G_RANDOM_SPHERE)
+					gotToHypothesis = demoOwner->gotoPoseWS(goal);
+				if (this->params.generationMethod == EGenerationMethod::G_FIXED)
+					gotToHypothesis = demoOwner->gotoPoseConfig(hypothesis->getConfig());
 
-				try {
-
-					if (this->params.generationMethod == EGenerationMethod::G_RANDOM_SPHERE)
-						success = demoOwner->gotoPoseWS(goal);
-					if (this->params.generationMethod == EGenerationMethod::G_FIXED)
-						success = demoOwner->gotoPoseConfig(hypothesis->getConfig());
-
-					if (!success)
-					{
-						demoOwner->context.write("ActiveSense: Couldnt go to selected hypothesis due to large final pose error, sampling again.\n");
-						if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED)
-						{
-							hypothesis = this->selectNextBestViewContactBased(ptr);
-						}
-						else if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2)
-						{
-							hypothesis = this->selectNextBestViewContactBased2(ptr);
-						}
-						else if (this->params.selectionMethod == ESelectionMethod::S_RANDOM)
-						{
-							hypothesis = this->selectNextBestViewRandom();
-						}
-						else if (this->params.selectionMethod == ESelectionMethod::S_SEQUENTIAL)
-						{
-							hypothesis = this->selectNextBestViewSequential();
-						}
-					}
-				}
-				catch (const golem::Message& e)
-				{
-					demoOwner->context.write("ActiveSense: Couldnt go to selected hypothesis due exception %s, sampling again...\n", e.what());
-					if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED)
-					{
-						hypothesis = this->selectNextBestViewContactBased(ptr);
-					}
-					else if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2)
-					{
-						hypothesis = this->selectNextBestViewContactBased2(ptr);
-					}
-					else if (this->params.selectionMethod == ESelectionMethod::S_RANDOM)
-					{
-						hypothesis = this->selectNextBestViewRandom();
-					}
-					else if (this->params.selectionMethod == ESelectionMethod::S_SEQUENTIAL)
-					{
-						hypothesis = this->selectNextBestViewSequential();
-					}
-				}
-
-
-
+				if (!gotToHypothesis)
+					demoOwner->context.write("ActiveSense: Couldnt go to selected hypothesis due to large final pose error, trying next NBV.\n");
 			}
-			collisionBounds.release();
+			catch (const golem::Message& e)
+			{
+				demoOwner->context.write("ActiveSense: Couldnt go to selected hypothesis due exception %s, trying next NBV.\n", e.what());
+			}
 		}
-
+		collisionBounds.release();
 
 		//Adding hypotheses to the set of visited hypotheses so far (used for not going to this hypothesis again later)
 		hypothesis->visited = true;
@@ -644,17 +599,20 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 
 		demoOwner->scanPoseActive(scannedImageItems);
 
-
 		//Integrate views into the current pointCurv
 		this->pointCurvItem = processItems(scannedImageItems);
 
 		//Number of views increment
-		i++;
+		++numViewsAcquired;
 
 		//Checking stopping criteria
 		if (params.stoppingCriteria == EStoppingCriteria::C_NVIEWS)
 		{
-			stop = i >= size;
+			if (numViewsAcquired >= maxNumViews)
+			{
+				stop = true;
+				demoOwner->context.write("ActiveSense: Stopping because used max number of views\n");
+			}
 		}	
 		else if (params.stoppingCriteria == EStoppingCriteria::C_COVERAGE || params.stoppingCriteria == EStoppingCriteria::C_NVIEWS_COVERAGE)
 		{
@@ -662,29 +620,29 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 			grasp::data::ItemPointsCurv* image = grasp::is<grasp::data::ItemPointsCurv>(this->pointCurvItem);
 			golem::Real coverage = 0.0;
 			if (image)
-			{
-				
 				coverage = computeCoverage(image->cloud, polygons);
-			}
 			else
-			{
 				demoOwner->context.write("ActiveSense: This is not an ItemImage.\n");
+			
+			if (coverage >= params.coverageThr)
+			{
+				stop = true;
+				demoOwner->context.write("ActiveSense: Stopping because exceeded coverage threshold\n");
 			}
-			
-			stop = coverage >= params.coverageThr;
-			
-			if (params.stoppingCriteria == EStoppingCriteria::C_NVIEWS_COVERAGE)
-				stop = stop || i >= size;
-
+			else if (params.stoppingCriteria == EStoppingCriteria::C_NVIEWS_COVERAGE && numViewsAcquired >= maxNumViews)
+			{
+				stop = true;
+				demoOwner->context.write("ActiveSense: Stopping because used max number of views\n");
+			}
 		}
 		else
 		{
 			demoOwner->context.write("ActiveSense: Unknown stopping criteria, stopping now.\n");
 			stop = true;
 		}
-			
+	} // loop over views
 
-	}
+	demoOwner->context.write("ActiveSense: ************************ COMPLETED OBSERVATIONS ************************\n");
 
 	//If we are using a selection method different from contact_based then we generate a queryModel, trajectory and a disposable (feedback)predictorModel as a final result
 	if (this->params.selectionMethod != ESelectionMethod::S_CONTACT_BASED)
@@ -693,10 +651,39 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 	}
 
 	demoOwner->context.write("\nActiveSense: NextBestView Finished! Check this->result attribute member for: %d pointCurvs, %d predQueries and %d best trajectories\n", result.pointCurvs.size(), result.predQueries.size(), result.trajectories.size());
+
 	return this->pointCurvItem;
-
-
 }
+
+pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestView(grasp::data::Item::Map::iterator predModelPtr)
+{
+	HypothesisSensor::Ptr hypothesis;
+
+	if (params.selectionMethod == ESelectionMethod::S_CONTACT_BASED)
+	{
+		hypothesis = selectNextBestViewContactBased(predModelPtr);
+	}
+	else if (params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2)
+	{
+		hypothesis = selectNextBestViewContactBased2(predModelPtr);
+	}
+	else if (params.selectionMethod == ESelectionMethod::S_RANDOM)
+	{
+		hypothesis = selectNextBestViewRandom();
+	}
+	else if (params.selectionMethod == ESelectionMethod::S_SEQUENTIAL)
+	{
+		hypothesis = selectNextBestViewSequential();
+	}
+	else
+		throw Cancel("pacman::ActiveSense::selectNextBestView: unknown selectionMethod");
+
+	if (hypothesis == nullptr)
+		throw Cancel("ActiveSense::selectNextBestView: unable to get hypothesis for next best view");
+
+	return hypothesis;
+}
+
 
 pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewRandom()
 {
@@ -724,6 +711,8 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewSequential(
 
 	this->seqIndex = (this->seqIndex + 1) % this->viewHypotheses.size();
 
+	demoOwner->context.write("\nActiveSense: Sequential View #%d\n\n", seqIndex);
+
 	return ret;
 }
 
@@ -731,22 +720,27 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBase
 {
 	golem::CriticalSectionWrapper csw(this->csViewHypotheses);
 
-
-
 	if (this->params.regenerateViews) this->generateViews();
-
 
 	int index = 0;
 
 	Real maxValue(-golem::REAL_MAX);
 	for (int i = 0; i < this->viewHypotheses.size(); i++)
 	{
-		if (this->viewHypotheses[i]->visited || hasViewed(this->viewHypotheses[i]))
+		if (this->viewHypotheses[i]->visited)
+		{
+			demoOwner->context.write("ActiveSense: H[%d] Value: ALREADY VISITED\n", i + 1);
 			continue;
+		}
+		if (hasViewed(this->viewHypotheses[i]))
+		{
+			demoOwner->context.write("ActiveSense: H[%d] Value: ALREADY VISITED WITHIN 5CM\n", i + 1);
+			continue;
+		}
 
 		ActiveSense::ValueTuple valueTuple = this->computeValue(this->viewHypotheses[i], predModelPtr);
 
-		demoOwner->context.write("ActiveSense: H[%d] Value: %f\n", i, valueTuple.second);
+		demoOwner->context.write("ActiveSense: H[%d] Value: %f\n", i+1, valueTuple.second);
 
 		if (valueTuple.second > maxValue)
 		{
@@ -755,8 +749,7 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBase
 		}
 	}
 
-	demoOwner->context.write("\nActiveSense: Best View Was H[%d] Value: %f\n\n", index, maxValue);
-
+	demoOwner->context.write("\nActiveSense: Best View Was H[%d] Value: %f\n\n", index+1, maxValue);
 
 	return this->getViewHypothesis(index);
 }
@@ -785,7 +778,7 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBase
 
 		value = onlineModel.computeValue(this->viewHypotheses[i]);
 
-		demoOwner->context.write("ActiveSense: H[%d] Value: %f\n", i, value);
+		demoOwner->context.write("ActiveSense: H[%d] Value: %f\n", i+1, value);
 
 		if (value > maxValue)
 		{
@@ -794,7 +787,7 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBase
 		}
 	}
 
-	demoOwner->context.write("\nActiveSense: Best View Was H[%d] Value: %f\n\n", index, maxValue);
+	demoOwner->context.write("\nActiveSense: Best View Was H[%d] Value: %f\n\n", index+1, maxValue);
 
 
 	return this->getViewHypothesis(index);
@@ -813,7 +806,7 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::generateViewFrom(const Hypoth
 
 	golem::U8 r, g, b, a;
 	//Generate random color
-	r = 125, g = 122, b = 200, a = 255;
+	r = 125, g = 122, b = 200, a = 32;
 
 	golem::Controller::State state = demoOwner->controller->createState();
 	state.cpos.set(config.c.data(), config.c.data() + std::min(config.c.size(), (size_t)demoOwner->info.getJoints().size()));
@@ -834,8 +827,8 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::generateViewFrom(const Hypoth
 
 
 
-	showPose("Generated SensorPose:", sensorConfig.w);
-	//Creating uniformly generated random hypothesis sensor
+	showPose("sensor pose", sensorConfig.w);
+
 	pacman::HypothesisSensor::Ptr s(new HypothesisSensor(sensorConfig, golem::RGBA(r, g, b, a)));
 
 	return s;
@@ -843,6 +836,7 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::generateViewFrom(const Hypoth
 }
 void pacman::ActiveSense::generateViewsFromSeq(const HypothesisSensor::Config::Seq& configSeq)
 {
+	demoOwner->context.write("Generating %d sensor poses from fixed sequence...\n", configSeq.size());
 	this->viewHypotheses.clear();
 	for (int i = 0; i < configSeq.size(); i++)
 	{
@@ -960,7 +954,7 @@ pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSens
 	typedef std::vector<const grasp::data::ItemPredictorModel::Data::Map*> TrainingData;
 	TrainingData trainingData;
 
-	demoOwner->context.write("ActiveSense: Getting ItemPredictorModel\n");
+	//demoOwner->context.write("ActiveSense: Getting ItemPredictorModel\n");
 	// collect data (TODO: Receive a list of ItemPredictorModel
 	const grasp::data::ItemPredictorModel* model = is<const grasp::data::ItemPredictorModel>(input);
 	if (model)
@@ -1364,9 +1358,9 @@ void pacman::ActiveSense::executeTrajectory(){
 	trajectory->createTrajectory(seq);
 	// select collision object
 	CollisionBounds::Ptr collisionBounds = this->selectCollisionBounds(true, this->result.pointCurvs.back());
-	demoOwner->context.write("Performing trajectory! \n");
+	demoOwner->context.write("ActiveSense: Performing trajectory! \n");
 	// perform
-	this->demoOwner->perform(this->demoOwner->dataCurrentPtr->first, "Testing", seq);
+	this->demoOwner->perform(this->demoOwner->dataCurrentPtr->first, this->result.trajectories.back()->first, seq);
 	// done!
 	this->demoOwner->createRender();
 }
