@@ -355,6 +355,13 @@ public:
 		grasp::Manipulator::Appearance manipulatorAppearance;
 		/** Manipulator pose distribution standard deviation */
 		grasp::RBDist manipulatorPoseStdDev;
+		/** Manipulator trajectory item */
+		std::string manipulatorItemTrj;
+
+		/** Manipulation trajectory duration */
+		golem::SecTmReal trajectoryDuration;
+		/** Manipulation trajectory force threshold */
+		golem::Twist trajectoryThresholdForce;
 
 		/** Constructs from description object */
 		Desc() {
@@ -415,6 +422,10 @@ public:
 			manipulatorDesc.reset(new grasp::Manipulator::Desc);
 			manipulatorAppearance.setToDefault();
 			manipulatorPoseStdDev.set(golem::Real(0.002), golem::Real(1000.0));
+			manipulatorItemTrj.clear();
+
+			trajectoryDuration = golem::SecTmReal(5.0);
+			trajectoryThresholdForce.setZero();
 		}
 		/** Assert that the description is valid. */
 		virtual void assertValid(const grasp::Assert::Context& ac) const {
@@ -482,6 +493,10 @@ public:
 			manipulatorDesc->assertValid(grasp::Assert::Context(ac, "manipulatorDesc->"));
 			manipulatorAppearance.assertValid(grasp::Assert::Context(ac, "manipulatorAppearance."));
 			grasp::Assert::valid(manipulatorPoseStdDev.isValid(), ac, "manipulatorPoseStdDev: invalid");
+			grasp::Assert::valid(manipulatorItemTrj.length() > 0, ac, "manipulatorItemTrj: invalid");
+
+			grasp::Assert::valid(trajectoryDuration > golem::SEC_TM_REAL_ZERO, ac, "trajectoryDuration: <= 0");
+			grasp::Assert::valid(trajectoryThresholdForce.isPositive(), ac, "trajectoryThresholdForce: negative");
 		}
 		/** Load descritpion from xml context. */
 		virtual void load(golem::Context& context, const golem::XMLContext* xmlcontext);
@@ -579,8 +594,16 @@ protected:
 	grasp::Manipulator::Ptr manipulator;
 	/** Manipulator Appearance */
 	grasp::Manipulator::Appearance manipulatorAppearance;
+	/** Manipulator trajectory item */
+	std::string manipulatorItemTrj;
 	/** Manipulator pose distribution covariance */
 	grasp::RBDist poseCov, poseCovInv;
+
+	/** Manipulation trajectory duration */
+	golem::SecTmReal trajectoryDuration;
+
+	/** Manipulation trajectory force threshold */
+	golem::Twist trajectoryThresholdForce;
 
 	/** Item selection */
 	typedef std::function<void(Data::Training::Map&, Data::Training::Map::iterator&)> ItemSelectFunc;
@@ -597,19 +620,21 @@ protected:
 	/** Process object image and add to data bundle */
 	grasp::data::Item::Map::iterator objectProcess(grasp::data::Item::Map::iterator ptr);
 	/** Create trajectory name */
-	std::string getTrajectoryName(const std::string& type) const;
+	std::string getTrajectoryName(const std::string& prefix, const std::string& type) const;
 
 	/** Create query densities */
 	void createQuery(grasp::data::Item::Ptr item, const golem::Mat34& frame);
 
 	/** Generate solutions */
 	void generateSolutions();
+	/** Sort solutions */
+	static void sortSolutions(Data::Solution::Seq& seq);
 
 	/** Select trajectory */
-	grasp::data::Item::Map::const_iterator selectTrajectory();
+	void selectTrajectory();
 
 	/** Perform trajectory */
-	void performTrajectory(grasp::data::Item::Map::const_iterator ptr);
+	void performTrajectory(bool testTrajectory);
 
 	grasp::Camera* getWristCamera(const bool dontThrow = false) const;
 	golem::Mat34 getWristPose() const;

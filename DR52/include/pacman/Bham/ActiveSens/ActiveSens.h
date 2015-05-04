@@ -91,7 +91,7 @@ namespace pacman {
 				this->setToDefault();
 			}
 
-			std::map<std::string, ESelectionMethod> getSelectionMethodMap(){
+			std::map<std::string, ESelectionMethod> getSelectionMethodMap() const {
 
 				std::map<std::string, ESelectionMethod> retMap;
 
@@ -104,7 +104,7 @@ namespace pacman {
 
 			}
 
-			std::map<std::string, EGenerationMethod> getGenerationMethodMap(){
+			std::map<std::string, EGenerationMethod> getGenerationMethodMap() const {
 
 				std::map<std::string, EGenerationMethod> retMap;
 
@@ -116,7 +116,7 @@ namespace pacman {
 
 			}
 
-			std::map<std::string, ECoverageMethod> getCoverageMethodMap(){
+			std::map<std::string, ECoverageMethod> getCoverageMethodMap() const {
 
 				std::map<std::string, ECoverageMethod> retMap;
 
@@ -128,7 +128,7 @@ namespace pacman {
 
 			}
 
-			std::map<std::string, EStoppingCriteria> getStoppingCriteriaMap(){
+			std::map<std::string, EStoppingCriteria> getStoppingCriteriaMap() const {
 				std::map<std::string, EStoppingCriteria> retMap;
 
 				retMap["number_of_views"] = EStoppingCriteria::C_NVIEWS;
@@ -138,8 +138,6 @@ namespace pacman {
 
 				return retMap;
 			}
-
-
 
 			/** Number of hypothesis samples */
 			golem::U32 nsamples, nviews;
@@ -206,6 +204,7 @@ namespace pacman {
 				grasp::Assert::valid(this->generationMethod != EGenerationMethod::G_NONE, ac, "Generation Method: is G_NONE (unknown generation method)");
 				grasp::Assert::valid(this->coverageMethod != ECoverageMethod::M_NONE, ac, "Coverage Method: is M_NONE (unknown coverage method)");
 				grasp::Assert::valid(this->stoppingCriteria != EStoppingCriteria::C_NONE, ac, "Stopping Criteria: is C_NONE (unknown stopping criteria)");
+				grasp::Assert::valid(!configSeq.empty(), ac, "need at least one fixed camera pose in parameters (for initial view)");
 			}
 			/** Load from xml context */
 			void load(const golem::XMLContext* xmlcontext);
@@ -283,6 +282,7 @@ namespace pacman {
 		*/
 		//grasp::data::Item::Map::iterator nextBestViewRandom();
 		
+		pacman::HypothesisSensor::Ptr selectNextBestView(grasp::data::Item::Map::iterator predModelPtr);
 
 		/** Greedy selection for next best view based on contact point information */
 		pacman::HypothesisSensor::Ptr selectNextBestViewContactBased(grasp::data::Item::Map::iterator predModelPtr);
@@ -295,6 +295,9 @@ namespace pacman {
 
 		/** Selects next best view sequentially*/
 		pacman::HypothesisSensor::Ptr selectNextBestViewSequential();
+
+		void resetNextBestViewSequential() { seqIndex = 0; }
+		void incrNextBestViewSequential() { seqIndex = (seqIndex + 1) % viewHypotheses.size(); }
 
 		/** Gets current view hypotheses a.k.a. sensor hypotheses*/
 		pacman::HypothesisSensor::Seq& getViewHypotheses() {
