@@ -504,6 +504,14 @@ return processItems(scannedImageItems);
 
 grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 {
+	this->visitedHypotheses.clear();
+	this->result.pointCurvs.clear();
+	this->result.predQueries.clear();
+	this->result.trajectories.clear();
+
+	for (int i = 0; i < this->viewHypotheses.size(); i++)
+		this->viewHypotheses[i]->visited = false;
+
 	grasp::Camera* camera = this->getOwnerSensor(this->params.sensorId);
 
 	if (camera)
@@ -1364,9 +1372,9 @@ void pacman::ActiveSense::executeTrajectory(){
 	trajectory->createTrajectory(seq);
 	// select collision object
 	CollisionBounds::Ptr collisionBounds = this->selectCollisionBounds(true, this->result.pointCurvs.back());
-	demoOwner->context.write("Performing trajectory! \n");
+	demoOwner->context.write("ActiveSense: Performing trajectory! \n");
 	// perform
-	this->demoOwner->perform(this->demoOwner->dataCurrentPtr->first, "Testing", seq);
+	this->demoOwner->perform(this->demoOwner->dataCurrentPtr->first, this->result.trajectories.back()->first, seq);
 	// done!
 	this->demoOwner->createRender();
 }

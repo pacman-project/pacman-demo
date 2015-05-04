@@ -98,6 +98,7 @@ namespace pacman {
 				//j->second.contacts => Map between joints x contact3D 
 				//where contact3D is contains (point,orientation,frame,weight)
 				//For each joint's sequence of contact3D regardless of the joint associated with it, do...
+				value = golem::Real(0.0);
 				for (grasp::Contact3D::Map::const_iterator k = j->second.contacts.begin(); k != j->second.contacts.end(); k++)
 				{
 					// k->first => jointToString()
@@ -105,6 +106,8 @@ namespace pacman {
 					value += computeValue(hypothesis,k->second, index);
 					index += k->second.size();
 				}
+
+				printf("Value %lf\n", value);
 
 			}
 		}
