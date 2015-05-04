@@ -2,6 +2,7 @@
 
 #include <Golem/Math/Rand.h>
 #include <Grasp/Grasp/Model.h>
+#include <Grasp/Data/Image/Image.h>
 #include <Grasp/Core/Import.h>
 #include <Grasp/App/Player/Data.h>
 #include <Golem/Phys/Data.h>
@@ -12,8 +13,39 @@ using namespace grasp;
 
 //-----------------------------------------------------------------------------
 
+namespace {
+std::string toXMLString(const golem::Mat34& m)
+{
+	char buf[BUFSIZ], *begin = buf, *const end = buf + sizeof(buf) - 1;
+	golem::snprintf(begin, end,
+			"m11=\"%f\" m12=\"%f\" m13=\"%f\" m21=\"%f\" m22=\"%f\" m23=\"%f\" m31=\"%f\" m32=\"%f\" m33=\"%f\" v1=\"%f\" v2=\"%f\" v3=\"%f\"",
+			m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33, m.p.x, m.p.y, m.p.z);
+	return std::string(buf);
+}
+
+std::string toXMLString(const grasp::ConfigMat34& cfg, const bool shortFormat = false)
+{
+	std::ostringstream os;
+	os.precision(6);
+	const size_t n = shortFormat ? 7 : cfg.c.size();
+	for (size_t i = 0; i < n; ++i)
+	{
+		os << (i == 0 ? "c" : " c") << i + 1 << "=\"" << cfg.c[i] << "\"";
+	}
+
+	return os.str();
+}
+}
+
+//-----------------------------------------------------------------------------
 
 const std::string Demo::ID_ANY = "Any";
+
+const std::string Demo::Data::ModeName[MODE_LAST + 1] = {
+	"Model",
+	"Query",
+	"Solution",
+};
 
 data::Data::Ptr Demo::Data::Desc::create(golem::Context &context) const {
 	grasp::data::Data::Ptr data(new Demo::Data(context));
@@ -39,7 +71,10 @@ void Demo::Data::create(const Desc& desc) {
 	indexItem = 0;
 	contactRelation = grasp::Contact3D::RELATION_DFLT;
 
-	queryMode = false;
+	indexDensity = 0;
+	indexSolution = 0;
+
+	mode = MODE_MODEL;
 }
 
 void Demo::Data::setOwner(Manager* owner) {
@@ -85,9 +120,9 @@ void Demo::Data::createRender() {
 		golem::CriticalSectionWrapper csw(owner->csRenderer);
 		owner->modelRenderer.reset();
 		// model/query
-		const grasp::Vec3Seq& vertices = queryMode ? queryVertices : modelVertices;
-		const grasp::TriangleSeq& triangles = queryMode ? queryTriangles : modelTriangles;
-		const golem::Mat34& frame = queryMode ? queryFrame : modelFrame;
+		const grasp::Vec3Seq& vertices = mode == MODE_MODEL ? modelVertices : queryVertices;
+		const grasp::TriangleSeq& triangles = mode == MODE_MODEL ? modelTriangles : queryTriangles;
+		const golem::Mat34& frame = mode == MODE_MODEL ? modelFrame : queryFrame;
 		owner->modelRenderer.setColour(owner->modelColourSolid);
 		owner->modelRenderer.addSolid(vertices.data(), (U32)vertices.size(), triangles.data(), (U32)triangles.size());
 		owner->modelRenderer.setColour(owner->modelColourWire);
@@ -95,11 +130,42 @@ void Demo::Data::createRender() {
 		if (!vertices.empty() && !triangles.empty())
 			owner->modelRenderer.addAxes3D(frame, Vec3(0.2));
 		// training data
-		if (!queryMode) {
+		if (mode == MODE_MODEL) {
 			owner->contactAppearance.relation = contactRelation;
 			Training::Map::iterator ptr = getTrainingItem();
-			if (ptr != training.end())
+			if (ptr != training.end()) {
 				grasp::Contact3D::draw(owner->contactAppearance, ptr->second.contacts, modelFrame, owner->modelRenderer);
+				for (auto &i : ptr->second.locations)
+					owner->modelRenderer.addPoint(i, RGBA::BLACK);
+			}
+		}
+		// query data
+		else if (mode == MODE_QUERY) {
+			if (!densities.empty()) {
+				const Density::Seq::iterator ptr = densities.begin() + indexDensity;
+				for (grasp::Query::Pose::Seq::const_iterator i = ptr->object.begin(); i != ptr->object.end(); ++i)
+					owner->modelRenderer.addAxes(i->toMat34(), Vec3(0.005));
+				for (grasp::Query::Pose::Seq::const_iterator i = ptr->pose.begin(); i != ptr->pose.end(); ++i)
+					owner->modelRenderer.addAxes(i->toMat34(), Vec3(0.02));
+			}
+		}
+		else if (mode == MODE_SOLUTION) {
+			if (!solutions.empty()) {
+				const Solution::Seq::iterator ptr = solutions.begin() + indexSolution;
+				owner->modelRenderer.addAxes3D(ptr->pose.toMat34(), Vec3(0.1));
+				if (ptr->path.size() > 0) owner->manipulatorAppearance.draw(*owner->manipulator, ptr->path[0], owner->modelRenderer);
+				//if (ptr->path.size() > 1) owner->manipulatorAppearance.draw(*owner->manipulator, ptr->path[1], owner->modelRenderer);
+				if (ptr->queryIndex < densities.size()) {
+					Mat34 trn;
+					trn.setInverse(densities[ptr->queryIndex].frame);
+					trn.multiply(ptr->pose.toMat34(), trn);
+					for (auto &i : densities[ptr->queryIndex].locations) {
+						Vec3 p;
+						trn.multiply(p, i);
+						owner->modelRenderer.addPoint(p, RGBA::BLACK);
+					}
+				}
+			}
 		}
 	}
 }
@@ -130,6 +196,11 @@ void Demo::Data::load(const std::string& prefix, const golem::XMLContext* xmlcon
 			frs.read(*modelState);
 			training.clear();
 			frs.read(training, training.end(), std::make_pair(std::string(), Training(owner->controller->createState())));
+
+			densities.clear();
+			frs.read(densities, densities.end());
+			solutions.clear();
+			frs.read(solutions, solutions.end());
 		}
 	}
 	catch (const std::exception&) {
@@ -154,7 +225,29 @@ void Demo::Data::save(const std::string& prefix, golem::XMLContext* xmlcontext) 
 
 		fws.write(*modelState);
 		fws.write(training.begin(),training.end());
+
+		fws.write(densities.begin(), densities.end());
+		fws.write(solutions.begin(), solutions.end());
 	}
+}
+
+//------------------------------------------------------------------------------
+
+void Demo::PoseDensity::load(const golem::XMLContext* xmlcontext) {
+	grasp::XMLData(stdDev, xmlcontext->getContextFirst("std_dev"));
+	golem::XMLData("kernels", kernels, const_cast<golem::XMLContext*>(xmlcontext));
+	grasp::XMLData(pathDist, xmlcontext->getContextFirst("path_dist"));
+	golem::XMLData("std_dev", pathDistStdDev, xmlcontext->getContextFirst("path_dist"));
+}
+
+//------------------------------------------------------------------------------
+
+void Demo::Optimisation::load(const golem::XMLContext* xmlcontext) {
+	golem::XMLData("runs", runs, const_cast<golem::XMLContext*>(xmlcontext));
+	golem::XMLData("steps", steps, const_cast<golem::XMLContext*>(xmlcontext));
+	golem::XMLData("sa_temp", saTemp, const_cast<golem::XMLContext*>(xmlcontext));
+	golem::XMLData("sa_delta", saDelta, const_cast<golem::XMLContext*>(xmlcontext));
+	golem::XMLData("sa_energy", saEnergy, const_cast<golem::XMLContext*>(xmlcontext));
 }
 
 //------------------------------------------------------------------------------
@@ -183,6 +276,9 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 	golem::XMLData("item", queryItem, xmlcontext->getContextFirst("query"));
 	golem::XMLData("item_obj", queryItemObj, xmlcontext->getContextFirst("query"));
 
+	golem::XMLData("handler_trj", queryHandlerTrj, xmlcontext->getContextFirst("query"));
+	golem::XMLData("item_trj", queryItemTrj, xmlcontext->getContextFirst("query"));
+
 	golem::XMLData("sensor", graspSensorForce, xmlcontext->getContextFirst("grasp"));
 	golem::XMLData(graspThresholdForce, xmlcontext->getContextFirst("grasp threshold"));
 	golem::XMLData("event_time_wait", graspEventTimeWait, xmlcontext->getContextFirst("grasp"));
@@ -202,13 +298,28 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 	modelDescMap.clear();
 	golem::XMLData(modelDescMap, modelDescMap.max_size(), xmlcontext->getContextFirst("model"), "model", false);
 	contactAppearance.load(xmlcontext->getContextFirst("model appearance"));
+
+	queryDescMap.clear();
+	golem::XMLData(queryDescMap, queryDescMap.max_size(), xmlcontext->getContextFirst("query"), "query", false);
+	poseMap.clear();
+	golem::XMLData(poseMap, poseMap.max_size(), xmlcontext->getContextFirst("query"), "query", false);
+
+	optimisation.load(xmlcontext->getContextFirst("query optimisation"));
+
+	manipulatorDesc->load(xmlcontext->getContextFirst("manipulator"));
+	manipulatorAppearance.load(xmlcontext->getContextFirst("manipulator appearance"));
+	golem::XMLData("item_trj", manipulatorItemTrj, xmlcontext->getContextFirst("manipulator"));
+	grasp::XMLData(manipulatorPoseStdDev, xmlcontext->getContextFirst("manipulator pose_stddev"), false);
+
+	golem::XMLData("duration", trajectoryDuration, xmlcontext->getContextFirst("manipulator trajectory"));
+	golem::XMLData(trajectoryThresholdForce, xmlcontext->getContextFirst("manipulator threshold"));
 }
 
 //------------------------------------------------------------------------------
 
 pacman::Demo::Demo(Scene &scene) : 
 	Player(scene),
-	modelCamera(nullptr), queryCamera(nullptr), modelHandler(nullptr), queryHandler(nullptr), graspSensorForce(nullptr), objectCamera(nullptr), objectHandlerScan(nullptr), objectHandler(nullptr)
+	modelCamera(nullptr), queryCamera(nullptr), modelHandler(nullptr), modelHandlerTrj(nullptr), queryHandler(nullptr), queryHandlerTrj(nullptr), graspSensorForce(nullptr), objectCamera(nullptr), objectHandlerScan(nullptr), objectHandler(nullptr)
 {}
 
 pacman::Demo::~Demo() {
@@ -216,12 +327,13 @@ pacman::Demo::~Demo() {
 
 //------------------------------------------------------------------------------
 
-grasp::Camera* Demo::getWristCamera() const
+grasp::Camera* Demo::getWristCamera(const bool dontThrow) const
 {
 	const std::string id("OpenNI+OpenNI");
 	grasp::Sensor::Map::const_iterator i = sensorMap.find(id);
 	if (i == sensorMap.end())
 	{
+		if (dontThrow) return nullptr;
 		context.write("%s was not found\n", id.c_str());
 		throw Cancel("getWristCamera: wrist-mounted camera is not available");
 	}
@@ -231,6 +343,7 @@ grasp::Camera* Demo::getWristCamera() const
 	// want the wrist-mounted camera
 	if (!camera->hasVariableMounting())
 	{
+		if (dontThrow) return nullptr;
 		context.write("%s is a static camera\n", id.c_str());
 		throw Cancel("getWristCamera: wrist-mounted camera is not available");
 	}
@@ -246,7 +359,7 @@ golem::Mat34 Demo::getWristPose() const
 	return pose.w;
 }
 
-void Demo::gotoWristPose(const golem::Mat34& w)
+golem::Controller::State::Seq Demo::getTrajectoryFromPose(const golem::Mat34& w)
 {
 	const golem::Mat34 R = controller->getChains()[armInfo.getChains().begin()]->getReferencePose();
 	const golem::Mat34 wR = w * R;
@@ -257,11 +370,108 @@ void Demo::gotoWristPose(const golem::Mat34& w)
 	golem::Controller::State::Seq trajectory;
 	const grasp::RBDist err = findTrajectory(begin, nullptr, &wR, trajectoryDuration, trajectory);
 
+	return trajectory;
+}
+
+grasp::ConfigMat34 Demo::getConfigFromPose(const golem::Mat34& w)
+{
+	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w);
+	const golem::Controller::State& last = trajectory.back();
+	ConfigMat34 cfg(RealSeq(61,0.0));
+	for (size_t i = 0; i < 7; ++i)
+	{
+		cfg.c[i] = last.cpos.data()[i];
+	}
+	return cfg;
+}
+
+void Demo::gotoWristPose(const golem::Mat34& w)
+{
+	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w);
 	sendTrajectory(trajectory);
 	controller->waitForEnd();
 	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
 }
 
+void Demo::nudgeWrist()
+{
+	auto showPose = [&](const std::string& description, const golem::Mat34& m) {
+		context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
+	};
+
+	double s = 5; // 5cm step
+	int dirCode;
+	for (;;)
+	{
+		std::ostringstream os;
+		os << "up:7 down:1 left:4 right:6 back:8 front:2 null:0 STEP(" << s << " cm):+/-";
+		dirCode = option("7146820+-", os.str().c_str());
+		if (dirCode == '+')
+		{
+			s *= 2;
+			if (s > 20.0) s = 20.0;
+			continue;
+		}
+		if (dirCode == '-')
+		{
+			s /= 2;
+			continue;
+		}
+		break;
+	}
+	s /= 100.0; // cm -> m
+
+	golem::Vec3 nudge(golem::Vec3::zero());
+	switch (dirCode)
+	{
+	case '7': // up
+		nudge.z = s;
+		break;
+	case '1': // down
+		nudge.z = -s;
+		break;
+	case '4': // left
+		nudge.y = -s;
+		break;
+	case '6': // right
+		nudge.y = s;
+		break;
+	case '8': // back
+		nudge.x = -s;
+		break;
+	case '2': // front
+		nudge.x = s;
+		break;
+	};
+
+	golem::Mat34 pose;
+
+	grasp::Camera* camera = getWristCamera(true);
+	if (camera != nullptr)
+	{
+		pose = camera->getFrame();
+		showPose("camera before", pose);
+	}
+
+	pose = getWristPose();
+	showPose("before", pose);
+
+	pose.p = pose.p + nudge;
+	showPose("commanded", pose);
+
+	gotoWristPose(pose);
+
+	showPose("final wrist", getWristPose());
+	if (camera != nullptr)
+	{
+		pose = camera->getFrame();
+		showPose("final camera", pose);
+	}
+
+	grasp::ConfigMat34 cp;
+	getPose(0, cp);
+	context.debug("%s\n", toXMLString(cp, true).c_str());
+}
 
 void Demo::rotateObjectInHand()
 {
@@ -331,10 +541,10 @@ void Demo::rotateObjectInHand()
 
 	grasp::ConfigMat34 cp;
 	getPose(0, cp);
-	context.debug("c1=\"%f\" c2=\"%f\" c3=\"%f\" c4=\"%f\" c5=\"%f\" c6=\"%f\" c7=\"%f\"\n", cp.c[0], cp.c[1], cp.c[2], cp.c[3], cp.c[4], cp.c[5], cp.c[6], cp.c[7]);
-		
-	recordingStart(dataCurrentPtr->first, recordingLabel, false);
-	context.write("taken snapshot\n");
+	context.debug("%s\n", toXMLString(cp, true).c_str());
+
+	//recordingStart(dataCurrentPtr->first, recordingLabel, false);
+	//context.write("taken snapshot\n");
 }
 
 void Demo::gotoPose2(const ConfigMat34& pose, const SecTmReal duration)
@@ -391,6 +601,12 @@ void pacman::Demo::create(const Desc& desc) {
 	queryItem = desc.queryItem;
 	queryItemObj = desc.queryItemObj;
 
+	grasp::data::Handler::Map::const_iterator queryHandlerTrjPtr = handlerMap.find(desc.queryHandlerTrj);
+	queryHandlerTrj = queryHandlerTrjPtr != handlerMap.end() ? queryHandlerTrjPtr->second.get() : nullptr;
+	if (!queryHandlerTrj)
+		throw Message(Message::LEVEL_CRIT, "pacman::Demo::create(): unknown query trajectory handler: %s", desc.queryHandlerTrj.c_str());
+	queryItemTrj = desc.queryItemTrj;
+
 	grasp::Sensor::Map::const_iterator graspSensorForcePtr = sensorMap.find(desc.graspSensorForce);
 	graspSensorForce = graspSensorForcePtr != sensorMap.end() ? is<FT>(graspSensorForcePtr->second.get()) : nullptr;
 	if (!graspSensorForce)
@@ -424,6 +640,25 @@ void pacman::Demo::create(const Desc& desc) {
 		modelMap.insert(std::make_pair(i->first, i->second->create(context, i->first)));
 	contactAppearance = desc.contactAppearance;
 
+	// query densities
+	queryMap.clear();
+	for (Query::Desc::Map::const_iterator i = desc.queryDescMap.begin(); i != desc.queryDescMap.end(); ++i)
+		queryMap.insert(std::make_pair(i->first, i->second->create(context, i->first)));
+	poseMap = desc.poseMap;
+
+	optimisation = desc.optimisation;
+
+	// manipulator
+	manipulator = desc.manipulatorDesc->create(*planner, desc.controllerIDSeq);
+	manipulatorAppearance = desc.manipulatorAppearance;
+	manipulatorItemTrj = desc.manipulatorItemTrj;
+
+	poseCovInv.lin = REAL_ONE / (poseCov.lin = Math::sqr(desc.manipulatorPoseStdDev.lin));
+	poseCovInv.ang = REAL_ONE / (poseCov.ang = Math::sqr(desc.manipulatorPoseStdDev.ang));
+
+	trajectoryDuration = desc.trajectoryDuration;
+	trajectoryThresholdForce = desc.trajectoryThresholdForce;
+
 	// top menu help using global key '?'
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  Z                                       menu SZ Tests\n"));
@@ -432,37 +667,62 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("\t", [=]() {
 		// set mode
-		to<Data>(dataCurrentPtr)->queryMode = !to<Data>(dataCurrentPtr)->queryMode;
-		context.write("%s mode\n", to<Data>(dataCurrentPtr)->queryMode ? "Query" : "Model");
+		to<Data>(dataCurrentPtr)->mode = Data::Mode(to<Data>(dataCurrentPtr)->mode >= Data::MODE_LAST ? (U32)Data::MODE_FIRST : U32(to<Data>(dataCurrentPtr)->mode) + 1);
+		context.write("%s mode\n", Data::ModeName[to<Data>(dataCurrentPtr)->mode].c_str());
 		createRender();
 	}));
 	itemSelect = [&](ItemSelectFunc itemSelectFunc) {
-		if (!to<Data>(dataCurrentPtr)->queryMode) {
-			if (to<Data>(dataCurrentPtr)->training.empty()) {
-				context.write("No training data\n");
-				return;
-			}
-			Data::Training::Map::iterator ptr = to<Data>(dataCurrentPtr)->getTrainingItem();
-			itemSelectFunc(to<Data>(dataCurrentPtr)->training, ptr);
-			to<Data>(dataCurrentPtr)->setTrainingItem(ptr);
-			context.write("Type %s/%u, Item #%u\n", ptr->first.c_str(), to<Data>(dataCurrentPtr)->indexType + 1, to<Data>(dataCurrentPtr)->indexItem + 1);
-			createRender();
-		}
+		if (to<Data>(dataCurrentPtr)->training.empty())
+			throw Cancel("No training data");
+		Data::Training::Map::iterator ptr = to<Data>(dataCurrentPtr)->getTrainingItem();
+		itemSelectFunc(to<Data>(dataCurrentPtr)->training, ptr);
+		to<Data>(dataCurrentPtr)->setTrainingItem(ptr);
+		context.write("Model type %s/%u, Item #%u\n", ptr->first.c_str(), to<Data>(dataCurrentPtr)->indexType + 1, to<Data>(dataCurrentPtr)->indexItem + 1);
 	};
 	menuCmdMap.insert(std::make_pair("(", [&]() {
-		itemSelect([] (Data::Training::Map& map, Data::Training::Map::iterator& ptr) {
-			if (ptr == map.begin()) ptr = --map.end(); else --ptr;
-		});
+		if (to<Data>(dataCurrentPtr)->mode == Data::MODE_MODEL)
+			itemSelect([] (Data::Training::Map& map, Data::Training::Map::iterator& ptr) {
+				if (ptr == map.begin()) ptr = --map.end(); else --ptr;
+			});
+		else if (to<Data>(dataCurrentPtr)->mode == Data::MODE_QUERY) {
+			if (to<Data>(dataCurrentPtr)->densities.empty())
+				throw Cancel("No query densities created");
+			to<Data>(dataCurrentPtr)->indexDensity = to<Data>(dataCurrentPtr)->indexDensity <= 0 ? to<Data>(dataCurrentPtr)->densities.size() - 1 : to<Data>(dataCurrentPtr)->indexDensity - 1;
+			context.write("Query type %s, Item #%u\n", to<Data>(dataCurrentPtr)->densities[to<Data>(dataCurrentPtr)->indexDensity].type.c_str(), to<Data>(dataCurrentPtr)->indexDensity + 1);
+		}
+		else if (to<Data>(dataCurrentPtr)->mode == Data::MODE_SOLUTION) {
+			if (to<Data>(dataCurrentPtr)->solutions.empty())
+				throw Cancel("No solutions created");
+			to<Data>(dataCurrentPtr)->indexSolution = to<Data>(dataCurrentPtr)->indexSolution <= 0 ? to<Data>(dataCurrentPtr)->solutions.size() - 1 : to<Data>(dataCurrentPtr)->indexSolution - 1;
+			const Data::Solution& solution = to<Data>(dataCurrentPtr)->solutions[to<Data>(dataCurrentPtr)->indexSolution];
+			context.write("Solution type %s, Item #%u, Likelihood=%.9f\n", solution.type.c_str(), to<Data>(dataCurrentPtr)->indexSolution + 1, solution.likelihood);
+		}
+		createRender();
 	}));
 	menuCmdMap.insert(std::make_pair(")", [&]() {
-		itemSelect([] (Data::Training::Map& map, Data::Training::Map::iterator& ptr) {
-			if (ptr == --map.end()) ptr = map.begin(); else ++ptr;
-		});
+		if (to<Data>(dataCurrentPtr)->mode == Data::MODE_MODEL)
+			itemSelect([](Data::Training::Map& map, Data::Training::Map::iterator& ptr) {
+				if (ptr == --map.end()) ptr = map.begin(); else ++ptr;
+			});
+		else if (to<Data>(dataCurrentPtr)->mode == Data::MODE_QUERY) {
+			if (to<Data>(dataCurrentPtr)->densities.empty())
+				throw Cancel("No query densities created");
+			to<Data>(dataCurrentPtr)->indexDensity = to<Data>(dataCurrentPtr)->indexDensity < to<Data>(dataCurrentPtr)->densities.size() - 1 ? to<Data>(dataCurrentPtr)->indexDensity + 1 : 0;
+			context.write("Query type %s, Item #%u\n", to<Data>(dataCurrentPtr)->densities[to<Data>(dataCurrentPtr)->indexDensity].type.c_str(), to<Data>(dataCurrentPtr)->indexDensity + 1);
+		}
+		else if (to<Data>(dataCurrentPtr)->mode == Data::MODE_SOLUTION) {
+			if (to<Data>(dataCurrentPtr)->solutions.empty())
+				throw Cancel("No solutions created");
+			to<Data>(dataCurrentPtr)->indexSolution = to<Data>(dataCurrentPtr)->indexSolution < to<Data>(dataCurrentPtr)->solutions.size() - 1 ? to<Data>(dataCurrentPtr)->indexSolution + 1 : 0;
+			const Data::Solution& solution = to<Data>(dataCurrentPtr)->solutions[to<Data>(dataCurrentPtr)->indexSolution];
+			context.write("Solution type %s, Item #%u, Likelihood=%.9f\n", solution.type.c_str(), to<Data>(dataCurrentPtr)->indexSolution + 1, solution.likelihood);
+		}
+		createRender();
 	}));
 
 	// data menu control and commands
 	menuCtrlMap.insert(std::make_pair("P", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: (E)stimate pose, (C)apture object, (M)odel/(Q)uery menu, run (D)emo ...";
+		desc = "Press a key to: (E)stimate pose, (C)apture object, (M)odel, (Q)uery, (T)rajectory, run (D)emo ...";
 	}));
 
 	// model pose estimation
@@ -471,13 +731,13 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 	menuCmdMap.insert(std::make_pair("PEM", [=]() {
 		// estimate
-		(void)estimatePose(false);
+		(void)estimatePose(Data::MODE_MODEL);
 		// finish
 		context.write("Done!\n");
 	}));
 	menuCmdMap.insert(std::make_pair("PEQ", [=]() {
 		// estimate
-		(void)estimatePose(true);
+		(void)estimatePose(Data::MODE_QUERY);
 		// finish
 		context.write("Done!\n");
 	}));
@@ -521,8 +781,8 @@ void pacman::Demo::create(const Desc& desc) {
 		pointsTrn.resize(points.size());
 		Mat34 frame = RBPose::createFrame(points), frameInv;
 		frameInv.setInverse(frame);
-		context.write("Press a key to: (%s/%s) to adjust position, (%s/%s) to adjust orientation, finish <Enter>...\n",
-			objectFrameAdjustment.linKeysLarge.c_str(), objectFrameAdjustment.linKeysSmall.c_str(), objectFrameAdjustment.angKeysLarge.c_str(), objectFrameAdjustment.angKeysSmall.c_str());
+		context.write("Press a key to: (%s/%s) to adjust position/orientation, (%s) to adjust increment, finish <Enter>...\n",
+			objectFrameAdjustment.linKeys.c_str(), objectFrameAdjustment.angKeys.c_str(), objectFrameAdjustment.incKeys.c_str());
 		for (bool finish = false; !finish;) {
 			const Mat34 trn = frame * frameInv; // frame = trn * frameInit, trn = frame * frameInit^-1
 			for (size_t i = 0; i < points.size(); ++i)
@@ -538,7 +798,10 @@ void pacman::Demo::create(const Desc& desc) {
 			switch (key) {
 			case 27: throw Cancel("Cancelled");
 			case 13: finish = true; break;
-			default: objectFrameAdjustment.adjust(key, frame);
+			default:
+				if (objectFrameAdjustment.adjustIncrement(key))
+					context.write("Inrement: position = %f [m], orientation = %f [deg]\n", objectFrameAdjustment.getIncrement().lin, Math::radToDeg(objectFrameAdjustment.getIncrement().ang));
+				(void)objectFrameAdjustment.adjustFrame(key, frame);
 			}
 		}
 		// transform
@@ -563,7 +826,7 @@ void pacman::Demo::create(const Desc& desc) {
 	// model operations
 	menuCtrlMap.insert(std::make_pair("PM", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
 		// set mode
-		to<Data>(dataCurrentPtr)->queryMode = false;
+		to<Data>(dataCurrentPtr)->mode = Data::MODE_MODEL;
 		createRender();
 
 		desc = "Press a key to: (S)et/(G)oto initial object model pose, (A)dd/(R)emove training data...";
@@ -701,7 +964,7 @@ void pacman::Demo::create(const Desc& desc) {
 			case 'T': {
 				context.write("%s )T(\n", options.c_str());
 				// add trajectory waypoint
-				const std::string trjName = getTrajectoryName(modelType);
+				const std::string trjName = getTrajectoryName(modelItemTrj, modelType);
 				grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(trjName);
 				if (ptr == to<Data>(dataCurrentPtr)->itemMap.end()) {
 					golem::CriticalSectionWrapper cswData(csData);
@@ -742,33 +1005,117 @@ void pacman::Demo::create(const Desc& desc) {
 				to<Data>(dataCurrentPtr)->training.erase(ptr);
 			// remove trajectory if no items of a given type are present
 			//if (to<Data>(dataCurrentPtr)->training.end() == to<Data>(dataCurrentPtr)->training.find(modelType))
-			//	to<Data>(dataCurrentPtr)->itemMap.erase(getTrajectoryName(modelType));
+			//	to<Data>(dataCurrentPtr)->itemMap.erase(getTrajectoryName(modelItemTrj, modelType));
 			createRender();
 		}
 
 		context.write("Done!\n");
 	}));
 
+	// query operations
+	menuCtrlMap.insert(std::make_pair("PQ", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+		// set mode
+		to<Data>(dataCurrentPtr)->mode = Data::MODE_QUERY;
+		createRender();
+
+		desc = "Press a key to: create (D)ensities, generate (S)olutions ...";
+	}));
+	menuCmdMap.insert(std::make_pair("PQD", [=]() {
+		// load object item
+		data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(objectItem);
+		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
+			throw Message(Message::LEVEL_ERROR, "Object item has not been created");
+		// wrist frame
+		const Mat34 frame = forwardTransformArm(lookupState());
+		// create query densities
+		createQuery(ptr->second, frame);
+		createRender();
+
+		context.write("Done!\n");
+	}));
+	menuCmdMap.insert(std::make_pair("PQS", [=]() {
+		// generate wrist pose solutions
+		generateSolutions();
+
+		to<Data>(dataCurrentPtr)->mode = Data::MODE_SOLUTION;
+		createRender();
+
+		context.write("Done!\n");
+	}));
+
+	// trajectory operations
+	menuCtrlMap.insert(std::make_pair("PT", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+		// set mode
+		to<Data>(dataCurrentPtr)->mode = Data::MODE_SOLUTION;
+		createRender();
+
+		desc = "Press a key to: trajectory (S)elect/(P)erform...";
+	}));
+	menuCmdMap.insert(std::make_pair("PTS", [=]() {
+		// select best trajectory
+		selectTrajectory();
+		createRender();
+
+		context.write("Done!\n");
+	}));
+	menuCmdMap.insert(std::make_pair("PTP", [=]() {
+		// perform trajectory
+		performTrajectory(true);
+		createRender();
+
+		context.write("Done!\n");
+	}));
+
 	// main demo
 	menuCmdMap.insert(std::make_pair("PD", [=]() {
+		// debug mode
+		const bool stopAtBreakPoint = option("YN", "Debug mode (Y/N)...") == 'Y';
+		const auto breakPoint = [=] (const char* str) {
+			if (stopAtBreakPoint) {
+				if (option("YN", makeString("%s: Continue (Y/N)...", str).c_str()) != 'Y')
+					throw Cancel("Demo cancelled");
+			}
+			else {
+				context.write("%s\n", str);
+				(void)waitKey(0);
+			}
+		};
 
 		// estimate pose
-		if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty())
-			estimatePose(true);
+		if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty()) {
+			breakPoint("Dishwasher pose estimation");
+			estimatePose(Data::MODE_QUERY);
+		}
 
 		// run demo
 		for (;;) {
 			// grasp and scan object
+			breakPoint("Object grasp and point cloud capture");
 			grasp::data::Item::Map::iterator ptr = objectGraspAndCapture();
+
+			breakPoint("Action planning");
+
 			// compute features and add to data bundle
 			ptr = objectProcess(ptr);
+			// wrist frame
+			const Mat34 frame = forwardTransformArm(lookupState());
+			// create query densities
+			createQuery(ptr->second, frame);
+			// generate wrist pose solutions
+			generateSolutions();
+			// select best trajectory
+			selectTrajectory();
+
+			breakPoint("Action execution");
+			// execute trajectory
+			performTrajectory(stopAtBreakPoint);
 		}
 		context.write("Done!\n");
 
 	}));
 
 	menuCtrlMap.insert(std::make_pair("Z", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: run (R)otate, (N)udge, (O)bjectGraspAndCapture, compute rgb-to-ir (T)ranform...";
+		desc = "Press a key to: run (R)otate, (N)udge, (O)bjectGraspAndCapture, rgb-to-ir (T)ranform, (D)epth camera adjust, create (P)oses, (L)ocate object...";
 	}));
 
 	menuCmdMap.insert(std::make_pair("ZO", [=]() {
@@ -785,78 +1132,7 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("ZN", [=]() {
 		context.write("nudge wrist\n");
-
-		auto showPose = [&](const std::string& description, const golem::Mat34& m) {
-			context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
-		};
-
-		double s = 5; // 5cm step
-		int dirCode;
-		for (;;)
-		{
-			std::ostringstream os;
-			os << "up:7 down:1 left:4 right:6 back:8 front:2 null:0 STEP(" << s << " cm):+/-";
-			dirCode = option("7146820+-", os.str().c_str());
-			if (dirCode == '+')
-			{
-				s *= 2;
-				if (s > 20.0) s = 20.0;
-				continue;
-			}
-			if (dirCode == '-')
-			{
-				s /= 2;
-				continue;
-			}
-			break;
-		}
-		s /= 100.0; // cm -> m
-
-		golem::Vec3 nudge(golem::Vec3::zero());
-		switch (dirCode)
-		{
-		case '7': // up
-			nudge.z = s;
-			break;
-		case '1': // down
-			nudge.z = -s;
-			break;
-		case '4': // left
-			nudge.y = -s;
-			break;
-		case '6': // right
-			nudge.y = s;
-			break;
-		case '8': // back
-			nudge.x = -s;
-			break;
-		case '2': // front
-			nudge.x = s;
-			break;
-		};
-
-		golem::Mat34 pose;
-
-		grasp::Camera* camera = getWristCamera();
-		pose = camera->getFrame();
-		showPose("camera before", pose);
-
-		pose = getWristPose();
-		showPose("before", pose);
-
-		pose.p = pose.p + nudge;
-		showPose("commanded", pose);
-
-		gotoWristPose(pose);
-
-		showPose("final wrist", getWristPose());
-		pose = camera->getFrame();
-		showPose("final camera", pose);
-
-		grasp::ConfigMat34 cp;
-		getPose(0, cp);
-		context.debug("c1=\"%f\" c2=\"%f\" c3=\"%f\" c4=\"%f\" c5=\"%f\" c6=\"%f\" c7=\"%f\"\n", cp.c[0], cp.c[1], cp.c[2], cp.c[3], cp.c[4], cp.c[5], cp.c[6], cp.c[7]);
-
+		nudgeWrist();
 		context.write("Done!\n");
 	}));
 
@@ -893,23 +1169,246 @@ void pacman::Demo::create(const Desc& desc) {
 			context.write("%s\nFailed to compute transform!\n", e.what());
 		}
 	}));
-}
+
+	menuCmdMap.insert(std::make_pair("ZD", [=]() {
+		RBAdjust rba;
+		rba.increment.set(golem::Real(0.0005), golem::REAL_PI*golem::Real(0.001)); // small increments
+
+		select(sensorCurrentPtr, sensorMap.begin(), sensorMap.end(), "Select Sensor:\n",
+			[](Sensor::Map::const_iterator ptr) -> const std::string& {return ptr->second->getID();} );
+
+		if (!is<CameraDepth>(sensorCurrentPtr))
+			throw Cancel("Only works for depth cameras");
+
+		CameraDepth* camera = is<CameraDepth>(sensorCurrentPtr);
+		const Mat34 trn0 = camera->getColourToIRFrame();
+
+		context.write(
+			"Use adjustment keys %s %s %s or 0 for identity. To finish press <SPACE> or <ESC>\n",
+			rba.linKeys.c_str(), rba.angKeys.c_str(), rba.incKeys.c_str());
+		for (;;)
+		{
+			const int k = waitKey(golem::MSEC_TM_U32_INF);
+			if (k == 27) // <Esc>
+			{
+				camera->setColourToIRFrame(trn0);
+				throw Cancel("Cancelled");
+			}
+			if (k == 32) // <Space>
+				break;
+			if (k == '0')
+			{
+				camera->setColourToIRFrame(Mat34::identity());
+				continue;
+			}
+			if (rba.adjustIncrement(k))
+			{
+				const RBDist& incr = rba.getIncrement();
+				context.write("increment lin: %f, ang: %f\n", incr.lin, incr.ang);
+				continue;
+			}
+			
+			Mat34 trn = camera->getColourToIRFrame();
+			rba.adjustFrame(k, trn);
+			camera->setColourToIRFrame(trn);
+		}
+
+		const Mat34 trn = camera->getColourToIRFrame();
+		const Mat34 cameraFrame = camera->getFrame();
+		Mat34 depthCameraFrame;
+		depthCameraFrame.multiply(cameraFrame, trn);
+		context.write("<colourToIRFrame %s></colourToIRFrame>\n", toXMLString(trn).c_str());
+		context.write("<extrinsic %s></extrinsic>\n", toXMLString(depthCameraFrame).c_str());
+		context.write("Done!\n");
+	}));
+
+	menuCmdMap.insert(std::make_pair("ZP", [=]() {
+		context.write("create arm configs for a set of camera frames\n");
+		double theta(50), phi1(-180), phi2(160), phiStep(20), R(0.45), cx(0.45), cy(-0.45), cz(-0.30);
+		readNumber("theta ", theta);
+		readNumber("phi1 ", phi1);
+		readNumber("phi2 ", phi2);
+		readNumber("phiStep ", phiStep);
+		readNumber("R ", R);
+		readNumber("cx ", cx);
+		readNumber("cy ", cy);
+		readNumber("cz ", cz);
+
+		// create a set of poses at co-latitude theta, from phi1 to phi2 (step phiStep)
+		// looking at (cx,cy,cz) at a distance R
+		std::vector<Mat34> cameraPoses;
+		grasp::ConfigMat34::Seq configs;
+		const Vec3 centre(cx, cy, cz), Zaxis(0.0,0.0,1.0);
+		Vec3 cameraCentre, cameraXdir, cameraYdir, cameraZdir;
+		Mat34 cameraFrame, wristPose;
+		const double degToRad = golem::REAL_PI / 180.0;
+		const double sintheta = sin(theta * degToRad);
+		const double costheta = cos(theta * degToRad);
+		for (double phi = phi1; phi <= phi2; phi += phiStep)
+		{
+			const double sinphi = sin(phi * degToRad);
+			const double cosphi = cos(phi * degToRad);
+			const Vec3 ray(cosphi*sintheta, sinphi*sintheta, costheta);
+			cameraCentre.multiply(R, ray);
+			cameraCentre += centre;
+			cameraZdir.multiply(-1.0, ray);
+			cameraXdir.cross(cameraZdir, Zaxis);
+			cameraXdir.normalise();
+			cameraYdir.cross(cameraZdir, cameraXdir);
+			cameraFrame.R = Mat33(cameraXdir, cameraYdir, cameraZdir);
+			cameraFrame.p = cameraCentre;
+			cameraPoses.push_back(cameraFrame);
+			objectRenderer.addAxes3D(cameraFrame, golem::Vec3(0.05));
+
+			//Mat33 m;
+			//m.setTransposed(cameraFrame.R);
+			//m.multiply(m, cameraFrame.R);
+			//context.debug("%s\n", toXMLString(Mat34(m,Vec3::zero())).c_str());
+
+			// transform from camera to wrist frame
+			// default calibration for wrist extrinsics
+			Mat34 trn(
+				Mat33(-0.015082, -0.0709979, 0.997362, 0.999767, 0.0143117, 0.0161371, -0.0154197, 0.997374, 0.0707655),
+				Vec3(0.0920632, -0.0388034, 0.161098));
+			grasp::Camera* camera = getWristCamera(true);
+			if (camera != nullptr)
+				trn = getWristCamera()->getCurrentCalibration()->getParameters().pose;
+
+			Mat34 invTrn;
+			invTrn.setInverse(trn);
+			wristPose = cameraFrame * invTrn;
+			// get config from wrist pose, by executing trajectory from current pose!!!
+			gotoWristPose(wristPose);
+			grasp::ConfigMat34 cfg;
+			getPose(0, cfg);
+			configs.push_back(cfg);
+		}
+
+		// write out configs in xml format to file
+		std::string filePoses("scan_poses.xml");
+		readString("Filename for scan poses: ", filePoses);
+		FileWriteStream fws(filePoses.c_str());
+
+		std::ostringstream os;
+		bool first(true);
+		for (auto i = configs.begin(); i != configs.end(); ++i, first=false)
+		{
+			if (!first) os << "\n";
+			os << "  <pose name=\"scan_poses\" dim=\"61\" " << toXMLString(*i) << "/>";
+		}
+		os << std::ends;
+		fws.write(os.str().c_str(), os.str().size()-1);
+
+		context.write("Done!\n");
+	}));
+
+	menuCmdMap.insert(std::make_pair("ZL", [=]() {
+		context.write("locate object\n");
+
+		std::string itemName("transformed_image_for_locate");
+		
+		data::Item::Map& itemMap = to<Data>(dataCurrentPtr)->itemMap;
+
+		if (itemMap.empty())
+			throw Message(Message::LEVEL_ERROR, "No items");
+
+		// get current item as a data::Item::Map::iterator ptr
+		data::Item::Map::iterator ptr = itemMap.begin(); // @@@ should use current item @@@
+
+		data::ItemImage* itemImage = to<data::ItemImage>(ptr->second.get());
+
+		// generate features
+		data::Transform* transform = is<data::Transform>(&ptr->second->getHandler());
+		if (!transform)
+			throw Message(Message::LEVEL_ERROR, "Current item does not support Transform interface");
+		data::Item::List list;
+		list.insert(list.end(), ptr);
+		data::Item::Ptr item = transform->transform(list);
+		{
+			golem::CriticalSectionWrapper cswData(csData);
+			itemMap.erase(itemName);
+			ptr = itemMap.insert(itemMap.end(), data::Item::Map::value_type(itemName, item));
+			Data::View::setItem(itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+		}
+
+		// estimate pose
+		data::Model* model = is<data::Model>(ptr);
+		if (!model)
+			throw Message(Message::LEVEL_ERROR, "Transformed item does not support Model interface");
+		grasp::ConfigMat34 robotPose;
+		golem::Mat34 modelFrame;
+		model->model(robotPose, modelFrame);
+
+		context.write("Model pose is: %s\n", toXMLString(modelFrame).c_str());
+
+		const int k = option("MC", "Update (M)odel pose or (C)amera extrinsics for some .cal file, or (Q)uit");
+		if (k == 'C')
+		{
+			Mat34 cameraFrame, newCameraFrame, invModelFrame, trueModelFrame;
+			invModelFrame.setInverse(modelFrame);
+
+			// get camera frame of image F (should be extrinsics of depth camera)
+			cameraFrame = itemImage->parameters.pose;
+
+			std::string fileCal("GraspCameraOpenNIChest.cal");
+			readString("Calibration filename: ", fileCal);
+
+			// assume true model pose is in .cal file
+			XMLParser::Ptr pParser = XMLParser::load(fileCal);
+			XMLData(trueModelFrame, pParser->getContextRoot()->getContextFirst("grasp sensor extrinsic model pose"));
+
+			context.write("Camera frame for image was:  %s\n", toXMLString(cameraFrame).c_str());
+			context.write("Assuming true model pose is: %s\n", toXMLString(trueModelFrame).c_str());
+
+			// new extrinsics = trueModelFrame * modelFrame^-1 * cameraFrame
+			newCameraFrame.multiply(invModelFrame, cameraFrame);
+			context.write("transform from model to camera wrt model frame: %s\n", toXMLString(newCameraFrame).c_str());
+			newCameraFrame.multiply(trueModelFrame, newCameraFrame);
+
+			context.write("Updating %s with\n<extrinsic %s></extrinsic>\n", fileCal.c_str(), toXMLString(newCameraFrame).c_str());
+			
+			// current static camera on Boris:
+			// m11 = "-0.689817" m12 = "-0.351147" m13 = "0.633124" m21 = "-0.723807" m22 = "0.353741" m23 = "-0.592427" m31 = "-0.015934" m32 = "-0.866928" m33 = "-0.498180"
+			// v1 = "0.216904" v2 = "-0.058540" v3 = "0.281856"
+
+			// write new extrinsics into .cal xml
+			FileWriteStream fws(fileCal.c_str());
+			XMLData(newCameraFrame, pParser->getContextRoot()->getContextFirst("grasp sensor extrinsic", true), true);
+			pParser->store(fws); // @@@ save does not work
+		}
+		else if (k == 'M')
+		{
+			std::string fileCal("GraspCameraOpenNIChest.cal");
+			readString("Calibration filename: ", fileCal);
+
+			XMLParser::Ptr pParser = XMLParser::load(fileCal);
+			XMLData(modelFrame, pParser->getContextRoot()->getContextFirst("grasp sensor extrinsic model pose", true), true);
+			FileWriteStream fws(fileCal.c_str());
+			pParser->store(fws); // @@@ save does not work
+		}
+
+		context.write("Done!\n");
+	}));
+
+
+
+	}
 
 //------------------------------------------------------------------------------
 
-grasp::data::Item::Map::iterator pacman::Demo::estimatePose(bool queryMode) {
-	if (queryMode && (to<Data>(dataCurrentPtr)->modelVertices.empty() || to<Data>(dataCurrentPtr)->modelTriangles.empty()))
+grasp::data::Item::Map::iterator pacman::Demo::estimatePose(Data::Mode mode) {
+	if (mode != Data::MODE_MODEL && (to<Data>(dataCurrentPtr)->modelVertices.empty() || to<Data>(dataCurrentPtr)->modelTriangles.empty()))
 		throw Cancel("Model has not been estimated");
 
-	grasp::Vec3Seq& vertices = queryMode ? to<Data>(dataCurrentPtr)->queryVertices : to<Data>(dataCurrentPtr)->modelVertices;
-	grasp::TriangleSeq& triangles = queryMode ? to<Data>(dataCurrentPtr)->queryTriangles : to<Data>(dataCurrentPtr)->modelTriangles;
-	golem::Mat34& frame = queryMode ? to<Data>(dataCurrentPtr)->queryFrame : to<Data>(dataCurrentPtr)->modelFrame;
-	const std::string itemName = queryMode ? queryItem : modelItem;
-	grasp::data::Handler* handler = queryMode ? queryHandler : modelHandler;
-	grasp::Camera* camera = queryMode ? queryCamera : modelCamera;
+	grasp::Vec3Seq& vertices = mode != Data::MODE_MODEL ? to<Data>(dataCurrentPtr)->queryVertices : to<Data>(dataCurrentPtr)->modelVertices;
+	grasp::TriangleSeq& triangles = mode != Data::MODE_MODEL ? to<Data>(dataCurrentPtr)->queryTriangles : to<Data>(dataCurrentPtr)->modelTriangles;
+	golem::Mat34& frame = mode != Data::MODE_MODEL ? to<Data>(dataCurrentPtr)->queryFrame : to<Data>(dataCurrentPtr)->modelFrame;
+	const std::string itemName = mode != Data::MODE_MODEL ? queryItem : modelItem;
+	grasp::data::Handler* handler = mode != Data::MODE_MODEL ? queryHandler : modelHandler;
+	grasp::Camera* camera = mode != Data::MODE_MODEL ? queryCamera : modelCamera;
 
 	// set mode
-	to<Data>(dataCurrentPtr)->queryMode = queryMode;
+	to<Data>(dataCurrentPtr)->mode = mode;
 
 	// run robot
 	gotoPose(modelScanPose);
@@ -961,7 +1460,7 @@ grasp::data::Item::Map::iterator pacman::Demo::estimatePose(bool queryMode) {
 	model->model(robotPose, modelFrame, &modelVertices, &modelTriangles);
 
 	// compute a new frame
-	if (!queryMode) {
+	if (mode == Data::MODE_MODEL) {
 		Vec3Seq modelPoints;
 		Rand rand(context.getRandSeed());
 		Import().generate(rand, modelVertices, modelTriangles, [&](const golem::Vec3& p, const golem::Vec3&) { modelPoints.push_back(p); });
@@ -974,14 +1473,14 @@ grasp::data::Item::Map::iterator pacman::Demo::estimatePose(bool queryMode) {
 		golem::CriticalSectionWrapper cswData(csData);
 		vertices = modelVertices;
 		triangles = modelTriangles;
-		if (queryMode)
-			frame = modelFrame * to<Data>(dataCurrentPtr)->modelFrameOffset;
-		else {
+		if (mode == Data::MODE_MODEL) {
 			// newFrame = modelFrame * offset ==> offset = modelFrame^-1 * newFrame
 			frame = modelNewFrame;
 			to<Data>(dataCurrentPtr)->modelFrameOffset.setInverse(modelFrame);
 			to<Data>(dataCurrentPtr)->modelFrameOffset.multiply(to<Data>(dataCurrentPtr)->modelFrameOffset, modelNewFrame);
 		}
+		else
+			frame = modelFrame * to<Data>(dataCurrentPtr)->modelFrameOffset;
 	}
 
 	return ptr;
@@ -998,8 +1497,6 @@ grasp::data::Item::Map::iterator pacman::Demo::estimatePose(bool queryMode) {
 // return ptr to Item
 grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture()
 {
-	data::Item::Ptr item;
-
 	gotoPose(graspPoseOpen);
 
 	context.write("Waiting for force event, simulate (F)orce event or <ESC> to cancel\n");
@@ -1098,8 +1595,465 @@ grasp::data::Item::Map::iterator pacman::Demo::objectProcess(grasp::data::Item::
 
 //------------------------------------------------------------------------------
 
-std::string pacman::Demo::getTrajectoryName(const std::string& type) const {
-	return modelItemTrj + "-" + type;
+std::string pacman::Demo::getTrajectoryName(const std::string& prefix, const std::string& type) const {
+	return prefix + dataDesc->sepName + type;
+}
+
+//------------------------------------------------------------------------------
+
+void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& frame) {
+	// Features
+	const data::Feature3D* features = is<data::Feature3D>(item.get());
+	if (!features)
+		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): No query features");
+	// training data are required
+	if (to<Data>(dataCurrentPtr)->training.empty())
+		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): No model densities");
+	// model object pose
+	if (to<Data>(dataCurrentPtr)->modelVertices.empty() || to<Data>(dataCurrentPtr)->modelVertices.empty())
+		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): No model pose");
+	// query object pose
+	if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty())
+		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): No query pose");
+
+	// select query any
+	const grasp::Query::Map::const_iterator queryAny = queryMap.find(ID_ANY);
+	if (queryAny == queryMap.end())
+		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Unable to find Query %s", ID_ANY.c_str());
+	// select pose std dev any
+	const PoseDensity::Map::const_iterator poseAny = poseMap.find(ID_ANY);
+	if (poseAny == poseMap.end())
+		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Unable to find pose density %s", ID_ANY.c_str());
+
+	to<Data>(dataCurrentPtr)->densities.clear();
+	for (Data::Training::Map::const_iterator i = to<Data>(dataCurrentPtr)->training.begin(); i != to<Data>(dataCurrentPtr)->training.end(); ++i) {
+		// select query density
+		grasp::Query::Map::const_iterator query = queryMap.find(i->first);
+		if (query == queryMap.end()) query = queryAny;
+
+		try {
+			query->second->clear();
+			//if (!golem::Sample<golem::Real>::normalise<golem::Ref1>(const_cast<grasp::Contact3D::Seq&>(i->second.contacts)))
+			//	throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Unable to normalise model distribution");
+			query->second->create(i->second.contacts, *features);
+		}
+		catch (const std::exception& ex) {
+			context.write("%s\n", ex.what());
+			continue;
+		}
+
+		Data::Density density;
+		density.type = i->first;
+
+		// object density
+		density.object = query->second->getPoses();
+		for (grasp::Query::Pose::Seq::iterator j = density.object.begin(); j != density.object.end(); ++j) {
+			Mat34 trn;
+
+			// frame transform: eff_curr = frame, model = modelFrame
+			// model = trn * query |==> trn = model * query^-1
+			// eff_pred = trn * eff_curr |==> eff_pred = model * query^-1 * eff_curr
+			trn.setInverse(j->toMat34());
+			trn.multiply(trn, frame);
+			trn.multiply(to<Data>(dataCurrentPtr)->queryFrame, trn);
+			j->fromMat34(trn);
+		}
+
+		// select pose any
+		PoseDensity::Map::const_iterator pose = poseMap.find(i->first);
+		if (pose == poseMap.end()) pose = poseAny;
+
+		// trajectory
+		const std::string trjName = getTrajectoryName(modelItemTrj, i->first);
+		grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(trjName);
+		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
+			throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Empty trajectory");
+		data::Trajectory* trajectory = is<data::Trajectory>(ptr);
+		if (!trajectory)
+			throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Trajectory handler does not implement data::Trajectory");
+		// waypoints
+		const golem::Controller::State::Seq waypoints = trajectory->getWaypoints();
+		if (waypoints.size() < 2)
+			throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Trajectory must have at least two waypoints");
+
+		// Desired trajectory frame at contact pose
+		const golem::Mat34 trajectoryFrame = forwardTransformArm(i->second.state);
+		// Contact and approach poses as recorded
+		const golem::Mat34 contactPose(forwardTransformArm(waypoints[0])), approachPose(forwardTransformArm(waypoints[1]));
+		// trajectoryFrame = trn * contactPose |==> trn = trajectoryFrame * contactPose^-1
+		golem::Mat34 trnTrj;
+		trnTrj.setInverse(contactPose);
+		trnTrj.multiply(trajectoryFrame, trnTrj);
+
+		// query = trn * model |==> trn = query * model^-1
+		golem::Mat34 trn;
+		trn.setInverse(to<Data>(dataCurrentPtr)->modelFrame);
+		trn.multiply(to<Data>(dataCurrentPtr)->queryFrame, trn);
+
+		// Contact and approach poses in the desired frame
+		const grasp::RBCoord contactFrame(trn * trajectoryFrame), approachFrame(trn * trnTrj * approachPose);
+
+		// distance
+		const RBDist frameDist(contactFrame.p.distance(approachFrame.p), contactFrame.q.distance(approachFrame.q));
+		if (frameDist.lin < REAL_EPS || frameDist.ang < REAL_EPS)
+			throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Invalid distance between waypoints");
+
+		// create pose distribution
+		const I32 range = pose->second.kernels / 2 + 1;
+		density.pose.reserve(2 * range + 1);
+		for (I32 j = -range; j <= range; ++j) {
+			const Real dist = Real(j)/range;
+
+			// kernel
+			grasp::Query::Pose qp;
+			
+			// interpolation factor
+			const grasp::RBDist interpol(dist * pose->second.pathDist.lin / frameDist.lin, dist * pose->second.pathDist.ang / frameDist.ang);
+
+			// linear interpolation/extrapolation
+			qp.p.interpolate(contactFrame.p, approachFrame.p, interpol.lin);
+			// angular interpolation/extrapolation, TODO use angular distance scaling
+			qp.q.slerp(contactFrame.q, approachFrame.q, interpol.lin);
+
+			// kernel parameters
+			qp.stdDev = pose->second.stdDev;
+			qp.cov.set(Math::sqr(qp.stdDev.lin), Math::sqr(qp.stdDev.ang));
+			qp.distFac.set(REAL_ONE / qp.cov.lin, REAL_ONE / qp.cov.ang); // == covInv
+			//const RBDist frameDistMax(poseDistanceMax * frameCov.lin, poseDistanceMax * frameCov.ang);
+			// kernel weight
+			qp.weight = Math::exp( - Math::abs(dist)*pose->second.pathDistStdDev);
+
+			// add to pose ditribution
+			density.pose.push_back(qp);
+		}
+
+		// normalise pose ditribution
+		if (!golem::Sample<Real>::normalise<golem::Ref1>(density.pose))
+			throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Unable to normalise pose distribution");
+
+		// create path
+		density.path = manipulator->create(waypoints, [=](const Manipulator::Waypoint& l, const Manipulator::Waypoint& r) -> Real { return poseCovInv.dot(RBDist(l, r)); });
+		
+		// locations
+		density.locations = i->second.locations;
+
+		// end-effector frame
+		density.frame = trajectoryFrame;
+		
+		// likelihood
+		density.weight = query->second->weight;
+
+		// done
+		to<Data>(dataCurrentPtr)->densities.push_back(density);
+	}
+
+	if (to<Data>(dataCurrentPtr)->densities.empty())
+		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): No query created");
+
+	if (!golem::Sample<Real>::normalise<golem::Ref1>(to<Data>(dataCurrentPtr)->densities))
+		throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Unable to normalise query distributions");
+}
+
+void pacman::Demo::generateSolutions() {
+	// training data are required
+	if (to<Data>(dataCurrentPtr)->densities.empty())
+		throw Message(Message::LEVEL_ERROR, "Demo::generateSolutions(): No query densities");
+
+	Mat34 referencePose;
+	referencePose.setInverse(manipulator->getBaseFrame());
+
+	size_t acceptGreedy = 0, acceptSA = 0;
+
+	to<Data>(dataCurrentPtr)->solutions.resize(optimisation.runs);
+	Data::Solution::Seq::iterator ptr = to<Data>(dataCurrentPtr)->solutions.begin();
+	CriticalSection cs;
+	ParallelsTask(context.getParallels(), [&](ParallelsTask*) {
+		const U32 jobId = context.getParallels()->getCurrentJob()->getJobId();
+		Rand rand(RandSeed(this->context.getRandSeed()._U32[0] + jobId, (U32)0));
+
+		Data::Solution *solution = nullptr, test;
+
+		for (;;) {
+			// select next pointer
+			{
+				CriticalSectionWrapper csw(cs);
+				if (ptr == to<Data>(dataCurrentPtr)->solutions.end())
+					break;
+				solution = &*ptr++;
+			}
+
+			// sample query density
+			Data::Density::Seq::const_iterator query;
+			for (;;) {
+				query = golem::Sample<golem::Real>::sample<golem::Ref1, Data::Density::Seq::const_iterator>(to<Data>(dataCurrentPtr)->densities, rand);
+				if (query == to<Data>(dataCurrentPtr)->densities.end()) {
+					context.error("Demo::generateSolutions(): Query density sampling error\n");
+					return;
+				}
+				break;
+			}
+			// sample pose density
+			grasp::Query::Pose::Seq::const_iterator pose;
+			for (;;) {
+				pose = golem::Sample<golem::Real>::sample<golem::Ref1, grasp::Query::Pose::Seq::const_iterator>(query->pose, rand);
+				if (pose == query->pose.end()) {
+					context.error("Demo::generateSolutions(): Pose density sampling error\n");
+					return;
+				}
+				break;
+			}
+			// set
+			test.type = query->type;
+			test.queryIndex = (U32)(query - to<Data>(dataCurrentPtr)->densities.begin());
+			test.likelihood = pose->weight;
+
+			// local search: try to find better solution using simulated annealing
+			for (size_t s = 0; s <= optimisation.steps; ++s) {
+				const bool init = s == 0;
+
+				// linear schedule
+				const Real Temp = optimisation.saTemp + Real(optimisation.steps - s) / optimisation.steps;
+				const Real Delta = optimisation.saDelta*Temp;
+				const Real Energy = optimisation.saEnergy*Temp;
+
+				// Linear component
+				Vec3 v;
+				v.next(rand); // |v|==1
+				v.multiply(Math::abs(rand.nextGaussian<Real>(REAL_ZERO, Delta*pose->stdDev.lin)), v);
+				test.pose.p.add(init ? pose->p : solution->pose.p, v);
+				// Angular component
+				const Real poseCovAng = Math::sqr(Delta*pose->stdDev.ang);
+				Quat q;
+				q.next(rand, poseCovAng);
+				test.pose.q.multiply(init ? pose->q : solution->pose.q, q);
+
+				// create path
+				test.path = query->path;
+
+				// transform to the new frame
+				RBCoord inv;
+				inv.setInverse(test.path[0]);
+				for (Manipulator::Waypoint::Seq::iterator i = test.path.begin(); i != test.path.end(); ++i) {
+					i->multiply(inv, *i);
+					i->multiply(test.pose * referencePose, *i);
+				}
+
+				*solution = test;
+				break;
+
+				/*
+				// path
+				// TODO
+				configuration.sample(rand, pose, test.path);
+
+				// evaluate test
+				evaluate(jobId, test.path, test.likelihood, desc.collisionAll);
+
+				// accept if better or
+				if (test.likelihood.value > config->likelihood.value || Math::exp((test.likelihood.value - config->likelihood.value) / Energy) > rand.nextUniform<Real>()) {
+					// debug
+					test.likelihood.value > config->likelihood.value ? ++acceptGreedy : ++acceptSA;
+					// update
+					config->path = test.path;
+					config->likelihood = test.likelihood;
+				}*/
+			}
+		}
+	});
+
+	// sort
+	sortSolutions(to<Data>(dataCurrentPtr)->solutions);
+}
+
+void pacman::Demo::sortSolutions(Data::Solution::Seq& seq) {
+	if (seq.empty())
+		throw Message(Message::LEVEL_ERROR, "Demo::sortSolutions(): No solutions");
+
+	// create pointers
+	typedef std::vector<const Data::Solution*> PtrSeq;
+	PtrSeq ptrSeq;
+	ptrSeq.reserve(seq.size());
+	for (Data::Solution::Seq::const_iterator i = seq.begin(); i != seq.end(); ++i)
+		ptrSeq.push_back(&*i);
+
+	// sort
+	std::sort(ptrSeq.begin(), ptrSeq.end(), [] (const Data::Solution* l, const Data::Solution* r) -> bool {return l->likelihood > r->likelihood; });
+
+	// copy
+	Data::Solution::Seq seqSorted;
+	seqSorted.reserve(ptrSeq.size());
+	for (PtrSeq::const_iterator i = ptrSeq.begin(); i != ptrSeq.end(); ++i)
+		seqSorted.push_back(**i);
+
+	// replace
+	seq = seqSorted;
+}
+
+void pacman::Demo::selectTrajectory() {
+	if (to<Data>(dataCurrentPtr)->solutions.empty())
+		throw Message(Message::LEVEL_ERROR, "Demo::selectTrajectory(): No solutions");
+
+	const U32 testTrajectories = std::min((U32)to<Data>(dataCurrentPtr)->solutions.size(), manipulator->getDesc().trajectoryClusterSize);
+
+	// TODO collision detection
+	// collision bounds
+	//CollisionBounds collisionBounds(const_cast<golem::Planner&>(manipulator->getPlanner()), [=] (size_t i, Vec3& p)->bool {
+	//	return false;
+	//}, &objectRenderer, &csRenderer);
+	//collisionBounds.setLocal();
+
+	// search
+	const std::pair<U32, RBDistEx> val = manipulator->find<U32>(0, testTrajectories, [&](U32 index) -> RBDistEx {
+		to<Data>(dataCurrentPtr)->indexSolution = index;
+		createRender();
+		Manipulator::Waypoint::Seq& path = to<Data>(dataCurrentPtr)->solutions[index].path;
+		const RBDist dist(manipulator->find(path));
+		const golem::ConfigspaceCoord approach = manipulator->getConfig(path.back());
+		const bool collides = false;// collisionBounds.collides(approach, manipulator->getArm()->getStateInfo().getJoints().end() - 1); // TODO test approach config using locations
+		const RBDistEx distex(dist, manipulator->getDesc().trajectoryErr.collision && collides);
+		context.write("#%03u/%u: Trajectory error: lin=%.9f, ang=%.9f, collision=%s\n", index + 1, testTrajectories, distex.lin, distex.ang, distex.collision ? "yes" : "no");
+		//if (getUICallback() && getUICallback()->hasInputEnabled()) Menu(context, *getUICallback()).option("\x0D", "Press <Enter> to continue...");
+		return distex;
+	});
+
+	to<Data>(dataCurrentPtr)->indexSolution = val.first;
+	context.write("#%03u: Best trajectory\n", val.first + 1);
+	createRender();
+	Controller::State::Seq seq;
+	manipulator->copy(to<Data>(dataCurrentPtr)->solutions[val.first].path, seq);
+
+	// add trajectory waypoint
+	{
+		RenderBlock renderBlock(*this);
+		golem::CriticalSectionWrapper cswData(csData);
+		to<Data>(dataCurrentPtr)->itemMap.erase(queryItemTrj);
+		grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(queryItemTrj, modelHandlerTrj->create()));
+		data::Trajectory* trajectory = is<data::Trajectory>(ptr);
+		if (!trajectory)
+			throw Message(Message::LEVEL_ERROR, "Demo::selectTrajectory(): Trajectory handler does not implement data::Trajectory");
+		// add current state
+		trajectory->setWaypoints(seq);
+		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+	}
+}
+
+void pacman::Demo::performTrajectory(bool testTrajectory) {
+	grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(queryItemTrj);
+	if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
+		throw Message(Message::LEVEL_ERROR, "Demo::performTrajectory(): Unable to find query trajectory");
+	data::Trajectory* trajectory = is<data::Trajectory>(ptr);
+	if (!trajectory)
+		throw Message(Message::LEVEL_ERROR, "Demo::performTrajectory(): Trajectory handler does not implement data::Trajectory");
+
+	Controller::State::Seq seqInv = trajectory->getWaypoints();
+	if (seqInv.size() < 2)
+		throw Message(Message::LEVEL_ERROR, "Demo::performTrajectory(): At least two waypoints required");
+	// reverse
+	Controller::State::Seq seq;
+	for (Controller::State::Seq::const_reverse_iterator i = seqInv.rbegin(); i != seqInv.rend(); ++i) seq.push_back(*i);
+	
+	// profile
+	struct ProfileCallback : Profile::CallbackDist {
+		const Demo* demo;
+		ProfileCallback(const Demo* demo) : demo(demo) {}
+		Real distConfigspaceCoord(const ConfigspaceCoord& prev, const ConfigspaceCoord& next) const {
+			RBCoord cprev(demo->forwardTransformArm(prev)), cnext(demo->forwardTransformArm(next));
+			return Math::sqrt(demo->poseCovInv.dot(RBDist(cprev, cnext)));
+		}
+		Real distCoord(Real prev, Real next) const {
+			return Math::abs(prev - next);
+		}
+		bool distCoordEnabled(const Configspace::Index& index) const {
+			return true;
+		}
+	} profileCallback(this);
+	Profile::Desc desc;
+	desc.pCallbackDist = &profileCallback;
+	//auto pDesc = new Polynomial4::Desc; // 4-th deg polynomial - quadratic velocity
+	auto pDesc = new Polynomial1::Desc; // 1-st deg polynomial - constant velocity
+	desc.pTrajectoryDesc.reset(pDesc);
+	Profile::Ptr profile = desc.create(*controller);
+	if (profile == nullptr)
+		throw Message(Message::LEVEL_ERROR, "Demo::performTrajectory(): unable to create profile");
+	seq.back().t = seq.front().t + trajectoryDuration;
+	profile->profile(seq);
+
+	golem::Controller::State::Seq initTrajectory;
+	findTrajectory(lookupState(), &seq.front(), nullptr, SEC_TM_REAL_ZERO, initTrajectory);
+
+	golem::Controller::State::Seq completeTrajectory = initTrajectory;
+	completeTrajectory.insert(completeTrajectory.end(), seq.begin(), seq.end());
+
+	// create trajectory item
+	data::Item::Ptr itemTrajectory;
+	data::Handler::Map::const_iterator handlerPtr = handlerMap.find(trajectoryHandler);
+	if (handlerPtr == handlerMap.end())
+		throw Message(Message::LEVEL_ERROR, "Demo::performTrajectory(): unknown default trajectory handler %s", trajectoryHandler.c_str());
+	data::Handler* handler = is<data::Handler>(handlerPtr);
+	if (!handler)
+		throw Message(Message::LEVEL_ERROR, "Demo::performTrajectory(): invalid default trajectory handler %s", trajectoryHandler.c_str());
+	itemTrajectory = handler->create();
+	data::Trajectory* trajectoryIf = is<data::Trajectory>(itemTrajectory.get());
+	if (!trajectoryIf)
+		throw Message(Message::LEVEL_ERROR, "Demo::performTrajectory(): unable to create trajectory using handler %s", trajectoryHandler.c_str());
+	trajectoryIf->setWaypoints(completeTrajectory);
+	
+	// remove if failed
+	bool finished = false;
+	const Data::View view = to<Data>(dataCurrentPtr)->getView();
+	ScopeGuard removeItem([&]() {
+		if (!finished) {
+			RenderBlock renderBlock(*this);
+			golem::CriticalSectionWrapper csw(csData);
+			to<Data>(dataCurrentPtr)->itemMap.erase(manipulatorItemTrj);
+			to<Data>(dataCurrentPtr)->getView() = view;
+		}
+	});
+	// add trajectory item
+	{
+		RenderBlock renderBlock(*this);
+		golem::CriticalSectionWrapper csw(csData);
+		const data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(manipulatorItemTrj, itemTrajectory));
+		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+	}
+
+	// test trajectory
+	if (testTrajectory) {
+		// prompt user
+		EnableKeyboardMouse enableKeyboardMouse(*this);
+		option("\x0D", "Press <Enter> to accept trajectory...");
+	}
+
+	// block displaying the current item
+	RenderBlock renderBlock(*this);
+
+	// go to initial state
+	sendTrajectory(initTrajectory);
+	// wait until the last trajectory segment is sent
+	controller->waitForEnd();
+
+	// send trajectory
+	sendTrajectory(seq);
+
+	// repeat every send waypoint until trajectory end
+	for (U32 i = 0; controller->waitForBegin(); ++i) {
+		if (universe.interrupted())
+			throw Exit();
+		if (controller->waitForEnd(0))
+			break;
+
+		// TODO wait for force event given trajectoryThresholdForce
+
+		// print every 10th robot state
+		if (i % 10 == 0)
+			context.write("State #%d\r", i);
+	}
+
+	// TODO open hand and perform withdraw action to a safe pose
+
+	// done
+	finished = true;
+	context.write("Performance finished!\n");
 }
 
 //------------------------------------------------------------------------------
@@ -1110,6 +2064,13 @@ void pacman::Demo::render() const {
 	golem::CriticalSectionWrapper cswRenderer(csRenderer);
 	modelRenderer.render();
 	objectRenderer.render();
+}
+
+//------------------------------------------------------------------------------
+
+void golem::XMLData(pacman::Demo::PoseDensity::Map::value_type& val, golem::XMLContext* xmlcontext, bool create) {
+	golem::XMLData("id", const_cast<std::string&>(val.first), xmlcontext, create);
+	val.second.load(xmlcontext->getContextFirst("pose", create));
 }
 
 //------------------------------------------------------------------------------
@@ -1130,6 +2091,49 @@ template <> void golem::Stream::write(const pacman::Demo::Data::Training::Map::v
 	write(value.second.frame);
 	write(value.second.contacts.begin(), value.second.contacts.end());
 	write(value.second.locations.begin(), value.second.locations.end());
+}
+
+template <> void golem::Stream::read(pacman::Demo::Data::Density::Seq::value_type& value) const {
+	read(value.type);
+	value.object.clear();
+	read(value.object, value.object.begin());
+	value.pose.clear();
+	read(value.pose, value.pose.begin());
+	value.path.clear();
+	read(value.path, value.path.begin());
+	value.locations.clear();
+	read(value.locations, value.locations.begin());
+	read(value.frame);
+	read(value.weight);
+	read(value.cdf);
+}
+
+template <> void golem::Stream::write(const pacman::Demo::Data::Density::Seq::value_type& value) {
+	write(value.type);
+	write(value.object.begin(), value.object.end());
+	write(value.pose.begin(), value.pose.end());
+	write(value.path.begin(), value.path.end());
+	write(value.locations.begin(), value.locations.end());
+	write(value.frame);
+	write(value.weight);
+	write(value.cdf);
+}
+
+template <> void golem::Stream::read(pacman::Demo::Data::Solution::Seq::value_type& value) const {
+	read(value.type);
+	read(value.pose);
+	value.path.clear();
+	read(value.path, value.path.begin());
+	read(value.likelihood);
+	read(value.queryIndex);
+}
+
+template <> void golem::Stream::write(const pacman::Demo::Data::Solution::Seq::value_type& value) {
+	write(value.type);
+	write(value.pose);
+	write(value.path.begin(), value.path.end());
+	write(value.likelihood);
+	write(value.queryIndex);
 }
 
 //------------------------------------------------------------------------------

@@ -17,7 +17,6 @@
 #include <Grasp/Grasp/Model.h>
 #include <Grasp/Core/RBPose.h>
 #include <Grasp/Core/Ctrl.h>
-#include <Grasp/Grasp/Model.h>
 #include <Grasp/Grasp/Query.h>
 
 //------------------------------------------------------------------------------
@@ -83,12 +82,6 @@ protected:
 	virtual void postprocess(golem::SecTmReal elapsedTime);
 
 	grasp::Camera* getWristCamera() const;
-	golem::Mat34 getWristPose() const;
-	void gotoWristPose(const golem::Mat34& w);
-	void Demo::gotoPose2(const grasp::ConfigMat34& pose, const golem::SecTmReal duration);
-	void rotateObjectInHand();
-
-
 	void create(const Desc& desc);
 
 	Demo(golem::Scene &scene);

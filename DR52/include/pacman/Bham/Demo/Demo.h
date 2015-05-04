@@ -15,6 +15,7 @@
 #include <Grasp/Core/Ctrl.h>
 #include <Grasp/Grasp/Model.h>
 #include <Grasp/Grasp/Query.h>
+#include <Grasp/Grasp/Manipulator.h>
 
 //------------------------------------------------------------------------------
 
@@ -32,6 +33,24 @@ public:
 	/** Data */
 	class Data : public grasp::Player::Data {
 	public:
+		/** Mode */
+		enum Mode {
+			/** Model data */
+			MODE_MODEL,
+			/** Query density */
+			MODE_QUERY,
+			/** Solution */
+			MODE_SOLUTION,
+
+			/** First */
+			MODE_FIRST = MODE_MODEL,
+			/** Last */
+			MODE_LAST = MODE_SOLUTION,
+		};
+
+		/** Mode name */
+		static const std::string ModeName[MODE_LAST + 1];
+
 		/** Model training data */
 		class Training {
 		public:
@@ -43,7 +62,7 @@ public:
 
 			/** Robot state */
 			golem::Controller::State state;
-			/** End-effector frame */
+			/** Model frame */
 			golem::Mat34 frame;
 			/** Contacts */
 			grasp::Contact3D::Seq contacts;
@@ -51,11 +70,51 @@ public:
 			grasp::data::Location3D::Point::Seq locations;
 		};
 
+		/** Query density */
+		class Density : public golem::Sample<golem::Real> {
+		public:
+			/** Collection of distributions */
+			typedef std::vector<Density> Seq;
+
+			/** Type */
+			std::string type;
+			/** Object density */
+			grasp::Query::Pose::Seq object;
+			/** Pose density */
+			grasp::Query::Pose::Seq pose;
+			/** Path */
+			grasp::Manipulator::Waypoint::Seq path;
+			/** Locations */
+			grasp::data::Location3D::Point::Seq locations;
+			/** End-effector frame */
+			golem::Mat34 frame;
+		};
+
+		/** Solution */
+		class Solution {
+		public:
+			/** Collection of solutions */
+			typedef std::vector<Solution> Seq;
+
+			/** Type */
+			std::string type;
+			/** Pose */
+			grasp::RBCoord pose;
+			/** Path */
+			grasp::Manipulator::Waypoint::Seq path;
+
+			/** Likelihood */
+			golem::Real likelihood;
+
+			/** Query index */
+			golem::U32 queryIndex;
+		};
+
 		/** Data bundle default name */
 		std::string dataName;
 
-		/** Query mode */
-		bool queryMode;
+		/** Current Mode */
+		Mode mode;
 
 		/** Model triangles */
 		grasp::Vec3Seq modelVertices;
@@ -83,8 +142,18 @@ public:
 		golem::U32 indexType;
 		/** Model training data item index */
 		golem::U32 indexItem;
-		/** Contact relation */
+		/** Model contact relation */
 		grasp::Contact3D::Relation contactRelation;
+
+		/** Collection of distributions */
+		Density::Seq densities;
+		/** Density index */
+		golem::U32 indexDensity;
+
+		/** Solutions */
+		Solution::Seq solutions;
+		/** Solution index */
+		golem::U32 indexSolution;
 
 		/** Data bundle description */
 		class Desc : public grasp::Player::Data::Desc {
@@ -121,8 +190,84 @@ public:
 
 	friend class Data;
 
-	/** Demo description */
+	/** Pose density description */
+	class PoseDensity {
+	public:
+		/** map */
+		typedef std::map<std::string, PoseDensity> Map;
 
+		/** Std dev */
+		grasp::RBDist stdDev;
+		/** Kernels */
+		golem::U32 kernels;
+		/** Path distance */
+		grasp::RBDist pathDist;
+		/** Path distance std dev */
+		golem::Real pathDistStdDev;
+
+		/** Constructs from description object */
+		PoseDensity() {
+			PoseDensity::setToDefault();
+		}
+		/** Sets the parameters to the default values */
+		void setToDefault() {
+			stdDev.set(golem::Real(0.01), golem::Real(50.0));
+			kernels = 100;
+			pathDist.set(golem::Real(0.1), golem::Real(20.0));
+			pathDistStdDev = golem::Real(1.0);
+		};
+		/** Assert that the description is valid. */
+		void assertValid(const grasp::Assert::Context& ac) const {
+			grasp::Assert::valid(stdDev.isValid(), ac, "stdDev: invalid");
+			grasp::Assert::valid(kernels > 0, ac, "kernels: <= 0");
+			grasp::Assert::valid(pathDist.isValid(), ac, "pathDist: invalid");
+			grasp::Assert::valid(pathDistStdDev > golem::REAL_EPS, ac, "pathDistStdDev: < eps");
+		}
+		/** Load descritpion from xml context. */
+		void load(const golem::XMLContext* xmlcontext);
+	};
+
+	/** Optimisation description */
+	class Optimisation {
+	public:
+		/** number of runs */
+		size_t runs;
+		/** number of steps per run */
+		size_t steps;
+
+		/** Simulated annealing minimum temperature */
+		golem::Real saTemp;
+		/** Simulated annealing temperature to local coordinate scaling factor */
+		golem::Real saDelta;
+		/** Simulated annealing temperature to energy scaling factor */
+		golem::Real saEnergy;
+
+		/** Constructs description object */
+		Optimisation() {
+			Optimisation::setToDefault();
+		}
+		/** Sets the parameters to the default values */
+		void setToDefault() {
+			runs = 1000;
+			steps = 1000;
+
+			saTemp = golem::Real(0.1);
+			saDelta = golem::Real(1.0);
+			saEnergy = golem::Real(0.5);
+		}
+		/** Assert that the description is valid. */
+		void assertValid(const grasp::Assert::Context& ac) const {
+			grasp::Assert::valid(runs > 0, ac, "runs: <= 0");
+			grasp::Assert::valid(steps > 0, ac, "steps: <= 0");
+			grasp::Assert::valid(saTemp >= golem::REAL_ZERO, ac, "saTemp: < 0");
+			grasp::Assert::valid(saDelta > golem::REAL_ZERO, ac, "saDelta: <= 0");
+			grasp::Assert::valid(saEnergy > golem::REAL_ZERO, ac, "saEnergy: <= 0");
+		}
+		/** Load descritpion from xml context. */
+		void load(const golem::XMLContext* xmlcontext);
+	};
+
+	/** Demo description */
 	class Desc : public grasp::Player::Desc {
 	public:
 		/** Data bundle default name */
@@ -158,6 +303,11 @@ public:
 		/** Query data item object */
 		std::string queryItemObj;
 
+		/** Query trajectory handler */
+		std::string queryHandlerTrj;
+		/** Query trajectory item */
+		std::string queryItemTrj;
+
 		/** Grasp force sensor */
 		std::string graspSensorForce;
 		/** Grasp force threshold */
@@ -191,6 +341,27 @@ public:
 		/** Contact appearance */
 		grasp::Contact3D::Appearance contactAppearance;
 
+		/** Query descriptions */
+		grasp::Query::Desc::Map queryDescMap;
+		/** Pose descriptions */
+		PoseDensity::Map poseMap;
+
+		/** Optimisation description */
+		Optimisation optimisation;
+
+		/** Manipulator description */
+		grasp::Manipulator::Desc::Ptr manipulatorDesc;
+		/** Manipulator Appearance */
+		grasp::Manipulator::Appearance manipulatorAppearance;
+		/** Manipulator pose distribution standard deviation */
+		grasp::RBDist manipulatorPoseStdDev;
+		/** Manipulator trajectory item */
+		std::string manipulatorItemTrj;
+
+		/** Manipulation trajectory duration */
+		golem::SecTmReal trajectoryDuration;
+		/** Manipulation trajectory force threshold */
+		golem::Twist trajectoryThresholdForce;
 
 		/** Constructs from description object */
 		Desc() {
@@ -222,6 +393,9 @@ public:
 			queryItem.clear();
 			queryItemObj.clear();
 
+			queryHandlerTrj.clear();
+			queryItemTrj.clear();
+
 			graspSensorForce.clear();
 			graspThresholdForce.setZero();
 			graspEventTimeWait = golem::SecTmReal(2.0);
@@ -240,6 +414,18 @@ public:
 			modelDescMap.clear();
 			contactAppearance.setToDefault();
 
+			queryDescMap.clear();
+			poseMap.clear();
+
+			optimisation.setToDefault();
+
+			manipulatorDesc.reset(new grasp::Manipulator::Desc);
+			manipulatorAppearance.setToDefault();
+			manipulatorPoseStdDev.set(golem::Real(0.002), golem::Real(1000.0));
+			manipulatorItemTrj.clear();
+
+			trajectoryDuration = golem::SecTmReal(5.0);
+			trajectoryThresholdForce.setZero();
 		}
 		/** Assert that the description is valid. */
 		virtual void assertValid(const grasp::Assert::Context& ac) const {
@@ -264,6 +450,9 @@ public:
 			grasp::Assert::valid(queryItem.length() > 0, ac, "queryItem: invalid");
 			grasp::Assert::valid(queryItemObj.length() > 0, ac, "queryItemObj: invalid");
 
+			grasp::Assert::valid(queryHandlerTrj.length() > 0, ac, "queryHandlerTrj: invalid");
+			grasp::Assert::valid(queryItemTrj.length() > 0, ac, "queryItemTrj: invalid");
+
 			grasp::Assert::valid(graspSensorForce.length() > 0, ac, "graspSensorForce: invalid");
 			grasp::Assert::valid(graspThresholdForce.isPositive(), ac, "graspThresholdForce: negative");
 			grasp::Assert::valid(graspEventTimeWait > golem::SEC_TM_REAL_ZERO, ac, "graspEventTimeWait: <= 0");
@@ -287,6 +476,27 @@ public:
 				i->second->assertValid(grasp::Assert::Context(ac, "modelDescMap[]->"));
 			}
 			contactAppearance.assertValid(grasp::Assert::Context(ac, "contactAppearance."));
+
+			grasp::Assert::valid(!queryDescMap.empty(), ac, "queryDescMap: empty");
+			for (grasp::Query::Desc::Map::const_iterator i = queryDescMap.begin(); i != queryDescMap.end(); ++i) {
+				grasp::Assert::valid(i->second != nullptr, ac, "queryDescMap[]: null");
+				i->second->assertValid(grasp::Assert::Context(ac, "queryDescMap[]->"));
+			}
+			grasp::Assert::valid(!poseMap.empty(), ac, "poseMap: empty");
+			for (PoseDensity::Map::const_iterator i = poseMap.begin(); i != poseMap.end(); ++i) {
+				i->second.assertValid(grasp::Assert::Context(ac, "poseMap[]->"));
+			}
+
+			optimisation.assertValid(grasp::Assert::Context(ac, "optimisation."));
+
+			grasp::Assert::valid(manipulatorDesc != nullptr, ac, "manipulatorDesc: null");
+			manipulatorDesc->assertValid(grasp::Assert::Context(ac, "manipulatorDesc->"));
+			manipulatorAppearance.assertValid(grasp::Assert::Context(ac, "manipulatorAppearance."));
+			grasp::Assert::valid(manipulatorPoseStdDev.isValid(), ac, "manipulatorPoseStdDev: invalid");
+			grasp::Assert::valid(manipulatorItemTrj.length() > 0, ac, "manipulatorItemTrj: invalid");
+
+			grasp::Assert::valid(trajectoryDuration > golem::SEC_TM_REAL_ZERO, ac, "trajectoryDuration: <= 0");
+			grasp::Assert::valid(trajectoryThresholdForce.isPositive(), ac, "trajectoryThresholdForce: negative");
 		}
 		/** Load descritpion from xml context. */
 		virtual void load(golem::Context& context, const golem::XMLContext* xmlcontext);
@@ -294,14 +504,6 @@ public:
 	protected:
 		GRASP_CREATE_FROM_OBJECT_DESC1(Demo, golem::Object::Ptr, golem::Scene&)
 	};
-protected:
-	
-	/** Current viewHypothesis */
-	golem::I32 currentViewHypothesis;
-
-	/** Currently selected viewHypothesis */
-	golem::I32 selectedCamera;
-	
 
 protected:
 	/** Data bundle default name */
@@ -340,6 +542,11 @@ protected:
 	/** Query data item object */
 	std::string queryItemObj;
 
+	/** Query trajectory handler */
+	grasp::data::Handler* queryHandlerTrj;
+	/** Query trajectory item */
+	std::string queryItemTrj;
+
 	/** Grasp force sensor */
 	grasp::FT* graspSensorForce;
 	/** Grasp force threshold */
@@ -375,6 +582,29 @@ protected:
 	/** Contact appearance */
 	grasp::Contact3D::Appearance contactAppearance;
 
+	/** Query densities */
+	grasp::Query::Map queryMap;
+	/** Pose descriptions */
+	PoseDensity::Map poseMap;
+
+	/** Optimisation description */
+	Optimisation optimisation;
+
+	/** Manipulator */
+	grasp::Manipulator::Ptr manipulator;
+	/** Manipulator Appearance */
+	grasp::Manipulator::Appearance manipulatorAppearance;
+	/** Manipulator trajectory item */
+	std::string manipulatorItemTrj;
+	/** Manipulator pose distribution covariance */
+	grasp::RBDist poseCov, poseCovInv;
+
+	/** Manipulation trajectory duration */
+	golem::SecTmReal trajectoryDuration;
+
+	/** Manipulation trajectory force threshold */
+	golem::Twist trajectoryThresholdForce;
+
 	/** Item selection */
 	typedef std::function<void(Data::Training::Map&, Data::Training::Map::iterator&)> ItemSelectFunc;
 	typedef std::function<void(ItemSelectFunc)> ItemSelect;
@@ -384,20 +614,37 @@ protected:
 	virtual void render() const;
 
 	/** Pose estimation */
-	grasp::data::Item::Map::iterator estimatePose(bool query);
+	grasp::data::Item::Map::iterator estimatePose(Data::Mode mode);
 	/** Grasp and capture object */
 	grasp::data::Item::Map::iterator objectGraspAndCapture();
 	/** Process object image and add to data bundle */
 	grasp::data::Item::Map::iterator objectProcess(grasp::data::Item::Map::iterator ptr);
 	/** Create trajectory name */
-	std::string getTrajectoryName(const std::string& type) const;
+	std::string getTrajectoryName(const std::string& prefix, const std::string& type) const;
 
-	grasp::Camera* getWristCamera() const;
+	/** Create query densities */
+	void createQuery(grasp::data::Item::Ptr item, const golem::Mat34& frame);
+
+	/** Generate solutions */
+	void generateSolutions();
+	/** Sort solutions */
+	static void sortSolutions(Data::Solution::Seq& seq);
+
+	/** Select trajectory */
+	void selectTrajectory();
+
+	/** Perform trajectory */
+	void performTrajectory(bool testTrajectory);
+
+	grasp::Camera* getWristCamera(const bool dontThrow = false) const;
 	golem::Mat34 getWristPose() const;
+	golem::Controller::State::Seq getTrajectoryFromPose(const golem::Mat34& w);
+	grasp::ConfigMat34 getConfigFromPose(const golem::Mat34& w);
 	void gotoWristPose(const golem::Mat34& w);
-	void Demo::gotoPose2(const grasp::ConfigMat34& pose, const golem::SecTmReal duration);
-	void rotateObjectInHand();
+	void gotoPose2(const grasp::ConfigMat34& pose, const golem::SecTmReal duration);
 
+	void nudgeWrist();
+	void rotateObjectInHand();
 
 	void create(const Desc& desc);
 
@@ -412,8 +659,16 @@ protected:
 //------------------------------------------------------------------------------
 
 namespace golem {
+	void XMLData(pacman::Demo::PoseDensity::Map::value_type& val, golem::XMLContext* context, bool create = false);
+
 	template <> void Stream::read(pacman::Demo::Data::Training::Map::value_type& value) const;
 	template <> void Stream::write(const pacman::Demo::Data::Training::Map::value_type& value);
+
+	template <> void Stream::read(pacman::Demo::Data::Density::Seq::value_type& value) const;
+	template <> void Stream::write(const pacman::Demo::Data::Density::Seq::value_type& value);
+
+	template <> void Stream::read(pacman::Demo::Data::Solution::Seq::value_type& value) const;
+	template <> void Stream::write(const pacman::Demo::Data::Solution::Seq::value_type& value);
 };	// namespace
 
 //------------------------------------------------------------------------------

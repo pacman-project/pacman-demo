@@ -9,7 +9,20 @@ using namespace pacman;
 using namespace golem;
 using namespace grasp;
 
+
 //-----------------------------------------------------------------------------
+
+namespace
+{
+
+	template <typename E> std::string enumToString(const golem::U32 i, const std::map<std::string, E>& emap)
+	{
+		for (auto j = emap.begin(); j != emap.end(); ++j)
+			if (j->second == i) return j->first;
+		return std::string("enumToString: enum code not found");
+	}
+
+}
 
 void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlcontext) {
 	Player::Desc::load(context, xmlcontext);
@@ -153,118 +166,6 @@ grasp::Camera* Demo::getWristCamera() const
 	return camera;
 }
 
-golem::Mat34 Demo::getWristPose() const
-{
-	const golem::U32 wristJoint = 6; // @@@
-	grasp::ConfigMat34 pose;
-	getPose(wristJoint, pose);
-	return pose.w;
-}
-
-void Demo::gotoWristPose(const golem::Mat34& w)
-{
-	const golem::Mat34 R = controller->getChains()[armInfo.getChains().begin()]->getReferencePose();
-	const golem::Mat34 wR = w * R;
-
-	golem::Controller::State begin = controller->createState();
-	controller->lookupState(SEC_TM_REAL_MAX, begin);
-
-	golem::Controller::State::Seq trajectory;
-	const grasp::RBDist err = findTrajectory(begin, nullptr, &wR, trajectoryDuration, trajectory);
-
-	sendTrajectory(trajectory);
-	controller->waitForEnd();
-	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
-}
-
-
-void Demo::rotateObjectInHand()
-{
-	auto showPose = [&](const std::string& description, const golem::Mat34& m) {
-		context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
-	};
-
-	const double maxstep = 45.0;
-	double angstep = 30.0;
-	int rotType;
-	for (;;)
-	{
-		std::ostringstream os;
-		os << "rotation: Clockwise or Anticlockwise screw, Up or Down, Left or Right; STEP(" << angstep << " deg):+/-";
-		rotType = option("CAUDLR+-", os.str().c_str());
-		if (rotType == '+')
-		{
-			angstep *= 2;
-			if (angstep > maxstep) angstep = maxstep;
-			continue;
-		}
-		if (rotType == '-')
-		{
-			angstep /= 2;
-			continue;
-		}
-		break;
-	}
-
-	golem::Vec3 rotAxis(golem::Vec3::zero());
-
-	switch(rotType)
-	{
-	case 'C':
-		rotAxis.z = 1.0;
-		break;
-	case 'A':
-		rotAxis.z = 1.0;
-		angstep = -angstep;
-		break;
-	case 'U':
-		rotAxis.y = 1.0;
-		break;
-	case 'D':
-		rotAxis.y = 1.0;
-		angstep = -angstep;
-		break;
-	case 'L':
-		rotAxis.x = 1.0;
-		break;
-	case 'R':
-		rotAxis.x = 1.0;
-		angstep = -angstep;
-		break;
-	}
-
-	golem::Mat33 rot(golem::Mat33(angstep / 180.0 * golem::REAL_PI, rotAxis));
-
-	golem::Mat34 pose = getWristPose();
-	showPose("before", pose);
-
-	pose.R = pose.R * rot;
-	showPose("commanded", pose);
-
-	gotoWristPose(pose);
-	showPose("final wrist", getWristPose());
-
-	grasp::ConfigMat34 cp;
-	getPose(0, cp);
-	context.debug("c1=\"%f\" c2=\"%f\" c3=\"%f\" c4=\"%f\" c5=\"%f\" c6=\"%f\" c7=\"%f\"\n", cp.c[0], cp.c[1], cp.c[2], cp.c[3], cp.c[4], cp.c[5], cp.c[6], cp.c[7]);
-		
-	recordingStart(dataCurrentPtr->first, recordingLabel, false);
-	context.write("taken snapshot\n");
-}
-
-void Demo::gotoPose2(const ConfigMat34& pose, const SecTmReal duration)
-{
-	golem::Controller::State begin = lookupState();	// current state
-	golem::Controller::State end = begin;
-	end.cpos.set(pose.c.data(), pose.c.data() + std::min(pose.c.size(), (size_t)info.getJoints().size()));
-	golem::Controller::State::Seq trajectory;
-	findTrajectory(begin, &end, nullptr, duration, trajectory);
-	sendTrajectory(trajectory);
-	controller->waitForEnd();
-	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
-}
-
-
 void pacman::Demo::create(const Desc& desc) {
 	desc.assertValid(Assert::Context("pacman::Demo::Desc."));
 
@@ -282,22 +183,24 @@ void pacman::Demo::create(const Desc& desc) {
 
 
 	menuCtrlMap.insert(std::make_pair("C", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: (CP)Active Sense Parameters\n(D)Demo ActiveSense\n(E)Goto to Camera Hypothesis Pose\n(V)Set OpenGL View Point to Camera Hypothesis View\n(N)View from Next ViewHypothesis\n(K)View from Mounted Sensor\n(H)Print Sensor Hypothesis Matrices";
+		desc = "Press a key to:\nchange ActiveSense (P)arameters\n(G)enerate possible camera poses\n(D)emo ActiveSense\n"
+			"(E) Goto to Camera Hypothesis Pose\n"
+			"(V) Set OpenGL View Point to Camera Hypothesis View\n(N) View from Next-Best-View Hypothesis\n(K) View from wrist-mounted sensor\n(H) Print Sensor Hypothesis Matrices";
 		//menuCmdMap.erase("CE");
 		//menuCmdMap.erase("CV");
 	}));
 
 	menuCtrlMap.insert(std::make_pair("CP", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: (S)Choose Selection Method\n(G)Choose Generation Method\n(M)Choose Coverage Method\n(C)Choose Stopping Criteria";
+		desc = "Press a key to:\n(L) List parameters\n(S) Choose Selection Method\n(G) Choose Generation Method\n(M) Choose Coverage Method\n(C) Choose Stopping Criteria";
 	
 	}));
 
 
 	//ActiveSense Demo 
-	menuCmdMap.insert(std::make_pair("CD", [=]() {
-
-		grasp::data::Item::Map predModelMap, trajMap, predQueryMap, imageMap, pointCurvMap;
-		grasp::data::Item::Map::iterator itemPredModelPtr, itemTrajPtr, itemPredQueryPtr, itemImagePtr, itemPointCurvPtr;
+	menuCmdMap.insert(std::make_pair("CD", [=]()
+	{
+		grasp::data::Item::Map predModelMap;
+		grasp::data::Item::Map::iterator itemPredModelPtr;
 
 		auto filter = [&](const grasp::data::Item::Map& itemMap, const std::string& filterID, grasp::data::Item::Map& outMap) {
 			for (grasp::data::Item::Map::const_iterator it = itemMap.begin(); it != itemMap.end(); it++)
@@ -308,18 +211,38 @@ void pacman::Demo::create(const Desc& desc) {
 				}
 			}
 		};
-
-		
 		//Filter by PredictorModel+PredictorModel HandlerID
 		filter(dataCurrentPtr->second->itemMap, "PredictorModel+PredictorModel", predModelMap);
-		select(itemPredModelPtr, predModelMap.begin(), predModelMap.end(), "Select PredModel:\n", [](grasp::data::Item::Map::iterator ptr) -> std::string{
-		return ptr->first + ": " + ptr->second->getHandler().getID();
-		});
+		itemPredModelPtr = predModelMap.begin();
+		select(
+			itemPredModelPtr,
+			predModelMap.begin(),
+			predModelMap.end(),
+			"Select PredModel:\n",
+			[](grasp::data::Item::Map::iterator ptr) -> std::string{ return ptr->first + ": " + ptr->second->getHandler().getID(); });
 
 		activeSense->setPredModelItem(itemPredModelPtr);
+
+		activeSense->resetNextBestViewSequential(); // always start from first fixed pose when using sequential selection method
+
+		if (!activeSense->getParameters().configSeq.empty())
+		{
+			const int k = option("CF", "For the first view, use (C)urrent camera pose, or first (F)ixed pose?");
+			if (k == 'F')
+			{
+				context.write("pacman::Demo: moving to first fixed NBV pose\n");
+				const grasp::ConfigMat34& pose = activeSense->getParameters().configSeq.front();
+				gotoPoseConfig(pose);
+				// then throw this pose away if using sequential selection method
+				if (activeSense->getParameters().selectionMethod == ActiveSense::ESelectionMethod::S_SEQUENTIAL)
+					activeSense->incrNextBestViewSequential();
+			}
+		}
+
 		activeSense->nextBestView();
 
-
+		context.write("Executing Trajectory...\n");
+		activeSense->executeTrajectory();
 	}));
 	menuCmdMap.insert(std::make_pair("CH", [=]() {
 
@@ -451,7 +374,7 @@ void pacman::Demo::create(const Desc& desc) {
 			golem::CriticalSectionWrapper csw(activeSense->getCSViewHypotheses());
 			activeSense->generateViews();
 		}
-		getWristCamera();
+		getWristCamera(); // why this call???
 
 		context.write("Done!\n");
 
@@ -459,14 +382,25 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 
 
+	menuCmdMap.insert(std::make_pair("CPL", [&]() {
+		const ActiveSense::Parameters& params = activeSense->getParameters();
+		context.write("view generation method: %s\n", enumToString(params.generationMethod, params.getGenerationMethodMap()).c_str());
+		context.write("selection method:       %s\n", enumToString(params.selectionMethod, params.getSelectionMethodMap()).c_str());
+		context.write("stopping criteria:      %s\n", enumToString(params.stoppingCriteria, params.getStoppingCriteriaMap()).c_str());
+		context.write("coverage method:        %s\n", enumToString(params.coverageMethod, params.getCoverageMethodMap()).c_str());
+		context.write("max numbers of views:   %d\n", params.nviews);
+		context.write("coverage threshold:     %g\n", params.coverageThr);
+		context.write("centroid calc:          %s\n", params.useManualCentroid ? "manual" : "auto from captured point cloud");
+	}));
+
 	menuCmdMap.insert(std::make_pair("CPS", [&]() {
 
 		std::map<std::string, ActiveSense::ESelectionMethod> selectionMethodMap = activeSense->getParameters().getSelectionMethodMap();
-		std::map<std::string, ActiveSense::ESelectionMethod>::iterator selectionPtr;
+		std::map<std::string, ActiveSense::ESelectionMethod>::iterator selectionPtr(selectionMethodMap.begin());
 		select(selectionPtr, selectionMethodMap.begin(), selectionMethodMap.end(), "Select Selection Method:\n", [](std::map<std::string, ActiveSense::ESelectionMethod>::iterator ptr) -> std::string{
 			return ptr->first;
 		});
-		context.write("Selected: %s", selectionPtr->first.c_str());
+		context.write("Selected: %s\n", selectionPtr->first.c_str());
 		activeSense->getParameters().selectionMethod = selectionPtr->second;
 
 		context.write("Done!\n");
@@ -475,11 +409,11 @@ void pacman::Demo::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("CPG", [&]() {
 
 		std::map<std::string, ActiveSense::EGenerationMethod> selectionMap = activeSense->getParameters().getGenerationMethodMap();
-		std::map<std::string, ActiveSense::EGenerationMethod>::iterator selectionPtr;
+		std::map<std::string, ActiveSense::EGenerationMethod>::iterator selectionPtr(selectionMap.begin());
 		select(selectionPtr, selectionMap.begin(), selectionMap.end(), "Select Generation Method:\n", [](std::map<std::string, ActiveSense::EGenerationMethod>::iterator ptr) -> std::string{
 			return ptr->first;
 		});
-		context.write("Selected: %s",selectionPtr->first.c_str());
+		context.write("Selected: %s\n",selectionPtr->first.c_str());
 		activeSense->getParameters().generationMethod = selectionPtr->second;
 
 
@@ -489,11 +423,11 @@ void pacman::Demo::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("CPM", [&]() {
 
 		std::map<std::string, ActiveSense::ECoverageMethod> selectionMap = activeSense->getParameters().getCoverageMethodMap();
-		std::map<std::string, ActiveSense::ECoverageMethod>::iterator selectionPtr;
+		std::map<std::string, ActiveSense::ECoverageMethod>::iterator selectionPtr(selectionMap.begin());
 		select(selectionPtr, selectionMap.begin(), selectionMap.end(), "Select Coverage Method:\n", [](std::map<std::string, ActiveSense::ECoverageMethod>::iterator ptr) -> std::string{
 			return ptr->first;
 		});
-		context.write("Selected: %s", selectionPtr->first.c_str());
+		context.write("Selected: %s\n", selectionPtr->first.c_str());
 		activeSense->getParameters().coverageMethod = selectionPtr->second;
 
 		context.write("Done!\n");
@@ -502,12 +436,19 @@ void pacman::Demo::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("CPC", [&]() {
 
 		std::map<std::string, ActiveSense::EStoppingCriteria> selectionMap = activeSense->getParameters().getStoppingCriteriaMap();
-		std::map<std::string, ActiveSense::EStoppingCriteria>::iterator selectionPtr;
+		std::map<std::string, ActiveSense::EStoppingCriteria>::iterator selectionPtr(selectionMap.begin());
 		select(selectionPtr, selectionMap.begin(), selectionMap.end(), "Select Stopping Criteria:\n", [](std::map<std::string, ActiveSense::EStoppingCriteria>::iterator ptr) -> std::string{
 			return ptr->first;
 		});
-		context.write("Selected: %s", selectionPtr->first.c_str());
-		activeSense->getParameters().stoppingCriteria = selectionPtr->second;
+		context.write("Selected: %s\n", selectionPtr->first.c_str());
+		const golem::U32 stoppingCriteria = selectionPtr->second;
+		activeSense->getParameters().stoppingCriteria = stoppingCriteria;
+
+		if (stoppingCriteria == ActiveSense::C_NVIEWS || stoppingCriteria == ActiveSense::C_NVIEWS_COVERAGE)
+			readNumber("max number of views: ", activeSense->getParameters().nviews);
+
+		if (stoppingCriteria == ActiveSense::C_COVERAGE || stoppingCriteria == ActiveSense::C_NVIEWS_COVERAGE)
+			readNumber("coverage threshold: ", activeSense->getParameters().coverageThr);
 
 		context.write("Done!\n");
 	}));

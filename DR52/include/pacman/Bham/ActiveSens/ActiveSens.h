@@ -30,6 +30,10 @@
 #include <pcl/surface/convex_hull.h>
 #include <pcl/Vertices.h>
 
+#include <pacman/Bham/ActiveSens/HypothesisSensor.h>
+#include <pacman/Bham/ActiveSens/ActiveSensOM.h>
+
+
 
 /** PaCMan name space */
 namespace pacman {
@@ -37,171 +41,6 @@ namespace pacman {
 	class Demo;
 	//------------------------------------------------------------------------------
 	
-
-	/** Sensor interface */
-	class HypothesisSensor {
-	public:
-		typedef golem::shared_ptr<pacman::HypothesisSensor> Ptr;
-		typedef std::map<std::string, Ptr> Map;
-		typedef std::vector<Ptr> Seq;
-
-		typedef grasp::ConfigMat34 Config;
-
-		/** Sensor appearance */
-		class Appearance {
-		public:
-			/** Frame size */
-			golem::Vec3 frameSize;
-			/** Show camera frame */
-			bool frameShow;
-
-			/** Shape colour */
-			golem::RGBA shapeColour;
-			/** Show sensor */
-			bool shapeShow;
-
-			/** Constructs description. */
-			Appearance() {
-				setToDefault();
-			}
-			/** Sets the parameters to the default values. */
-			void setToDefault() {
-
-				frameSize.set(golem::Real(0.03), golem::Real(0.03), golem::Real(0.05));
-				frameShow = true;
-				shapeColour = golem::RGBA(127, 127, 127, 255);
-				shapeShow = true;
-			}
-			/** Assert that the object is valid. */
-			void assertValid(const grasp::Assert::Context& ac) const {
-				grasp::Assert::valid(frameSize.isPositive(), ac, "frameSize: <= 0");
-			}
-			/** Load from xml context */
-			void load(const golem::XMLContext* xmlcontext);
-		};
-
-		/** Sensor description */
-		class Desc {
-		public:
-			typedef golem::shared_ptr<Desc> Ptr;
-
-			/** Sensor appearance */
-			Appearance appearance;
-
-			/** View frame pose (Frame attached to the front of this sensor appearance)*/
-			golem::Mat34 viewFrame;
-
-			/** Sensor shape */
-			golem::Bounds::Desc::Seq shapeDesc;
-
-			/** Constructs description. */
-			Desc() {
-				setToDefault();
-			}
-			/** Destroys description. */
-			virtual ~Desc() {}
-
-			/** Sets the parameters to the default values. */
-			void setToDefault() {
-
-				appearance.setToDefault();
-				shapeDesc.clear();
-
-				viewFrame.setId();
-				viewFrame.p.z = 0.05;
-
-			}
-
-			/** Assert that the description is valid. */
-			virtual void assertValid(const grasp::Assert::Context& ac) const {
-
-
-				appearance.assertValid(grasp::Assert::Context(ac, "appearance."));
-				for (golem::Bounds::Desc::Seq::const_iterator i = shapeDesc.begin(); i != shapeDesc.end(); ++i)
-					grasp::Assert::valid((*i)->isValid(), ac, "shapeDesc[]: invalid");
-			}
-
-			/** Creates the object from the description. */
-			//virtual Sensor::Ptr create(golem::Context &context) const = 0;
-			virtual HypothesisSensor::Ptr create(const pacman::HypothesisSensor::Desc& desc)
-			{
-				return HypothesisSensor::Ptr(new pacman::HypothesisSensor(desc));
-			}
-
-			/** Load descritpion from xml context. */
-			virtual void load(golem::Context& context, const golem::XMLContext* xmlcontext);
-		};
-
-
-		/** Curent sensor frame */
-		virtual golem::Mat34 getFrame() const {
-
-			return config.w*viewFrame;
-		}
-
-		/** Pose frame */
-		golem::Mat34 getPose() const {
-			return config.w;
-		}
-
-		/** Pose frame */
-		const HypothesisSensor::Config& getConfig() const {
-
-			return this->config;
-		}
-
-		/** Local frame */
-		golem::Mat34 getViewFrame() const {
-			return viewFrame;
-		}
-
-		/** Sensor appearance */
-		const Appearance& getAppearance() const {
-			return appearance;
-		}
-
-		/** Draw sensor at the current pose */
-		virtual void draw(const Appearance& appearance, golem::DebugRenderer& renderer) const;
-
-
-	protected:
-
-		/** Camera appearance */
-		Appearance appearance;
-		/** Camera shape */
-		mutable golem::Bounds::Seq shape;
-		/** Camera shape frame */
-		grasp::Mat34Seq shapeFrame;
-
-		/** Hypothesis of a view frame */
-		golem::Mat34 viewFrame;
-
-		/** Hypothesis view configuration */
-		Config config;
-
-		/** Creates/initialises the Sensor */
-		void create(const pacman::HypothesisSensor::Desc& desc);
-
-		/** Constructs the Sensor */
-		HypothesisSensor(golem::Context& context);
-
-		/** Constructs the Sensor */
-		HypothesisSensor(const pacman::HypothesisSensor::Desc& desc);
-
-	public:
-		/** Constructs the Sensor with default configurations */
-		HypothesisSensor(HypothesisSensor::Config config, golem::RGBA shapeColour = golem::RGBA::CYAN);
-
-		/** Set OpenGL view point to *this sensor's frame view point*/
-		void setGLView(golem::Scene& scene);
-
-		/** Set OpenGL view point to the sensor's frame view point */
-		static void setGLView(golem::Scene& scene, const golem::Mat34& sensorFrame);
-
-
-		/** visited flag */
-		bool visited;
-	};
 
 	class ActiveSense {
 
@@ -228,6 +67,7 @@ namespace pacman {
 
 			S_RANDOM,
 			S_CONTACT_BASED,
+			S_CONTACT_BASED2,
 			S_SEQUENTIAL,
 			S_NONE //Used for validity check
 
@@ -251,19 +91,20 @@ namespace pacman {
 				this->setToDefault();
 			}
 
-			std::map<std::string, ESelectionMethod> getSelectionMethodMap(){
+			std::map<std::string, ESelectionMethod> getSelectionMethodMap() const {
 
 				std::map<std::string, ESelectionMethod> retMap;
 
 				retMap["random"] = ESelectionMethod::S_RANDOM;
 				retMap["contact_based"] = ESelectionMethod::S_CONTACT_BASED;
+				retMap["contact_based_v2"] = ESelectionMethod::S_CONTACT_BASED2;
 				retMap["sequential"] = ESelectionMethod::S_SEQUENTIAL;
 
 				return retMap;
 
 			}
 
-			std::map<std::string, EGenerationMethod> getGenerationMethodMap(){
+			std::map<std::string, EGenerationMethod> getGenerationMethodMap() const {
 
 				std::map<std::string, EGenerationMethod> retMap;
 
@@ -275,7 +116,7 @@ namespace pacman {
 
 			}
 
-			std::map<std::string, ECoverageMethod> getCoverageMethodMap(){
+			std::map<std::string, ECoverageMethod> getCoverageMethodMap() const {
 
 				std::map<std::string, ECoverageMethod> retMap;
 
@@ -287,7 +128,7 @@ namespace pacman {
 
 			}
 
-			std::map<std::string, EStoppingCriteria> getStoppingCriteriaMap(){
+			std::map<std::string, EStoppingCriteria> getStoppingCriteriaMap() const {
 				std::map<std::string, EStoppingCriteria> retMap;
 
 				retMap["number_of_views"] = EStoppingCriteria::C_NVIEWS;
@@ -297,8 +138,6 @@ namespace pacman {
 
 				return retMap;
 			}
-
-
 
 			/** Number of hypothesis samples */
 			golem::U32 nsamples, nviews;
@@ -365,6 +204,7 @@ namespace pacman {
 				grasp::Assert::valid(this->generationMethod != EGenerationMethod::G_NONE, ac, "Generation Method: is G_NONE (unknown generation method)");
 				grasp::Assert::valid(this->coverageMethod != ECoverageMethod::M_NONE, ac, "Coverage Method: is M_NONE (unknown coverage method)");
 				grasp::Assert::valid(this->stoppingCriteria != EStoppingCriteria::C_NONE, ac, "Stopping Criteria: is C_NONE (unknown stopping criteria)");
+				grasp::Assert::valid(!configSeq.empty(), ac, "need at least one fixed camera pose in parameters (for initial view)");
 			}
 			/** Load from xml context */
 			void load(const golem::XMLContext* xmlcontext);
@@ -442,15 +282,22 @@ namespace pacman {
 		*/
 		//grasp::data::Item::Map::iterator nextBestViewRandom();
 		
+		pacman::HypothesisSensor::Ptr selectNextBestView(grasp::data::Item::Map::iterator predModelPtr);
 
 		/** Greedy selection for next best view based on contact point information */
 		pacman::HypothesisSensor::Ptr selectNextBestViewContactBased(grasp::data::Item::Map::iterator predModelPtr);
+
+		/** Greedy selection for next best view based on contact point information VERSION 2 with online model */
+		pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBased2(grasp::data::Item::Map::iterator predModelPtr);
 
 		/** Selects next best view randomly from the sequence of generated this->viewHypotheses*/
 		pacman::HypothesisSensor::Ptr selectNextBestViewRandom();
 
 		/** Selects next best view sequentially*/
 		pacman::HypothesisSensor::Ptr selectNextBestViewSequential();
+
+		void resetNextBestViewSequential() { seqIndex = 0; }
+		void incrNextBestViewSequential() { seqIndex = (seqIndex + 1) % viewHypotheses.size(); }
 
 		/** Gets current view hypotheses a.k.a. sensor hypotheses*/
 		pacman::HypothesisSensor::Seq& getViewHypotheses() {
@@ -603,6 +450,9 @@ namespace pacman {
 		/** Load from xml context */
 		void load(const golem::XMLContext* xmlcontext);
 
+		/** Execute Grasp Trajectory (modification of Play trajectory */
+		void executeTrajectory();
+
 	protected:
 		/** Ad-hoc Tools for cloud processing: Aux Types **/
 		typedef grasp::Cloud::PointSeq CloudT;
@@ -689,6 +539,7 @@ namespace pacman {
 		grasp::CollisionBounds::Ptr selectCollisionBounds(bool draw, grasp::data::Item::Map::const_iterator input);
 		
 
+
 		/** Ad-hoc Tools for cloud processing: Functions **/
 		
 
@@ -706,6 +557,8 @@ namespace pacman {
 		grasp::data::Item::Map::iterator predQueryItem;
 		grasp::data::Item::Map::iterator pointCurvItem;
 		grasp::data::Item::Map::iterator trajectoryItem;
+
+		pacman::ActiveSensOnlineModel onlineModel;
 
 		/**Internal control flags*/
 		bool hasPointCurv, hasPredModel, hasPredQuery, hasTrajectory;
@@ -804,6 +657,8 @@ namespace pacman {
 		/** Load from xml context */
 		void load(const golem::XMLContext* xmlcontext);
 
+
+		
 	};
 };
 
