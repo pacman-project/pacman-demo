@@ -235,8 +235,12 @@ void Demo::Data::save(const std::string& prefix, golem::XMLContext* xmlcontext) 
 
 void Demo::PoseDensity::load(const golem::XMLContext* xmlcontext) {
 	grasp::XMLData(stdDev, xmlcontext->getContextFirst("std_dev"));
+	stdDev.ang = Math::sqrt(REAL_ONE / stdDev.ang);	// stdDev ~ 1/cov
+
 	golem::XMLData("kernels", kernels, const_cast<golem::XMLContext*>(xmlcontext));
 	grasp::XMLData(pathDist, xmlcontext->getContextFirst("path_dist"));
+	pathDist.ang = Math::sqrt(REAL_ONE / pathDist.ang);	// stdDev ~ 1/cov
+
 	golem::XMLData("std_dev", pathDistStdDev, xmlcontext->getContextFirst("path_dist"));
 }
 
@@ -246,7 +250,8 @@ void Demo::Optimisation::load(const golem::XMLContext* xmlcontext) {
 	golem::XMLData("runs", runs, const_cast<golem::XMLContext*>(xmlcontext));
 	golem::XMLData("steps", steps, const_cast<golem::XMLContext*>(xmlcontext));
 	golem::XMLData("sa_temp", saTemp, const_cast<golem::XMLContext*>(xmlcontext));
-	golem::XMLData("sa_delta", saDelta, const_cast<golem::XMLContext*>(xmlcontext));
+	golem::XMLData("sa_delta_lin", saDelta.lin, const_cast<golem::XMLContext*>(xmlcontext));
+	golem::XMLData("sa_delta_ang", saDelta.ang, const_cast<golem::XMLContext*>(xmlcontext));
 	golem::XMLData("sa_energy", saEnergy, const_cast<golem::XMLContext*>(xmlcontext));
 }
 
@@ -655,6 +660,7 @@ void pacman::Demo::create(const Desc& desc) {
 
 	poseCovInv.lin = REAL_ONE / (poseCov.lin = Math::sqr(desc.manipulatorPoseStdDev.lin));
 	poseCovInv.ang = REAL_ONE / (poseCov.ang = Math::sqr(desc.manipulatorPoseStdDev.ang));
+	poseDistanceMax = Math::sqr(desc.manipulatorPoseStdDevMax);
 
 	trajectoryDuration = desc.trajectoryDuration;
 	trajectoryThresholdForce = desc.trajectoryThresholdForce;
@@ -695,7 +701,7 @@ void pacman::Demo::create(const Desc& desc) {
 				throw Cancel("No solutions created");
 			to<Data>(dataCurrentPtr)->indexSolution = to<Data>(dataCurrentPtr)->indexSolution <= 0 ? to<Data>(dataCurrentPtr)->solutions.size() - 1 : to<Data>(dataCurrentPtr)->indexSolution - 1;
 			const Data::Solution& solution = to<Data>(dataCurrentPtr)->solutions[to<Data>(dataCurrentPtr)->indexSolution];
-			context.write("Solution type %s, Item #%u, Likelihood=%.9f\n", solution.type.c_str(), to<Data>(dataCurrentPtr)->indexSolution + 1, solution.likelihood);
+			context.write("Solution type %s, Item #%u, Likelihood_{total, contact, pose, collision}={%.6e, %.6e, %.6e, %.6e}\n", solution.type.c_str(), to<Data>(dataCurrentPtr)->indexSolution + 1, solution.likelihood.likelihood, solution.likelihood.contact, solution.likelihood.pose, solution.likelihood.collision);
 		}
 		createRender();
 	}));
@@ -715,7 +721,7 @@ void pacman::Demo::create(const Desc& desc) {
 				throw Cancel("No solutions created");
 			to<Data>(dataCurrentPtr)->indexSolution = to<Data>(dataCurrentPtr)->indexSolution < to<Data>(dataCurrentPtr)->solutions.size() - 1 ? to<Data>(dataCurrentPtr)->indexSolution + 1 : 0;
 			const Data::Solution& solution = to<Data>(dataCurrentPtr)->solutions[to<Data>(dataCurrentPtr)->indexSolution];
-			context.write("Solution type %s, Item #%u, Likelihood=%.9f\n", solution.type.c_str(), to<Data>(dataCurrentPtr)->indexSolution + 1, solution.likelihood);
+			context.write("Solution type %s, Item #%u, Likelihood_{total, contact, pose, collision}={%.6e, %.6e, %.6e, %.6e}\n", solution.type.c_str(), to<Data>(dataCurrentPtr)->indexSolution + 1, solution.likelihood.likelihood, solution.likelihood.contact, solution.likelihood.pose, solution.likelihood.collision);
 		}
 		createRender();
 	}));
@@ -1718,8 +1724,8 @@ void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 			// kernel parameters
 			qp.stdDev = pose->second.stdDev;
 			qp.cov.set(Math::sqr(qp.stdDev.lin), Math::sqr(qp.stdDev.ang));
-			qp.distFac.set(REAL_ONE / qp.cov.lin, REAL_ONE / qp.cov.ang); // == covInv
-			//const RBDist frameDistMax(poseDistanceMax * frameCov.lin, poseDistanceMax * frameCov.ang);
+			qp.covInv.set(REAL_ONE / qp.cov.lin, REAL_ONE / qp.cov.ang);
+			qp.distMax.set(poseDistanceMax * qp.cov.lin, poseDistanceMax * qp.cov.ang);
 			// kernel weight
 			qp.weight = Math::exp( - Math::abs(dist)*pose->second.pathDistStdDev);
 
@@ -1758,6 +1764,8 @@ void pacman::Demo::generateSolutions() {
 	// training data are required
 	if (to<Data>(dataCurrentPtr)->densities.empty())
 		throw Message(Message::LEVEL_ERROR, "Demo::generateSolutions(): No query densities");
+
+	const SecTmReal t = context.getTimer().elapsed();
 
 	Mat34 referencePose;
 	referencePose.setInverse(manipulator->getBaseFrame());
@@ -1803,28 +1811,29 @@ void pacman::Demo::generateSolutions() {
 				break;
 			}
 			// set
+			test.likelihood.setToDefault();
 			test.type = query->type;
 			test.queryIndex = (U32)(query - to<Data>(dataCurrentPtr)->densities.begin());
-			test.likelihood = pose->weight;
 
 			// local search: try to find better solution using simulated annealing
 			for (size_t s = 0; s <= optimisation.steps; ++s) {
 				const bool init = s == 0;
 
 				// linear schedule
-				const Real Temp = optimisation.saTemp + Real(optimisation.steps - s) / optimisation.steps;
-				const Real Delta = optimisation.saDelta*Temp;
+				const Real Scale = Real(optimisation.steps - s)/optimisation.steps; // 0..1
+				const Real Temp = (REAL_ONE - Scale)*optimisation.saTemp + Scale;
+				const RBDist Delta(optimisation.saDelta.lin*Temp, optimisation.saDelta.ang*Temp);
 				const Real Energy = optimisation.saEnergy*Temp;
 
 				// Linear component
 				Vec3 v;
 				v.next(rand); // |v|==1
-				v.multiply(Math::abs(rand.nextGaussian<Real>(REAL_ZERO, Delta*pose->stdDev.lin)), v);
+				v.multiply(Math::abs(rand.nextGaussian<Real>(REAL_ZERO, Delta.lin*pose->stdDev.lin)), v);
 				test.pose.p.add(init ? pose->p : solution->pose.p, v);
 				// Angular component
-				const Real poseCovAng = Math::sqr(Delta*pose->stdDev.ang);
+				const Real poseCovInvAng = pose->covInv.ang / Math::sqr(Delta.ang);
 				Quat q;
-				q.next(rand, poseCovAng);
+				q.next(rand, poseCovInvAng);
 				test.pose.q.multiply(init ? pose->q : solution->pose.q, q);
 
 				// create path
@@ -1838,31 +1847,37 @@ void pacman::Demo::generateSolutions() {
 					i->multiply(test.pose * referencePose, *i);
 				}
 
-				*solution = test;
-				break;
+				// evaluate
+				test.likelihood.contact = evaluateSample(query->object.begin(), query->object.end(), test.pose);
+				test.likelihood.pose = evaluateSample(query->pose.begin(), query->pose.end(), test.pose);
+				test.likelihood.collision = golem::numeric_const<golem::Real>::ONE;
+				test.likelihood.make();
+				//test.likelihood.makeLog();
 
-				/*
-				// path
-				// TODO
-				configuration.sample(rand, pose, test.path);
+				// first run sampling only
+				if (init) {
+					*solution = test;
+					continue;
+				}
 
-				// evaluate test
-				evaluate(jobId, test.path, test.likelihood, desc.collisionAll);
-
-				// accept if better or
-				if (test.likelihood.value > config->likelihood.value || Math::exp((test.likelihood.value - config->likelihood.value) / Energy) > rand.nextUniform<Real>()) {
+				// accept if better
+				if (test.likelihood.likelihood > solution->likelihood.likelihood || Math::exp((test.likelihood.likelihood - solution->likelihood.likelihood) / Energy) > rand.nextUniform<Real>()) {
 					// debug
-					test.likelihood.value > config->likelihood.value ? ++acceptGreedy : ++acceptSA;
+					test.likelihood.likelihood > solution->likelihood.likelihood ? ++acceptGreedy : ++acceptSA;
 					// update
-					config->path = test.path;
-					config->likelihood = test.likelihood;
-				}*/
+					solution->pose = test.pose;
+					solution->path = test.path;
+					solution->likelihood = test.likelihood;
+				}
 			}
 		}
 	});
 
 	// sort
 	sortSolutions(to<Data>(dataCurrentPtr)->solutions);
+
+	// print debug information
+	context.debug("Demo::generateSolutions(): time=%.6f, solutions=%u, steps=%u, energy=%f, greedy_accept=%d, SA_accept=%d\n", context.getTimer().elapsed() - t, optimisation.runs, optimisation.steps, optimisation.saEnergy, acceptGreedy, acceptSA);
 }
 
 void pacman::Demo::sortSolutions(Data::Solution::Seq& seq) {
@@ -1877,7 +1892,7 @@ void pacman::Demo::sortSolutions(Data::Solution::Seq& seq) {
 		ptrSeq.push_back(&*i);
 
 	// sort
-	std::sort(ptrSeq.begin(), ptrSeq.end(), [] (const Data::Solution* l, const Data::Solution* r) -> bool {return l->likelihood > r->likelihood; });
+	std::sort(ptrSeq.begin(), ptrSeq.end(), [](const Data::Solution* l, const Data::Solution* r) -> bool {return l->likelihood.likelihood > r->likelihood.likelihood; });
 
 	// copy
 	Data::Solution::Seq seqSorted;

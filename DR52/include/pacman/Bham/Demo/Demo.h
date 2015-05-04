@@ -96,6 +96,32 @@ public:
 			/** Collection of solutions */
 			typedef std::vector<Solution> Seq;
 
+			/** Solution likelihood */
+			class Likelihood {
+			public:
+				/** Likelihood contact */
+				golem::Real contact;
+				/** Likelihood pose */
+				golem::Real pose;
+				/** Likelihood collision */
+				golem::Real collision;
+				/** Likelihood */
+				golem::Real likelihood;
+
+				Likelihood() {
+					setToDefault();
+				}
+				void setToDefault() {
+					contact = pose = collision = likelihood = golem::numeric_const<golem::Real>::MIN_EXP;
+				}
+				void make() {
+					likelihood = contact <= golem::REAL_ZERO || pose <= golem::REAL_ZERO || collision <= golem::REAL_ZERO ? golem::numeric_const<golem::Real>::MIN_EXP : contact * pose * collision;
+				}
+				void makeLog() {
+					likelihood = contact <= golem::REAL_ZERO || pose <= golem::REAL_ZERO || collision <= golem::REAL_ZERO ? golem::numeric_const<golem::Real>::MIN_EXP : golem::Math::ln(contact) + golem::Math::ln(pose) + golem::Math::ln(collision);
+				}
+			};
+
 			/** Type */
 			std::string type;
 			/** Pose */
@@ -104,7 +130,7 @@ public:
 			grasp::Manipulator::Waypoint::Seq path;
 
 			/** Likelihood */
-			golem::Real likelihood;
+			Likelihood likelihood;
 
 			/** Query index */
 			golem::U32 queryIndex;
@@ -211,7 +237,7 @@ public:
 		}
 		/** Sets the parameters to the default values */
 		void setToDefault() {
-			stdDev.set(golem::Real(0.01), golem::Real(50.0));
+			stdDev.set(golem::Real(0.01), golem::Real(200.0));
 			kernels = 100;
 			pathDist.set(golem::Real(0.1), golem::Real(20.0));
 			pathDistStdDev = golem::Real(1.0);
@@ -238,7 +264,7 @@ public:
 		/** Simulated annealing minimum temperature */
 		golem::Real saTemp;
 		/** Simulated annealing temperature to local coordinate scaling factor */
-		golem::Real saDelta;
+		grasp::RBDist saDelta;
 		/** Simulated annealing temperature to energy scaling factor */
 		golem::Real saEnergy;
 
@@ -252,7 +278,7 @@ public:
 			steps = 1000;
 
 			saTemp = golem::Real(0.1);
-			saDelta = golem::Real(1.0);
+			saDelta.set(golem::Real(1.0), golem::Real(1.0));
 			saEnergy = golem::Real(0.5);
 		}
 		/** Assert that the description is valid. */
@@ -260,7 +286,7 @@ public:
 			grasp::Assert::valid(runs > 0, ac, "runs: <= 0");
 			grasp::Assert::valid(steps > 0, ac, "steps: <= 0");
 			grasp::Assert::valid(saTemp >= golem::REAL_ZERO, ac, "saTemp: < 0");
-			grasp::Assert::valid(saDelta > golem::REAL_ZERO, ac, "saDelta: <= 0");
+			grasp::Assert::valid(saDelta.isValid(), ac, "saDelta: invalid");
 			grasp::Assert::valid(saEnergy > golem::REAL_ZERO, ac, "saEnergy: <= 0");
 		}
 		/** Load descritpion from xml context. */
@@ -355,6 +381,8 @@ public:
 		grasp::Manipulator::Appearance manipulatorAppearance;
 		/** Manipulator pose distribution standard deviation */
 		grasp::RBDist manipulatorPoseStdDev;
+		/** Maximum distance between frames in standard deviations */
+		golem::Real manipulatorPoseStdDevMax;
 		/** Manipulator trajectory item */
 		std::string manipulatorItemTrj;
 
@@ -422,6 +450,7 @@ public:
 			manipulatorDesc.reset(new grasp::Manipulator::Desc);
 			manipulatorAppearance.setToDefault();
 			manipulatorPoseStdDev.set(golem::Real(0.002), golem::Real(1000.0));
+			manipulatorPoseStdDevMax = golem::Real(5.0);
 			manipulatorItemTrj.clear();
 
 			trajectoryDuration = golem::SecTmReal(5.0);
@@ -493,6 +522,7 @@ public:
 			manipulatorDesc->assertValid(grasp::Assert::Context(ac, "manipulatorDesc->"));
 			manipulatorAppearance.assertValid(grasp::Assert::Context(ac, "manipulatorAppearance."));
 			grasp::Assert::valid(manipulatorPoseStdDev.isValid(), ac, "manipulatorPoseStdDev: invalid");
+			grasp::Assert::valid(manipulatorPoseStdDevMax > golem::REAL_EPS, ac, "manipulatorPoseStdDevMax: < eps");
 			grasp::Assert::valid(manipulatorItemTrj.length() > 0, ac, "manipulatorItemTrj: invalid");
 
 			grasp::Assert::valid(trajectoryDuration > golem::SEC_TM_REAL_ZERO, ac, "trajectoryDuration: <= 0");
@@ -598,6 +628,8 @@ protected:
 	std::string manipulatorItemTrj;
 	/** Manipulator pose distribution covariance */
 	grasp::RBDist poseCov, poseCovInv;
+	/** Maximum distance between frames in squared standard deviations */
+	golem::Real poseDistanceMax;
 
 	/** Manipulation trajectory duration */
 	golem::SecTmReal trajectoryDuration;
@@ -635,6 +667,23 @@ protected:
 
 	/** Perform trajectory */
 	void performTrajectory(bool testTrajectory);
+
+	/** Evaluation */
+	template <typename _Ptr> inline static golem::Real evaluateSample(_Ptr begin, _Ptr end, const grasp::RBCoord& coord) {
+		golem::Real likelihood = golem::numeric_const<golem::Real>::ZERO, c = golem::numeric_const<golem::Real>::ZERO;
+		for (_Ptr kernel = begin; kernel < end; ++kernel) {
+			const golem::Real dlin = kernel->p.distanceSqr(coord.p);
+			if (dlin < kernel->distMax.lin) {
+				const golem::Real dang = kernel->q.distance(coord.q);
+				if (dang < kernel->distMax.ang) {
+					const golem::Real distance = kernel->covInv.lin*dlin + kernel->covInv.ang*dang;
+					const golem::Real sampleLikelihood = kernel->weight*golem::Math::exp(-golem::Real(distance));
+					golem::kahanSum(likelihood, c, sampleLikelihood);
+				}
+			}
+		}
+		return likelihood;
+	}
 
 	grasp::Camera* getWristCamera(const bool dontThrow = false) const;
 	golem::Mat34 getWristPose() const;
