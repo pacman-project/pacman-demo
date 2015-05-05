@@ -524,6 +524,17 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 	pacman::HypothesisSensor::Ptr hypothesis(nullptr);
 
 	grasp::data::Item::List scannedImageItems; // scanned Items List
+
+	//Adding current sensor pose to the sequence of visited hypotheses
+	HypothesisSensor::Config config;
+	golem::Controller::State begin = demoOwner->lookupState();
+	begin.cpos.get(config.c.data(), config.c.data() + std::min(config.c.size(), (size_t)demoOwner->info.getJoints().size()));
+	hypothesis = this->generateViewFrom(config);
+	hypothesis->visited = true;
+	visitedHypotheses.push_back(hypothesis);
+
+	//Carry on as if nothing happened
+	hypothesis = pacman::HypothesisSensor::Ptr(nullptr);
 	
 	// performs first scan using current wrist pose
 	demoOwner->scanPoseActive(scannedImageItems); 
