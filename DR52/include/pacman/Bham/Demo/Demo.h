@@ -390,7 +390,7 @@ public:
 		std::string manipulatorItemTrj;
 
 		/** Manipulation trajectory duration */
-		golem::SecTmReal trajectoryDuration;
+		golem::SecTmReal manipulatorTrajectoryDuration;
 		/** Manipulation trajectory force threshold */
 		golem::Twist trajectoryThresholdForce;
 
@@ -461,7 +461,7 @@ public:
 			manipulatorPoseStdDevMax = golem::Real(5.0);
 			manipulatorItemTrj.clear();
 
-			trajectoryDuration = golem::SecTmReal(5.0);
+			manipulatorTrajectoryDuration = golem::SecTmReal(5.0);
 			trajectoryThresholdForce.setZero();
 
 			withdrawReleaseFraction = golem::Real(0.5);
@@ -536,7 +536,7 @@ public:
 			grasp::Assert::valid(manipulatorPoseStdDevMax > golem::REAL_EPS, ac, "manipulatorPoseStdDevMax: < eps");
 			grasp::Assert::valid(manipulatorItemTrj.length() > 0, ac, "manipulatorItemTrj: invalid");
 
-			grasp::Assert::valid(trajectoryDuration > golem::SEC_TM_REAL_ZERO, ac, "trajectoryDuration: <= 0");
+			grasp::Assert::valid(manipulatorTrajectoryDuration > golem::SEC_TM_REAL_ZERO, ac, "manipulatorTrajectoryDuration: <= 0");
 			grasp::Assert::valid(trajectoryThresholdForce.isPositive(), ac, "trajectoryThresholdForce: negative");
 
 			grasp::Assert::valid(withdrawReleaseFraction >= golem::REAL_ZERO, ac, "withdrawReleaseFraction: < 0");
@@ -647,7 +647,7 @@ protected:
 	golem::Real poseDistanceMax;
 
 	/** Manipulation trajectory duration */
-	golem::SecTmReal trajectoryDuration; // @@@ OVERRIDE @@@
+	golem::SecTmReal manipulatorTrajectoryDuration;
 
 	/** Manipulation trajectory force threshold */
 	golem::Twist trajectoryThresholdForce;

@@ -368,7 +368,7 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 	golem::XMLData("item_trj", manipulatorItemTrj, xmlcontext->getContextFirst("manipulator"));
 	grasp::XMLData(manipulatorPoseStdDev, xmlcontext->getContextFirst("manipulator pose_stddev"), false);
 
-	golem::XMLData("duration", trajectoryDuration, xmlcontext->getContextFirst("manipulator trajectory"));
+	golem::XMLData("duration", manipulatorTrajectoryDuration, xmlcontext->getContextFirst("manipulator trajectory"));
 	golem::XMLData(trajectoryThresholdForce, xmlcontext->getContextFirst("manipulator threshold"));
 
 	golem::XMLData("release_fraction", withdrawReleaseFraction, xmlcontext->getContextFirst("manipulator withdraw_action"));
@@ -757,7 +757,7 @@ void pacman::Demo::create(const Desc& desc) {
 	poseCovInv.ang = REAL_ONE / (poseCov.ang = Math::sqr(desc.manipulatorPoseStdDev.ang));
 	poseDistanceMax = Math::sqr(desc.manipulatorPoseStdDevMax);
 
-	trajectoryDuration = desc.trajectoryDuration;
+	manipulatorTrajectoryDuration = desc.manipulatorTrajectoryDuration;
 	trajectoryThresholdForce = desc.trajectoryThresholdForce;
 
 	withdrawReleaseFraction = desc.withdrawReleaseFraction;
@@ -2105,7 +2105,7 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 	Profile::Ptr profile = desc.create(*controller);
 	if (profile == nullptr)
 		throw Message(Message::LEVEL_ERROR, "Demo::performTrajectory(): unable to create profile");
-	seq.back().t = seq.front().t + trajectoryDuration;
+	seq.back().t = seq.front().t + manipulatorTrajectoryDuration;
 	profile->profile(seq);
 
 	golem::Controller::State::Seq initTrajectory;
