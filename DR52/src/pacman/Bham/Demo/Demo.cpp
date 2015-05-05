@@ -371,6 +371,9 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 
 	golem::XMLData("duration", trajectoryDuration, xmlcontext->getContextFirst("manipulator trajectory"));
 	golem::XMLData(trajectoryThresholdForce, xmlcontext->getContextFirst("manipulator threshold"));
+
+	golem::XMLData("release_fraction", withdrawReleaseFraction, xmlcontext->getContextFirst("manipulator withdraw_action"));
+	golem::XMLData("lift_distance", withdrawLiftDistance, xmlcontext->getContextFirst("manipulator withdraw_action"));
 }
 
 //------------------------------------------------------------------------------
@@ -756,6 +759,15 @@ void pacman::Demo::create(const Desc& desc) {
 
 	trajectoryDuration = desc.trajectoryDuration;
 	trajectoryThresholdForce = desc.trajectoryThresholdForce;
+
+	withdrawReleaseFraction = desc.withdrawReleaseFraction;
+	withdrawLiftDistance = desc.withdrawLiftDistance;
+
+
+	////////////////////////////////////////////////////////////////////////////
+	//                            START OF MENUS                              // 
+	////////////////////////////////////////////////////////////////////////////
+
 
 	// top menu help using global key '?'
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
@@ -1164,7 +1176,10 @@ void pacman::Demo::create(const Desc& desc) {
 		context.write("Done!\n");
 	}));
 
-	// main demo
+	////////////////////////////////////////////////////////////////////////////
+	//                            MAIN DEMO                                   // 
+	////////////////////////////////////////////////////////////////////////////
+
 	menuCmdMap.insert(std::make_pair("PD", [=]() {
 		// debug mode
 		const bool stopAtBreakPoint = option("YN", "Debug mode (Y/N)...") == 'Y';
@@ -1211,6 +1226,10 @@ void pacman::Demo::create(const Desc& desc) {
 		context.write("Done!\n");
 
 	}));
+
+	////////////////////////////////////////////////////////////////////////////
+	//                               UTILITIES                                // 
+	////////////////////////////////////////////////////////////////////////////
 
 	menuCtrlMap.insert(std::make_pair("Z", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
 		desc = "Press a key to: run (R)otate, (N)udge, (O)bjectGraspAndCapture, rgb-to-ir (T)ranform, (D)epth camera adjust, create (P)oses, (L)ocate object...";
@@ -1488,7 +1507,7 @@ void pacman::Demo::create(const Desc& desc) {
 		context.write("Done!\n");
 	}));
 
-
+	// END OF MENUS
 
 	}
 
@@ -2148,8 +2167,16 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 		if (controller->waitForEnd(0))
 			break;
 
-		if (forceEvent.detected(&context))
+		bool spoofedForceEvent = false;
+		if (waitKey(0) == 'F')
 		{
+			context.write("Simulated force event\n");
+			spoofedForceEvent = true;
+		}
+
+		if (forceEvent.detected(&context) || spoofedForceEvent)
+		{
+			context.write("Force event detected. Halting robot.\n");
 			haltRobot();
 			// jiggle, if not docked => when bottom of object is near base of rack
 		}
@@ -2159,12 +2186,14 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 			context.write("State #%d\r", i);
 	}
 
-	// TODO open hand and perform withdraw action to a safe pose
+	// open hand and perform withdraw action to a safe pose
 	// translate wrist vertically upwards, keeping orientation constant
-	// use local planner
+	context.write("Waiting 1s...\n");
 	Sleep::msleep(SecToMSec(1.0)); // wait 1s before release and withdraw
-	releaseHand(0.5, trajectoryDuration); // partial release 50% to zero config
-	liftWrist(0.20, trajectoryDuration); // vertically by 20cm; (to hand zero config???)
+	context.write("Releasing hand by %g in %g s...\n", withdrawReleaseFraction, trajectoryDuration);
+	releaseHand(withdrawReleaseFraction, trajectoryDuration); // partial release 50% to zero config
+	context.write("Lifting hand by %g in %g s...\n", withdrawLiftDistance, trajectoryDuration);
+	liftWrist(withdrawLiftDistance, trajectoryDuration); // vertically by 20cm; (to hand zero config???)
 	//gotoPose(safePose);
 
 	// done
