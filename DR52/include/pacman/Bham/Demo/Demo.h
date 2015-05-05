@@ -668,7 +668,7 @@ protected:
 	/** Pose estimation */
 	grasp::data::Item::Map::iterator estimatePose(Data::Mode mode);
 	/** Grasp and capture object */
-	grasp::data::Item::Map::iterator objectGraspAndCapture();
+	grasp::data::Item::Map::iterator objectGraspAndCapture(const bool stopAtBreakPoint = false);
 	/** Process object image and add to data bundle */
 	grasp::data::Item::Map::iterator objectProcess(grasp::data::Item::Map::iterator ptr);
 	/** Create trajectory name */

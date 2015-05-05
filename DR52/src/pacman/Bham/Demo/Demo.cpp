@@ -1207,7 +1207,7 @@ void pacman::Demo::create(const Desc& desc) {
 		for (;;) {
 			// grasp and scan object
 			breakPoint("Object grasp and point cloud capture");
-			grasp::data::Item::Map::iterator ptr = objectGraspAndCapture();
+			grasp::data::Item::Map::iterator ptr = objectGraspAndCapture(stopAtBreakPoint);
 
 			breakPoint("Action planning");
 
@@ -1240,7 +1240,7 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("ZO", [=]() {
 		context.write("Testing objectGraspAndCapture()\n");
-		objectGraspAndCapture();
+		objectGraspAndCapture(true);
 		context.write("Done!\n");
 	}));
 
@@ -1615,8 +1615,19 @@ grasp::data::Item::Map::iterator pacman::Demo::estimatePose(Data::Mode mode) {
 // full hand grasp, fingers spread out; thumb in centre
 // 4. move through scan poses and capture object, add as objectScan
 // return ptr to Item
-grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture()
+grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture(const bool stopAtBreakPoint)
 {
+	const auto breakPoint = [=](const char* str) {
+		if (stopAtBreakPoint) {
+			if (option("YN", makeString("%s: Continue (Y/N)...", str).c_str()) != 'Y')
+				throw Cancel("Demo cancelled");
+		}
+		else {
+			context.write("%s\n", str);
+			(void)waitKey(0);
+		}
+	};
+
 	gotoPose(graspPoseOpen);
 
 	context.write("Waiting for force event, simulate (F)orce event or <ESC> to cancel\n");
@@ -1641,16 +1652,9 @@ grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture()
 
 	context.debug("Closing hand!\n");
 	gotoPose2(graspPoseClosed, graspCloseDuration);
+	Sleep::msleep(SecToMSec(1.0));
 
-	context.write("<SPACE> to continue to scan pose, or <ESC> to cancel\n");
-	for (;;)
-	{
-		const int k = waitKey(golem::MSEC_TM_U32_INF);
-		if (k == 27) // <Esc>
-			throw Cancel("Cancelled");
-		if (k == 32) // <Space>
-			break;
-	}
+	breakPoint("Go to scan pose");
 
 	context.debug("Proceeding to first scan pose!\n");
 	gotoPose(objectScanPoseSeq.front());
