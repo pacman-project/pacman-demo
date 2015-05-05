@@ -59,7 +59,7 @@
 
     <query camera="OpenNI+OpenNIDemo" handler="Image+ImageDemo" item="Query" item_obj="QueryObj" handler_trj="Trajectory+TrajectoryDemo" item_trj="TrajectoryQuery">
       <query id="Any" weight="1.0">
-        <contact_3d kernels="5000" epsilon="1e-10" feature_std_dev_max="5.0" pose_std_dev_max="5.0"/>
+        <contact_3d kernels="5000" epsilon="1e-10" trials="100" feature_std_dev_max="5.0" pose_std_dev_max="5.0"/>
         <nn_search neighbours="0" search_checks="32" search_kdtrees="1" search_leaf_max_size="10"/>
         <pose kernels="100">
           <std_dev lin="0.01" ang="500.0"/>

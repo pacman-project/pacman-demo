@@ -114,11 +114,14 @@ public:
 				void setToDefault() {
 					contact = pose = collision = likelihood = golem::numeric_const<golem::Real>::MIN_EXP;
 				}
+				static bool isValid(golem::Real likelihood) {
+					return likelihood > golem::REAL_ZERO;
+				}
 				void make() {
-					likelihood = contact <= golem::REAL_ZERO || pose <= golem::REAL_ZERO || collision <= golem::REAL_ZERO ? golem::numeric_const<golem::Real>::MIN_EXP : contact * pose * collision;
+					likelihood = isValid(contact) && isValid(pose) && isValid(collision) ? contact * pose * collision : golem::numeric_const<golem::Real>::MIN_EXP;
 				}
 				void makeLog() {
-					likelihood = contact <= golem::REAL_ZERO || pose <= golem::REAL_ZERO || collision <= golem::REAL_ZERO ? golem::numeric_const<golem::Real>::MIN_EXP : golem::Math::ln(contact) + golem::Math::ln(pose) + golem::Math::ln(collision);
+					likelihood = isValid(contact) && isValid(pose) && isValid(collision) ? golem::Math::ln(contact) + golem::Math::ln(pose) + golem::Math::ln(collision) : golem::numeric_const<golem::Real>::MIN_EXP;
 				}
 			};
 

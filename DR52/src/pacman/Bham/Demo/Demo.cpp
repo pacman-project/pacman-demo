@@ -1825,34 +1825,43 @@ void pacman::Demo::generateSolutions() {
 				const RBDist Delta(optimisation.saDelta.lin*Temp, optimisation.saDelta.ang*Temp);
 				const Real Energy = optimisation.saEnergy*Temp;
 
-				// Linear component
-				Vec3 v;
-				v.next(rand); // |v|==1
-				v.multiply(Math::abs(rand.nextGaussian<Real>(REAL_ZERO, Delta.lin*pose->stdDev.lin)), v);
-				test.pose.p.add(init ? pose->p : solution->pose.p, v);
-				// Angular component
-				const Real poseCovInvAng = pose->covInv.ang / Math::sqr(Delta.ang);
-				Quat q;
-				q.next(rand, poseCovInvAng);
-				test.pose.q.multiply(init ? pose->q : solution->pose.q, q);
+				// generate test solution
+				for (;;) {
+					// Linear component
+					Vec3 v;
+					v.next(rand); // |v|==1
+					v.multiply(Math::abs(rand.nextGaussian<Real>(REAL_ZERO, Delta.lin*pose->stdDev.lin)), v);
+					test.pose.p.add(init ? pose->p : solution->pose.p, v);
+					// Angular component
+					const Real poseCovInvAng = pose->covInv.ang / Math::sqr(Delta.ang);
+					Quat q;
+					q.next(rand, poseCovInvAng);
+					test.pose.q.multiply(init ? pose->q : solution->pose.q, q);
 
-				// create path
-				test.path = query->path;
+					// create path
+					test.path = query->path;
 
-				// transform to the new frame
-				RBCoord inv;
-				inv.setInverse(test.path[0]);
-				for (Manipulator::Waypoint::Seq::iterator i = test.path.begin(); i != test.path.end(); ++i) {
-					i->multiply(inv, *i);
-					i->multiply(test.pose * referencePose, *i);
+					// transform to the new frame
+					RBCoord inv;
+					inv.setInverse(test.path[0]);
+					for (Manipulator::Waypoint::Seq::iterator i = test.path.begin(); i != test.path.end(); ++i) {
+						i->multiply(inv, *i);
+						i->multiply(test.pose * referencePose, *i);
+					}
+
+					// evaluate
+					if (!Data::Solution::Likelihood::isValid(test.likelihood.contact = evaluateSample(query->object.begin(), query->object.end(), test.pose)))
+						continue;
+					if (!Data::Solution::Likelihood::isValid(test.likelihood.pose = evaluateSample(query->pose.begin(), query->pose.end(), test.pose)))
+						continue;
+					if (!Data::Solution::Likelihood::isValid(test.likelihood.collision = golem::numeric_const<golem::Real>::ONE))
+						continue;
+
+					test.likelihood.make();
+					//test.likelihood.makeLog();
+
+					break;
 				}
-
-				// evaluate
-				test.likelihood.contact = evaluateSample(query->object.begin(), query->object.end(), test.pose);
-				test.likelihood.pose = evaluateSample(query->pose.begin(), query->pose.end(), test.pose);
-				test.likelihood.collision = golem::numeric_const<golem::Real>::ONE;
-				test.likelihood.make();
-				//test.likelihood.makeLog();
 
 				// first run sampling only
 				if (init) {
