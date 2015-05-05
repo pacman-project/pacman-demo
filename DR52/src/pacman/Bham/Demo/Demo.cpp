@@ -496,11 +496,14 @@ void Demo::liftWrist(const double verticalDistance, const SecTmReal duration)
 
 void Demo::haltRobot()
 {
-	golem::Controller::State currentState = lookupState();
-	golem::Controller::State::Seq trajectory;
-	trajectory.push_back(currentState);
-	//sendTrajectory(trajectory, true);
-	(void)controller->send(&trajectory.front(), &trajectory.back() + 1, true);
+	context.debug("STOPPING ROBOT!");
+
+	golem::Controller::State command = controller->createState();
+	const Real t = controller->getCommandTime();
+	controller->lookupCommand(t, command);
+	command.cvel.setToDefault(info.getJoints());
+	command.t = t;
+	controller->send(&command, &command + 1, true, false);
 }
 
 //------------------------------------------------------------------------------
@@ -2056,17 +2059,6 @@ void pacman::Demo::selectTrajectory() {
 	}
 }
 
-// to stop
-//if (waitKey(0) == ' ') {
-//	context.write("Stop       \n");
-//	Controller::State command = controller->createState();
-//	const Real t = controller->getCommandTime();
-//	controller->lookupCommand(t, command);
-//	command.cvel.setToDefault(info.getJoints());
-//	command.t = t;
-//	controller->send(&command, &command + 1, true, false);
-//}
-
 void pacman::Demo::performTrajectory(bool testTrajectory) {
 	grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(queryItemTrj);
 	if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
@@ -2196,16 +2188,19 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 		if (i % 10 == 0)
 			context.write("State #%d\r", i);
 	}
+	context.debug("\n");
 
 	// open hand and perform withdraw action to a safe pose
 	// translate wrist vertically upwards, keeping orientation constant
-	context.debug("Waiting 1s...\n");
-	Sleep::msleep(SecToMSec(1.0)); // wait 1s before release and withdraw
-	context.debug("Releasing hand by %g in %g s...\n", withdrawReleaseFraction, trajectoryDuration);
-	releaseHand(withdrawReleaseFraction, trajectoryDuration); // partial release 50% to zero config
-	context.debug("Lifting hand by %g in %g s...\n", withdrawLiftDistance, trajectoryDuration);
-	liftWrist(withdrawLiftDistance, trajectoryDuration); // vertically by 20cm; (to hand zero config???)
-	//gotoPose(safePose);
+
+	context.debug("Releasing hand by %g%% in %gs...\n", withdrawReleaseFraction*100.0, trajectoryDuration);
+	releaseHand(withdrawReleaseFraction, trajectoryDuration);
+
+	context.debug("Waiting 1s before withdrawing upwards...\n");
+	Sleep::msleep(SecToMSec(1.0));
+
+	context.debug("Lifting hand by %gm in %gs...\n", withdrawLiftDistance, trajectoryDuration);
+	liftWrist(withdrawLiftDistance, trajectoryDuration);
 
 	// done
 	finished = true;
