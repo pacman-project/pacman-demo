@@ -394,6 +394,11 @@ public:
 		/** Manipulation trajectory force threshold */
 		golem::Twist trajectoryThresholdForce;
 
+		/* Withdraw action hand release fraction */
+		golem::Real withdrawReleaseFraction;
+		/* Withdraw action lift distance */
+		golem::Real withdrawLiftDistance;
+
 		/** Constructs from description object */
 		Desc() {
 			Desc::setToDefault();
@@ -458,6 +463,9 @@ public:
 
 			trajectoryDuration = golem::SecTmReal(5.0);
 			trajectoryThresholdForce.setZero();
+
+			withdrawReleaseFraction = golem::Real(0.5);
+			withdrawLiftDistance = golem::Real(0.20);
 		}
 		/** Assert that the description is valid. */
 		virtual void assertValid(const grasp::Assert::Context& ac) const {
@@ -530,6 +538,10 @@ public:
 
 			grasp::Assert::valid(trajectoryDuration > golem::SEC_TM_REAL_ZERO, ac, "trajectoryDuration: <= 0");
 			grasp::Assert::valid(trajectoryThresholdForce.isPositive(), ac, "trajectoryThresholdForce: negative");
+
+			grasp::Assert::valid(withdrawReleaseFraction >= golem::REAL_ZERO, ac, "withdrawReleaseFraction: < 0");
+			grasp::Assert::valid(withdrawReleaseFraction <= golem::REAL_ONE,  ac, "withdrawReleaseFraction: > 1");
+			grasp::Assert::valid(withdrawLiftDistance >= golem::REAL_ZERO, ac, "withdrawLiftDistance: < 0");
 		}
 		/** Load descritpion from xml context. */
 		virtual void load(golem::Context& context, const golem::XMLContext* xmlcontext);
@@ -635,10 +647,15 @@ protected:
 	golem::Real poseDistanceMax;
 
 	/** Manipulation trajectory duration */
-	golem::SecTmReal trajectoryDuration;
+	golem::SecTmReal trajectoryDuration; // @@@ OVERRIDE @@@
 
 	/** Manipulation trajectory force threshold */
 	golem::Twist trajectoryThresholdForce;
+
+	/* Withdraw action hand release fraction */
+	golem::Real withdrawReleaseFraction;
+	/* Withdraw action lift distance */
+	golem::Real withdrawLiftDistance;
 
 	/** Item selection */
 	typedef std::function<void(Data::Training::Map&, Data::Training::Map::iterator&)> ItemSelectFunc;
@@ -690,10 +707,13 @@ protected:
 
 	grasp::Camera* getWristCamera(const bool dontThrow = false) const;
 	golem::Mat34 getWristPose() const;
-	golem::Controller::State::Seq getTrajectoryFromPose(const golem::Mat34& w);
+	golem::Controller::State::Seq getTrajectoryFromPose(const golem::Mat34& w, const golem::SecTmReal duration);
 	grasp::ConfigMat34 getConfigFromPose(const golem::Mat34& w);
-	void gotoWristPose(const golem::Mat34& w);
+	void gotoWristPose(const golem::Mat34& w, const golem::SecTmReal duration = golem::SEC_TM_REAL_ZERO);
 	void gotoPose2(const grasp::ConfigMat34& pose, const golem::SecTmReal duration);
+	void releaseHand(const double openFraction, const golem::SecTmReal duration);
+	void liftWrist(const double verticalDistance, const golem::SecTmReal duration);
+	void haltRobot();
 
 	void nudgeWrist();
 	void rotateObjectInHand();

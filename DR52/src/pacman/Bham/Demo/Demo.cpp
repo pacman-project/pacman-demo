@@ -35,6 +35,59 @@ std::string toXMLString(const grasp::ConfigMat34& cfg, const bool shortFormat = 
 
 	return os.str();
 }
+
+class ForceEvent
+{
+public:
+	ForceEvent(grasp::FT* pFTSensor_, const golem::Twist& threshold_) :
+		pFTSensor(pFTSensor_),
+		threshold(threshold_),
+		bias(Vec3::zero(), Vec3::zero())
+	{}
+
+	void setBias()
+	{
+		SecTmReal t;
+		if (pFTSensor != nullptr)
+			pFTSensor->readSensor(bias, t);
+	}
+
+	bool detected(golem::Context* pContext = nullptr)
+	{
+		bool tripped = false;
+		if (pFTSensor != nullptr)
+		{
+			golem::Twist current;
+			SecTmReal t;
+			pFTSensor->readSensor(current, t);
+			double currentFT[6], biasFT[6], thresholdFT[6];
+			current.get(currentFT);
+			bias.get(biasFT);
+			threshold.get(thresholdFT);
+			for (size_t i = 0; i < 6; ++i)
+			{
+				if (abs(currentFT[i] - biasFT[i]) > thresholdFT[i])
+				{
+					tripped = true;
+					if (pContext != nullptr)
+						pContext->write("Force event detected on axis %d: |%f - %f| > %f\n", i + 1, currentFT[i], biasFT[i], thresholdFT[i]);
+					break;
+				}
+			}
+		}
+		return tripped;
+	}
+
+public:
+	grasp::FT* pFTSensor;
+	golem::Twist threshold;
+
+private:
+	golem::Twist bias;
+
+	ForceEvent();
+};
+
 }
 
 //-----------------------------------------------------------------------------
@@ -318,6 +371,9 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 
 	golem::XMLData("duration", trajectoryDuration, xmlcontext->getContextFirst("manipulator trajectory"));
 	golem::XMLData(trajectoryThresholdForce, xmlcontext->getContextFirst("manipulator threshold"));
+
+	golem::XMLData("release_fraction", withdrawReleaseFraction, xmlcontext->getContextFirst("manipulator withdraw_action"));
+	golem::XMLData("lift_distance", withdrawLiftDistance, xmlcontext->getContextFirst("manipulator withdraw_action"));
 }
 
 //------------------------------------------------------------------------------
@@ -364,7 +420,7 @@ golem::Mat34 Demo::getWristPose() const
 	return pose.w;
 }
 
-golem::Controller::State::Seq Demo::getTrajectoryFromPose(const golem::Mat34& w)
+golem::Controller::State::Seq Demo::getTrajectoryFromPose(const golem::Mat34& w, const SecTmReal duration)
 {
 	const golem::Mat34 R = controller->getChains()[armInfo.getChains().begin()]->getReferencePose();
 	const golem::Mat34 wR = w * R;
@@ -373,16 +429,16 @@ golem::Controller::State::Seq Demo::getTrajectoryFromPose(const golem::Mat34& w)
 	controller->lookupState(SEC_TM_REAL_MAX, begin);
 
 	golem::Controller::State::Seq trajectory;
-	const grasp::RBDist err = findTrajectory(begin, nullptr, &wR, trajectoryDuration, trajectory);
+	const grasp::RBDist err = findTrajectory(begin, nullptr, &wR, duration, trajectory);
 
 	return trajectory;
 }
 
 grasp::ConfigMat34 Demo::getConfigFromPose(const golem::Mat34& w)
 {
-	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w);
+	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w, SEC_TM_REAL_ZERO);
 	const golem::Controller::State& last = trajectory.back();
-	ConfigMat34 cfg(RealSeq(61,0.0));
+	ConfigMat34 cfg(RealSeq(61,0.0)); // !!!
 	for (size_t i = 0; i < 7; ++i)
 	{
 		cfg.c[i] = last.cpos.data()[i];
@@ -390,13 +446,64 @@ grasp::ConfigMat34 Demo::getConfigFromPose(const golem::Mat34& w)
 	return cfg;
 }
 
-void Demo::gotoWristPose(const golem::Mat34& w)
+void Demo::gotoWristPose(const golem::Mat34& w, const SecTmReal duration)
 {
-	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w);
+	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w, duration);
 	sendTrajectory(trajectory);
 	controller->waitForEnd();
 	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
 }
+
+void Demo::gotoPose2(const ConfigMat34& pose, const SecTmReal duration)
+{
+	golem::Controller::State begin = lookupState();	// current state
+	golem::Controller::State end = begin;
+	end.cpos.set(pose.c.data(), pose.c.data() + std::min(pose.c.size(), (size_t)info.getJoints().size()));
+	golem::Controller::State::Seq trajectory;
+	findTrajectory(begin, &end, nullptr, duration, trajectory);
+	sendTrajectory(trajectory);
+	controller->waitForEnd();
+	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
+}
+
+void Demo::releaseHand(const double openFraction, const SecTmReal duration)
+{
+	// partial release 50% to zero config
+	double f = 1.0 - openFraction;
+	f = std::max(0.0, std::min(1.0, f));
+
+	golem::Controller::State currentState = lookupState();
+	ConfigMat34 openPose(RealSeq(61, 0.0)); // !!!
+	for (size_t i = 0; i < openPose.c.size(); ++i)
+		openPose.c[i] = currentState.cpos.data()[i];
+
+	const size_t handIndexBegin = 7;
+	const size_t handIndexEnd   = handIndexBegin + 5*4;
+	for (size_t i = handIndexBegin; i < handIndexEnd; ++i)
+		openPose.c[i] *= f;
+
+	gotoPose2(openPose, duration);
+}
+
+void Demo::liftWrist(const double verticalDistance, const SecTmReal duration)
+{
+	// vertically by verticalDistance; to hand zero config
+	Mat34 pose = getWristPose();
+	pose.p.z += std::max(0.0, verticalDistance);
+	gotoWristPose(pose, duration);
+
+	// TODO open hand while lifting
+}
+
+void Demo::haltRobot()
+{
+	golem::Controller::State currentState = lookupState();
+	golem::Controller::State::Seq trajectory;
+	trajectory.push_back(currentState);
+	sendTrajectory(trajectory, true);
+}
+
+//------------------------------------------------------------------------------
 
 void Demo::nudgeWrist()
 {
@@ -508,7 +615,7 @@ void Demo::rotateObjectInHand()
 
 	golem::Vec3 rotAxis(golem::Vec3::zero());
 
-	switch(rotType)
+	switch (rotType)
 	{
 	case 'C':
 		rotAxis.z = 1.0;
@@ -550,18 +657,6 @@ void Demo::rotateObjectInHand()
 
 	//recordingStart(dataCurrentPtr->first, recordingLabel, false);
 	//context.write("taken snapshot\n");
-}
-
-void Demo::gotoPose2(const ConfigMat34& pose, const SecTmReal duration)
-{
-	golem::Controller::State begin = lookupState();	// current state
-	golem::Controller::State end = begin;
-	end.cpos.set(pose.c.data(), pose.c.data() + std::min(pose.c.size(), (size_t)info.getJoints().size()));
-	golem::Controller::State::Seq trajectory;
-	findTrajectory(begin, &end, nullptr, duration, trajectory);
-	sendTrajectory(trajectory);
-	controller->waitForEnd();
-	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
 }
 
 //------------------------------------------------------------------------------
@@ -664,6 +759,15 @@ void pacman::Demo::create(const Desc& desc) {
 
 	trajectoryDuration = desc.trajectoryDuration;
 	trajectoryThresholdForce = desc.trajectoryThresholdForce;
+
+	withdrawReleaseFraction = desc.withdrawReleaseFraction;
+	withdrawLiftDistance = desc.withdrawLiftDistance;
+
+
+	////////////////////////////////////////////////////////////////////////////
+	//                            START OF MENUS                              // 
+	////////////////////////////////////////////////////////////////////////////
+
 
 	// top menu help using global key '?'
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  P                                       menu PaCMan\n"));
@@ -1072,7 +1176,10 @@ void pacman::Demo::create(const Desc& desc) {
 		context.write("Done!\n");
 	}));
 
-	// main demo
+	////////////////////////////////////////////////////////////////////////////
+	//                            MAIN DEMO                                   // 
+	////////////////////////////////////////////////////////////////////////////
+
 	menuCmdMap.insert(std::make_pair("PD", [=]() {
 		// debug mode
 		const bool stopAtBreakPoint = option("YN", "Debug mode (Y/N)...") == 'Y';
@@ -1119,6 +1226,10 @@ void pacman::Demo::create(const Desc& desc) {
 		context.write("Done!\n");
 
 	}));
+
+	////////////////////////////////////////////////////////////////////////////
+	//                               UTILITIES                                // 
+	////////////////////////////////////////////////////////////////////////////
 
 	menuCtrlMap.insert(std::make_pair("Z", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
 		desc = "Press a key to: run (R)otate, (N)udge, (O)bjectGraspAndCapture, rgb-to-ir (T)ranform, (D)epth camera adjust, create (P)oses, (L)ocate object...";
@@ -1396,7 +1507,7 @@ void pacman::Demo::create(const Desc& desc) {
 		context.write("Done!\n");
 	}));
 
-
+	// END OF MENUS
 
 	}
 
@@ -1506,12 +1617,8 @@ grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture()
 	gotoPose(graspPoseOpen);
 
 	context.write("Waiting for force event, simulate (F)orce event or <ESC> to cancel\n");
-	SecTmReal t;
-	Twist biasForce, currentForce;
-	double thresholdFT[6], biasFT[6], currentFT[6];
-	graspSensorForce->readSensor(biasForce, t);
-	graspThresholdForce.get(thresholdFT);
-	biasForce.get(biasFT);
+	ForceEvent forceEvent(graspSensorForce, graspThresholdForce);
+	forceEvent.setBias();
 	for (;;)
 	{
 		const int k = waitKey(10); // poll FT every 10ms
@@ -1523,20 +1630,8 @@ grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture()
 			break;
 		}
 
-		// check if force has deviated more than threshold from bias
-		graspSensorForce->readSensor(currentForce, t);
-		currentForce.get(currentFT);
-		bool tripped = false;
-		for (size_t i = 0; i < 6; ++i)
-		{
-			if (abs(currentFT[i] - biasFT[i]) > thresholdFT[i])
-			{
-				context.write("Force event detected on axis %d: |%f - %f| > %f\n", i + 1, currentFT[i], biasFT[i], thresholdFT[i]);
-				tripped = true;
-				break;
-			}
-		}
-		if (tripped) break;
+		if (forceEvent.detected(&context))
+			break;
 	}
 
 	Sleep::msleep(SecToMSec(graspEventTimeWait));
@@ -2067,24 +2162,50 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 	// wait until the last trajectory segment is sent
 	controller->waitForEnd();
 
+	Sleep::msleep(SecToMSec(0.5)); // wait before taking bias for F/T
+	ForceEvent forceEvent(graspSensorForce, trajectoryThresholdForce);
+	forceEvent.setBias();
+
 	// send trajectory
 	sendTrajectory(seq);
 
 	// repeat every send waypoint until trajectory end
-	for (U32 i = 0; controller->waitForBegin(); ++i) {
+	for (U32 i = 0; controller->waitForBegin(); ++i)
+	{
+		// ~20ms loop
 		if (universe.interrupted())
 			throw Exit();
 		if (controller->waitForEnd(0))
 			break;
 
-		// TODO wait for force event given trajectoryThresholdForce
+		bool spoofedForceEvent = false;
+		if (waitKey(0) == 'F')
+		{
+			context.write("Simulated force event\n");
+			spoofedForceEvent = true;
+		}
+
+		if (forceEvent.detected(&context) || spoofedForceEvent)
+		{
+			context.write("Force event detected. Halting robot.\n");
+			haltRobot();
+			// jiggle, if not docked => when bottom of object is near base of rack
+		}
 
 		// print every 10th robot state
 		if (i % 10 == 0)
 			context.write("State #%d\r", i);
 	}
 
-	// TODO open hand and perform withdraw action to a safe pose
+	// open hand and perform withdraw action to a safe pose
+	// translate wrist vertically upwards, keeping orientation constant
+	context.write("Waiting 1s...\n");
+	Sleep::msleep(SecToMSec(1.0)); // wait 1s before release and withdraw
+	context.write("Releasing hand by %g in %g s...\n", withdrawReleaseFraction, trajectoryDuration);
+	releaseHand(withdrawReleaseFraction, trajectoryDuration); // partial release 50% to zero config
+	context.write("Lifting hand by %g in %g s...\n", withdrawLiftDistance, trajectoryDuration);
+	liftWrist(withdrawLiftDistance, trajectoryDuration); // vertically by 20cm; (to hand zero config???)
+	//gotoPose(safePose);
 
 	// done
 	finished = true;

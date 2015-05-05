@@ -95,6 +95,8 @@
       <pose_stddev lin="0.002" ang="1000.0" dist_max="5.0"/>
       <threshold v1="0.5" v2="0.5" v3="0.5" w1="0.1" w2="0.1" w3="0.1"/>
 
+      <withdraw_action release_fraction="0.5" lift_distance="0.20"/>
+
       <appearance show_bounds="1" show_frames="0">
         <bounds show_solid="1" show_wire="1" wire_width="1.0">
           <solid_colour R="255" G="255" B="0" A="150"/>
