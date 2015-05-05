@@ -158,7 +158,7 @@
 
     <activectrl library_path="GraspJointCtrl" config_path="GraspJointCtrl"/>
     <activectrl library_path="GraspArmHandForce" config_path="GraspArmHandForce"/>
-    <activectrl library_path="GraspArmHandWorkspace" config_path="GraspArmHandWorkspace"/>
+    <activectrl library_path="GraspWorkspaceCtrl" config_path="GraspWorkspaceCtrl"/>
     
     <trajectory name="trajectory" handler="Trajectory+Trajectory" idle_begin="0.5" idle_end="1.0" idle_perf="5.0" duration="5.0" trials="5"/>
   

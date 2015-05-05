@@ -1961,6 +1961,17 @@ void pacman::Demo::selectTrajectory() {
 	}
 }
 
+// to stop
+//if (waitKey(0) == ' ') {
+//	context.write("Stop       \n");
+//	Controller::State command = controller->createState();
+//	const Real t = controller->getCommandTime();
+//	controller->lookupCommand(t, command);
+//	command.cvel.setToDefault(info.getJoints());
+//	command.t = t;
+//	controller->send(&command, &command + 1, true, false);
+//}
+
 void pacman::Demo::performTrajectory(bool testTrajectory) {
 	grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(queryItemTrj);
 	if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
