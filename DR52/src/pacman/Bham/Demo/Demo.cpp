@@ -208,9 +208,8 @@ void Demo::Data::createRender() {
 				if (ptr->path.size() > 0) owner->manipulatorAppearance.draw(*owner->manipulator, ptr->path[0], owner->modelRenderer);
 				//if (ptr->path.size() > 1) owner->manipulatorAppearance.draw(*owner->manipulator, ptr->path[1], owner->modelRenderer);
 				if (ptr->queryIndex < densities.size()) {
-					Mat34 trn;
-					trn.setInverse(densities[ptr->queryIndex].frame);
-					trn.multiply(ptr->pose.toMat34(), trn);
+					// F = P * r
+					Mat34 trn = ptr->path[0].toMat34() * owner->manipulator->getBaseFrame();
 					for (auto &i : densities[ptr->queryIndex].locations) {
 						Vec3 p;
 						trn.multiply(p, i);
@@ -1843,7 +1842,15 @@ void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 		density.path = manipulator->create(waypoints, [=](const Manipulator::Waypoint& l, const Manipulator::Waypoint& r) -> Real { return poseCovInv.dot(RBDist(l, r)); });
 		
 		// locations
-		density.locations = i->second.locations;
+		Mat34 trnObj;
+		trnObj.setInverse(frame);
+		density.locations.clear();
+		density.locations.reserve(features->getNumOfLocations());
+		for (size_t i = 0; i < features->getNumOfLocations(); ++i) {
+			grasp::data::Location3D::Point p = features->getLocation(i);
+			trnObj.multiply(p, p);
+			density.locations.push_back(p);
+		}
 
 		// end-effector frame
 		density.frame = trajectoryFrame;
