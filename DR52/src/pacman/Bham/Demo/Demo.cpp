@@ -445,6 +445,19 @@ grasp::ConfigMat34 Demo::getConfigFromPose(const golem::Mat34& w)
 	return cfg;
 }
 
+void Demo::setHandConfig(Controller::State::Seq& trajectory, const grasp::ConfigMat34& handPose)
+{
+	ConfigspaceCoord cposHand;
+	cposHand.set(handPose.c.data(), handPose.c.data() + std::min(handPose.c.size(), (size_t)info.getJoints().size()));
+
+	for (Controller::State::Seq::iterator i = trajectory.begin(); i != trajectory.end(); ++i)
+	{
+		Controller::State& state = *i;
+		state.setToDefault(handInfo.getJoints().begin(), handInfo.getJoints().end());
+		state.cpos.set(handInfo.getJoints(), cposHand);
+	}
+}
+
 void Demo::gotoWristPose(const golem::Mat34& w, const SecTmReal duration)
 {
 	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w, duration);
@@ -498,12 +511,21 @@ void Demo::haltRobot()
 {
 	context.debug("STOPPING ROBOT!");
 
-	golem::Controller::State command = controller->createState();
+	Controller::State::Seq trj;
+
+	Controller::State command = controller->createState();
 	const Real t = controller->getCommandTime();
 	controller->lookupCommand(t, command);
 	command.cvel.setToDefault(info.getJoints());
+	command.cacc.setToDefault(info.getJoints());
 	command.t = t;
-	controller->send(&command, &command + 1, true, false);
+	trj.push_back(command);
+
+	Controller::State command2 = command;
+	command2.t += controller->getCycleDuration();
+	trj.push_back(command2);
+
+	controller->send(&trj.front(), &trj.back() + 1, true, false);
 }
 
 //------------------------------------------------------------------------------
@@ -1648,11 +1670,10 @@ grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture(const bool 
 			break;
 	}
 
-	Sleep::msleep(SecToMSec(graspEventTimeWait));
-
 	context.debug("Closing hand!\n");
 	gotoPose2(graspPoseClosed, graspCloseDuration);
-	Sleep::msleep(SecToMSec(1.0));
+
+	Sleep::msleep(SecToMSec(graspEventTimeWait));
 
 	breakPoint("Go to scan pose");
 
@@ -2154,6 +2175,7 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 	RenderBlock renderBlock(*this);
 
 	// go to initial state
+	setHandConfig(initTrajectory, objectScanPoseSeq.back());
 	sendTrajectory(initTrajectory);
 	// wait until the last trajectory segment is sent
 	controller->waitForEnd();
@@ -2163,6 +2185,7 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 	forceEvent.setBias();
 
 	// send trajectory
+	setHandConfig(seq, objectScanPoseSeq.back());
 	sendTrajectory(seq);
 
 	// repeat every send waypoint until trajectory end
