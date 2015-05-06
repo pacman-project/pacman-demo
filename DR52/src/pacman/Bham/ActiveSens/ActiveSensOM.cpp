@@ -88,7 +88,7 @@ namespace pacman {
 
 		int index = 0;
 		golem::Real value(0.0);
-		//demoOwner->context.write("Computing Value\n");
+		//demoOwner->context.debug("Computing Value\n");
 		printf("ActiveSensOnlineModel: Computing value outer...\n");
 		for (TrainingData::const_iterator i = trainingData.begin(); i != trainingData.end(); ++i){
 			//For each graspType's mapping of joint->contacts do...

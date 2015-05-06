@@ -159,7 +159,7 @@ namespace pacman {
 			/** Min and Max values for biased hypothesis generation (heuristics for minimizing shade) */
 			golem::Real minPhi, maxPhi, minTheta, maxTheta; //Param
 
-			golem::U32 selectionMethod, generationMethod, coverageMethod, stoppingCriteria;
+			golem::U32 selectionMethod, alternativeSelectionMethod, generationMethod, coverageMethod, stoppingCriteria;
 
 			/** Coverage threshold for stopping criteria */
 			golem::Real coverageThr;
@@ -185,6 +185,7 @@ namespace pacman {
 				this->maxTheta = 135.0;
 
 				this->selectionMethod = ESelectionMethod::S_CONTACT_BASED;
+				this->alternativeSelectionMethod = ESelectionMethod::S_RANDOM;
 				this->generationMethod = EGenerationMethod::G_RANDOM_SPHERE;
 				this->coverageMethod = ECoverageMethod::M_AREA_BASED;
 				this->stoppingCriteria = EStoppingCriteria::C_NVIEWS;
@@ -201,6 +202,7 @@ namespace pacman {
 				grasp::Assert::valid(this->nviews > 0, ac, "nviews: <= 0");
 				grasp::Assert::valid(this->radius > 0, ac, "radius: <= 0");
 				grasp::Assert::valid(this->selectionMethod != ESelectionMethod::S_NONE, ac, "Selection Method: is S_NONE (unknown selection method)");
+				grasp::Assert::valid(this->alternativeSelectionMethod != ESelectionMethod::S_NONE, ac, "Alternative Selection Method: is S_NONE (unknown selection method)");
 				grasp::Assert::valid(this->generationMethod != EGenerationMethod::G_NONE, ac, "Generation Method: is G_NONE (unknown generation method)");
 				grasp::Assert::valid(this->coverageMethod != ECoverageMethod::M_NONE, ac, "Coverage Method: is M_NONE (unknown coverage method)");
 				grasp::Assert::valid(this->stoppingCriteria != EStoppingCriteria::C_NONE, ac, "Stopping Criteria: is C_NONE (unknown stopping criteria)");
@@ -280,9 +282,9 @@ namespace pacman {
 
 		Output: final Item with ItemPointCurv representing integrated random scans
 		*/
-		//grasp::data::Item::Map::iterator nextBestViewRandom();
 		
-		pacman::HypothesisSensor::Ptr selectNextBestView(grasp::data::Item::Map::iterator predModelPtr);
+		pacman::HypothesisSensor::Ptr selectNextBestView(grasp::data::Item::Map::iterator predModelPtr, bool found_contacts = true);
+		pacman::HypothesisSensor::Ptr selectNextBestView(int selectionMethod, grasp::data::Item::Map::iterator predModelPtr);
 
 		/** Greedy selection for next best view based on contact point information */
 		pacman::HypothesisSensor::Ptr selectNextBestViewContactBased(grasp::data::Item::Map::iterator predModelPtr);

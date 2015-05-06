@@ -230,7 +230,7 @@ void pacman::Demo::create(const Desc& desc) {
 			const int k = option("CF", "For the first view, use (C)urrent camera pose, or first (F)ixed pose?");
 			if (k == 'F')
 			{
-				context.write("pacman::Demo: moving to first fixed NBV pose\n");
+				context.debug("ActiveSense: pacman::Demo: moving to first fixed NBV pose\n");
 				const grasp::ConfigMat34& pose = activeSense->getParameters().configSeq.front();
 				gotoPoseConfig(pose);
 				// then throw this pose away if using sequential selection method
@@ -241,7 +241,6 @@ void pacman::Demo::create(const Desc& desc) {
 
 		activeSense->nextBestView();
 
-		context.write("Executing Trajectory...\n");
 		activeSense->executeTrajectory();
 	}));
 	menuCmdMap.insert(std::make_pair("CH", [=]() {
