@@ -680,7 +680,7 @@ protected:
 	/** Generate solutions */
 	void generateSolutions();
 	/** Sort solutions */
-	static void sortSolutions(Data::Solution::Seq& seq);
+	void sortSolutions(Data::Solution::Seq& seq) const;
 
 	/** Select trajectory */
 	void selectTrajectory();

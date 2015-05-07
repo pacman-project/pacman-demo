@@ -829,7 +829,7 @@ void pacman::Demo::create(const Desc& desc) {
 				throw Cancel("No solutions created");
 			to<Data>(dataCurrentPtr)->indexSolution = to<Data>(dataCurrentPtr)->indexSolution <= 0 ? to<Data>(dataCurrentPtr)->solutions.size() - 1 : to<Data>(dataCurrentPtr)->indexSolution - 1;
 			const Data::Solution& solution = to<Data>(dataCurrentPtr)->solutions[to<Data>(dataCurrentPtr)->indexSolution];
-			context.write("Solution type %s, Item #%u, Likelihood_{total, contact, pose, collision}={%.6e, %.6e, %.6e, %.6e}\n", solution.type.c_str(), to<Data>(dataCurrentPtr)->indexSolution + 1, solution.likelihood.likelihood, solution.likelihood.contact, solution.likelihood.pose, solution.likelihood.collision);
+			context.write("Solution type %s (%u/%u), Item #%u, Likelihood_{total, contact, pose, collision}={%.6e, %.6e, %.6e, %.6e}\n", solution.type.c_str(), solution.queryIndex + 1, to<Data>(dataCurrentPtr)->densities.size(), to<Data>(dataCurrentPtr)->indexSolution + 1, solution.likelihood.likelihood, solution.likelihood.contact, solution.likelihood.pose, solution.likelihood.collision);
 		}
 		createRender();
 	}));
@@ -849,7 +849,7 @@ void pacman::Demo::create(const Desc& desc) {
 				throw Cancel("No solutions created");
 			to<Data>(dataCurrentPtr)->indexSolution = to<Data>(dataCurrentPtr)->indexSolution < to<Data>(dataCurrentPtr)->solutions.size() - 1 ? to<Data>(dataCurrentPtr)->indexSolution + 1 : 0;
 			const Data::Solution& solution = to<Data>(dataCurrentPtr)->solutions[to<Data>(dataCurrentPtr)->indexSolution];
-			context.write("Solution type %s, Item #%u, Likelihood_{total, contact, pose, collision}={%.6e, %.6e, %.6e, %.6e}\n", solution.type.c_str(), to<Data>(dataCurrentPtr)->indexSolution + 1, solution.likelihood.likelihood, solution.likelihood.contact, solution.likelihood.pose, solution.likelihood.collision);
+			context.write("Solution type %s (%u/%u), Item #%u, Likelihood_{total, contact, pose, collision}={%.6e, %.6e, %.6e, %.6e}\n", solution.type.c_str(), solution.queryIndex + 1, to<Data>(dataCurrentPtr)->densities.size(), to<Data>(dataCurrentPtr)->indexSolution + 1, solution.likelihood.likelihood, solution.likelihood.contact, solution.likelihood.pose, solution.likelihood.collision);
 		}
 		createRender();
 	}));
@@ -2019,7 +2019,7 @@ void pacman::Demo::generateSolutions() {
 	context.debug("Demo::generateSolutions(): time=%.6f, solutions=%u, steps=%u, energy=%f, greedy_accept=%d, SA_accept=%d\n", context.getTimer().elapsed() - t, optimisation.runs, optimisation.steps, optimisation.saEnergy, acceptGreedy, acceptSA);
 }
 
-void pacman::Demo::sortSolutions(Data::Solution::Seq& seq) {
+void pacman::Demo::sortSolutions(Data::Solution::Seq& seq) const {
 	if (seq.empty())
 		throw Message(Message::LEVEL_ERROR, "Demo::sortSolutions(): No solutions");
 
@@ -2030,14 +2030,33 @@ void pacman::Demo::sortSolutions(Data::Solution::Seq& seq) {
 	for (Data::Solution::Seq::const_iterator i = seq.begin(); i != seq.end(); ++i)
 		ptrSeq.push_back(&*i);
 
-	// sort
-	std::sort(ptrSeq.begin(), ptrSeq.end(), [](const Data::Solution* l, const Data::Solution* r) -> bool {return l->likelihood.likelihood > r->likelihood.likelihood; });
+	// sort with clustering
+	std::sort(ptrSeq.begin(), ptrSeq.end(), [](const Data::Solution* l, const Data::Solution* r) -> bool {return l->queryIndex < r->queryIndex || l->queryIndex == r->queryIndex && l->likelihood.likelihood > r->likelihood.likelihood; });
 
 	// copy
+	//Data::Solution::Seq seqSorted;
+	//seqSorted.reserve(ptrSeq.size());
+	//for (PtrSeq::const_iterator i = ptrSeq.begin(); i != ptrSeq.end(); ++i)
+	//	seqSorted.push_back(**i);
 	Data::Solution::Seq seqSorted;
 	seqSorted.reserve(ptrSeq.size());
-	for (PtrSeq::const_iterator i = ptrSeq.begin(); i != ptrSeq.end(); ++i)
-		seqSorted.push_back(**i);
+	U32 clusterSize = manipulator->getDesc().trajectoryClusterSize, clusterId = ptrSeq.front()->queryIndex, clusterIndex = 0;
+	for (PtrSeq::const_iterator i = ptrSeq.begin(); i != ptrSeq.end();) {
+		seqSorted.push_back(**i++);
+		if (++clusterIndex >= clusterSize) {
+			for (; i != ptrSeq.end(); ++i)
+				if (clusterId != (*i)->queryIndex) {
+					clusterId = (*i)->queryIndex;
+					clusterIndex = 0;
+					break;
+				}
+		}
+		else if (clusterId != (*i)->queryIndex) {
+			clusterId = (*i)->queryIndex;
+			clusterIndex = 0;
+			break;
+		}
+	}
 
 	// replace
 	seq = seqSorted;
@@ -2047,7 +2066,7 @@ void pacman::Demo::selectTrajectory() {
 	if (to<Data>(dataCurrentPtr)->solutions.empty())
 		throw Message(Message::LEVEL_ERROR, "Demo::selectTrajectory(): No solutions");
 
-	const U32 testTrajectories = std::min((U32)to<Data>(dataCurrentPtr)->solutions.size(), manipulator->getDesc().trajectoryClusterSize);
+	const U32 testTrajectories = (U32)to<Data>(dataCurrentPtr)->solutions.size();
 
 	// TODO collision detection
 	// collision bounds
