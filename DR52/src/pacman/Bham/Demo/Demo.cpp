@@ -2151,8 +2151,15 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 	seq.back().t = seq.front().t + manipulatorTrajectoryDuration;
 	profile->profile(seq);
 
+	// overwrite hand config in final approach trajectory
+	setHandConfig(seq, objectScanPoseSeq.back());
+
 	golem::Controller::State::Seq initTrajectory;
+	// @@@ problem is that we need to know intended state of hand, i.e. if grasping
+	// when grasping with low stiffness, commanded and actual can be quite different
 	findTrajectory(lookupState(), &seq.front(), nullptr, SEC_TM_REAL_ZERO, initTrajectory);
+	// overwriting hand config may cause sudden hand closing - exceed finger velocity limits - if not already grasping
+	//setHandConfig(initTrajectory, objectScanPoseSeq.back());
 
 	golem::Controller::State::Seq completeTrajectory = initTrajectory;
 	completeTrajectory.insert(completeTrajectory.end(), seq.begin(), seq.end());
@@ -2201,7 +2208,6 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 	RenderBlock renderBlock(*this);
 
 	// go to initial state
-	setHandConfig(initTrajectory, objectScanPoseSeq.back());
 	sendTrajectory(initTrajectory);
 	// wait until the last trajectory segment is sent
 	controller->waitForEnd();
@@ -2211,7 +2217,6 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 	forceEvent.setBias();
 
 	// send trajectory
-	setHandConfig(seq, objectScanPoseSeq.back());
 	sendTrajectory(seq);
 
 	// repeat every send waypoint until trajectory end
