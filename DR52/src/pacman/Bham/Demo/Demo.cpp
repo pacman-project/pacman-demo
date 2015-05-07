@@ -878,7 +878,7 @@ void pacman::Demo::create(const Desc& desc) {
 
 	// model attachement
 	menuCtrlMap.insert(std::make_pair("PC", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: (C)amera/(L)oad...";
+		desc = "Press a key to: (C)amera/(L)oad/(I)mport...";
 	}));
 	menuCmdMap.insert(std::make_pair("PCC", [=]() {
 		// grasp and scan object
@@ -952,6 +952,62 @@ void pacman::Demo::create(const Desc& desc) {
 
 		// compute features and add to data bundle
 		(void)objectProcess(ptr);
+
+		// finish
+		context.write("Done!\n");
+	}));
+	menuCmdMap.insert(std::make_pair("PCI", [=]() {
+		// target data
+		const Data::Map::iterator targetDataPtr = dataCurrentPtr;
+
+		// data to import
+		data::Item::Ptr ptrObject;
+		golem::Controller::State::Ptr ptrState;
+
+		// create menu
+		bool stop = false;
+		MenuCtrlMap menuCtrlMap;
+		menuCtrlMap.insert(std::make_pair("", [&](MenuCmdMap& menuCmdMap, std::string& desc) {}));
+		MenuCmdMap menuCmdMap;
+		menuCmdMap.insert(std::make_pair("\x0D", [&]() {
+			if (targetDataPtr == dataCurrentPtr)
+				context.write("Select another data bundle\n");
+			else {
+				data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(modelItemObj);
+				if (ptr == to<Data>(dataCurrentPtr)->itemMap.end()) {
+					context.write("Model item is not set\n");
+					return;
+				}
+				if (to<Data>(dataCurrentPtr)->modelState == nullptr) {
+					context.write("Model state is not set\n");
+					return;
+				}
+				ptrObject = ptr->second->clone();
+				ptrState = to<Data>(dataCurrentPtr)->modelState;
+				stop = true;
+			}
+		}));
+		menuCmdMap.insert(std::make_pair("{", [&]() { this->Manager::menuCmdMap["{"](); }));
+		menuCmdMap.insert(std::make_pair("}", [&]() { this->Manager::menuCmdMap["}"](); }));
+
+		// select
+		context.write("Press a key to: accept(<Enter>), select index of data({}) bundle...\n");
+		while (!stop) {
+			U32 menuLevel = 0;
+			menu(menuCtrlMap, menuCmdMap, menuLevel);
+		}
+
+		setCurrentDataPtr(targetDataPtr);
+		{
+			RenderBlock renderBlock(*this);
+			golem::CriticalSectionWrapper cswData(csData);
+			to<Data>(targetDataPtr)->itemMap.erase(objectItem);
+			data::Item::Map::iterator ptr = to<Data>(targetDataPtr)->itemMap.insert(to<Data>(targetDataPtr)->itemMap.end(), data::Item::Map::value_type(objectItem, ptrObject));
+			Data::View::setItem(to<Data>(targetDataPtr)->itemMap, ptr, to<Data>(targetDataPtr)->getView());
+		}
+
+		// go to model robot pose
+		gotoConfig(*ptrState);
 
 		// finish
 		context.write("Done!\n");
