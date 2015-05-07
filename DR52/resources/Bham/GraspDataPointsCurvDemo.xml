@@ -9,7 +9,7 @@
       <outrem_segmentation enabled_radius="1" enabled_statistical="0" radius="0.02" min_neighbors_in_radius="200" mean_k="50" stddev_mul_threshold="1.0"/>
       <outrem_segmentation enabled_radius="1" enabled_statistical="0" radius="0.005" min_neighbors_in_radius="20" mean_k="50" stddev_mul_threshold="1.0"/>
 
-      <normal enabled_pca="0" enabled_ii="0" enabled_mls="1" normal_eps="1e-5" polynomial_fit="1" radius_search="0.015" max_depth_change_factor="0.02" normal_smoothing_size="0.02"/>
+      <normal enabled_pca="1" enabled_ii="0" enabled_mls="0" normal_eps="1e-5" polynomial_fit="1" radius_search="0.015" max_depth_change_factor="0.02" normal_smoothing_size="0.02"/>
 
       <curvature normals="1" radius_search="0.015"/>
 
