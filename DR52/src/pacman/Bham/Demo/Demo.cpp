@@ -2234,6 +2234,8 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 		{
 			context.debug("Force event detected. Halting robot.\n");
 			haltRobot();
+			controller->waitForBegin();
+			break;
 			// jiggle, if not docked => when bottom of object is near base of rack
 		}
 
