@@ -444,6 +444,14 @@ grasp::ConfigMat34 Demo::getConfigFromPose(const golem::Mat34& w)
 	return cfg;
 }
 
+golem::Controller::State Demo::lookupStateArmCommandHand() const
+{
+	golem::Controller::State state = lookupState();	// current state
+	golem::Controller::State cmdHand = lookupCommand();	// commanded state (wanted just for hand)
+	state.cpos.set(handInfo.getJoints(), cmdHand.cpos); // only set cpos ???
+	return state;
+}
+
 void Demo::setHandConfig(Controller::State::Seq& trajectory, const grasp::ConfigMat34& handPose)
 {
 	ConfigspaceCoord cposHand;
@@ -467,7 +475,10 @@ void Demo::gotoWristPose(const golem::Mat34& w, const SecTmReal duration)
 
 void Demo::gotoPose2(const ConfigMat34& pose, const SecTmReal duration)
 {
-	golem::Controller::State begin = lookupState();	// current state
+	context.debug("Demo::gotoPose2: %s\n", toXMLString(pose).c_str());
+
+	// always start with hand in commanded config, not actual
+	golem::Controller::State begin = lookupStateArmCommandHand();	// current state but commanded state for hand
 	golem::Controller::State end = begin;
 	end.cpos.set(pose.c.data(), pose.c.data() + std::min(pose.c.size(), (size_t)info.getJoints().size()));
 	golem::Controller::State::Seq trajectory;
@@ -1649,7 +1660,7 @@ grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture(const bool 
 		}
 	};
 
-	gotoPose(graspPoseOpen);
+	gotoPose2(graspPoseOpen, trajectoryDuration);
 
 	context.write("Waiting for force event, simulate (F)orce event or <ESC> to cancel\n");
 	ForceEvent forceEvent(graspSensorForce, graspThresholdForce);
@@ -1677,7 +1688,7 @@ grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture(const bool 
 	breakPoint("Go to scan pose");
 
 	context.debug("Proceeding to first scan pose!\n");
-	gotoPose(objectScanPoseSeq.front());
+	gotoPose2(objectScanPoseSeq.front(), trajectoryDuration);
 
 	data::Capture* capture = is<data::Capture>(objectHandlerScan);
 	if (!capture)
@@ -2155,9 +2166,10 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 	setHandConfig(seq, objectScanPoseSeq.back());
 
 	golem::Controller::State::Seq initTrajectory;
-	// @@@ problem is that we need to know intended state of hand, i.e. if grasping
+	// problem is that we need to know intended state of hand, i.e. if grasping
 	// when grasping with low stiffness, commanded and actual can be quite different
-	findTrajectory(lookupState(), &seq.front(), nullptr, SEC_TM_REAL_ZERO, initTrajectory);
+	// so we will maintain continuity with commanded state for the hand
+	findTrajectory(lookupStateArmCommandHand(), &seq.front(), nullptr, SEC_TM_REAL_ZERO, initTrajectory);
 	// overwriting hand config may cause sudden hand closing - exceed finger velocity limits - if not already grasping
 	//setHandConfig(initTrajectory, objectScanPoseSeq.back());
 
