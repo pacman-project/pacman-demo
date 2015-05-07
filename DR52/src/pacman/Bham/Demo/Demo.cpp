@@ -1384,7 +1384,19 @@ void pacman::Demo::create(const Desc& desc) {
 	////////////////////////////////////////////////////////////////////////////
 
 	menuCtrlMap.insert(std::make_pair("Z", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: run (R)otate, (N)udge, (O)bjectGraspAndCapture, rgb-to-ir (T)ranform, (D)epth camera adjust, create (P)oses, (L)ocate object...";
+		desc =
+			"Press a key to: (R)otate, (N)udge, (O)bjectGraspAndCapture, rgb-to-ir (T)ranform, (D)epth camera adjust, create (P)oses\n"
+			"                (L)ocate object, change trajectory d(U)ration ...";
+	}));
+
+	menuCmdMap.insert(std::make_pair("ZU", [=]() {
+		context.write("*** Change trajectory duration BEWARE ***\n");
+		
+		do
+			readNumber("trajectoryDuration ", trajectoryDuration);
+		while (trajectoryDuration < 1.0);
+		
+		context.write("Done!\n");
 	}));
 
 	menuCmdMap.insert(std::make_pair("ZO", [=]() {
@@ -1977,13 +1989,13 @@ void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 			qp.covInv.set(REAL_ONE / qp.cov.lin, REAL_ONE / qp.cov.ang);
 			qp.distMax.set(poseDistanceMax * qp.cov.lin, poseDistanceMax * qp.cov.ang);
 			// kernel weight
-			qp.weight = Math::exp( - Math::abs(dist)*pose->second.pathDistStdDev);
+			qp.weight = Math::exp( - Math::abs(dist)*pose->second.pathDistStdDev); // set this to 1.0 to ignore kernel weights
 
-			// add to pose ditribution
+			// add to pose distribution
 			density.pose.push_back(qp);
 		}
 
-		// normalise pose ditribution
+		// normalise pose distribution
 		if (!golem::Sample<Real>::normalise<golem::Ref1>(density.pose))
 			throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Unable to normalise pose distribution");
 
@@ -2108,6 +2120,7 @@ void pacman::Demo::generateSolutions() {
 					}
 
 					// evaluate
+					// use (test.likelihood.xxx = REAL_ONE) in isValid() to turn off expert
 					if (!Data::Solution::Likelihood::isValid(test.likelihood.contact = evaluateSample(query->object.begin(), query->object.end(), test.pose)))
 						continue;
 					if (!Data::Solution::Likelihood::isValid(test.likelihood.pose = evaluateSample(query->pose.begin(), query->pose.end(), test.pose)))
