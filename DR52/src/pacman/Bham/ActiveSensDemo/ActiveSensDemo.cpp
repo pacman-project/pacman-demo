@@ -504,7 +504,10 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 
 	menuCtrlMap.insert(std::make_pair("CP", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to:\n(L) List parameters\n(S) Choose Selection Method\n(G) Choose Generation Method\n(M) Choose Coverage Method\n(C) Choose Stopping Criteria";
+		desc =
+			"Press a key to:\n(L) List parameters\n"
+			"(S) Choose Selection Method\n(A) Choose Alternative Selection Method\n"
+			"(G) Choose Generation Method\n(M) Choose Coverage Method\n(C) Choose Stopping Criteria";
 	
 	}));
 
@@ -696,13 +699,14 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("CPL", [&]() {
 		const ActiveSense::Parameters& params = activeSense->getParameters();
-		context.write("view generation method: %s\n", enumToString(params.generationMethod, params.getGenerationMethodMap()).c_str());
-		context.write("selection method:       %s\n", enumToString(params.selectionMethod, params.getSelectionMethodMap()).c_str());
-		context.write("stopping criteria:      %s\n", enumToString(params.stoppingCriteria, params.getStoppingCriteriaMap()).c_str());
-		context.write("coverage method:        %s\n", enumToString(params.coverageMethod, params.getCoverageMethodMap()).c_str());
-		context.write("max numbers of views:   %d\n", params.nviews);
-		context.write("coverage threshold:     %g\n", params.coverageThr);
-		context.write("centroid calc:          %s\n", params.useManualCentroid ? "manual" : "auto from captured point cloud");
+		context.write("view generation method:       %s\n", enumToString(params.generationMethod, params.getGenerationMethodMap()).c_str());
+		context.write("selection method:             %s\n", enumToString(params.selectionMethod, params.getSelectionMethodMap()).c_str());
+		context.write("alternative selection method: %s\n", enumToString(params.alternativeSelectionMethod, params.getSelectionMethodMap()).c_str());
+		context.write("stopping criteria:            %s\n", enumToString(params.stoppingCriteria, params.getStoppingCriteriaMap()).c_str());
+		context.write("coverage method:              %s\n", enumToString(params.coverageMethod, params.getCoverageMethodMap()).c_str());
+		context.write("max numbers of views:         %d\n", params.nviews);
+		context.write("coverage threshold:           %g\n", params.coverageThr);
+		context.write("centroid calc:                %s\n", params.useManualCentroid ? "manual" : "auto from captured point cloud");
 	}));
 
 	menuCmdMap.insert(std::make_pair("CPS", [&]() {
@@ -714,6 +718,19 @@ void pacman::Demo::create(const Desc& desc) {
 		});
 		context.write("Selected: %s\n", selectionPtr->first.c_str());
 		activeSense->getParameters().selectionMethod = selectionPtr->second;
+
+		context.write("Done!\n");
+	}));
+
+	menuCmdMap.insert(std::make_pair("CPA", [&]() {
+
+		std::map<std::string, ActiveSense::ESelectionMethod> selectionMethodMap = activeSense->getParameters().getSelectionMethodMap();
+		std::map<std::string, ActiveSense::ESelectionMethod>::iterator selectionPtr(selectionMethodMap.begin());
+		select(selectionPtr, selectionMethodMap.begin(), selectionMethodMap.end(), "Select Alternative Selection Method:\n", [](std::map<std::string, ActiveSense::ESelectionMethod>::iterator ptr) -> std::string{
+			return ptr->first;
+		});
+		context.write("Selected: %s\n", selectionPtr->first.c_str());
+		activeSense->getParameters().alternativeSelectionMethod = selectionPtr->second;
 
 		context.write("Done!\n");
 	}));

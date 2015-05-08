@@ -489,7 +489,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 	while (!stop)
 	{
 		demoOwner->context.debug(
-			"ActiveSense: ************************ STARTING OBSERVATION #%d ************************\n",
+			"\nActiveSense: ************************ STARTING OBSERVATION #%d ************************\n\n",
 			numViewsAcquired+1);
 
 		if (params.selectionMethod == ESelectionMethod::S_CONTACT_BASED ||
@@ -585,7 +585,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 		}
 	} // loop over views
 
-	demoOwner->context.debug("ActiveSense: ************************ COMPLETED OBSERVATIONS ************************\n");
+	demoOwner->context.debug("\nActiveSense: ************************ COMPLETED OBSERVATIONS ************************\n\n");
 
 	//If we are using a selection method different from contact_based then we generate a queryModel, trajectory and a disposable (feedback)predictorModel as a final result
 	if (this->params.selectionMethod != ESelectionMethod::S_CONTACT_BASED)

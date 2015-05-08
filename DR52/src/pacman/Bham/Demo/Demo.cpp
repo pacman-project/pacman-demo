@@ -1420,8 +1420,8 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCtrlMap.insert(std::make_pair("Z", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
 		desc =
-			"Press a key to: (R)otate, (N)udge, (O)bjectGraspAndCapture, rgb-to-ir (T)ranform, (D)epth camera adjust, create (P)oses\n"
-			"                (L)ocate object, change trajectory d(U)ration ...";
+			"Press a key to: (R)otate, (N)udge, (H)and control, (O)bjectGraspAndCapture, rgb-to-ir (T)ranform\n"
+			"                (D)epth camera adjust, create (P)oses, (L)ocate object, trajectory d(U)ration...";
 	}));
 
 	menuCmdMap.insert(std::make_pair("ZU", [=]() {
