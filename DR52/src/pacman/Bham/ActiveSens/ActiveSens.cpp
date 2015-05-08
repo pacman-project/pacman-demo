@@ -446,9 +446,10 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 	grasp::data::Item::List scannedImageItems; // scanned Items List
 
 	//Adding current sensor pose to the sequence of visited hypotheses
-	HypothesisSensor::Config config;
+	const size_t jointsSize = (size_t)demoOwner->info.getJoints().size();
+	HypothesisSensor::Config config(RealSeq(jointsSize, 0.0));
 	golem::Controller::State begin = demoOwner->lookupState();
-	begin.cpos.get(config.c.data(), config.c.data() + std::min(config.c.size(), (size_t)demoOwner->info.getJoints().size()));
+	begin.cpos.get(config.c.data(), config.c.data() + std::min(config.c.size(), jointsSize));
 	hypothesis = this->generateViewFrom(config);
 	hypothesis->visited = true;
 	visitedHypotheses.push_back(hypothesis);
@@ -489,7 +490,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 	while (!stop)
 	{
 		demoOwner->context.debug(
-			"\nActiveSense: ************************ STARTING OBSERVATION #%d ************************\n\n",
+			"\n\nActiveSense: ************************ STARTING OBSERVATION #%d ************************\n\n",
 			numViewsAcquired+1);
 
 		if (params.selectionMethod == ESelectionMethod::S_CONTACT_BASED ||
@@ -585,7 +586,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 		}
 	} // loop over views
 
-	demoOwner->context.debug("\nActiveSense: ************************ COMPLETED OBSERVATIONS ************************\n\n");
+	demoOwner->context.debug("\n\nActiveSense: ************************ COMPLETED OBSERVATIONS ************************\n\n");
 
 	//If we are using a selection method different from contact_based then we generate a queryModel, trajectory and a disposable (feedback)predictorModel as a final result
 	if (this->params.selectionMethod != ESelectionMethod::S_CONTACT_BASED)
