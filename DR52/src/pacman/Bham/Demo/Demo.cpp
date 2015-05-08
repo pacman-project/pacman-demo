@@ -507,6 +507,41 @@ void Demo::releaseHand(const double openFraction, const SecTmReal duration)
 	gotoPose2(openPose, duration);
 }
 
+void Demo::closeHand(const double closeFraction, const SecTmReal duration)
+{
+	// @@@ HACK @@@
+
+	const double f = std::max(0.0, std::min(1.0, closeFraction));
+
+	// !!! TODO use proper indices
+	ConfigMat34 pose(RealSeq(61, 0.0)), finalPose(RealSeq(61, 0.0));
+	golem::Controller::State currentState = lookupStateArmCommandHand();
+	for (size_t i = 0; i < pose.c.size(); ++i)
+		pose.c[i] = currentState.cpos.data()[i];
+
+	// TODO use proper indices - handInfo.getJoints()
+	const size_t handIndexBegin = 7;
+	const size_t handIndexEnd = handIndexBegin + 5 * 4;
+	for (size_t i = handIndexBegin; i < handIndexEnd; i += 4)
+	{
+		finalPose.c[i + 1] = 0.85;
+		finalPose.c[i + 2] = 0.2;
+		finalPose.c[i + 3] = 0.2;
+	}
+	// ease off the thumb
+	finalPose.c[handIndexBegin + 0] = 0.22;
+	finalPose.c[handIndexBegin + 1] = 0.6;
+	finalPose.c[handIndexBegin + 2] = 0.1;
+	finalPose.c[handIndexBegin + 3] = 0.1;
+
+	//context.debug("Demo::closeHand: finalPose: %s\n", toXMLString(finalPose).c_str());
+
+	for (size_t i = handIndexBegin; i < handIndexEnd; ++i)
+		pose.c[i] += f * (finalPose.c[i] - pose.c[i]);
+
+	gotoPose2(pose, duration);
+}
+
 void Demo::liftWrist(const double verticalDistance, const SecTmReal duration)
 {
 	// vertically by verticalDistance; to hand zero config
@@ -1414,6 +1449,31 @@ void pacman::Demo::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("ZN", [=]() {
 		context.write("nudge wrist\n");
 		nudgeWrist();
+		context.write("Done!\n");
+	}));
+
+	menuCmdMap.insert(std::make_pair("ZH", [=]() {
+		context.write("Hand Control\n");
+		for (;;)
+		{
+			const int k = option("+-01 ", "increase grasp:+  relax grasp:-  open:0  close:1  <SPACE> to end");
+			if (k == 32) break;
+			switch (k)
+			{
+			case '+':
+				closeHand(0.1, 1.0);
+				break;
+			case '1':
+				closeHand(1.0, 4.0);
+				break;
+			case '-':
+				releaseHand(0.1, 1.0);
+				break;
+			case '0':
+				releaseHand(1.0, 2.0);
+				break;
+			}
+		}
 		context.write("Done!\n");
 	}));
 

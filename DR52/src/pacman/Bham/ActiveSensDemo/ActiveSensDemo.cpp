@@ -14,6 +14,27 @@ using namespace grasp;
 
 namespace
 {
+	std::string toXMLString(const golem::Mat34& m)
+	{
+		char buf[BUFSIZ], *begin = buf, *const end = buf + sizeof(buf) - 1;
+		golem::snprintf(begin, end,
+			"m11=\"%f\" m12=\"%f\" m13=\"%f\" m21=\"%f\" m22=\"%f\" m23=\"%f\" m31=\"%f\" m32=\"%f\" m33=\"%f\" v1=\"%f\" v2=\"%f\" v3=\"%f\"",
+			m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33, m.p.x, m.p.y, m.p.z);
+		return std::string(buf);
+	}
+
+	std::string toXMLString(const grasp::ConfigMat34& cfg, const bool shortFormat = false)
+	{
+		std::ostringstream os;
+		os.precision(6);
+		const size_t n = shortFormat ? 7 : cfg.c.size();
+		for (size_t i = 0; i < n; ++i)
+		{
+			os << (i == 0 ? "c" : " c") << i + 1 << "=\"" << cfg.c[i] << "\"";
+		}
+
+		return os.str();
+	}
 
 	template <typename E> std::string enumToString(const golem::U32 i, const std::map<std::string, E>& emap)
 	{
@@ -21,7 +42,6 @@ namespace
 			if (j->second == i) return j->first;
 		return std::string("enumToString: enum code not found");
 	}
-
 }
 
 void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlcontext) {
@@ -144,12 +164,13 @@ void pacman::Demo::scanPoseActive(grasp::data::Item::List& scannedImageItems, Sc
 
 //-------------------------------------------------------------------------------------------------------------------
 
-grasp::Camera* Demo::getWristCamera() const
+grasp::Camera* Demo::getWristCamera(const bool dontThrow) const
 {
 	const std::string id("OpenNI+OpenNI");
 	grasp::Sensor::Map::const_iterator i = sensorMap.find(id);
 	if (i == sensorMap.end())
 	{
+		if (dontThrow) return nullptr;
 		context.write("%s was not found\n", id.c_str());
 		throw Cancel("getWristCamera: wrist-mounted camera is not available");
 	}
@@ -159,12 +180,303 @@ grasp::Camera* Demo::getWristCamera() const
 	// want the wrist-mounted camera
 	if (!camera->hasVariableMounting())
 	{
+		if (dontThrow) return nullptr;
 		context.write("%s is a static camera\n", id.c_str());
 		throw Cancel("getWristCamera: wrist-mounted camera is not available");
 	}
 
 	return camera;
 }
+
+golem::Mat34 Demo::getWristPose() const
+{
+	const golem::U32 wristJoint = 6; // @@@
+	grasp::ConfigMat34 pose;
+	getPose(wristJoint, pose);
+	return pose.w;
+}
+
+golem::Controller::State::Seq Demo::getTrajectoryFromPose(const golem::Mat34& w, const SecTmReal duration)
+{
+	const golem::Mat34 R = controller->getChains()[armInfo.getChains().begin()]->getReferencePose();
+	const golem::Mat34 wR = w * R;
+
+	golem::Controller::State begin = controller->createState();
+	controller->lookupState(SEC_TM_REAL_MAX, begin);
+
+	golem::Controller::State::Seq trajectory;
+	const grasp::RBDist err = findTrajectory(begin, nullptr, &wR, duration, trajectory);
+
+	return trajectory;
+}
+
+grasp::ConfigMat34 Demo::getConfigFromPose(const golem::Mat34& w)
+{
+	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w, SEC_TM_REAL_ZERO);
+	const golem::Controller::State& last = trajectory.back();
+	ConfigMat34 cfg(RealSeq(61, 0.0)); // !!! TODO use proper indices
+	for (size_t i = 0; i < 7; ++i)
+	{
+		cfg.c[i] = last.cpos.data()[i];
+	}
+	return cfg;
+}
+
+golem::Controller::State Demo::lookupStateArmCommandHand() const
+{
+	golem::Controller::State state = lookupState();	// current state
+	golem::Controller::State cmdHand = lookupCommand();	// commanded state (wanted just for hand)
+	state.cpos.set(handInfo.getJoints(), cmdHand.cpos); // only set cpos ???
+	return state;
+}
+
+void Demo::setHandConfig(Controller::State::Seq& trajectory, const grasp::ConfigMat34& handPose)
+{
+	ConfigspaceCoord cposHand;
+	cposHand.set(handPose.c.data(), handPose.c.data() + std::min(handPose.c.size(), (size_t)info.getJoints().size()));
+
+	for (Controller::State::Seq::iterator i = trajectory.begin(); i != trajectory.end(); ++i)
+	{
+		Controller::State& state = *i;
+		state.setToDefault(handInfo.getJoints().begin(), handInfo.getJoints().end());
+		state.cpos.set(handInfo.getJoints(), cposHand);
+	}
+}
+
+void Demo::gotoWristPose(const golem::Mat34& w, const SecTmReal duration)
+{
+	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w, duration);
+	sendTrajectory(trajectory);
+	controller->waitForEnd();
+	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
+}
+
+void Demo::gotoPose2(const ConfigMat34& pose, const SecTmReal duration)
+{
+	context.debug("Demo::gotoPose2: %s\n", toXMLString(pose).c_str());
+
+	// always start with hand in commanded config, not actual
+	golem::Controller::State begin = lookupStateArmCommandHand();	// current state but commanded state for hand
+	golem::Controller::State end = begin;
+	end.cpos.set(pose.c.data(), pose.c.data() + std::min(pose.c.size(), (size_t)info.getJoints().size()));
+	golem::Controller::State::Seq trajectory;
+	findTrajectory(begin, &end, nullptr, duration, trajectory);
+	sendTrajectory(trajectory);
+	controller->waitForEnd();
+	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
+}
+
+void Demo::releaseHand(const double openFraction, const SecTmReal duration)
+{
+	double f = 1.0 - openFraction;
+	f = std::max(0.0, std::min(1.0, f));
+
+	golem::Controller::State currentState = lookupStateArmCommandHand();
+	ConfigMat34 openPose(RealSeq(61, 0.0)); // !!! TODO use proper indices
+	for (size_t i = 0; i < openPose.c.size(); ++i)
+		openPose.c[i] = currentState.cpos.data()[i];
+
+	// TODO use proper indices - handInfo.getJoints()
+	const size_t handIndexBegin = 7;
+	const size_t handIndexEnd = handIndexBegin + 5 * 4;
+	for (size_t i = handIndexBegin; i < handIndexEnd; ++i)
+		openPose.c[i] *= f;
+
+	gotoPose2(openPose, duration);
+}
+
+void Demo::closeHand(const double closeFraction, const SecTmReal duration)
+{
+	// @@@ HACK @@@
+
+	const double f = std::max(0.0, std::min(1.0, closeFraction));
+
+	// !!! TODO use proper indices
+	ConfigMat34 pose(RealSeq(61, 0.0)), finalPose(RealSeq(61, 0.0));
+	golem::Controller::State currentState = lookupStateArmCommandHand();
+	for (size_t i = 0; i < pose.c.size(); ++i)
+		pose.c[i] = currentState.cpos.data()[i];
+
+	// TODO use proper indices - handInfo.getJoints()
+	const size_t handIndexBegin = 7;
+	const size_t handIndexEnd = handIndexBegin + 5 * 4;
+	for (size_t i = handIndexBegin; i < handIndexEnd; i += 4)
+	{
+		finalPose.c[i + 1] = 0.85;
+		finalPose.c[i + 2] = 0.2;
+		finalPose.c[i + 3] = 0.2;
+	}
+	// ease off the thumb
+	finalPose.c[handIndexBegin + 0] = 0.22;
+	finalPose.c[handIndexBegin + 1] = 0.6;
+	finalPose.c[handIndexBegin + 2] = 0.1;
+	finalPose.c[handIndexBegin + 3] = 0.1;
+
+	//context.debug("Demo::closeHand: finalPose: %s\n", toXMLString(finalPose).c_str());
+
+	for (size_t i = handIndexBegin; i < handIndexEnd; ++i)
+		pose.c[i] += f * (finalPose.c[i] - pose.c[i]);
+
+	gotoPose2(pose, duration);
+}
+
+//------------------------------------------------------------------------------
+
+void Demo::nudgeWrist()
+{
+	auto showPose = [&](const std::string& description, const golem::Mat34& m) {
+		context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
+	};
+
+	double s = 5; // 5cm step
+	int dirCode;
+	for (;;)
+	{
+		std::ostringstream os;
+		os << "up:7 down:1 left:4 right:6 back:8 front:2 null:0 STEP(" << s << " cm):+/-";
+		dirCode = option("7146820+-", os.str().c_str());
+		if (dirCode == '+')
+		{
+			s *= 2;
+			if (s > 20.0) s = 20.0;
+			continue;
+		}
+		if (dirCode == '-')
+		{
+			s /= 2;
+			continue;
+		}
+		break;
+	}
+	s /= 100.0; // cm -> m
+
+	golem::Vec3 nudge(golem::Vec3::zero());
+	switch (dirCode)
+	{
+	case '7': // up
+		nudge.z = s;
+		break;
+	case '1': // down
+		nudge.z = -s;
+		break;
+	case '4': // left
+		nudge.y = -s;
+		break;
+	case '6': // right
+		nudge.y = s;
+		break;
+	case '8': // back
+		nudge.x = -s;
+		break;
+	case '2': // front
+		nudge.x = s;
+		break;
+	};
+
+	golem::Mat34 pose;
+
+	grasp::Camera* camera = getWristCamera(true);
+	if (camera != nullptr)
+	{
+		pose = camera->getFrame();
+		showPose("camera before", pose);
+	}
+
+	pose = getWristPose();
+	showPose("before", pose);
+
+	pose.p = pose.p + nudge;
+	showPose("commanded", pose);
+
+	gotoWristPose(pose);
+
+	showPose("final wrist", getWristPose());
+	if (camera != nullptr)
+	{
+		pose = camera->getFrame();
+		showPose("final camera", pose);
+	}
+
+	grasp::ConfigMat34 cp;
+	getPose(0, cp);
+	context.debug("%s\n", toXMLString(cp, true).c_str());
+}
+
+void Demo::rotateObjectInHand()
+{
+	auto showPose = [&](const std::string& description, const golem::Mat34& m) {
+		context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
+	};
+
+	const double maxstep = 45.0;
+	double angstep = 30.0;
+	int rotType;
+	for (;;)
+	{
+		std::ostringstream os;
+		os << "rotation: Clockwise or Anticlockwise screw, Up or Down, Left or Right; STEP(" << angstep << " deg):+/-";
+		rotType = option("CAUDLR+-", os.str().c_str());
+		if (rotType == '+')
+		{
+			angstep *= 2;
+			if (angstep > maxstep) angstep = maxstep;
+			continue;
+		}
+		if (rotType == '-')
+		{
+			angstep /= 2;
+			continue;
+		}
+		break;
+	}
+
+	golem::Vec3 rotAxis(golem::Vec3::zero());
+
+	switch (rotType)
+	{
+	case 'C':
+		rotAxis.z = 1.0;
+		break;
+	case 'A':
+		rotAxis.z = 1.0;
+		angstep = -angstep;
+		break;
+	case 'U':
+		rotAxis.y = 1.0;
+		break;
+	case 'D':
+		rotAxis.y = 1.0;
+		angstep = -angstep;
+		break;
+	case 'L':
+		rotAxis.x = 1.0;
+		break;
+	case 'R':
+		rotAxis.x = 1.0;
+		angstep = -angstep;
+		break;
+	}
+
+	golem::Mat33 rot(golem::Mat33(angstep / 180.0 * golem::REAL_PI, rotAxis));
+
+	golem::Mat34 pose = getWristPose();
+	showPose("before", pose);
+
+	pose.R = pose.R * rot;
+	showPose("commanded", pose);
+
+	gotoWristPose(pose);
+	showPose("final wrist", getWristPose());
+
+	grasp::ConfigMat34 cp;
+	getPose(0, cp);
+	context.debug("%s\n", toXMLString(cp, true).c_str());
+
+	//recordingStart(dataCurrentPtr->first, recordingLabel, false);
+	//context.write("taken snapshot\n");
+}
+
+//------------------------------------------------------------------------------
 
 void pacman::Demo::create(const Desc& desc) {
 	desc.assertValid(Assert::Context("pacman::Demo::Desc."));
@@ -180,6 +492,7 @@ void pacman::Demo::create(const Desc& desc) {
 
 	// top menu help using global key '?'
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  C                                       Camera Sensor Options\n"));
+	scene.getHelp().insert(Scene::StrMapVal("0F5", "  Z                                       menu SZ Tests\n"));
 
 
 	menuCtrlMap.insert(std::make_pair("C", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
@@ -451,6 +764,65 @@ void pacman::Demo::create(const Desc& desc) {
 
 		context.write("Done!\n");
 	}));
+
+	////////////////////////////////////////////////////////////////////////////
+	//                               UTILITIES                                // 
+	////////////////////////////////////////////////////////////////////////////
+
+	menuCtrlMap.insert(std::make_pair("Z", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+		desc =
+			"Press a key to: (R)otate, (N)udge, (H)and control, change trajectory d(U)ration ...";
+	}));
+
+	menuCmdMap.insert(std::make_pair("ZU", [=]() {
+		context.write("*** Change trajectory duration BEWARE ***\n");
+
+		do
+			readNumber("trajectoryDuration ", trajectoryDuration);
+		while (trajectoryDuration < 1.0);
+
+		context.write("Done!\n");
+	}));
+
+	menuCmdMap.insert(std::make_pair("ZR", [=]() {
+		context.write("rotate object in hand\n");
+		rotateObjectInHand();
+		context.write("Done!\n");
+	}));
+
+	menuCmdMap.insert(std::make_pair("ZN", [=]() {
+		context.write("nudge wrist\n");
+		nudgeWrist();
+		context.write("Done!\n");
+	}));
+
+	menuCmdMap.insert(std::make_pair("ZH", [=]() {
+		context.write("Hand Control\n");
+		for (;;)
+		{
+			const int k = option("+-01 ", "increase grasp:+  relax grasp:-  open:0  close:1  <SPACE> to end");
+			if (k == 32) break;
+			switch (k)
+			{
+			case '+':
+				closeHand(0.1, 1.0);
+				break;
+			case '1':
+				closeHand(1.0, 4.0);
+				break;
+			case '-':
+				releaseHand(0.1, 1.0);
+				break;
+			case '0':
+				releaseHand(1.0, 2.0);
+				break;
+			}
+		}
+		context.write("Done!\n");
+	}));
+
+
+	// END OF MENUS
 }
 
 //------------------------------------------------------------------------------
