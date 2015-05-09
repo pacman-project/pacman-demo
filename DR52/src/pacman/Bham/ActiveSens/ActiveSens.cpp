@@ -136,6 +136,7 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 	else
 		this->generationMethod = EGenerationMethod::G_NONE;
 
+	dropOffPose.xmlData(pxmlcontext->getContextFirst("drop_off_pose"));
 
 	if (this->generationMethod == EGenerationMethod::G_FIXED)
 	{

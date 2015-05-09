@@ -230,6 +230,16 @@ golem::Controller::State Demo::lookupStateArmCommandHand() const
 	return state;
 }
 
+void Demo::setHandConfig(Controller::State::Seq& trajectory, const golem::Controller::State cmdHand)
+{
+	for (Controller::State::Seq::iterator i = trajectory.begin(); i != trajectory.end(); ++i)
+	{
+		Controller::State& state = *i;
+		state.setToDefault(handInfo.getJoints().begin(), handInfo.getJoints().end());
+		state.cpos.set(handInfo.getJoints(), cmdHand.cpos);
+	}
+}
+
 void Demo::setHandConfig(Controller::State::Seq& trajectory, const grasp::ConfigMat34& handPose)
 {
 	ConfigspaceCoord cposHand;
@@ -251,7 +261,7 @@ void Demo::gotoWristPose(const golem::Mat34& w, const SecTmReal duration)
 	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
 }
 
-void Demo::gotoPose2(const ConfigMat34& pose, const SecTmReal duration)
+void Demo::gotoPose2(const ConfigMat34& pose, const SecTmReal duration, const bool ignoreHand)
 {
 	context.debug("Demo::gotoPose2: %s\n", toXMLString(pose).c_str());
 
@@ -261,6 +271,10 @@ void Demo::gotoPose2(const ConfigMat34& pose, const SecTmReal duration)
 	end.cpos.set(pose.c.data(), pose.c.data() + std::min(pose.c.size(), (size_t)info.getJoints().size()));
 	golem::Controller::State::Seq trajectory;
 	findTrajectory(begin, &end, nullptr, duration, trajectory);
+
+	if (ignoreHand)
+		setHandConfig(trajectory, begin); // overwrite hand config with current commanded cpos
+
 	sendTrajectory(trajectory);
 	controller->waitForEnd();
 	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
@@ -318,6 +332,21 @@ void Demo::closeHand(const double closeFraction, const SecTmReal duration)
 		pose.c[i] += f * (finalPose.c[i] - pose.c[i]);
 
 	gotoPose2(pose, duration);
+}
+
+void Demo::executeDropOff()
+{
+	context.debug("Moving to drop-off point...\n");
+	gotoPose2(activeSense->getParameters().dropOffPose, trajectoryDuration, true);
+
+	context.debug("Waiting 1s before releasing grasp...\n");
+	Sleep::msleep(SecToMSec(1.0));
+
+	const double withdrawReleaseFraction = 1.0;
+	context.debug("Releasing hand by %g%% in %gs...\n", withdrawReleaseFraction*100.0, trajectoryDuration);
+	releaseHand(withdrawReleaseFraction, trajectoryDuration);
+
+	context.write("Done!\n");
 }
 
 //------------------------------------------------------------------------------
@@ -788,7 +817,13 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCtrlMap.insert(std::make_pair("Z", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
 		desc =
-			"Press a key to: (R)otate, (N)udge, (H)and control, change trajectory d(U)ration ...";
+			"Press a key to: execute (D)rop off, (R)otate, (N)udge, (H)and control, change trajectory d(U)ration ...";
+	}));
+
+	menuCmdMap.insert(std::make_pair("ZD", [=]() {
+		context.write("Executing drop-off!\n");
+		executeDropOff();
+		context.write("Done!\n");
 	}));
 
 	menuCmdMap.insert(std::make_pair("ZU", [=]() {
