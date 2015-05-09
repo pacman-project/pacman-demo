@@ -1420,8 +1420,8 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCtrlMap.insert(std::make_pair("Z", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
 		desc =
-			"Press a key to: (R)otate, (N)udge, (H)and control, (O)bjectGraspAndCapture, rgb-to-ir (T)ranform\n"
-			"                (D)epth camera adjust, create (P)oses, (L)ocate object, trajectory d(U)ration...";
+			"(R)otate, (N)udge, (H)and control, (O)bjectGraspAndCapture, rgb-to-ir (T)ranform\n"
+			"(B)atch transform, (D)epth camera adjust, create (P)oses, (L)ocate object, trajectory d(U)ration...";
 	}));
 
 	menuCmdMap.insert(std::make_pair("ZU", [=]() {
@@ -1474,6 +1474,52 @@ void pacman::Demo::create(const Desc& desc) {
 				break;
 			}
 		}
+		context.write("Done!\n");
+	}));
+
+	menuCmdMap.insert(std::make_pair("ZB", [=]() {
+		context.write("Batch transform of all Image items in data bundle\n");
+
+		// find handlers supporting data::Transform
+		typedef std::vector<std::pair<data::Handler*, data::Transform*>> TransformMap;
+		TransformMap transformMap;
+		for (data::Handler::Map::const_iterator i = handlerMap.begin(); i != handlerMap.end(); ++i) {
+			data::Transform* transform = is<data::Transform>(i);
+			if (transform) transformMap.push_back(std::make_pair(i->second.get(), transform));
+		}
+		if (transformMap.empty())
+			throw Cancel("No handlers support Transform interface");
+		// pick up handler
+		TransformMap::const_iterator transformPtr = transformMap.begin();
+		select(transformPtr, transformMap.begin(), transformMap.end(), "Transform:\n", [] (TransformMap::const_iterator ptr) -> std::string {
+			std::stringstream str;
+			for (StringSeq::const_iterator i = ptr->second->getItemTypes().begin(); i != ptr->second->getItemTypes().end(); ++i) str << *i << " ";
+			return std::string("Handler: ") + ptr->first->getID() + std::string(", Item types: ") + str.str();
+		});
+
+		readString("Enter label: ", dataItemLabel);
+
+		// TODO need removeCallback() on ScopeGuard ???
+		//UI::addCallback(*this, transformPtr->first);
+
+		// iterate over all items in current bundle
+		data::Item::Map& itemMap = to<Data>(dataCurrentPtr)->itemMap;
+		//const data::Item::Map::iterator ptr = itemMap.begin();
+		for (auto ptr = itemMap.begin(); ptr != itemMap.end(); ++ptr)
+		{
+			context.debug("Transforming %s\n", ptr->first.c_str());
+			data::Item::List itemList; // just to contain a single item for transform API
+			itemList.push_back(ptr);
+
+			RenderBlock renderBlock(*this);
+			data::Item::Ptr item = transformPtr->second->transform(itemList);
+			{
+				golem::CriticalSectionWrapper cswData(csData);
+				const data::Item::Map::iterator ptr = itemMap.insert(itemMap.end(), data::Item::Map::value_type(dataItemLabel, item));
+				Data::View::setItem(itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+			}
+		}
+
 		context.write("Done!\n");
 	}));
 
