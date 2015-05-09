@@ -1078,7 +1078,7 @@ grasp::data::Item::Map::iterator ActiveSense::convertToTrajectory(grasp::data::I
 
 	// convert
 	data::Item::Ptr traj = convert->convert(*handlerPtr->second);
-	grasp::data::Item::Map::iterator output = addItem("handle", traj);
+	grasp::data::Item::Map::iterator output = addItem("ActiveSenseTrajectory", traj);
 
 	//Adding Trajectory to results
 	this->result.trajectories.push_back(output);
