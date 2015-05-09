@@ -1502,21 +1502,35 @@ void pacman::Demo::create(const Desc& desc) {
 		// TODO need removeCallback() on ScopeGuard ???
 		//UI::addCallback(*this, transformPtr->first);
 
-		// iterate over all items in current bundle
+		// iterate over all items in current bundle - USE A COPY SINCE IT WILL BE MODIFIED
 		data::Item::Map& itemMap = to<Data>(dataCurrentPtr)->itemMap;
+		data::Item::Map itemMap0(itemMap);
 		//const data::Item::Map::iterator ptr = itemMap.begin();
-		for (auto ptr = itemMap.begin(); ptr != itemMap.end(); ++ptr)
+		for (auto ptr0 = itemMap0.begin(); ptr0 != itemMap0.end(); ++ptr0)
 		{
-			context.debug("Transforming %s\n", ptr->first.c_str());
-			data::Item::List itemList; // just to contain a single item for transform API
-			itemList.push_back(ptr);
-
-			RenderBlock renderBlock(*this);
-			data::Item::Ptr item = transformPtr->second->transform(itemList);
+			data::ItemImage* itemImage = is<data::ItemImage>(ptr0->second.get());
+			if (itemImage==nullptr)
+				context.debug("Skipping %s\n", ptr0->first.c_str());
+			else
 			{
-				golem::CriticalSectionWrapper cswData(csData);
-				const data::Item::Map::iterator ptr = itemMap.insert(itemMap.end(), data::Item::Map::value_type(dataItemLabel, item));
-				Data::View::setItem(itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+				try
+				{
+					context.debug("Transforming %s\n", ptr0->first.c_str());
+					data::Item::List itemList; // just to contain a single item for transform API
+					itemList.push_back(ptr0);
+
+					RenderBlock renderBlock(*this);
+					data::Item::Ptr item = transformPtr->second->transform(itemList);
+					{
+						golem::CriticalSectionWrapper cswData(csData);
+						const data::Item::Map::iterator ptr = itemMap.insert(itemMap.end(), data::Item::Map::value_type(dataItemLabel, item));
+						Data::View::setItem(itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+					}
+				}
+				catch (const std::exception& e)
+				{
+					context.debug("%s\nFailed to compute transform for %s\n", e.what(), ptr0->first.c_str());
+				}
 			}
 		}
 
@@ -1553,7 +1567,7 @@ void pacman::Demo::create(const Desc& desc) {
 		}
 		catch (const Message& e)
 		{
-			context.write("%s\nFailed to compute transform!\n", e.what());
+			context.debug("%s\nFailed to compute transform!\n", e.what());
 		}
 	}));
 
