@@ -507,6 +507,41 @@ void Demo::releaseHand(const double openFraction, const SecTmReal duration)
 	gotoPose2(openPose, duration);
 }
 
+void Demo::closeHand(const double closeFraction, const SecTmReal duration)
+{
+	// @@@ HACK @@@
+
+	const double f = std::max(0.0, std::min(1.0, closeFraction));
+
+	// !!! TODO use proper indices
+	ConfigMat34 pose(RealSeq(61, 0.0)), finalPose(RealSeq(61, 0.0));
+	golem::Controller::State currentState = lookupStateArmCommandHand();
+	for (size_t i = 0; i < pose.c.size(); ++i)
+		pose.c[i] = currentState.cpos.data()[i];
+
+	// TODO use proper indices - handInfo.getJoints()
+	const size_t handIndexBegin = 7;
+	const size_t handIndexEnd = handIndexBegin + 5 * 4;
+	for (size_t i = handIndexBegin; i < handIndexEnd; i += 4)
+	{
+		finalPose.c[i + 1] = 0.85;
+		finalPose.c[i + 2] = 0.2;
+		finalPose.c[i + 3] = 0.2;
+	}
+	// ease off the thumb
+	finalPose.c[handIndexBegin + 0] = 0.22;
+	finalPose.c[handIndexBegin + 1] = 0.6;
+	finalPose.c[handIndexBegin + 2] = 0.1;
+	finalPose.c[handIndexBegin + 3] = 0.1;
+
+	//context.debug("Demo::closeHand: finalPose: %s\n", toXMLString(finalPose).c_str());
+
+	for (size_t i = handIndexBegin; i < handIndexEnd; ++i)
+		pose.c[i] += f * (finalPose.c[i] - pose.c[i]);
+
+	gotoPose2(pose, duration);
+}
+
 void Demo::liftWrist(const double verticalDistance, const SecTmReal duration)
 {
 	// vertically by verticalDistance; to hand zero config
@@ -1385,8 +1420,8 @@ void pacman::Demo::create(const Desc& desc) {
 
 	menuCtrlMap.insert(std::make_pair("Z", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
 		desc =
-			"Press a key to: (R)otate, (N)udge, (O)bjectGraspAndCapture, rgb-to-ir (T)ranform, (D)epth camera adjust, create (P)oses\n"
-			"                (L)ocate object, change trajectory d(U)ration ...";
+			"(R)otate, (N)udge, (H)and control, (O)bjectGraspAndCapture, rgb-to-ir (T)ranform\n"
+			"(B)atch transform, (D)epth camera adjust, create (P)oses, (L)ocate object, trajectory d(U)ration...";
 	}));
 
 	menuCmdMap.insert(std::make_pair("ZU", [=]() {
@@ -1414,6 +1449,91 @@ void pacman::Demo::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("ZN", [=]() {
 		context.write("nudge wrist\n");
 		nudgeWrist();
+		context.write("Done!\n");
+	}));
+
+	menuCmdMap.insert(std::make_pair("ZH", [=]() {
+		context.write("Hand Control\n");
+		for (;;)
+		{
+			const int k = option("+-01 ", "increase grasp:+  relax grasp:-  open:0  close:1  <SPACE> to end");
+			if (k == 32) break;
+			switch (k)
+			{
+			case '+':
+				closeHand(0.1, 1.0);
+				break;
+			case '1':
+				closeHand(1.0, 4.0);
+				break;
+			case '-':
+				releaseHand(0.1, 1.0);
+				break;
+			case '0':
+				releaseHand(1.0, 2.0);
+				break;
+			}
+		}
+		context.write("Done!\n");
+	}));
+
+	menuCmdMap.insert(std::make_pair("ZB", [=]() {
+		context.write("Batch transform of all Image items in data bundle\n");
+
+		// find handlers supporting data::Transform
+		typedef std::vector<std::pair<data::Handler*, data::Transform*>> TransformMap;
+		TransformMap transformMap;
+		for (data::Handler::Map::const_iterator i = handlerMap.begin(); i != handlerMap.end(); ++i) {
+			data::Transform* transform = is<data::Transform>(i);
+			if (transform) transformMap.push_back(std::make_pair(i->second.get(), transform));
+		}
+		if (transformMap.empty())
+			throw Cancel("No handlers support Transform interface");
+		// pick up handler
+		TransformMap::const_iterator transformPtr = transformMap.begin();
+		select(transformPtr, transformMap.begin(), transformMap.end(), "Transform:\n", [] (TransformMap::const_iterator ptr) -> std::string {
+			std::stringstream str;
+			for (StringSeq::const_iterator i = ptr->second->getItemTypes().begin(); i != ptr->second->getItemTypes().end(); ++i) str << *i << " ";
+			return std::string("Handler: ") + ptr->first->getID() + std::string(", Item types: ") + str.str();
+		});
+
+		readString("Enter label: ", dataItemLabel);
+
+		// TODO need removeCallback() on ScopeGuard ???
+		//UI::addCallback(*this, transformPtr->first);
+
+		// iterate over all items in current bundle - USE A COPY SINCE IT WILL BE MODIFIED
+		data::Item::Map& itemMap = to<Data>(dataCurrentPtr)->itemMap;
+		data::Item::Map itemMap0(itemMap);
+		//const data::Item::Map::iterator ptr = itemMap.begin();
+		for (auto ptr0 = itemMap0.begin(); ptr0 != itemMap0.end(); ++ptr0)
+		{
+			data::ItemImage* itemImage = is<data::ItemImage>(ptr0->second.get());
+			if (itemImage==nullptr)
+				context.debug("Skipping %s\n", ptr0->first.c_str());
+			else
+			{
+				try
+				{
+					context.debug("Transforming %s\n", ptr0->first.c_str());
+					data::Item::List itemList; // just to contain a single item for transform API
+					itemList.push_back(ptr0);
+
+					RenderBlock renderBlock(*this);
+					data::Item::Ptr item = transformPtr->second->transform(itemList);
+					{
+						golem::CriticalSectionWrapper cswData(csData);
+						const data::Item::Map::iterator ptr = itemMap.insert(itemMap.end(), data::Item::Map::value_type(dataItemLabel, item));
+						Data::View::setItem(itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+					}
+				}
+				catch (const std::exception& e)
+				{
+					context.debug("%s\nFailed to compute transform for %s\n", e.what(), ptr0->first.c_str());
+				}
+			}
+		}
+
 		context.write("Done!\n");
 	}));
 
@@ -1447,7 +1567,7 @@ void pacman::Demo::create(const Desc& desc) {
 		}
 		catch (const Message& e)
 		{
-			context.write("%s\nFailed to compute transform!\n", e.what());
+			context.debug("%s\nFailed to compute transform!\n", e.what());
 		}
 	}));
 

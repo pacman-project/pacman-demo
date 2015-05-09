@@ -168,6 +168,8 @@ namespace pacman {
 			/** Configuration sequence */
 			HypothesisSensor::Config::Seq configSeq;
 
+			grasp::ConfigMat34 dropOffPose;
+
 			/** Sensor to be used for active control */
 			std::string sensorId;
 
@@ -193,7 +195,9 @@ namespace pacman {
 
 				this->sensorId = "OpenNI+OpenNI";
 
+				configSeq.clear();
 
+				dropOffPose.setToDefault();
 			}
 
 			/** Assert that the object is valid. */

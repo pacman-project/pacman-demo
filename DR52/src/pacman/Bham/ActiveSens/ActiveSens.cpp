@@ -136,6 +136,7 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 	else
 		this->generationMethod = EGenerationMethod::G_NONE;
 
+	dropOffPose.xmlData(pxmlcontext->getContextFirst("drop_off_pose"));
 
 	if (this->generationMethod == EGenerationMethod::G_FIXED)
 	{
@@ -446,9 +447,10 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 	grasp::data::Item::List scannedImageItems; // scanned Items List
 
 	//Adding current sensor pose to the sequence of visited hypotheses
-	HypothesisSensor::Config config;
+	const size_t jointsSize = (size_t)demoOwner->info.getJoints().size();
+	HypothesisSensor::Config config(RealSeq(jointsSize, 0.0));
 	golem::Controller::State begin = demoOwner->lookupState();
-	begin.cpos.get(config.c.data(), config.c.data() + std::min(config.c.size(), (size_t)demoOwner->info.getJoints().size()));
+	begin.cpos.get(config.c.data(), config.c.data() + std::min(config.c.size(), jointsSize));
 	hypothesis = this->generateViewFrom(config);
 	hypothesis->visited = true;
 	visitedHypotheses.push_back(hypothesis);
@@ -483,13 +485,13 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 	}
 
 	grasp::data::ItemPredictorModel::Map::iterator ptr;
-	bool stop = false;
+	bool stop = maxNumViews > 1 ? false : true; // we could stop after the initial view
 	bool found_contacts = true; //lets assume we have contacts
 	int numViewsAcquired = 1; // we count the initial view
 	while (!stop)
 	{
 		demoOwner->context.debug(
-			"ActiveSense: ************************ STARTING OBSERVATION #%d ************************\n",
+			"\n\nActiveSense: ************************ STARTING OBSERVATION #%d ************************\n\n",
 			numViewsAcquired+1);
 
 		if (params.selectionMethod == ESelectionMethod::S_CONTACT_BASED ||
@@ -585,10 +587,11 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 		}
 	} // loop over views
 
-	demoOwner->context.debug("ActiveSense: ************************ COMPLETED OBSERVATIONS ************************\n");
+	demoOwner->context.debug("\n\nActiveSense: ************************ COMPLETED AFTER %d OBSERVATION%s ************************\n\n",
+		numViewsAcquired, numViewsAcquired==1 ? "" : "S" );
 
 	//If we are using a selection method different from contact_based then we generate a queryModel, trajectory and a disposable (feedback)predictorModel as a final result
-	if (this->params.selectionMethod != ESelectionMethod::S_CONTACT_BASED)
+	if (maxNumViews == 1 || this->params.selectionMethod != ESelectionMethod::S_CONTACT_BASED)
 	{
 		ptr = this->computeFeedBackTransform(predModelItem, pointCurvItem);
 	}
@@ -1138,6 +1141,12 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::computePredModelFeedBack(g
 	demoOwner->context.debug("ActiveSense: Computing Trajectory!\n");
 	grasp::data::Item::Map::iterator traj = convertToTrajectory(predQuery);
 
+	// add trajectory item into current data bundle (so can execute grasp again)
+	std::string trajectoryName("ActiveSens_Grasp");
+	grasp::data::Item::Map& itemMap = to<Demo::Data>(demoOwner->dataCurrentPtr)->itemMap;
+	itemMap.erase(trajectoryName);
+	grasp::data::Item::Map::iterator ptr = itemMap.insert(itemMap.end(), grasp::data::Item::Map::value_type(trajectoryName, traj->second));
+	Demo::Data::View::setItem(itemMap, ptr, to<Demo::Data>(demoOwner->dataCurrentPtr)->getView());
 
 	return computeTransformPredModel(pointCurvItem, traj);
 }
