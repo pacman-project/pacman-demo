@@ -143,9 +143,10 @@ void pacman::Demo::scanPoseActive(grasp::data::Item::List& scannedImageItems, Sc
 	const bool isEnabledDeformationMap = camera && camera->getCurrentCalibration()->isEnabledDeformationMap();
 	ScopeGuard guard([&]() { if (camera) camera->getCurrentCalibration()->enableDeformationMap(isEnabledDeformationMap); });
 	if (camera && camera->getCurrentCalibration()->hasDeformationMap())
-		camera->getCurrentCalibration()->enableDeformationMap(option("YN", "Use deformation map (Y/N)...") == 'Y');
-
-
+	{
+		context.write("pacman::Demo::scanPoseActive: **** USING DEFORMATION MAP ****\n");
+		camera->getCurrentCalibration()->enableDeformationMap(true);
+	}
 
 	for (bool stop = false; !stop;) {
 		stop = scanPoseCommand == nullptr || !scanPoseCommand();
@@ -821,9 +822,11 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 
 	menuCmdMap.insert(std::make_pair("ZD", [=]() {
-		context.write("Executing drop-off!\n");
-		executeDropOff();
-		context.write("Done!\n");
+		if (option("YN", "Confirm drop-off action (Y/N)...") == 'Y')
+		{
+			executeDropOff();
+			context.write("Done!\n");
+		}
 	}));
 
 	menuCmdMap.insert(std::make_pair("ZU", [=]() {
