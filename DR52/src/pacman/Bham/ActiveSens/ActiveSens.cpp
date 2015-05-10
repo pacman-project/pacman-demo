@@ -60,6 +60,8 @@ void ActiveSense::init(pacman::Demo* demoOwner)
 
 
 	this->generateViews();
+
+	this->allowInput = false;
 }
 
 /** Load from xml context */
@@ -230,7 +232,8 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::processItems(grasp::data::
 		Manager::RenderBlock renderBlock(*demoOwner);
 
 		
-		grasp::Manager::InputBlock inputBlock(*demoOwner);
+		golem::shared_ptr<grasp::Manager::InputBlock> inputBlock;
+		if (!this->allowInput) inputBlock = golem::shared_ptr<grasp::Manager::InputBlock>(new grasp::Manager::InputBlock(*demoOwner));
 		UI::addCallback(*demoOwner, transformPtr.first);
 		data::Item::Map::iterator ptr;
 		grasp::data::Item::Ptr item = transformPtr.second->transform(list);
@@ -242,6 +245,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::processItems(grasp::data::
 
 		}
 
+		inputBlock.release();
 		return ptr;
 	};
 
@@ -605,7 +609,7 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestView(grasp::dat
 {
 	HypothesisSensor::Ptr hypothesis;
 
-	if (params.selectionMethod == ESelectionMethod::S_CONTACT_BASED && !found_contacts)
+	if ((params.selectionMethod == ESelectionMethod::S_CONTACT_BASED || params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2) && !found_contacts)
 	{
 		hypothesis = selectNextBestView(params.alternativeSelectionMethod, predModelPtr);
 	}
@@ -1042,8 +1046,10 @@ grasp::CollisionBounds::Ptr pacman::ActiveSense::selectCollisionBounds(bool draw
 	demoOwner->context.debug("ActiveSense: Select collision object...\n");
 
 	const data::Location3D* location = is<const data::Location3D>(input->second.get());
-
+	
+	
 	if (location) {
+		demoOwner->context.debug("ActivSense: Number of Locations %d\n", location->getNumOfLocations());
 		// create collision bounds
 		collisionBounds.reset(new CollisionBounds(*demoOwner->planner, [=](size_t i, Vec3& p) -> bool {
 
@@ -1081,7 +1087,7 @@ grasp::data::Item::Map::iterator ActiveSense::convertToTrajectory(grasp::data::I
 
 	// convert
 	data::Item::Ptr traj = convert->convert(*handlerPtr->second);
-	grasp::data::Item::Map::iterator output = addItem("ActiveSenseTrajectory", traj);
+	grasp::data::Item::Map::iterator output = addItem("handle", traj);
 
 	//Adding Trajectory to results
 	this->result.trajectories.push_back(output);
@@ -1096,7 +1102,9 @@ grasp::data::Item::Map::iterator ActiveSense::computeFeedBackTransform(grasp::da
 
 		demoOwner->context.debug("ActiveSense: ---[computeFeedBackTransform]: List Size: %d---\n", list.size());
 		// transform
-		grasp::Manager::InputBlock inputBlock(*demoOwner);
+		golem::shared_ptr<grasp::Manager::InputBlock> inputBlock;
+		if (!this->allowInput) inputBlock = golem::shared_ptr<grasp::Manager::InputBlock>(new grasp::Manager::InputBlock(*demoOwner));
+
 		Manager::RenderBlock renderBlock(*demoOwner);
 
 		UI::addCallback(*demoOwner, transformPtr.first);
@@ -1109,6 +1117,9 @@ grasp::data::Item::Map::iterator ActiveSense::computeFeedBackTransform(grasp::da
 
 
 		}
+
+		
+		inputBlock.release();
 
 		return ptr;
 	};
@@ -1157,7 +1168,8 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::computeTransformPredModel(
 
 		demoOwner->context.debug("\nActiveSense: [TransformPredModel]---List Size: %d---\n", list.size());
 		// transform
-		grasp::Manager::InputBlock inputBlock(*demoOwner);
+		golem::shared_ptr<grasp::Manager::InputBlock> inputBlock;
+		if (!this->allowInput) inputBlock = golem::shared_ptr<grasp::Manager::InputBlock>(new grasp::Manager::InputBlock(*demoOwner));
 		Manager::RenderBlock renderBlock(*demoOwner);
 
 		UI::addCallback(*demoOwner, transformPtr.first);
@@ -1171,6 +1183,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::computeTransformPredModel(
 
 		}
 
+		inputBlock.release();
 		return ptr;
 	};
 

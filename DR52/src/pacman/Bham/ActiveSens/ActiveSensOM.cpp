@@ -54,7 +54,7 @@ namespace pacman {
 	*/
 	void ActiveSensOnlineModel::updateViewingAngles(const HypothesisSensor::Seq& visitedHypotheses){
 
-		viewingAngles.resize(this->graspContacts.size());
+		viewingAngles.resize(this->graspContacts.size(),golem::REAL_MAX);
 		printf("ActiveSensOnlineModel: updatingViewingAngles...\n");
 		for (HypothesisSensor::Seq::const_iterator it_h = visitedHypotheses.begin(); it_h != visitedHypotheses.end(); it_h++)
 		{
@@ -104,10 +104,10 @@ namespace pacman {
 					// k->first => jointToString()
 					// k->second => contactSequence
 					value += computeValue(hypothesis,k->second, index);
-					index += k->second.size();
+					index += static_cast<int>(k->second.size());
 				}
 
-				printf("Value %lf\n", value);
+				printf("Value %f\n", static_cast<float>(value));
 
 			}
 		}

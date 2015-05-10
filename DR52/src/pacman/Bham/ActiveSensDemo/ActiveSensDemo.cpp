@@ -571,6 +571,9 @@ void pacman::Demo::create(const Desc& desc) {
 
 		activeSense->resetNextBestViewSequential(); // always start from first fixed pose when using sequential selection method
 
+		const int k = option("CY", "Enable user input during execution (Y/N)?");
+		activeSense->setAllowInput(k == 'Y');
+
 		if (!activeSense->getParameters().configSeq.empty())
 		{
 			const int k = option("CF", "For the first view, use (C)urrent camera pose, or first (F)ixed pose?");
@@ -584,6 +587,8 @@ void pacman::Demo::create(const Desc& desc) {
 					activeSense->incrNextBestViewSequential();
 			}
 		}
+
+		
 
 		activeSense->nextBestView();
 

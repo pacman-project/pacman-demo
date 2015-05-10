@@ -248,7 +248,7 @@ namespace pacman {
 		ActiveSense Default Constructor
 		Warning: *this needs to be initialised before use
 		*/
-		ActiveSense() : dataPath(ActiveSense::DFT_DATA_PATH), demoOwner(nullptr), hasPointCurv(false), hasPredModel(false), hasTrajectory(false), seqIndex(0) {}
+		ActiveSense() : dataPath(ActiveSense::DFT_DATA_PATH), demoOwner(nullptr), hasPointCurv(false), hasPredModel(false), hasTrajectory(false), allowInput(false), seqIndex(0) {}
 
 		/**
 		ActiveSense initialiser (Same function as Constructor)
@@ -304,6 +304,11 @@ namespace pacman {
 
 		void resetNextBestViewSequential() { seqIndex = 0; }
 		void incrNextBestViewSequential() { seqIndex = (seqIndex + 1) % viewHypotheses.size(); }
+
+		void setAllowInput(bool allowInput)
+		{
+			this->allowInput = allowInput;
+		}
 
 		/** Gets current view hypotheses a.k.a. sensor hypotheses*/
 		pacman::HypothesisSensor::Seq& getViewHypotheses() {
@@ -568,6 +573,9 @@ namespace pacman {
 
 		/**Internal control flags*/
 		bool hasPointCurv, hasPredModel, hasPredQuery, hasTrajectory;
+
+		/** toggle allow input flag */
+		bool allowInput;
 		
 		/** Internal control index for sequential selection*/
 		golem::U32 seqIndex;
