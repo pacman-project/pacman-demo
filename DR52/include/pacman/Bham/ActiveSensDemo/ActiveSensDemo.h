@@ -81,6 +81,11 @@ protected:
 	/** golem::Object (Post)processing function called AFTER every physics simulation step and before randering. */
 	virtual void postprocess(golem::SecTmReal elapsedTime);
 
+	virtual void perform2(const std::string& data, const std::string& item, const golem::Controller::State::Seq& trajectory,
+		const bool testTrajectory = true, const bool controlRecording = false);
+
+	void showRecordingState();
+
 	grasp::Camera* getWristCamera(const bool dontThrow = false) const;
 	golem::Mat34 getWristPose() const;
 	golem::Controller::State::Seq getTrajectoryFromPose(const golem::Mat34& w, const golem::SecTmReal duration);

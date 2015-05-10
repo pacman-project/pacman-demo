@@ -65,10 +65,12 @@ void pacman::Demo::postprocess(golem::SecTmReal elapsedTime) {
 	Player::postprocess(elapsedTime);
 	
 	golem::CriticalSectionWrapper csw(activeSense->getCSViewHypotheses());
+#if 0
 	for (pacman::HypothesisSensor::Seq::iterator it = activeSense->getViewHypotheses().begin(); it != activeSense->getViewHypotheses().end(); it++)
 	{
 		(*it)->draw((*it)->getAppearance(), this->sensorRenderer);
 	}
+#endif
 	golem::Mat34 centroidFrame;
 	centroidFrame.setId();
 	centroidFrame.p = activeSense->getParameters().centroid;
@@ -160,6 +162,117 @@ void pacman::Demo::scanPoseActive(grasp::data::Item::List& scannedImageItems, Sc
 	}
 
 	context.write("Done!\n");
+}
+
+void pacman::Demo::perform2(const std::string& data, const std::string& item, const golem::Controller::State::Seq& trajectory, const bool testTrajectory, const bool controlRecording)
+{
+	// doesn't interfere with recording
+
+	if (trajectory.size() < 2)
+		throw Message(Message::LEVEL_ERROR, "Player::perform(): At least two waypoints required");
+
+	golem::Controller::State::Seq initTrajectory;
+	findTrajectory(lookupState(), &trajectory.front(), nullptr, SEC_TM_REAL_ZERO, initTrajectory);
+
+	golem::Controller::State::Seq completeTrajectory = initTrajectory;
+	completeTrajectory.insert(completeTrajectory.end(), trajectory.begin(), trajectory.end());
+
+	// create trajectory item
+	data::Item::Ptr itemTrajectory;
+	data::Handler::Map::const_iterator handlerPtr = handlerMap.find(trajectoryHandler);
+	if (handlerPtr == handlerMap.end())
+		throw Message(Message::LEVEL_ERROR, "Player::perform(): unknown default trajectory handler %s", trajectoryHandler.c_str());
+	data::Handler* handler = is<data::Handler>(handlerPtr);
+	if (!handler)
+		throw Message(Message::LEVEL_ERROR, "Player::perform(): invalid default trajectory handler %s", trajectoryHandler.c_str());
+	itemTrajectory = handler->create();
+	data::Trajectory* trajectoryIf = is<data::Trajectory>(itemTrajectory.get());
+	if (!trajectoryIf)
+		throw Message(Message::LEVEL_ERROR, "Player::perform(): unable to create trajectory using handler %s", trajectoryHandler.c_str());
+	trajectoryIf->setWaypoints(completeTrajectory);
+
+	// block displaying the current item
+	RenderBlock renderBlock(*this);
+
+	// test trajectory
+	if (testTrajectory) {
+		// insert trajectory to data with temporary name
+		const std::string itemLabelTmp = item + dataDesc->sepName + makeString("%f", context.getTimer().elapsed());
+		ScopeGuard removeItem([&]() {
+			UI::removeCallback(*this, getCurrentHandler());
+			{
+				golem::CriticalSectionWrapper csw(csData);
+				to<Data>(dataCurrentPtr)->itemMap.erase(itemLabelTmp);
+			}
+			createRender();
+		});
+		{
+			golem::CriticalSectionWrapper csw(csData);
+			const data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(itemLabelTmp, itemTrajectory));
+			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+		}
+		// enable GUI interaction and refresh
+		UI::addCallback(*this, getCurrentHandler());
+		createRender();
+		// prompt user
+		EnableKeyboardMouse enableKeyboardMouse(*this);
+		option("\x0D", "Press <Enter> to accept trajectory...");
+	}
+
+	// go to initial state
+	sendTrajectory(initTrajectory);
+	// wait until the last trajectory segment is sent
+	controller->waitForEnd();
+
+	if (controlRecording)
+	{
+		context.write("pacman::Demo::perform2:\n\n\n\n******** CONTROLLING RECORDING: STARTED ********\n\n\n\n");
+		// start recording
+		recordingStart(data, item, true);
+		recordingWaitToStart();
+	}
+
+	// send trajectory
+	sendTrajectory(trajectory);
+
+	// repeat every send waypoint until trajectory end
+	for (U32 i = 0; controller->waitForBegin(); ++i) {
+		if (universe.interrupted())
+			throw Exit();
+		if (controller->waitForEnd(0))
+			break;
+
+		// print every 10th robot state
+		if (i % 10 == 0)
+			context.write("State #%d\r", i);
+	}
+
+	if (controlRecording)
+	{
+		context.write("pacman::Demo::perform2:\n\n\n\n******** CONTROLLING RECORDING: STOPPED ********\n\n\n\n");
+		// stop recording
+		recordingStop(trajectoryIdlePerf);
+		recordingWaitToStop();
+	}
+
+	// insert trajectory
+	{
+		golem::CriticalSectionWrapper csw(csData);
+		data::Data::Map::iterator data = dataMap.find(recorderData);
+		if (data == dataMap.end())
+			throw Message(Message::LEVEL_ERROR, "Player::perform(): unable to find Data %s", recorderData.c_str());
+		data->second->itemMap.insert(std::make_pair(recorderItem + makeString("%s%.3f", dataDesc->sepName.c_str(), recorderStart), itemTrajectory));
+	}
+
+	context.write("Performance finished!\n");
+}
+
+void pacman::Demo::showRecordingState()
+{
+	if (recordingActive())
+		context.write("pacman::Demo::\n\n******** RECORDING VIDEO ********\n");
+	else
+		context.write("pacman::Demo::\n\n******** NOT RECORDING VIDEO!!! ********\n");
 }
 
 
@@ -340,8 +453,8 @@ void Demo::executeDropOff()
 	context.debug("Moving to drop-off point...\n");
 	gotoPose2(activeSense->getParameters().dropOffPose, trajectoryDuration, true);
 
-	context.debug("Waiting 1s before releasing grasp...\n");
-	Sleep::msleep(SecToMSec(1.0));
+	//context.debug("Waiting 1s before releasing grasp...\n");
+	//Sleep::msleep(SecToMSec(1.0));
 
 	const double withdrawReleaseFraction = 1.0;
 	context.debug("Releasing hand by %g%% in %gs...\n", withdrawReleaseFraction*100.0, trajectoryDuration);
@@ -571,8 +684,20 @@ void pacman::Demo::create(const Desc& desc) {
 
 		activeSense->resetNextBestViewSequential(); // always start from first fixed pose when using sequential selection method
 
-		const int k = option("CY", "Enable user input during execution (Y/N)?");
+		const int k = option("YN", "Enable user input during execution (Y/N)?");
 		activeSense->setAllowInput(k == 'Y');
+
+		if (!recordingActive())
+		{
+			const int k = option("YN", "Start video recording (Y/N)?");
+			if (k == 'Y')
+			{
+				recordingStart(dataCurrentPtr->first, "ActiveSense-Demo", true);
+				recordingWaitToStart();
+			}
+		}
+
+		showRecordingState();
 
 		if (!activeSense->getParameters().configSeq.empty())
 		{
@@ -588,11 +713,26 @@ void pacman::Demo::create(const Desc& desc) {
 			}
 		}
 
-		
-
 		activeSense->nextBestView();
 
+		showRecordingState();
+
 		activeSense->executeTrajectory();
+
+		showRecordingState();
+
+		if (option("YN", "Confirm drop-off action (Y/N)") == 'Y')
+			executeDropOff();
+
+		if (recordingActive() && option("YN", "Stop recording video? (Y/N)") == 'Y')
+		{
+			recordingStop(golem::SEC_TM_REAL_ZERO);
+			recordingWaitToStop();
+			context.write("\n\n\nNOW SAVE THE DATA BUNDLE!!!\n\n\n");
+		}
+
+		context.write(">>>>>>>> ActiveSense Demo Finished! <<<<<<<<\n");
+
 	}));
 	menuCmdMap.insert(std::make_pair("CH", [=]() {
 
@@ -827,11 +967,21 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 
 	menuCmdMap.insert(std::make_pair("ZD", [=]() {
-		if (option("YN", "Confirm drop-off action (Y/N)...") == 'Y')
+
+
+		if (option("YN", "Confirm drop-off action (Y/N)") == 'Y')
 		{
 			executeDropOff();
 			context.write("Done!\n");
 		}
+
+		if (recordingActive() && option("YN", "Stop recording video? (Y/N)") == 'Y')
+		{
+			recordingStop(golem::SEC_TM_REAL_ZERO);
+			recordingWaitToStop();
+			context.write("\n\n\nNOW SAVE THE DATA BUNDLE!!!\n\n\n");
+		}
+
 	}));
 
 	menuCmdMap.insert(std::make_pair("ZU", [=]() {
