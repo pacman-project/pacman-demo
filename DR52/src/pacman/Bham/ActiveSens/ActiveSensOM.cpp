@@ -54,6 +54,7 @@ namespace pacman {
 	*/
 	void ActiveSensOnlineModel::updateViewingAngles(const HypothesisSensor::Seq& visitedHypotheses){
 
+		viewingAngles.clear();
 		viewingAngles.resize(this->graspContacts.size(),golem::REAL_MAX);
 		printf("ActiveSensOnlineModel: updatingViewingAngles...\n");
 		for (HypothesisSensor::Seq::const_iterator it_h = visitedHypotheses.begin(); it_h != visitedHypotheses.end(); it_h++)

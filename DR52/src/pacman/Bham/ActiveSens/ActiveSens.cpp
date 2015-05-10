@@ -478,7 +478,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 	demoOwner->context.debug("ActiveSense: FEEDBACK COMPUTATION\n");
 	
 	//If we dont have a predictor model we generate one using either a predQuery or a trajectory
-	if (!hasPredModel && this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED)
+	if (!hasPredModel && (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED || this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2))
 	{
 	    if (hasPredQuery)
 			 this->setPredModelItem(this->computePredModelFeedBack(this->predQueryItem, this->pointCurvItem));
@@ -595,7 +595,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 		numViewsAcquired, numViewsAcquired==1 ? "" : "S" );
 
 	//If we are using a selection method different from contact_based then we generate a queryModel, trajectory and a disposable (feedback)predictorModel as a final result
-	if (maxNumViews == 1 || this->params.selectionMethod != ESelectionMethod::S_CONTACT_BASED)
+	if (maxNumViews == 1 || (this->params.selectionMethod != ESelectionMethod::S_CONTACT_BASED && this->params.selectionMethod != ESelectionMethod::S_CONTACT_BASED2))
 	{
 		ptr = this->computeFeedBackTransform(predModelItem, pointCurvItem);
 	}
