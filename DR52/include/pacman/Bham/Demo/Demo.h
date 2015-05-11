@@ -179,6 +179,9 @@ public:
 		/** Training data */
 		Training::Map training;
 
+		/** Show query densities */
+		bool queryShowDensities;
+
 		/** Model training data type index */
 		golem::U32 indexType;
 		/** Model training data item index */

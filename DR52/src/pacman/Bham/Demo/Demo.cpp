@@ -127,6 +127,7 @@ void Demo::Data::create(const Desc& desc) {
 	indexSolution = 0;
 
 	mode = MODE_MODEL;
+	queryShowDensities = false;
 }
 
 void Demo::Data::setOwner(Manager* owner) {
@@ -194,11 +195,13 @@ void Demo::Data::createRender() {
 		// query data
 		else if (mode == MODE_QUERY) {
 			if (!densities.empty()) {
-				const Density::Seq::iterator ptr = densities.begin() + indexDensity;
-				for (grasp::Query::Pose::Seq::const_iterator i = ptr->object.begin(); i != ptr->object.end(); ++i)
-					owner->modelRenderer.addAxes(i->toMat34(), Vec3(0.005));
-				for (grasp::Query::Pose::Seq::const_iterator i = ptr->pose.begin(); i != ptr->pose.end(); ++i)
-					owner->modelRenderer.addAxes(i->toMat34(), Vec3(0.02));
+				if (queryShowDensities) {
+					const Density::Seq::iterator ptr = densities.begin() + indexDensity;
+					for (grasp::Query::Pose::Seq::const_iterator i = ptr->object.begin(); i != ptr->object.end(); ++i)
+						owner->modelRenderer.addAxes(i->toMat34(), Vec3(0.005));
+					for (grasp::Query::Pose::Seq::const_iterator i = ptr->pose.begin(); i != ptr->pose.end(); ++i)
+						owner->modelRenderer.addAxes(i->toMat34(), Vec3(0.02));
+				}
 			}
 		}
 		else if (mode == MODE_SOLUTION) {
@@ -897,6 +900,12 @@ void pacman::Demo::create(const Desc& desc) {
 			const Data::Solution& solution = to<Data>(dataCurrentPtr)->solutions[to<Data>(dataCurrentPtr)->indexSolution];
 			context.write("Solution type %s (%u/%u), Item #%u, Likelihood_{total, contact, pose, collision}={%.6e, %.6e, %.6e, %.6e}\n", solution.type.c_str(), solution.queryIndex + 1, to<Data>(dataCurrentPtr)->densities.size(), to<Data>(dataCurrentPtr)->indexSolution + 1, solution.likelihood.likelihood, solution.likelihood.contact, solution.likelihood.pose, solution.likelihood.collision);
 		}
+		createRender();
+	}));
+	menuCmdMap.insert(std::make_pair("0", [=]() {
+		// set mode
+		to<Data>(dataCurrentPtr)->queryShowDensities = !to<Data>(dataCurrentPtr)->queryShowDensities;
+		context.write("query density %s\n", to<Data>(dataCurrentPtr)->queryShowDensities ? "ON" : "OFF");
 		createRender();
 	}));
 
