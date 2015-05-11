@@ -118,10 +118,22 @@ public:
 					return likelihood > golem::REAL_ZERO;
 				}
 				void make() {
-					likelihood = isValid(contact) && isValid(pose) && isValid(collision) ? contact * pose * collision : golem::numeric_const<golem::Real>::MIN_EXP;
+					likelihood = golem::numeric_const<golem::Real>::ONE;
+					if (isValid(contact))
+						likelihood *= contact;
+					if (isValid(pose))
+						likelihood *= pose;
+					if (isValid(collision))
+						likelihood *= collision;
 				}
 				void makeLog() {
-					likelihood = isValid(contact) && isValid(pose) && isValid(collision) ? golem::Math::ln(contact) + golem::Math::ln(pose) + golem::Math::ln(collision) : golem::numeric_const<golem::Real>::MIN_EXP;
+					likelihood = golem::numeric_const<golem::Real>::ZERO;
+					if (isValid(contact))
+						likelihood += golem::Math::ln(contact);
+					if (isValid(pose))
+						likelihood += golem::Math::ln(pose);
+					if (isValid(collision))
+						likelihood += golem::Math::ln(collision);
 				}
 			};
 

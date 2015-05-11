@@ -62,8 +62,8 @@
         <contact_3d kernels="5000" epsilon="1e-10" trials="100" feature_std_dev_max="5.0" pose_std_dev_max="5.0"/>
         <nn_search neighbours="0" search_checks="32" search_kdtrees="1" search_leaf_max_size="10"/>
         <pose kernels="100">
-          <std_dev lin="0.01" ang="200.0"/>
-          <path_dist lin="0.05" ang="100.0" std_dev="0.5"/>
+          <std_dev lin="0.01" ang="100.0"/>
+          <path_dist lin="0.075" ang="100.0" std_dev="0.01"/>
         </pose>
       </query>
 

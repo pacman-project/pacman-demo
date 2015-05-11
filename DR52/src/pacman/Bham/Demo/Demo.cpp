@@ -2201,7 +2201,6 @@ void pacman::Demo::generateSolutions() {
 				break;
 			}
 			// set
-			test.likelihood.setToDefault();
 			test.type = query->type;
 			test.queryIndex = (U32)(query - to<Data>(dataCurrentPtr)->densities.begin());
 
@@ -2240,7 +2239,8 @@ void pacman::Demo::generateSolutions() {
 					}
 
 					// evaluate
-					// use (test.likelihood.xxx = REAL_ONE) in isValid() to turn off expert
+					test.likelihood.setToDefault();
+					// comment out to turn off expert
 					if (!Data::Solution::Likelihood::isValid(test.likelihood.contact = evaluateSample(query->object.begin(), query->object.end(), test.pose)))
 						continue;
 					if (!Data::Solution::Likelihood::isValid(test.likelihood.pose = evaluateSample(query->pose.begin(), query->pose.end(), test.pose)))
