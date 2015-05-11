@@ -223,6 +223,10 @@
       <normal v1="0.0" v2="0.0" v3="1.0"/>
       <pose v1="0.0" v2="0.0" v3="-0.345" roll="0.0" pitch="0.0" yaw="0.0"/>
     </obstacle_bounds>
+    <obstacle_bounds type="box" group="1" invisible="1">
+      <dimensions v1="0.15" v2="0.15" v3="0.15"/>
+      <pose v1="0.1" v2="0.0" v3="0.45" roll="0.0" pitch="0.0" yaw="0.0"/>
+    </obstacle_bounds>
   </player>
 
   <recorder>
