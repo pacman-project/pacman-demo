@@ -1215,7 +1215,7 @@ void pacman::Demo::create(const Desc& desc) {
 		frameInv.setInverse(frame);
 
 		// run model tools
-		const std::string options("Press a key to: add (C)ontact/(T)rajectory data, finish <Enter>...");
+		const std::string options("Press a key to: add (C)ontact/(T)rajectory data, (G)oto contact, finish <Enter>...");
 		context.write("%s\n", options.c_str());
 		for (bool finish = false; !finish;) {
 			// attach object to the robot's end-effector
@@ -1233,6 +1233,22 @@ void pacman::Demo::create(const Desc& desc) {
 			// model options
 			const int key = waitKey(20);
 			switch (key) {
+			case 'G': {
+				context.write("%s )G(\n", options.c_str());
+				// clone model object item
+				if (to<Data>(dataCurrentPtr)->training.empty())
+					throw Message(Message::LEVEL_ERROR, "No contacts");
+				Data::Training::Map::const_iterator contactPtr = to<Data>(dataCurrentPtr)->training.begin();
+				size_t id = 0;
+				select(contactPtr, to<Data>(dataCurrentPtr)->training.begin(), to<Data>(dataCurrentPtr)->training.end(), "Contact:\n", [&](Data::Training::Map::const_iterator ptr) -> std::string {
+					return makeString("Contact id: %u", ++id);
+				});
+				// go to contact pose
+				gotoConfig(contactPtr->second.state);
+				// done here
+				context.write("Done!\n");
+				break;
+			}
 			case 'C': {
 				context.write("%s )C(\n", options.c_str());
 				// clone model object item
@@ -2092,7 +2108,7 @@ void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 
 		// distance
 		const RBDist frameDist(contactFrame.p.distance(approachFrame.p), contactFrame.q.distance(approachFrame.q));
-		if (frameDist.lin < REAL_EPS || frameDist.ang < REAL_EPS)
+		if (frameDist.lin < REAL_EPS/* || frameDist.ang < REAL_EPS*/)
 			throw Message(Message::LEVEL_ERROR, "Demo::createQuery(): Invalid distance between waypoints");
 
 		// create pose distribution
@@ -2105,7 +2121,7 @@ void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 			grasp::Query::Pose qp;
 			
 			// interpolation factor
-			const grasp::RBDist interpol(dist * pose->second.pathDist.lin / frameDist.lin, dist * pose->second.pathDist.ang / frameDist.ang);
+			const grasp::RBDist interpol(dist * pose->second.pathDist.lin / frameDist.lin, REAL_ZERO/*dist * pose->second.pathDist.ang / frameDist.ang*/);
 
 			// linear interpolation/extrapolation
 			qp.p.interpolate(contactFrame.p, approachFrame.p, interpol.lin);
