@@ -40,9 +40,11 @@ class ForceEvent
 {
 public:
 	ForceEvent(grasp::FT* pFTSensor_, const golem::Twist& threshold_) :
-		pFTSensor(pFTSensor_),
 		threshold(threshold_),
-		bias(Vec3::zero(), Vec3::zero())
+		bias(Vec3::zero(), Vec3::zero()),
+		maxExcursion(Vec3::zero(), Vec3::zero()),
+		//logFile("FT-debug.log", std::ios::out | std::ios::app),
+		pFTSensor(pFTSensor_)
 	{
 		if (pFTSensor == nullptr)
 			throw Message(Message::LEVEL_CRIT, "ForceEvent(): pFTSensor is nullptr");
@@ -50,36 +52,69 @@ public:
 
 	void setBias()
 	{
-		SecTmReal t;
-		pFTSensor->readSensor(bias, t);
+		grasp::FT::Data ftdata;
+		pFTSensor->read(ftdata, true);
+		bias = ftdata.wrench;
 	}
 
 	bool detected(golem::Context* pContext = nullptr)
 	{
 		bool tripped = false;
-		golem::Twist current;
-		SecTmReal t;
-		pFTSensor->readSensor(current, t);
-		double currentFT[6], biasFT[6], thresholdFT[6];
+		grasp::FT::Data ftdata;
+		pFTSensor->read(ftdata, true);
+		golem::Twist current = ftdata.wrench;
+		double currentFT[6], biasFT[6], thresholdFT[6], maxExcursionFT[6];
 		current.get(currentFT);
 		bias.get(biasFT);
 		threshold.get(thresholdFT);
+		maxExcursion.get(maxExcursionFT);
 		for (size_t i = 0; i < 6; ++i)
 		{
-			if (abs(currentFT[i] - biasFT[i]) > thresholdFT[i])
+			const double excursion = abs(currentFT[i] - biasFT[i]);
+
+			if (excursion > maxExcursionFT[i])
+				maxExcursionFT[i] = excursion;
+
+			if (excursion > thresholdFT[i])
 			{
 				tripped = true;
 				if (pContext != nullptr)
 					pContext->debug("Force event detected on axis %d: |%f - %f| > %f\n", i + 1, currentFT[i], biasFT[i], thresholdFT[i]);
-				break;
+				//break; // test on all axes
 			}
 		}
+		maxExcursion.set(maxExcursionFT);
 		return tripped;
+	}
+
+	void showMaxExcursion(golem::Context* pContext)
+	{
+		const golem::Twist& m = maxExcursion;
+		pContext->debug("ForceEvent: max excursion: %g %g %g;  %g %g %g\n", m.v.x, m.v.y, m.v.z, m.w.x, m.w.y, m.w.z);
+	}
+
+	void showFT(golem::Context* pContext)
+	{
+		grasp::FT::Data ft1, ft2;
+		pFTSensor->read(ft1, false);
+		pFTSensor->read(ft2, true);
+
+		SecTmReal t1 = ft1.timeStamp;
+		golem::Twist raw = ft1.wrench;
+		SecTmReal t2 = ft2.timeStamp;
+		golem::Twist in = ft2.wrench;
+
+		pContext->debug("FT raw[%8.3f]: %7.2f %7.2f %7.2f %7.2f %7.2f %7.2f; FT inertia[%8.3f]: %7.2f %7.2f %7.2f %7.2f %7.2f %7.2f\n",
+			t1, raw.v.x, raw.v.y, raw.v.z, raw.w.x, raw.w.y, raw.w.z,
+			t2, in.v.x, in.v.y, in.v.z, in.w.x, in.w.y, in.w.z);
 	}
 
 public:
 	golem::Twist threshold;
 	golem::Twist bias;
+	golem::Twist maxExcursion;
+
+	//golem::FileStream logFile;
 
 private:
 	grasp::FT* pFTSensor;
@@ -2484,6 +2519,24 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
 	}
 
+	// adjust thresholds
+	bool adjustedFT = false;
+	if (testTrajectory)
+	{
+		if (option("YN", "Adjust F/T thresholds? (Y/N)") == 'Y')
+		{
+			adjustedFT = true;
+			do {
+				readNumber("X ", trajectoryThresholdForce.v.x);
+				readNumber("Y ", trajectoryThresholdForce.v.y);
+				readNumber("Z ", trajectoryThresholdForce.v.z);
+				readNumber("Tx ", trajectoryThresholdForce.w.x);
+				readNumber("Ty ", trajectoryThresholdForce.w.y);
+				readNumber("Tz ", trajectoryThresholdForce.w.z);
+			} while (option("YN", "OK? (Y/N)") != 'Y');
+		}
+	}
+
 	// test trajectory
 	if (testTrajectory) {
 		// prompt user
@@ -2534,6 +2587,14 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 		// print every 10th robot state
 		if (i % 10 == 0)
 			context.write("State #%d\r", i);
+		
+		if (adjustedFT)
+		{
+			if (i % 2 == 0)
+				forceEvent.showFT(&context);
+			if (i % 50 == 0)
+				forceEvent.showMaxExcursion(&context);
+		}
 	}
 	context.debug("\n");
 
