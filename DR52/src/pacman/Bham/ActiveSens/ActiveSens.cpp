@@ -1152,12 +1152,17 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::computePredModelFeedBack(g
 	demoOwner->context.debug("ActiveSense: Computing Trajectory!\n");
 	grasp::data::Item::Map::iterator traj = convertToTrajectory(predQuery);
 
-	// add trajectory item into current data bundle (so can execute grasp again)
-	std::string trajectoryName("ActiveSens_Grasp");
-	grasp::data::Item::Map& itemMap = to<Demo::Data>(demoOwner->dataCurrentPtr)->itemMap;
-	itemMap.erase(trajectoryName);
-	grasp::data::Item::Map::iterator ptr = itemMap.insert(itemMap.end(), grasp::data::Item::Map::value_type(trajectoryName, traj->second));
-	Demo::Data::View::setItem(itemMap, ptr, to<Demo::Data>(demoOwner->dataCurrentPtr)->getView());
+	{
+		Manager::RenderBlock renderBlock(*demoOwner);
+		golem::CriticalSectionWrapper cswData(demoOwner->csData);
+		// add trajectory item into current data bundle (so can execute grasp again)
+		std::string trajectoryName("ActiveSens_Grasp");
+		grasp::data::Item::Map& itemMap = to<Demo::Data>(demoOwner->dataCurrentPtr)->itemMap;
+		itemMap.erase(trajectoryName);
+		grasp::data::Item::Map::iterator ptr = itemMap.insert(itemMap.end(), grasp::data::Item::Map::value_type(trajectoryName, traj->second));
+		Demo::Data::View::setItem(itemMap, ptr, to<Demo::Data>(demoOwner->dataCurrentPtr)->getView());
+	}
+	
 
 	return computeTransformPredModel(pointCurvItem, traj);
 }
