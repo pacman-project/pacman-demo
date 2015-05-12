@@ -56,6 +56,8 @@ public:
 		public:
 			/** Collection */
 			typedef std::multimap<std::string, Training> Map;
+			/** Range */
+			typedef std::pair<Map::const_iterator, Map::const_iterator> Range;
 
 			/** Initialisation */
 			Training(const golem::Controller::State& state) : state(state) {}
@@ -149,6 +151,25 @@ public:
 
 			/** Query index */
 			golem::U32 queryIndex;
+		};
+
+		/** Cluster */
+		class Cluster {
+		public:
+			/** Type-slot map */
+			typedef std::multimap<std::string, Cluster> Map;
+			/** Slot set */
+			typedef std::set<golem::U32> Set;
+			/** Slot counter */
+			typedef std::map<std::string, Set> Counter;
+
+			/** Slot */
+			std::string slot;
+
+			/** Set occupied */
+			static void setOccupied(const Map& map, Counter& counter, const std::string& type, golem::U32 index, bool occupied = true);
+			/** Is occupied */
+			static bool isOccupied(const Map& map, const Counter& counter, const std::string& type, golem::U32 index);
 		};
 
 		/** Data bundle default name */
@@ -414,6 +435,9 @@ public:
 		/* Withdraw action lift distance */
 		golem::Real withdrawLiftDistance;
 
+		/** Cluster */
+		Data::Cluster::Map clusterMap;
+
 		/** Constructs from description object */
 		Desc() {
 			Desc::setToDefault();
@@ -481,6 +505,8 @@ public:
 
 			withdrawReleaseFraction = golem::Real(0.5);
 			withdrawLiftDistance = golem::Real(0.20);
+
+			clusterMap.clear();
 		}
 		/** Assert that the description is valid. */
 		virtual void assertValid(const grasp::Assert::Context& ac) const {
@@ -557,6 +583,8 @@ public:
 			grasp::Assert::valid(withdrawReleaseFraction >= golem::REAL_ZERO, ac, "withdrawReleaseFraction: < 0");
 			grasp::Assert::valid(withdrawReleaseFraction <= golem::REAL_ONE,  ac, "withdrawReleaseFraction: > 1");
 			grasp::Assert::valid(withdrawLiftDistance >= golem::REAL_ZERO, ac, "withdrawLiftDistance: < 0");
+
+			//grasp::Assert::valid(!clusterMap.empty(), ac, "clusterMap: empty");
 		}
 		/** Load descritpion from xml context. */
 		virtual void load(golem::Context& context, const golem::XMLContext* xmlcontext);
@@ -672,6 +700,11 @@ protected:
 	/* Withdraw action lift distance */
 	golem::Real withdrawLiftDistance;
 
+	/** Cluster map */
+	Data::Cluster::Map clusterMap;
+	/** Cluster counter */
+	Data::Cluster::Counter clusterCounter;
+
 	/** Item selection */
 	typedef std::function<void(Data::Training::Map&, Data::Training::Map::iterator&)> ItemSelectFunc;
 	typedef std::function<void(ItemSelectFunc)> ItemSelect;
@@ -690,7 +723,7 @@ protected:
 	std::string getTrajectoryName(const std::string& prefix, const std::string& type) const;
 
 	/** Create query densities */
-	void createQuery(grasp::data::Item::Ptr item, const golem::Mat34& frame);
+	void createQuery(grasp::data::Item::Ptr item, const golem::Mat34& frame, const Data::Cluster::Counter* clusterCounter = nullptr);
 
 	/** Generate solutions */
 	void generateSolutions();
@@ -750,6 +783,8 @@ protected:
 //------------------------------------------------------------------------------
 
 namespace golem {
+	void XMLData(pacman::Demo::Data::Cluster::Map::value_type& val, golem::XMLContext* context, bool create = false);
+
 	void XMLData(pacman::Demo::PoseDensity::Map::value_type& val, golem::XMLContext* context, bool create = false);
 
 	template <> void Stream::read(pacman::Demo::Data::Training::Map::value_type& value) const;

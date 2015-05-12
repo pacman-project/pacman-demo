@@ -68,6 +68,10 @@
       </query>
 
       <optimisation runs="1000" steps="1000" sa_temp="0.1" sa_delta_lin="1.0" sa_delta_ang="0.2" sa_energy="0.1" epsilon="1.e-10"/>
+    
+      <cluster_map type="plate-up" slot="1"/>
+      <cluster_map type="plate-dn" slot="1"/>
+      <cluster_map type="cup" slot="2"/>
     </query>
 
     <grasp sensor="FTClient+FTClient" event_time_wait="2.0" close_duration="2.0">

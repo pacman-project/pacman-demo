@@ -335,6 +335,40 @@ void Demo::PoseDensity::load(const golem::XMLContext* xmlcontext) {
 
 //------------------------------------------------------------------------------
 
+void Demo::Data::Cluster::setOccupied(const Map& map, Counter& counter, const std::string& type, golem::U32 index, bool occupied) {
+	// find cluster
+	Data::Cluster::Map::const_iterator cluster = map.find(type);
+	if (cluster == map.end())
+		throw Message(Message::LEVEL_NOTICE, "Demo::Data::Cluster::setOccupied(): %s type does not belong to any cluster", type.c_str());
+	// find slot
+	Data::Cluster::Counter::iterator slot = counter.find(cluster->second.slot);
+	// set/clear the state
+	if (slot == counter.end()) {
+		if (occupied) {
+			Set set;
+			set.insert(index);
+			counter.insert(std::make_pair(cluster->second.slot, set));
+		}
+	}
+	else if (occupied)
+		slot->second.insert(index);
+	else
+		slot->second.erase(index);
+}
+
+bool Demo::Data::Cluster::isOccupied(const Map& map, const Counter& counter, const std::string& type, golem::U32 index) {
+	// find cluster
+	Data::Cluster::Map::const_iterator cluster = map.find(type);
+	if (cluster == map.end())
+		throw Message(Message::LEVEL_NOTICE, "Demo::Data::Cluster::isOccupied(): %s type does not belong to any cluster", type.c_str());
+	// find slot
+	Data::Cluster::Counter::const_iterator slot = counter.find(cluster->second.slot);
+	// check if slot is available
+	return slot != counter.end() && slot->second.find(index) != slot->second.end();
+}
+
+//------------------------------------------------------------------------------
+
 void Demo::Optimisation::load(const golem::XMLContext* xmlcontext) {
 	golem::XMLData("runs", runs, const_cast<golem::XMLContext*>(xmlcontext));
 	golem::XMLData("steps", steps, const_cast<golem::XMLContext*>(xmlcontext));
@@ -410,6 +444,13 @@ void Demo::Desc::load(golem::Context& context, const golem::XMLContext* xmlconte
 
 	golem::XMLData("release_fraction", withdrawReleaseFraction, xmlcontext->getContextFirst("manipulator withdraw_action"));
 	golem::XMLData("lift_distance", withdrawLiftDistance, xmlcontext->getContextFirst("manipulator withdraw_action"));
+
+	try {
+		clusterMap.clear();
+		golem::XMLData(clusterMap, clusterMap.max_size(), xmlcontext->getContextFirst("query"), "cluster_map", false);
+	}
+	catch (const MsgXMLParserNameNotFound&) {
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -871,6 +912,7 @@ void pacman::Demo::create(const Desc& desc) {
 	withdrawReleaseFraction = desc.withdrawReleaseFraction;
 	withdrawLiftDistance = desc.withdrawLiftDistance;
 
+	clusterMap = desc.clusterMap;
 
 	////////////////////////////////////////////////////////////////////////////
 	//                            START OF MENUS                              // 
@@ -1385,7 +1427,7 @@ void pacman::Demo::create(const Desc& desc) {
 		// wrist frame
 		const Mat34 frame = forwardTransformArm(lookupState());
 		// create query densities
-		createQuery(ptr->second, frame);
+		createQuery(ptr->second, frame, &clusterCounter);
 		createRender();
 
 		context.write("Done!\n");
@@ -1406,7 +1448,7 @@ void pacman::Demo::create(const Desc& desc) {
 		to<Data>(dataCurrentPtr)->mode = Data::MODE_SOLUTION;
 		createRender();
 
-		desc = "Press a key to: trajectory (S)elect/(P)erform...";
+		desc = "Press a key to: trajectory (S)elect/(P)erform/(C)lear occupied slots...";
 	}));
 	menuCmdMap.insert(std::make_pair("PTS", [=]() {
 		// select best trajectory
@@ -1420,6 +1462,11 @@ void pacman::Demo::create(const Desc& desc) {
 		performTrajectory(true);
 		createRender();
 
+		context.write("Done!\n");
+	}));
+	menuCmdMap.insert(std::make_pair("PTC", [=]() {
+		// reset occupied slots
+		clusterCounter.clear();
 		context.write("Done!\n");
 	}));
 
@@ -1460,7 +1507,7 @@ void pacman::Demo::create(const Desc& desc) {
 			// wrist frame
 			const Mat34 frame = forwardTransformArm(lookupState());
 			// create query densities
-			createQuery(ptr->second, frame);
+			createQuery(ptr->second, frame, &clusterCounter);
 			// generate wrist pose solutions
 			generateSolutions();
 			// select best trajectory
@@ -2049,7 +2096,7 @@ std::string pacman::Demo::getTrajectoryName(const std::string& prefix, const std
 
 //------------------------------------------------------------------------------
 
-void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& frame) {
+void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& frame, const Data::Cluster::Counter* clusterCounter) {
 	// Features
 	const data::Feature3D* features = is<data::Feature3D>(item.get());
 	if (!features)
@@ -2075,6 +2122,28 @@ void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 
 	to<Data>(dataCurrentPtr)->densities.clear();
 	for (Data::Training::Map::const_iterator i = to<Data>(dataCurrentPtr)->training.begin(); i != to<Data>(dataCurrentPtr)->training.end(); ++i) {
+		Data::Density density;
+		density.type = i->first;
+
+		try {
+			// range
+			const Data::Training::Range range = to<Data>(dataCurrentPtr)->training.equal_range(i->first);
+			// index
+			const U32 index = (U32)std::distance(range.first, i);
+			// check if slot is occupied
+			if (clusterCounter && Data::Cluster::isOccupied(clusterMap, *clusterCounter, i->first, index)) {
+				density.weight = REAL_ZERO;
+				to<Data>(dataCurrentPtr)->densities.push_back(density);
+				context.debug("Demo::createQuery(): slot %s index %u is occupied\n", i->first.c_str(), index);
+				continue;
+			}
+			else
+				context.debug("Demo::createQuery(): slot %s index %u is empty\n", i->first.c_str(), index);
+		}
+		catch (const Message& msg) {
+			context.write("%s\n", msg.what());
+		}
+
 		// select query density
 		grasp::Query::Map::const_iterator query = queryMap.find(i->first);
 		if (query == queryMap.end()) query = queryAny;
@@ -2089,9 +2158,6 @@ void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 			context.write("%s\n", ex.what());
 			continue;
 		}
-
-		Data::Density density;
-		density.type = i->first;
 
 		// object density
 		density.object = query->second->getPoses();
@@ -2410,11 +2476,12 @@ void pacman::Demo::selectTrajectory() {
 		return distex;
 	});
 
-	to<Data>(dataCurrentPtr)->indexSolution = val.first;
 	context.write("#%03u: Best trajectory\n", val.first + 1);
+	to<Data>(dataCurrentPtr)->indexSolution = val.first;
+	const Data::Solution& solution = to<Data>(dataCurrentPtr)->solutions[val.first];
 	createRender();
 	Controller::State::Seq seq;
-	manipulator->copy(to<Data>(dataCurrentPtr)->solutions[val.first].path, seq);
+	manipulator->copy(solution.path, seq);
 
 	// add trajectory waypoint
 	{
@@ -2428,6 +2495,23 @@ void pacman::Demo::selectTrajectory() {
 		// add current state
 		trajectory->setWaypoints(seq);
 		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+	}
+
+	// set slot occupancy
+	try {
+		// restore 
+		Data::Training::Map::const_iterator i = to<Data>(dataCurrentPtr)->training.begin();
+		std::advance(i, solution.queryIndex); // 1:1 map model-query
+		// range
+		const Data::Training::Range range = to<Data>(dataCurrentPtr)->training.equal_range(i->first);
+		// index
+		const U32 index = (U32)std::distance(range.first, i);
+		// set slot occupied
+		context.debug("Demo::selectTrajectory(): slot %s index %u set occupied\n", solution.type.c_str(), index);
+		Data::Cluster::setOccupied(clusterMap, clusterCounter, solution.type, index, true);
+	}
+	catch (const Message& msg) {
+		context.write("%s\n", msg.what());
 	}
 }
 
@@ -2626,6 +2710,11 @@ void pacman::Demo::render() const {
 }
 
 //------------------------------------------------------------------------------
+
+void golem::XMLData(pacman::Demo::Data::Cluster::Map::value_type& val, golem::XMLContext* xmlcontext, bool create) {
+	golem::XMLData("type", const_cast<std::string&>(val.first), xmlcontext, create);
+	golem::XMLData("slot", val.second.slot, xmlcontext, create);
+}
 
 void golem::XMLData(pacman::Demo::PoseDensity::Map::value_type& val, golem::XMLContext* xmlcontext, bool create) {
 	golem::XMLData("id", const_cast<std::string&>(val.first), xmlcontext, create);
