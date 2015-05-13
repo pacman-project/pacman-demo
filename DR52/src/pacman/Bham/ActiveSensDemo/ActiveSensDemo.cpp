@@ -253,15 +253,15 @@ void pacman::Demo::perform2(const std::string& data, const std::string& item, co
 		// stop recording
 		recordingStop(trajectoryIdlePerf);
 		recordingWaitToStop();
-	}
 
-	// insert trajectory
-	{
-		golem::CriticalSectionWrapper csw(csData);
-		data::Data::Map::iterator data = dataMap.find(recorderData);
-		if (data == dataMap.end())
-			throw Message(Message::LEVEL_ERROR, "Player::perform(): unable to find Data %s", recorderData.c_str());
-		data->second->itemMap.insert(std::make_pair(recorderItem + makeString("%s%.3f", dataDesc->sepName.c_str(), recorderStart), itemTrajectory));
+		// insert trajectory
+		{
+			golem::CriticalSectionWrapper csw(csData);
+			data::Data::Map::iterator data = dataMap.find(recorderData);
+			if (data == dataMap.end())
+				throw Message(Message::LEVEL_ERROR, "Player::perform(): unable to find Data %s", recorderData.c_str());
+			data->second->itemMap.insert(std::make_pair(recorderItem + makeString("%s%.3f", dataDesc->sepName.c_str(), recorderStart), itemTrajectory));
+		}
 	}
 
 	context.write("Performance finished!\n");

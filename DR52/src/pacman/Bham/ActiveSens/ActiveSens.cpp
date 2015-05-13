@@ -1083,7 +1083,9 @@ grasp::data::Item::Map::iterator ActiveSense::convertToTrajectory(grasp::data::I
 
 
 	// pick up handler
-	data::Handler::Map::iterator handlerPtr = demoOwner->handlerMap.find("Trajectory+Trajectory");
+	data::Handler::Map::iterator handlerPtr = demoOwner->handlerMap.find("Trajectory+TrajectoryActiveSense");
+	if (handlerPtr == demoOwner->handlerMap.end())
+		throw Message(Message::LEVEL_ERROR, "ActiveSense::convertToTrajectory: Trajectory+TrajectoryActiveSense not in handler map");
 
 	// convert
 	data::Item::Ptr traj = convert->convert(*handlerPtr->second);
