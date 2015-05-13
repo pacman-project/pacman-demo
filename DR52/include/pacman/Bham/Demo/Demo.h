@@ -166,8 +166,10 @@ public:
 			/** Slot */
 			std::string slot;
 
+			/** Set to default */
+			static void setToDefault(const Map& map, Counter& counter, const Training::Map& training, bool ordered = true);
 			/** Set occupied */
-			static void setOccupied(const Map& map, Counter& counter, const std::string& type, golem::U32 index, bool occupied = true);
+			static void setOccupied(const Map& map, Counter& counter, const std::string& type, golem::U32 index, bool ordered = true);
 			/** Is occupied */
 			static bool isOccupied(const Map& map, const Counter& counter, const std::string& type, golem::U32 index);
 		};
@@ -219,6 +221,9 @@ public:
 		Solution::Seq solutions;
 		/** Solution index */
 		golem::U32 indexSolution;
+
+		/** Cluster counter */
+		Data::Cluster::Counter clusterCounter;
 
 		/** Data bundle description */
 		class Desc : public grasp::Player::Data::Desc {
@@ -702,8 +707,6 @@ protected:
 
 	/** Cluster map */
 	Data::Cluster::Map clusterMap;
-	/** Cluster counter */
-	Data::Cluster::Counter clusterCounter;
 
 	/** Item selection */
 	typedef std::function<void(Data::Training::Map&, Data::Training::Map::iterator&)> ItemSelectFunc;

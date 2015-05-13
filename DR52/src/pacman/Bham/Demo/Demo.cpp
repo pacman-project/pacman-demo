@@ -294,6 +294,8 @@ void Demo::Data::load(const std::string& prefix, const golem::XMLContext* xmlcon
 	}
 	catch (const std::exception&) {
 	}
+
+	Data::Cluster::setToDefault(this->owner->clusterMap, clusterCounter, training);
 }
 
 void Demo::Data::save(const std::string& prefix, golem::XMLContext* xmlcontext) const {
@@ -335,25 +337,32 @@ void Demo::PoseDensity::load(const golem::XMLContext* xmlcontext) {
 
 //------------------------------------------------------------------------------
 
-void Demo::Data::Cluster::setOccupied(const Map& map, Counter& counter, const std::string& type, golem::U32 index, bool occupied) {
+void Demo::Data::Cluster::setToDefault(const Map& map, Counter& counter, const Training::Map& training, bool ordered) {
+	counter.clear();
+
+	if (ordered) {
+		for (Training::Map::const_iterator ptr = training.begin(); ptr != training.end(); ptr = training.upper_bound(ptr->first)) {
+			const Map::const_iterator cluster = map.find(ptr->first);
+			if (cluster == map.end())
+				continue;
+			const Data::Training::Range range = training.equal_range(ptr->first);
+			const U32 size = std::distance(range.first, range.second);
+
+			for (U32 index = 1; index < size; ++index)
+				counter[cluster->second.slot].insert(index);
+		}
+	}
+}
+
+void Demo::Data::Cluster::setOccupied(const Map& map, Counter& counter, const std::string& type, golem::U32 index, bool ordered) {
 	// find cluster
 	Data::Cluster::Map::const_iterator cluster = map.find(type);
 	if (cluster == map.end())
 		throw Message(Message::LEVEL_NOTICE, "Demo::Data::Cluster::setOccupied(): %s type does not belong to any cluster", type.c_str());
-	// find slot
-	Data::Cluster::Counter::iterator slot = counter.find(cluster->second.slot);
-	// set/clear the state
-	if (slot == counter.end()) {
-		if (occupied) {
-			Set set;
-			set.insert(index);
-			counter.insert(std::make_pair(cluster->second.slot, set));
-		}
-	}
-	else if (occupied)
-		slot->second.insert(index);
-	else
-		slot->second.erase(index);
+	// add index
+	counter[cluster->second.slot].insert(index);
+	if (ordered)
+		counter[cluster->second.slot].erase(index + 1);
 }
 
 bool Demo::Data::Cluster::isOccupied(const Map& map, const Counter& counter, const std::string& type, golem::U32 index) {
@@ -1385,6 +1394,9 @@ void pacman::Demo::create(const Desc& desc) {
 			}
 		}
 
+		// update occupancy
+		Data::Cluster::setToDefault(clusterMap, to<Data>(dataCurrentPtr)->clusterCounter, to<Data>(dataCurrentPtr)->training);
+
 		context.write("Done!\n");
 	}));
 	menuCmdMap.insert(std::make_pair("PMR", [=]() {
@@ -1427,7 +1439,7 @@ void pacman::Demo::create(const Desc& desc) {
 		// wrist frame
 		const Mat34 frame = forwardTransformArm(lookupState());
 		// create query densities
-		createQuery(ptr->second, frame, &clusterCounter);
+		createQuery(ptr->second, frame, &to<Data>(dataCurrentPtr)->clusterCounter);
 		createRender();
 
 		context.write("Done!\n");
@@ -1466,7 +1478,7 @@ void pacman::Demo::create(const Desc& desc) {
 	}));
 	menuCmdMap.insert(std::make_pair("PTC", [=]() {
 		// reset occupied slots
-		clusterCounter.clear();
+		Data::Cluster::setToDefault(clusterMap, to<Data>(dataCurrentPtr)->clusterCounter, to<Data>(dataCurrentPtr)->training);
 		context.write("Done!\n");
 	}));
 
@@ -1507,7 +1519,7 @@ void pacman::Demo::create(const Desc& desc) {
 			// wrist frame
 			const Mat34 frame = forwardTransformArm(lookupState());
 			// create query densities
-			createQuery(ptr->second, frame, &clusterCounter);
+			createQuery(ptr->second, frame, &to<Data>(dataCurrentPtr)->clusterCounter);
 			// generate wrist pose solutions
 			generateSolutions();
 			// select best trajectory
@@ -2508,7 +2520,7 @@ void pacman::Demo::selectTrajectory() {
 		const U32 index = (U32)std::distance(range.first, i);
 		// set slot occupied
 		context.debug("Demo::selectTrajectory(): slot %s index %u set occupied\n", solution.type.c_str(), index);
-		Data::Cluster::setOccupied(clusterMap, clusterCounter, solution.type, index, true);
+		Data::Cluster::setOccupied(clusterMap, to<Data>(dataCurrentPtr)->clusterCounter, solution.type, index);
 	}
 	catch (const Message& msg) {
 		context.write("%s\n", msg.what());
