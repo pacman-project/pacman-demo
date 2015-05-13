@@ -1512,7 +1512,7 @@ void pacman::Demo::create(const Desc& desc) {
 			breakPoint("Object grasp and point cloud capture");
 			grasp::data::Item::Map::iterator ptr = objectGraspAndCapture(stopAtBreakPoint);
 
-			breakPoint("Action planning");
+			//breakPoint("Action planning");
 
 			// compute features and add to data bundle
 			ptr = objectProcess(ptr);

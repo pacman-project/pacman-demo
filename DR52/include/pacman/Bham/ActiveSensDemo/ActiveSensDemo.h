@@ -97,6 +97,7 @@ protected:
 	void gotoWristPose(const golem::Mat34& w, const golem::SecTmReal duration = golem::SEC_TM_REAL_ZERO);
 	void gotoPose2(const grasp::ConfigMat34& pose, const golem::SecTmReal duration, const bool ignoreHand = false);
 	void releaseHand(const double openFraction, const golem::SecTmReal duration);
+	void releaseHand2(const double openFraction, const golem::SecTmReal duration, const golem::Controller::State partReleaseConfig);
 	void closeHand(const double closeFraction, const golem::SecTmReal duration);
 
 	void nudgeWrist();

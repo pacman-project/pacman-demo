@@ -1339,8 +1339,8 @@ golem::Real pacman::ActiveSense::computeCoverage(grasp::Cloud::PointCurvSeq::Ptr
 }
 
 
-void pacman::ActiveSense::executeTrajectory(){
-
+void pacman::ActiveSense::executeTrajectory()
+{
 	demoOwner->context.debug("ActiveSense: Attempting to execute trajectory...\n");
 
 	if (this->result.trajectories.size() <= 0)
@@ -1355,6 +1355,9 @@ void pacman::ActiveSense::executeTrajectory(){
 	demoOwner->context.debug("ActiveSense: Performing trajectory! \n");
 	// perform
 	this->demoOwner->perform2(this->demoOwner->dataCurrentPtr->first, this->result.trajectories.back()->first, seq);
+
+	pLastExecutedWaypoint.reset(new Controller::State(seq.front()));
+
 	// done!
 	this->demoOwner->createRender();
 }

@@ -413,6 +413,24 @@ void Demo::releaseHand(const double openFraction, const SecTmReal duration)
 	gotoPose2(openPose, duration);
 }
 
+void Demo::releaseHand2(const double openFraction, const SecTmReal duration, const golem::Controller::State partReleaseConfig)
+{
+	golem::Controller::State currentState = lookupStateArmCommandHand();
+	currentState.cpos.set(handInfo.getJoints(), partReleaseConfig.cpos);
+
+	ConfigMat34 openPose(RealSeq(61, 0.0)); // !!! TODO use proper indices
+	for (size_t i = 0; i < openPose.c.size(); ++i)
+		openPose.c[i] = currentState.cpos.data()[i];
+
+
+	//context.debug("Demo::releaseHand2: %s\n", toXMLString(openPose).c_str());
+	//if (option("YN", "OK? (Y/N)") == 'Y')
+	gotoPose2(openPose, duration);
+
+	//if (option("YN", "release hand OK? (Y/N)") == 'Y')
+	releaseHand(openFraction, duration);
+}
+
 void Demo::closeHand(const double closeFraction, const SecTmReal duration)
 {
 	// @@@ HACK @@@
@@ -458,7 +476,12 @@ void Demo::executeDropOff()
 
 	const double withdrawReleaseFraction = 1.0;
 	context.debug("Releasing hand by %g%% in %gs...\n", withdrawReleaseFraction*100.0, trajectoryDuration);
-	releaseHand(withdrawReleaseFraction, trajectoryDuration);
+	
+	
+	if (activeSense->pLastExecutedWaypoint != nullptr)
+	{
+		releaseHand2(withdrawReleaseFraction, trajectoryDuration, *(activeSense->pLastExecutedWaypoint));
+	}
 
 	context.write("Done!\n");
 }

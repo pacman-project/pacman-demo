@@ -625,9 +625,10 @@ namespace pacman {
 		golem::Rand rand;
 
 
-
-
-
+	public:
+		// @@@ HACK @@@
+		golem::Controller::State::Ptr pLastExecutedWaypoint;
+		//bool lastExecutedWaypointValid = false;
 	};
 
 
