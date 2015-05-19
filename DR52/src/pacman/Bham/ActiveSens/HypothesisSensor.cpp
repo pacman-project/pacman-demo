@@ -110,7 +110,7 @@ void pacman::HypothesisSensor::setGLView(golem::Scene& scene)
 
 void pacman::HypothesisSensor::setGLView(golem::Scene& scene, const golem::Mat34& sensorFrame)
 {
-	golem::CriticalSectionWrapper csw(scene.getCSOpenGL());
+	golem::CriticalSectionWrapper csw(scene.getUniverse().getCS());
 	golem::OpenGL::Seq openGL = scene.getOpenGL();
 
 	const golem::Mat34 frame = sensorFrame;

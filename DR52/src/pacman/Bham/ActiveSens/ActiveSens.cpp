@@ -446,7 +446,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 	//grasp::Manager::Data::Map::iterator data = createData();
 
 	size_t index = 0, maxNumViews = this->params.nviews;
-	pacman::HypothesisSensor::Ptr hypothesis(nullptr);
+	pacman::HypothesisSensor::Ptr hypothesis;
 
 	grasp::data::Item::List scannedImageItems; // scanned Items List
 
@@ -460,7 +460,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 	visitedHypotheses.push_back(hypothesis);
 
 	//Carry on as if nothing happened
-	hypothesis = pacman::HypothesisSensor::Ptr(nullptr);
+	hypothesis = pacman::HypothesisSensor::Ptr();
 	
 	// performs first scan using current wrist pose
 	demoOwner->scanPoseActive(scannedImageItems); 
@@ -471,7 +471,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 		this->params.centroid = this->computeCentroid(*scannedImageItems.begin());
 	}
 
-	CollisionBounds::Ptr collisionBounds(nullptr);
+	CollisionBounds::Ptr collisionBounds;
 	this->pointCurvItem = processItems(scannedImageItems);
 	this->hasPointCurv = true;
 

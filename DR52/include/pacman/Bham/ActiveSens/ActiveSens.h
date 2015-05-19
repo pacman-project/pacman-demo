@@ -10,8 +10,8 @@
 
 #include <Grasp/Core/Library.h>
 #include <Grasp/Core/Defs.h>
-#include <Golem/Phys/Renderer.h>
-#include <Golem/Phys/Scene.h>
+#include <Golem/UI/Renderer.h>
+#include <Golem/UI/Scene.h>
 #include <Grasp/Core/Camera.h>
 #include <Grasp/App/Manager/Manager.h>
 #include <Golem/Tools/Data.h>

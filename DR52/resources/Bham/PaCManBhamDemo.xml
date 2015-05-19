@@ -4,32 +4,31 @@
   <rand seed="0"></rand>
   <parallels threads="8"></parallels>
   <messages level="verbose"/><!-- level="undef" level="verbose" level="debug" level="info" level="warning" level="error" level="crit" -->
-  <library physx="0" normals="0"/>
 
   <universe name="PaCMan">
     <!--<window x="0" y="0" width="640" height="480"></window>-->
     <!--<window x="0" y="0" width="800" height="600"></window>-->
     <window x="0" y="0" width="1288" height="964"></window>
-    <physx fps="30" skin_width="0.005" sleep_lin_vel_squared="0.0025" sleep_ang_vel_squared="0.0025" max_angular_velocity="7.0" bounce_threshold="-2.0"></physx>
+    <simulation fps="30" real_time="0" skin_width="0.005" sleep_lin_vel_squared="0.0025" sleep_ang_vel_squared="0.0025" max_angular_velocity="7.0" bounce_threshold="-2.0"></simulation>
   </universe>
 
   <scene name="Demo">
-    <physx restitution="0.0" static_friction="0.2" dynamic_friction="0.1">
+    <simulation restitution="0.0" static_friction="0.2" dynamic_friction="0.1">
       <gravity v1="0.0" v2="0.0" v3="-9.81"/>
-    </physx>
+    </simulation>
     <opengl view_name="Front" view_inc="0.2">
       <view_point v1="21.0" v2="0.0" v3="10.0"/>
       <view_dir v1="-1.0" v2="0.0" v3="-0.45"/>
       <view_up v1="0.0000" v2="0.0000" v3="1.0000"/>
       <clear_color R="255" G="255" B="255" A="255"/>
-      <draw solid="1" wire="0" shadow="0" physx="0" normals="0"/>
+      <draw solid="1" wire="0" shadow="0" simulation="0" normals="0"/>
     </opengl>
     <opengl view_name="Workspace" view_inc="0.2">
       <view_point v1="10.2120" v2="0.5598" v3="2.1240"/>
       <view_dir v1="-0.7193" v2="-0.5633" v3="-0.4065"/>
       <view_up v1="0.0000" v2="0.0000" v3="1.0000"/>
       <clear_color R="255" G="255" B="255" A="255"/>
-      <draw solid="1" wire="0" shadow="0" physx="0" normals="0"/>
+      <draw solid="1" wire="0" shadow="0" simulation="0" normals="0"/>
     </opengl>
   </scene>
 

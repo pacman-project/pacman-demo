@@ -289,8 +289,8 @@ if (WIN32)
 		optimized GolemTools${CMAKE_RELEASE_POSTFIX} debug GolemTools${CMAKE_DEBUG_POSTFIX}
 		optimized GolemCtrl${CMAKE_RELEASE_POSTFIX} debug GolemCtrl${CMAKE_DEBUG_POSTFIX}
 		optimized GolemPlan${CMAKE_RELEASE_POSTFIX} debug GolemPlan${CMAKE_DEBUG_POSTFIX}
-		optimized GolemPhys${CMAKE_RELEASE_POSTFIX} debug GolemPhys${CMAKE_DEBUG_POSTFIX}
-		optimized GolemPhysCtrl${CMAKE_RELEASE_POSTFIX} debug GolemPhysCtrl${CMAKE_DEBUG_POSTFIX}
+		optimized GolemUI${CMAKE_RELEASE_POSTFIX} debug GolemUI${CMAKE_DEBUG_POSTFIX}
+		optimized GolemUICtrl${CMAKE_RELEASE_POSTFIX} debug GolemUICtrl${CMAKE_DEBUG_POSTFIX}
 		optimized GolemDeviceSM${CMAKE_RELEASE_POSTFIX} debug GolemDeviceSM${CMAKE_DEBUG_POSTFIX}
 		optimized CamcalbCalb${CMAKE_RELEASE_POSTFIX} debug CamcalbCalb${CMAKE_DEBUG_POSTFIX}
 		optimized CamcalbMatas${CMAKE_RELEASE_POSTFIX} debug CamcalbMatas${CMAKE_DEBUG_POSTFIX}		 
@@ -314,11 +314,11 @@ elseif (UNIX)
 		optimized GolemTools${CMAKE_RELEASE_POSTFIX} debug GolemTools${CMAKE_DEBUG_POSTFIX}
 		optimized GolemCtrl${CMAKE_RELEASE_POSTFIX} debug GolemCtrl${CMAKE_DEBUG_POSTFIX}
 		optimized GolemPlan${CMAKE_RELEASE_POSTFIX} debug GolemPlan${CMAKE_DEBUG_POSTFIX}
-		optimized GolemPhysCtrl${CMAKE_RELEASE_POSTFIX} debug GolemPhysCtrl${CMAKE_DEBUG_POSTFIX}
+		optimized GolemUICtrl${CMAKE_RELEASE_POSTFIX} debug GolemUICtrl${CMAKE_DEBUG_POSTFIX}
 		optimized GolemDeviceSM${CMAKE_RELEASE_POSTFIX} debug GolemDeviceSM${CMAKE_DEBUG_POSTFIX}
 		${CMAKE_DL_LIBS}
 		optimized GolemMath${CMAKE_RELEASE_POSTFIX} debug GolemMath${CMAKE_DEBUG_POSTFIX}
-		optimized GolemPhys${CMAKE_RELEASE_POSTFIX} debug GolemPhys${CMAKE_DEBUG_POSTFIX}
+		optimized GolemUI${CMAKE_RELEASE_POSTFIX} debug GolemUI${CMAKE_DEBUG_POSTFIX}
 		GL
 		GLU
 		glut
@@ -367,8 +367,8 @@ if (WIN32)
 		optimized GolemTools${CMAKE_RELEASE_POSTFIX} debug GolemTools${CMAKE_DEBUG_POSTFIX}
 		optimized GolemCtrl${CMAKE_RELEASE_POSTFIX} debug GolemCtrl${CMAKE_DEBUG_POSTFIX}
 		optimized GolemPlan${CMAKE_RELEASE_POSTFIX} debug GolemPlan${CMAKE_DEBUG_POSTFIX}
-		optimized GolemPhys${CMAKE_RELEASE_POSTFIX} debug GolemPhys${CMAKE_DEBUG_POSTFIX}
-		optimized GolemPhysCtrl${CMAKE_RELEASE_POSTFIX} debug GolemPhysCtrl${CMAKE_DEBUG_POSTFIX}
+		optimized GolemUI${CMAKE_RELEASE_POSTFIX} debug GolemUI${CMAKE_DEBUG_POSTFIX}
+		optimized GolemUICtrl${CMAKE_RELEASE_POSTFIX} debug GolemUICtrl${CMAKE_DEBUG_POSTFIX}
 		optimized GolemDeviceSM${CMAKE_RELEASE_POSTFIX} debug GolemDeviceSM${CMAKE_DEBUG_POSTFIX}
 		optimized CamcalbCalb${CMAKE_RELEASE_POSTFIX} debug CamcalbCalb${CMAKE_DEBUG_POSTFIX}
 		optimized CamcalbMatas${CMAKE_RELEASE_POSTFIX} debug CamcalbMatas${CMAKE_DEBUG_POSTFIX}		 
@@ -390,11 +390,11 @@ elseif (UNIX)
 		optimized GolemTools${CMAKE_RELEASE_POSTFIX} debug GolemTools${CMAKE_DEBUG_POSTFIX}
 		optimized GolemCtrl${CMAKE_RELEASE_POSTFIX} debug GolemCtrl${CMAKE_DEBUG_POSTFIX}
 		optimized GolemPlan${CMAKE_RELEASE_POSTFIX} debug GolemPlan${CMAKE_DEBUG_POSTFIX}
-		optimized GolemPhysCtrl${CMAKE_RELEASE_POSTFIX} debug GolemPhysCtrl${CMAKE_DEBUG_POSTFIX}
+		optimized GolemUICtrl${CMAKE_RELEASE_POSTFIX} debug GolemUICtrl${CMAKE_DEBUG_POSTFIX}
 		optimized GolemDeviceSM${CMAKE_RELEASE_POSTFIX} debug GolemDeviceSM${CMAKE_DEBUG_POSTFIX}
 		${CMAKE_DL_LIBS}
 		optimized GolemMath${CMAKE_RELEASE_POSTFIX} debug GolemMath${CMAKE_DEBUG_POSTFIX}
-		optimized GolemPhys${CMAKE_RELEASE_POSTFIX} debug GolemPhys${CMAKE_DEBUG_POSTFIX}
+		optimized GolemUI${CMAKE_RELEASE_POSTFIX} debug GolemUI${CMAKE_DEBUG_POSTFIX}
 		GL
 		GLU
 		glut
@@ -443,8 +443,8 @@ if (WIN32)
 		optimized GolemTools${CMAKE_RELEASE_POSTFIX} debug GolemTools${CMAKE_DEBUG_POSTFIX}
 		optimized GolemCtrl${CMAKE_RELEASE_POSTFIX} debug GolemCtrl${CMAKE_DEBUG_POSTFIX}
 		optimized GolemPlan${CMAKE_RELEASE_POSTFIX} debug GolemPlan${CMAKE_DEBUG_POSTFIX}
-		optimized GolemPhys${CMAKE_RELEASE_POSTFIX} debug GolemPhys${CMAKE_DEBUG_POSTFIX}
-		optimized GolemPhysCtrl${CMAKE_RELEASE_POSTFIX} debug GolemPhysCtrl${CMAKE_DEBUG_POSTFIX}
+		optimized GolemUI${CMAKE_RELEASE_POSTFIX} debug GolemUI${CMAKE_DEBUG_POSTFIX}
+		optimized GolemUICtrl${CMAKE_RELEASE_POSTFIX} debug GolemUICtrl${CMAKE_DEBUG_POSTFIX}
 		optimized GolemDeviceSM${CMAKE_RELEASE_POSTFIX} debug GolemDeviceSM${CMAKE_DEBUG_POSTFIX}
 		optimized CamcalbCalb${CMAKE_RELEASE_POSTFIX} debug CamcalbCalb${CMAKE_DEBUG_POSTFIX}
 		optimized CamcalbMatas${CMAKE_RELEASE_POSTFIX} debug CamcalbMatas${CMAKE_DEBUG_POSTFIX}		 
@@ -466,11 +466,11 @@ elseif (UNIX)
 		optimized GolemTools${CMAKE_RELEASE_POSTFIX} debug GolemTools${CMAKE_DEBUG_POSTFIX}
 		optimized GolemCtrl${CMAKE_RELEASE_POSTFIX} debug GolemCtrl${CMAKE_DEBUG_POSTFIX}
 		optimized GolemPlan${CMAKE_RELEASE_POSTFIX} debug GolemPlan${CMAKE_DEBUG_POSTFIX}
-		optimized GolemPhysCtrl${CMAKE_RELEASE_POSTFIX} debug GolemPhysCtrl${CMAKE_DEBUG_POSTFIX}
+		optimized GolemUICtrl${CMAKE_RELEASE_POSTFIX} debug GolemUICtrl${CMAKE_DEBUG_POSTFIX}
 		optimized GolemDeviceSM${CMAKE_RELEASE_POSTFIX} debug GolemDeviceSM${CMAKE_DEBUG_POSTFIX}
 		${CMAKE_DL_LIBS}
 		optimized GolemMath${CMAKE_RELEASE_POSTFIX} debug GolemMath${CMAKE_DEBUG_POSTFIX}
-		optimized GolemPhys${CMAKE_RELEASE_POSTFIX} debug GolemPhys${CMAKE_DEBUG_POSTFIX}
+		optimized GolemUI${CMAKE_RELEASE_POSTFIX} debug GolemUI${CMAKE_DEBUG_POSTFIX}
 		GL
 		GLU
 		glut
@@ -529,8 +529,8 @@ if (WIN32)
 		optimized GolemTools${CMAKE_RELEASE_POSTFIX} debug GolemTools${CMAKE_DEBUG_POSTFIX}
 		optimized GolemCtrl${CMAKE_RELEASE_POSTFIX} debug GolemCtrl${CMAKE_DEBUG_POSTFIX}
 		optimized GolemPlan${CMAKE_RELEASE_POSTFIX} debug GolemPlan${CMAKE_DEBUG_POSTFIX}
-		optimized GolemPhys${CMAKE_RELEASE_POSTFIX} debug GolemPhys${CMAKE_DEBUG_POSTFIX}
-		optimized GolemPhysCtrl${CMAKE_RELEASE_POSTFIX} debug GolemPhysCtrl${CMAKE_DEBUG_POSTFIX}
+		optimized GolemUI${CMAKE_RELEASE_POSTFIX} debug GolemUI${CMAKE_DEBUG_POSTFIX}
+		optimized GolemUICtrl${CMAKE_RELEASE_POSTFIX} debug GolemUICtrl${CMAKE_DEBUG_POSTFIX}
 		optimized GolemDeviceSM${CMAKE_RELEASE_POSTFIX} debug GolemDeviceSM${CMAKE_DEBUG_POSTFIX}
 		optimized CamcalbCalb${CMAKE_RELEASE_POSTFIX} debug CamcalbCalb${CMAKE_DEBUG_POSTFIX}
 		optimized CamcalbMatas${CMAKE_RELEASE_POSTFIX} debug CamcalbMatas${CMAKE_DEBUG_POSTFIX}		 
@@ -552,11 +552,11 @@ elseif (UNIX)
 		optimized GolemTools${CMAKE_RELEASE_POSTFIX} debug GolemTools${CMAKE_DEBUG_POSTFIX}
 		optimized GolemCtrl${CMAKE_RELEASE_POSTFIX} debug GolemCtrl${CMAKE_DEBUG_POSTFIX}
 		optimized GolemPlan${CMAKE_RELEASE_POSTFIX} debug GolemPlan${CMAKE_DEBUG_POSTFIX}
-		optimized GolemPhysCtrl${CMAKE_RELEASE_POSTFIX} debug GolemPhysCtrl${CMAKE_DEBUG_POSTFIX}
+		optimized GolemUICtrl${CMAKE_RELEASE_POSTFIX} debug GolemUICtrl${CMAKE_DEBUG_POSTFIX}
 		optimized GolemDeviceSM${CMAKE_RELEASE_POSTFIX} debug GolemDeviceSM${CMAKE_DEBUG_POSTFIX}
 		${CMAKE_DL_LIBS}
 		optimized GolemMath${CMAKE_RELEASE_POSTFIX} debug GolemMath${CMAKE_DEBUG_POSTFIX}
-		optimized GolemPhys${CMAKE_RELEASE_POSTFIX} debug GolemPhys${CMAKE_DEBUG_POSTFIX}
+		optimized GolemUI${CMAKE_RELEASE_POSTFIX} debug GolemUI${CMAKE_DEBUG_POSTFIX}
 		GL
 		GLU
 		glut

@@ -11,7 +11,7 @@
 #include <Grasp/App/Player/Player.h>
 
 #include <pacman/Bham/ActiveSens/ActiveSens.h>
-#include <Golem/Phys/Scene.h>
+#include <Golem/UI/Scene.h>
 #include <Grasp/Core/Camera.h>
 
 #include <Grasp/Grasp/Model.h>
