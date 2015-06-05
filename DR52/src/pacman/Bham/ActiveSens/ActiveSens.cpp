@@ -198,7 +198,7 @@ void pacman::ActiveSense::removeItems(grasp::data::Item::List& list)
 	for (grasp::data::Item::List::const_iterator i = list.begin(); i != list.end(); ++i) {
 		//Removing items
 		grasp::UI::removeCallback(*demoOwner, &(*i)->second->getHandler());
-		golem::CriticalSectionWrapper cswData(demoOwner->csData);
+		golem::CriticalSectionWrapper cswData(demoOwner->scene.getCS());
 		demoOwner->dataCurrentPtr->second->itemMap.erase(*i);
 	}
 
@@ -210,7 +210,7 @@ void pacman::ActiveSense::removeItems(grasp::data::Item::List& list)
 grasp::data::Item::Map::iterator ActiveSense::addItem(const std::string& label, grasp::data::Item::Ptr item)
 {
 	Manager::RenderBlock renderBlock(*demoOwner);
-	golem::CriticalSectionWrapper cswData(demoOwner->csData);
+	golem::CriticalSectionWrapper cswData(demoOwner->scene.getCS());
 	grasp::data::Item::Map::iterator ptr = to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap.insert(to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap.end(), grasp::data::Item::Map::value_type(label, item));
 	
 	{
@@ -238,7 +238,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::processItems(grasp::data::
 		data::Item::Map::iterator ptr;
 		grasp::data::Item::Ptr item = transformPtr.second->transform(list);
 		{
-			golem::CriticalSectionWrapper cswData(demoOwner->csData);
+			golem::CriticalSectionWrapper cswData(demoOwner->scene.getCS());
 			ptr = to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap.insert(to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(ActiveSense::DFT_POINT_CURV_ITEM_LABEL, item));
 			grasp::Manager::Data::View::setItem(to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap, ptr, to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->getView());
 
@@ -273,7 +273,7 @@ void pacman::ActiveSense::removeData(grasp::data::Data::Map::iterator data)
 		grasp::Manager::RenderBlock renderBlock(*demoOwner);
 		demoOwner->context.debug("ActiveSense: Removing %s...\n", demoOwner->dataCurrentPtr->first.c_str());
 		{
-			golem::CriticalSectionWrapper cswData(demoOwner->csData);
+			golem::CriticalSectionWrapper cswData(demoOwner->scene.getCS());
 			demoOwner->dataMap.erase(demoOwner->dataCurrentPtr++);
 			if (demoOwner->dataCurrentPtr == demoOwner->dataMap.end()) demoOwner->dataCurrentPtr = demoOwner->dataMap.begin();
 		}
@@ -295,7 +295,7 @@ grasp::Manager::Data::Map::iterator pacman::ActiveSense::createData()
 	demoOwner->scene.getOpenGL(grasp::to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->getView().openGL); // set current view
 	demoOwner->scene.getOpenGL(grasp::to<grasp::Manager::Data>(data)->getView().openGL); // set view of the new data
 	{
-		golem::CriticalSectionWrapper cswData(demoOwner->csData);
+		golem::CriticalSectionWrapper cswData(demoOwner->scene.getCS());
 		demoOwner->dataMap.erase(demoOwner->dataPath);
 		demoOwner->dataCurrentPtr = demoOwner->dataMap.insert(demoOwner->dataMap.begin(), grasp::Manager::Data::Map::value_type(this->dataPath, data));
 	}
@@ -1054,9 +1054,9 @@ grasp::CollisionBounds::Ptr pacman::ActiveSense::selectCollisionBounds(bool draw
 		collisionBounds.reset(new CollisionBounds(*demoOwner->planner, [=](size_t i, Vec3& p) -> bool {
 
 			if (i < location->getNumOfLocations()) p = location->getLocation(i); return i < location->getNumOfLocations();
-		}, draw ? &demoOwner->objectRenderer : nullptr, draw ? &demoOwner->csRenderer : nullptr));
+		}, draw ? &demoOwner->objectRenderer : nullptr, draw ? &demoOwner->scene.getCS() : nullptr));
 		// draw locations
-		golem::CriticalSectionWrapper csw(demoOwner->csRenderer);
+		golem::CriticalSectionWrapper csw(demoOwner->scene.getCS());
 		for (size_t i = 0; i < location->getNumOfLocations(); ++i)
 			demoOwner->objectRenderer.addPoint(location->getLocation(i), golem::RGBA::BLACK);
 	}
@@ -1113,7 +1113,7 @@ grasp::data::Item::Map::iterator ActiveSense::computeFeedBackTransform(grasp::da
 		data::Item::Map::iterator ptr;
 		grasp::data::Item::Ptr item = transformPtr.second->transform(list);
 		{
-			golem::CriticalSectionWrapper cswData(demoOwner->csData);
+			golem::CriticalSectionWrapper cswData(demoOwner->scene.getCS());
 			ptr = to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap.insert(to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(itemLabel, item));
 			grasp::Manager::Data::View::setItem(to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap, ptr, to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->getView());
 
@@ -1156,7 +1156,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::computePredModelFeedBack(g
 
 	{
 		Manager::RenderBlock renderBlock(*demoOwner);
-		golem::CriticalSectionWrapper cswData(demoOwner->csData);
+		golem::CriticalSectionWrapper cswData(demoOwner->scene.getCS());
 		// add trajectory item into current data bundle (so can execute grasp again)
 		std::string trajectoryName("ActiveSens_Grasp");
 		grasp::data::Item::Map& itemMap = to<Demo::Data>(demoOwner->dataCurrentPtr)->itemMap;
@@ -1183,7 +1183,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::computeTransformPredModel(
 		data::Item::Map::iterator ptr;
 		grasp::data::Item::Ptr item = transformPtr.second->transform(list);
 		{
-			golem::CriticalSectionWrapper cswData(demoOwner->csData);
+			golem::CriticalSectionWrapper cswData(demoOwner->scene.getCS());
 			ptr = to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap.insert(to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(itemLabel, item));
 			grasp::Manager::Data::View::setItem(to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->itemMap, ptr, to<grasp::Manager::Data>(demoOwner->dataCurrentPtr)->getView());
 

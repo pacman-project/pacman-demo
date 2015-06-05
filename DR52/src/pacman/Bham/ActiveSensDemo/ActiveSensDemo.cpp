@@ -154,7 +154,7 @@ void pacman::Demo::scanPoseActive(grasp::data::Item::List& scannedImageItems, Sc
 		stop = scanPoseCommand == nullptr || !scanPoseCommand();
 		RenderBlock renderBlock(*this);
 		{
-			golem::CriticalSectionWrapper cswData(csData);
+			golem::CriticalSectionWrapper cswData(scene.getCS());
 			const data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(dataItemLabel, capture->capture(*to<Camera>(sensorCurrentPtr), [&](const grasp::TimeStamp*) -> bool { return true; })));
 			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
 			scannedImageItems.push_back(ptr);
@@ -201,13 +201,13 @@ void pacman::Demo::perform2(const std::string& data, const std::string& item, co
 		ScopeGuard removeItem([&]() {
 			UI::removeCallback(*this, getCurrentHandler());
 			{
-				golem::CriticalSectionWrapper csw(csData);
+				golem::CriticalSectionWrapper csw(scene.getCS());
 				to<Data>(dataCurrentPtr)->itemMap.erase(itemLabelTmp);
 			}
 			createRender();
 		});
 		{
-			golem::CriticalSectionWrapper csw(csData);
+			golem::CriticalSectionWrapper csw(scene.getCS());
 			const data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(itemLabelTmp, itemTrajectory));
 			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
 		}
@@ -256,7 +256,7 @@ void pacman::Demo::perform2(const std::string& data, const std::string& item, co
 
 		// insert trajectory
 		{
-			golem::CriticalSectionWrapper csw(csData);
+			golem::CriticalSectionWrapper csw(scene.getCS());
 			data::Data::Map::iterator data = dataMap.find(recorderData);
 			if (data == dataMap.end())
 				throw Message(Message::LEVEL_ERROR, "Player::perform(): unable to find Data %s", recorderData.c_str());
@@ -1063,7 +1063,6 @@ void pacman::Demo::create(const Desc& desc) {
 void pacman::Demo::render() const {
 	Player::render();
 	
-	golem::CriticalSectionWrapper cswRenderer(csRenderer);
 	activeSense->render();
 }
 

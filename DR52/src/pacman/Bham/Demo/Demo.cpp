@@ -205,7 +205,7 @@ void Demo::Data::setTrainingItem(Training::Map::const_iterator ptr) {
 void Demo::Data::createRender() {
 	Player::Data::createRender();
 	{
-		golem::CriticalSectionWrapper csw(owner->csRenderer);
+		golem::CriticalSectionWrapper csw(owner->scene.getCS());
 		owner->modelRenderer.reset();
 		// model/query
 		const grasp::Vec3Seq& vertices = mode == MODE_MODEL ? modelVertices : queryVertices;
@@ -1043,7 +1043,7 @@ void pacman::Demo::create(const Desc& desc) {
 		readPath("Enter file path: ", dataImportPath, import->getFileTypes());
 		data::Item::Ptr item = import->import(dataImportPath);
 
-		ScopeGuard guard([&]() { golem::CriticalSectionWrapper csw(csRenderer); objectRenderer.reset(); });
+		ScopeGuard guard([&]() { golem::CriticalSectionWrapper csw(scene.getCS()); objectRenderer.reset(); });
 		RenderBlock renderBlock(*this);
 
 		// compute reference frame and adjust object frame
@@ -1063,7 +1063,7 @@ void pacman::Demo::create(const Desc& desc) {
 			for (size_t i = 0; i < points.size(); ++i)
 				trn.multiply(pointsTrn[i], points[i]);
 			{
-				golem::CriticalSectionWrapper csw(csRenderer);
+				golem::CriticalSectionWrapper csw(scene.getCS());
 				objectRenderer.reset();
 				for (size_t i = 0; i < pointsTrn.size(); ++i)
 					objectRenderer.addPoint(pointsTrn[i], objectFrameAdjustment.colourSolid);
@@ -1085,7 +1085,7 @@ void pacman::Demo::create(const Desc& desc) {
 		// add item to data bundle
 		data::Item::Map::iterator ptr;
 		{
-			golem::CriticalSectionWrapper cswData(csData);
+			golem::CriticalSectionWrapper cswData(scene.getCS());
 			to<Data>(dataCurrentPtr)->itemMap.erase(objectItemScan);
 			ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(objectItemScan, item));
 			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
@@ -1141,7 +1141,7 @@ void pacman::Demo::create(const Desc& desc) {
 		setCurrentDataPtr(targetDataPtr);
 		{
 			RenderBlock renderBlock(*this);
-			golem::CriticalSectionWrapper cswData(csData);
+			golem::CriticalSectionWrapper cswData(scene.getCS());
 			to<Data>(targetDataPtr)->itemMap.erase(objectItem);
 			data::Item::Map::iterator ptr = to<Data>(targetDataPtr)->itemMap.insert(to<Data>(targetDataPtr)->itemMap.end(), data::Item::Map::value_type(objectItem, ptrObject));
 			Data::View::setItem(to<Data>(targetDataPtr)->itemMap, ptr, to<Data>(targetDataPtr)->getView());
@@ -1172,7 +1172,7 @@ void pacman::Demo::create(const Desc& desc) {
 		// insert as model object item
 		{
 			RenderBlock renderBlock(*this);
-			golem::CriticalSectionWrapper cswData(csData);
+			golem::CriticalSectionWrapper cswData(scene.getCS());
 			to<Data>(dataCurrentPtr)->itemMap.erase(modelItemObj);
 			ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(modelItemObj, item));
 			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
@@ -1186,7 +1186,7 @@ void pacman::Demo::create(const Desc& desc) {
 		// load model object item
 		{
 			RenderBlock renderBlock(*this);
-			golem::CriticalSectionWrapper cswData(csData);
+			golem::CriticalSectionWrapper cswData(scene.getCS());
 			data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(modelItemObj);
 			if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
 				throw Message(Message::LEVEL_ERROR, "Model object item has not been created");
@@ -1247,7 +1247,7 @@ void pacman::Demo::create(const Desc& desc) {
 		setCurrentDataPtr(targetDataPtr);
 		{
 			RenderBlock renderBlock(*this);
-			golem::CriticalSectionWrapper cswData(csData);
+			golem::CriticalSectionWrapper cswData(scene.getCS());
 			to<Data>(targetDataPtr)->itemMap.erase(modelItemObj);
 			data::Item::Map::iterator ptr = to<Data>(targetDataPtr)->itemMap.insert(to<Data>(targetDataPtr)->itemMap.end(), data::Item::Map::value_type(modelItemObj, ptrObject));
 			to<Data>(dataCurrentPtr)->modelState = ptrState;
@@ -1271,7 +1271,7 @@ void pacman::Demo::create(const Desc& desc) {
 			throw Message(Message::LEVEL_ERROR, "Unable to find Model %s", ID_ANY.c_str());
 
 		// clear
-		ScopeGuard guard([&]() { golem::CriticalSectionWrapper csw(csRenderer); objectRenderer.reset(); });
+		ScopeGuard guard([&]() { golem::CriticalSectionWrapper csw(scene.getCS()); objectRenderer.reset(); });
 		RenderBlock renderBlock(*this);
 
 		// select model type
@@ -1310,7 +1310,7 @@ void pacman::Demo::create(const Desc& desc) {
 			for (size_t i = 0; i < points.size(); ++i)
 				trn.multiply(pointsTrn[i], points[i]);
 			{
-				golem::CriticalSectionWrapper csw(csRenderer);
+				golem::CriticalSectionWrapper csw(scene.getCS());
 				objectRenderer.reset();
 				for (size_t i = 0; i < pointsTrn.size(); ++i)
 					objectRenderer.addPoint(pointsTrn[i], objectFrameAdjustment.colourSolid);
@@ -1357,7 +1357,7 @@ void pacman::Demo::create(const Desc& desc) {
 				Contact3D::Seq contacts;
 				contacts.clear();
 				if (model->second->create(*features, to<Data>(dataCurrentPtr)->modelFrame, modelMesh, contacts)) {
-					golem::CriticalSectionWrapper cswData(csData);
+					golem::CriticalSectionWrapper cswData(scene.getCS());
 					Data::Training training(lookupState());
 					training.contacts = contacts;
 					training.frame = to<Data>(dataCurrentPtr)->modelFrame;
@@ -1375,7 +1375,7 @@ void pacman::Demo::create(const Desc& desc) {
 				const std::string trjName = getTrajectoryName(modelItemTrj, modelType);
 				grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(trjName);
 				if (ptr == to<Data>(dataCurrentPtr)->itemMap.end()) {
-					golem::CriticalSectionWrapper cswData(csData);
+					golem::CriticalSectionWrapper cswData(scene.getCS());
 					ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(trjName, modelHandlerTrj->create()));
 				}
 				data::Trajectory* trajectory = is<data::Trajectory>(ptr);
@@ -1407,7 +1407,7 @@ void pacman::Demo::create(const Desc& desc) {
 		// load model object item
 		{
 			RenderBlock renderBlock(*this);
-			golem::CriticalSectionWrapper cswData(csData);
+			golem::CriticalSectionWrapper cswData(scene.getCS());
 			Demo::Data::Training::Map::iterator ptr = to<Data>(dataCurrentPtr)->getTrainingItem();
 			const std::string modelType = ptr->first; // cache
 			if (bModelType)
@@ -1641,7 +1641,7 @@ void pacman::Demo::create(const Desc& desc) {
 					RenderBlock renderBlock(*this);
 					data::Item::Ptr item = transformPtr->second->transform(itemList);
 					{
-						golem::CriticalSectionWrapper cswData(csData);
+						golem::CriticalSectionWrapper cswData(scene.getCS());
 						const data::Item::Map::iterator ptr = itemMap.insert(itemMap.end(), data::Item::Map::value_type(dataItemLabel, item));
 						Data::View::setItem(itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
 					}
@@ -1845,7 +1845,7 @@ void pacman::Demo::create(const Desc& desc) {
 		list.insert(list.end(), ptr);
 		data::Item::Ptr item = transform->transform(list);
 		{
-			golem::CriticalSectionWrapper cswData(csData);
+			golem::CriticalSectionWrapper cswData(scene.getCS());
 			itemMap.erase(itemName);
 			ptr = itemMap.insert(itemMap.end(), data::Item::Map::value_type(itemName, item));
 			Data::View::setItem(itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
@@ -1937,7 +1937,7 @@ grasp::data::Item::Map::iterator pacman::Demo::estimatePose(Data::Mode mode) {
 	InputBlock inputBlock(*this);
 	{
 		RenderBlock renderBlock(*this);
-		golem::CriticalSectionWrapper cswData(csData);
+		golem::CriticalSectionWrapper cswData(scene.getCS());
 		to<Data>(dataCurrentPtr)->itemMap.erase(itemName);
 		vertices.clear();
 		triangles.clear();
@@ -1950,7 +1950,7 @@ grasp::data::Item::Map::iterator pacman::Demo::estimatePose(Data::Mode mode) {
 	data::Item::Ptr item = capture->capture(*camera, [&](const grasp::TimeStamp*) -> bool { return true; });
 	{
 		RenderBlock renderBlock(*this);
-		golem::CriticalSectionWrapper cswData(csData);
+		golem::CriticalSectionWrapper cswData(scene.getCS());
 		to<Data>(dataCurrentPtr)->itemMap.erase(itemName);
 		ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(itemName, item));
 		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
@@ -1964,7 +1964,7 @@ grasp::data::Item::Map::iterator pacman::Demo::estimatePose(Data::Mode mode) {
 	item = transform->transform(list);
 	{
 		RenderBlock renderBlock(*this);
-		golem::CriticalSectionWrapper cswData(csData);
+		golem::CriticalSectionWrapper cswData(scene.getCS());
 		to<Data>(dataCurrentPtr)->itemMap.erase(itemName);
 		ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(itemName, item));
 		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
@@ -1990,7 +1990,7 @@ grasp::data::Item::Map::iterator pacman::Demo::estimatePose(Data::Mode mode) {
 	// create triangle mesh
 	{
 		RenderBlock renderBlock(*this);
-		golem::CriticalSectionWrapper cswData(csData);
+		golem::CriticalSectionWrapper cswData(scene.getCS());
 		vertices = modelVertices;
 		triangles = modelTriangles;
 		if (mode == Data::MODE_MODEL) {
@@ -2065,7 +2065,7 @@ grasp::data::Item::Map::iterator pacman::Demo::objectGraspAndCapture(const bool 
 	RenderBlock renderBlock(*this);
 	data::Item::Map::iterator ptr;
 	{
-		golem::CriticalSectionWrapper cswData(csData);
+		golem::CriticalSectionWrapper cswData(scene.getCS());
 		data::Item::Ptr item = capture->capture(*objectCamera, [&](const grasp::TimeStamp*) -> bool { return true; });
 
 		// Finally: insert object scan, remove old one
@@ -2093,7 +2093,7 @@ grasp::data::Item::Map::iterator pacman::Demo::objectProcess(grasp::data::Item::
 
 	// insert processed object, remove old one
 	RenderBlock renderBlock(*this);
-	golem::CriticalSectionWrapper cswData(csData);
+	golem::CriticalSectionWrapper cswData(scene.getCS());
 	to<Data>(dataCurrentPtr)->itemMap.erase(objectItem);
 	ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(objectItem, item));
 	Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
@@ -2498,7 +2498,7 @@ void pacman::Demo::selectTrajectory() {
 	// add trajectory waypoint
 	{
 		RenderBlock renderBlock(*this);
-		golem::CriticalSectionWrapper cswData(csData);
+		golem::CriticalSectionWrapper cswData(scene.getCS());
 		to<Data>(dataCurrentPtr)->itemMap.erase(queryItemTrj);
 		grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(queryItemTrj, modelHandlerTrj->create()));
 		data::Trajectory* trajectory = is<data::Trajectory>(ptr);
@@ -2602,7 +2602,7 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 	ScopeGuard removeItem([&]() {
 		if (!finished) {
 			RenderBlock renderBlock(*this);
-			golem::CriticalSectionWrapper csw(csData);
+			golem::CriticalSectionWrapper csw(scene.getCS());
 			to<Data>(dataCurrentPtr)->itemMap.erase(manipulatorItemTrj);
 			to<Data>(dataCurrentPtr)->getView() = view;
 		}
@@ -2610,7 +2610,7 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 	// add trajectory item
 	{
 		RenderBlock renderBlock(*this);
-		golem::CriticalSectionWrapper csw(csData);
+		golem::CriticalSectionWrapper csw(scene.getCS());
 		const data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(manipulatorItemTrj, itemTrajectory));
 		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
 	}
@@ -2716,7 +2716,6 @@ void pacman::Demo::performTrajectory(bool testTrajectory) {
 void pacman::Demo::render() const {
 	Player::render();
 	
-	golem::CriticalSectionWrapper cswRenderer(csRenderer);
 	modelRenderer.render();
 	objectRenderer.render();
 }
