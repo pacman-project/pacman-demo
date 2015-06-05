@@ -5,7 +5,7 @@
 #include <Grasp/Data/Image/Image.h>
 #include <Grasp/Core/Import.h>
 #include <Grasp/App/Player/Data.h>
-#include <Golem/Phys/Data.h>
+#include <Golem/UI/Data.h>
 
 using namespace pacman;
 using namespace golem;

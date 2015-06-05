@@ -9,7 +9,7 @@
 #define _PACMAN_BHAM_ACTIVESENS_HYPOTHESIS_SENSOR_H_
 
 #include <Grasp/App/Player/Player.h>
-#include <Golem/Phys/Data.h>
+#include <Golem/UI/Data.h>
 
 
 
