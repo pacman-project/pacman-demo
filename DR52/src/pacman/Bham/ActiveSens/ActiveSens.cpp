@@ -2,7 +2,7 @@
 #include <Golem/Tools/XMLData.h>
 #include <pacman/Bham/ActiveSensDemo/ActiveSensDemo.h>
 #include <Grasp/Data/Image/Image.h>
-#include <Grasp/Data/PredictorModel/PredictorModel.h>
+#include <Grasp/Data/ContactModel/ContactModel.h>
 #include <Grasp/Data/PointsCurv/PointsCurv.h>
 
 using namespace pacman;
@@ -453,7 +453,9 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 	//Adding current sensor pose to the sequence of visited hypotheses
 	const size_t jointsSize = (size_t)demoOwner->info.getJoints().size();
 	HypothesisSensor::Config config(RealSeq(jointsSize, 0.0));
-	golem::Controller::State begin = demoOwner->lookupState();
+	golem::Controller::State begin = demoOwner->controller->createState();// demoOwner->lookupState();
+	demoOwner->controller->lookupState(golem::SEC_TM_REAL_MAX, begin);
+
 	begin.cpos.get(config.c.data(), config.c.data() + std::min(config.c.size(), jointsSize));
 	hypothesis = this->generateViewFrom(config);
 	hypothesis->visited = true;
@@ -488,7 +490,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
 			throw Cancel("ActiveSense: Failed to find one of the following required items: predQueryItem, trajectoryItem");
 	}
 
-	grasp::data::ItemPredictorModel::Map::iterator ptr;
+	grasp::data::ItemContactModel::Map::iterator ptr;
 	bool stop = maxNumViews > 1 ? false : true; // we could stop after the initial view
 	bool found_contacts = true; //lets assume we have contacts
 	int numViewsAcquired = 1; // we count the initial view
@@ -917,19 +919,19 @@ Output: predModelItem result of the feedBack transform
 pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSensor::Ptr hypothesis, grasp::data::Item::Map::iterator input)
 {
 	// training data
-	typedef std::vector<const grasp::data::ItemPredictorModel::Data::Map*> TrainingData;
+	typedef std::vector<const grasp::data::ItemContactModel::Data::Map*> TrainingData;
 	TrainingData trainingData;
 
-	//demoOwner->context.debug("ActiveSense: Getting ItemPredictorModel\n");
-	// collect data (TODO: Receive a list of ItemPredictorModel
-	const grasp::data::ItemPredictorModel* model = is<const grasp::data::ItemPredictorModel>(input);
+	//demoOwner->context.debug("ActiveSense: Getting ItemContactModel\n");
+	// collect data (TODO: Receive a list of ItemContactModel
+	const grasp::data::ItemContactModel* model = is<const grasp::data::ItemContactModel>(input);
 	if (model)
 	{
-		trainingData.push_back(&model->modelMap);
+		trainingData.push_back(&model->dataMap);
 	}
 	else
 	{
-		demoOwner->context.debug("ActiveSense: This is not an ItemPredictorModel\n");
+		demoOwner->context.debug("ActiveSense: This is not an ItemContactModel\n");
 	}
 
 
@@ -1003,7 +1005,7 @@ pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSens
 	//demoOwner->context.debug("Computing Value\n");
 	for (TrainingData::const_iterator i = trainingData.begin(); i != trainingData.end(); ++i){
 		//For each graspType's mapping of joint->contacts do...
-		for (grasp::data::ItemPredictorModel::Data::Map::const_iterator j = (*i)->begin(); j != (*i)->end(); ++j) {
+		for (grasp::data::ItemContactModel::Data::Map::const_iterator j = (*i)->begin(); j != (*i)->end(); ++j) {
 
 			//j->first => GraspType
 			//j->second.contacts => Map between joints x contact3D 
@@ -1045,20 +1047,20 @@ grasp::CollisionBounds::Ptr pacman::ActiveSense::selectCollisionBounds(bool draw
 	// select collision object
 	demoOwner->context.debug("ActiveSense: Select collision object...\n");
 
-	const data::Location3D* location = is<const data::Location3D>(input->second.get());
+	const data::Point3D* location = is<const data::Point3D>(input->second.get());
 	
 	
 	if (location) {
-		demoOwner->context.debug("ActivSense: Number of Locations %d\n", location->getNumOfLocations());
+		demoOwner->context.debug("ActivSense: Number of Locations %d\n", location->getNumOfPoints());
 		// create collision bounds
 		collisionBounds.reset(new CollisionBounds(*demoOwner->planner, [=](size_t i, Vec3& p) -> bool {
 
-			if (i < location->getNumOfLocations()) p = location->getLocation(i); return i < location->getNumOfLocations();
+			if (i < location->getNumOfPoints()) p = location->getPoint(i); return i < location->getNumOfPoints();
 		}, draw ? &demoOwner->objectRenderer : nullptr, draw ? &demoOwner->scene.getCS() : nullptr));
 		// draw locations
 		golem::CriticalSectionWrapper csw(demoOwner->scene.getCS());
-		for (size_t i = 0; i < location->getNumOfLocations(); ++i)
-			demoOwner->objectRenderer.addPoint(location->getLocation(i), golem::RGBA::BLACK);
+		for (size_t i = 0; i < location->getNumOfPoints(); ++i)
+			demoOwner->objectRenderer.addPoint(location->getPoint(i), golem::RGBA::BLACK);
 	}
 	else
 		demoOwner->context.debug("ActiveSense: Object collisions unsupported\n");
@@ -1077,9 +1079,9 @@ grasp::data::Item::Map::iterator ActiveSense::convertToTrajectory(grasp::data::I
 	// find matching handlers
 	typedef std::vector<data::Handler*> HandlerSet;
 	HandlerSet handlerSet;
-	for (data::Handler::Map::const_iterator i = demoOwner->handlerMap.begin(); i != demoOwner->handlerMap.end(); ++i)
-		if (std::find(convert->getHandlerTypes().begin(), convert->getHandlerTypes().end(), i->second->getType()) != convert->getHandlerTypes().end())
-			handlerSet.push_back(i->second.get());
+	//for (data::Handler::Map::const_iterator i = demoOwner->handlerMap.begin(); i != demoOwner->handlerMap.end(); ++i)
+	//	if (std::find(convert->getHandlerTypes().begin(), convert->getHandlerTypes().end(), i->second->getType()) != convert->getHandlerTypes().end())
+	//		handlerSet.push_back(i->second.get());
 
 
 	// pick up handler

@@ -9,7 +9,7 @@
 #define _PACMAN_BHAM_ACTIVESENS_ACTIVESENS_OM_H_
 
 #include <pacman/Bham/ActiveSens/HypothesisSensor.h>
-#include <Grasp/Data/PredictorModel/PredictorModel.h>
+#include <Grasp/Data/ContactModel/ContactModel.h>
 
 #include <list>
 
@@ -22,7 +22,7 @@ namespace pacman {
 	public:
 		grasp::Contact3D::Seq graspContacts;
 		std::vector<golem::Real> viewingAngles;
-		typedef std::vector<const grasp::data::ItemPredictorModel::Data::Map*> TrainingData;
+		typedef std::vector<const grasp::data::ItemContactModel::Data::Map*> TrainingData;
 		TrainingData trainingData;
 
 

@@ -6,15 +6,15 @@ namespace pacman {
 
 		trainingData.clear();
 
-		// collect data (TODO: Receive a list of ItemPredictorModel
-		const grasp::data::ItemPredictorModel* model = grasp::is<const grasp::data::ItemPredictorModel>(predModel);
+		// collect data (TODO: Receive a list of ItemContactModel
+		const grasp::data::ItemContactModel* model = grasp::is<const grasp::data::ItemContactModel>(predModel);
 		if (model)
 		{
-			trainingData.push_back(&model->modelMap);
+			trainingData.push_back(&model->dataMap);
 		}
 		else
 		{
-			printf("ActiveSense: This is not an ItemPredictorModel\n");
+			printf("ActiveSense: This is not an ItemContactModel\n");
 		}
 
 	}
@@ -31,7 +31,7 @@ namespace pacman {
 		printf("ActiveSensOnlineModel: Updating contacts...\n");
 		for (TrainingData::const_iterator i = trainingData.begin(); i != trainingData.end(); ++i){
 			//For each graspType's mapping of joint->contacts do...
-			for (grasp::data::ItemPredictorModel::Data::Map::const_iterator j = (*i)->begin(); j != (*i)->end(); ++j) {
+			for (grasp::data::ItemContactModel::Data::Map::const_iterator j = (*i)->begin(); j != (*i)->end(); ++j) {
 
 				//j->first => GraspType
 				//j->second.contacts => Map between joints x contact3D 
@@ -93,7 +93,7 @@ namespace pacman {
 		printf("ActiveSensOnlineModel: Computing value outer...\n");
 		for (TrainingData::const_iterator i = trainingData.begin(); i != trainingData.end(); ++i){
 			//For each graspType's mapping of joint->contacts do...
-			for (grasp::data::ItemPredictorModel::Data::Map::const_iterator j = (*i)->begin(); j != (*i)->end(); ++j) {
+			for (grasp::data::ItemContactModel::Data::Map::const_iterator j = (*i)->begin(); j != (*i)->end(); ++j) {
 
 				//j->first => GraspType
 				//j->second.contacts => Map between joints x contact3D 

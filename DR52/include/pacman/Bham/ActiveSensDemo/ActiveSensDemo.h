@@ -14,10 +14,10 @@
 #include <Golem/UI/Scene.h>
 #include <Grasp/Core/Camera.h>
 
-#include <Grasp/Grasp/Model.h>
+#include <Grasp/Contact/Model.h>
 #include <Grasp/Core/RBPose.h>
 #include <Grasp/Core/Ctrl.h>
-#include <Grasp/Grasp/Query.h>
+#include <Grasp/Contact/Query.h>
 
 //------------------------------------------------------------------------------
 
