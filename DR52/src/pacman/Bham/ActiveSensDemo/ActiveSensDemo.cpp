@@ -104,7 +104,8 @@ bool pacman::Demo::gotoPoseWS(const grasp::ConfigMat34& pose, const Real& linthr
 
 bool pacman::Demo::gotoPoseConfig(const grasp::ConfigMat34& config, const Real& linthr, const golem::Real& angthr) {
 	// current state
-	golem::Controller::State begin = lookupState();
+	golem::Controller::State begin = controller->createState();
+	controller->lookupState(SEC_TM_REAL_MAX, begin);
 	//context.debug("STATE[1]: t=%f, (%f, %f, %f, %f, %f, %f, %f)\n", begin.t, begin.cpos.data()[0], begin.cpos.data()[1], begin.cpos.data()[2], begin.cpos.data()[3], begin.cpos.data()[4], begin.cpos.data()[5], begin.cpos.data()[6]);
 	// target
 	golem::Controller::State end = begin;
@@ -172,7 +173,9 @@ void pacman::Demo::perform2(const std::string& data, const std::string& item, co
 		throw Message(Message::LEVEL_ERROR, "Player::perform(): At least two waypoints required");
 
 	golem::Controller::State::Seq initTrajectory;
-	findTrajectory(lookupState(), &trajectory.front(), nullptr, SEC_TM_REAL_ZERO, initTrajectory);
+	golem::Controller::State begin = controller->createState();
+	controller->lookupState(SEC_TM_REAL_MAX, begin);
+	findTrajectory(begin, &trajectory.front(), nullptr, SEC_TM_REAL_ZERO, initTrajectory);
 
 	golem::Controller::State::Seq completeTrajectory = initTrajectory;
 	completeTrajectory.insert(completeTrajectory.end(), trajectory.begin(), trajectory.end());
@@ -189,6 +192,8 @@ void pacman::Demo::perform2(const std::string& data, const std::string& item, co
 	data::Trajectory* trajectoryIf = is<data::Trajectory>(itemTrajectory.get());
 	if (!trajectoryIf)
 		throw Message(Message::LEVEL_ERROR, "Player::perform(): unable to create trajectory using handler %s", trajectoryHandler.c_str());
+	
+
 	trajectoryIf->setWaypoints(completeTrajectory);
 
 	// block displaying the current item
@@ -338,8 +343,12 @@ grasp::ConfigMat34 Demo::getConfigFromPose(const golem::Mat34& w)
 
 golem::Controller::State Demo::lookupStateArmCommandHand() const
 {
-	golem::Controller::State state = lookupState();	// current state
-	golem::Controller::State cmdHand = lookupCommand();	// commanded state (wanted just for hand)
+	golem::Controller::State begin = controller->createState();
+	controller->lookupState(SEC_TM_REAL_MAX, begin);
+	golem::Controller::State state = begin;	// current state
+
+	//TODO: Uncertain here! Should it be createState?
+	golem::Controller::State cmdHand = controller->createState();//lookupCommand();	// commanded state (wanted just for hand)
 	state.cpos.set(handInfo.getJoints(), cmdHand.cpos); // only set cpos ???
 	return state;
 }

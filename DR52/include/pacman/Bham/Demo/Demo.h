@@ -10,12 +10,11 @@
 
 #include <Grasp/App/Player/Player.h>
 
-#include <Grasp/Grasp/Model.h>
+#include <Grasp/Contact/Model.h>
 #include <Grasp/Core/RBPose.h>
 #include <Grasp/Core/Ctrl.h>
-#include <Grasp/Grasp/Model.h>
-#include <Grasp/Grasp/Query.h>
-#include <Grasp/Grasp/Manipulator.h>
+#include <Grasp/Contact/Query.h>
+#include <Grasp/Contact/Manipulator.h>
 
 //------------------------------------------------------------------------------
 
@@ -69,7 +68,7 @@ public:
 			/** Contacts */
 			grasp::Contact3D::Seq contacts;
 			/** Locations */
-			grasp::data::Location3D::Point::Seq locations;
+			grasp::data::Point3D::Point::Seq locations;
 		};
 
 		/** Query density */
@@ -87,7 +86,7 @@ public:
 			/** Path */
 			grasp::Manipulator::Waypoint::Seq path;
 			/** Locations */
-			grasp::data::Location3D::Point::Seq locations;
+			grasp::data::Point3D::Point::Seq locations;
 			/** End-effector frame */
 			golem::Mat34 frame;
 		};

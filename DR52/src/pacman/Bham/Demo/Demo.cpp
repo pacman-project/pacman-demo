@@ -1,7 +1,7 @@
 #include <pacman/Bham/Demo/Demo.h>
 
 #include <Golem/Math/Rand.h>
-#include <Grasp/Grasp/Model.h>
+#include <Grasp/Contact/Model.h>
 #include <Grasp/Data/Image/Image.h>
 #include <Grasp/Core/Import.h>
 #include <Grasp/App/Player/Data.h>
@@ -247,12 +247,14 @@ void Demo::Data::createRender() {
 				//if (ptr->path.size() > 1) owner->manipulatorAppearance.draw(*owner->manipulator, ptr->path[1], owner->modelRenderer);
 				if (ptr->queryIndex < densities.size()) {
 					// F = P * r
-					Mat34 trn = ptr->path[0].toMat34() * owner->manipulator->getBaseFrame();
+
+					//TODO: Fix this
+					/*Mat34 trn = ptr->path[0].toMat34() * owner->manipulator->getBaseFrame();
 					for (auto &i : densities[ptr->queryIndex].locations) {
 						Vec3 p;
 						trn.multiply(p, i);
 						owner->modelRenderer.addPoint(p, RGBA::BLACK);
-					}
+					}*/
 				}
 			}
 		}
@@ -534,8 +536,10 @@ grasp::ConfigMat34 Demo::getConfigFromPose(const golem::Mat34& w)
 
 golem::Controller::State Demo::lookupStateArmCommandHand() const
 {
-	golem::Controller::State state = lookupState();	// current state
-	golem::Controller::State cmdHand = lookupCommand();	// commanded state (wanted just for hand)
+	golem::Controller::State begin = controller->createState();
+	controller->lookupState(SEC_TM_REAL_MAX, begin);
+	golem::Controller::State state = begin; //lookupState();	// current state
+	golem::Controller::State cmdHand = controller->createState();//lookupCommand();	// commanded state (wanted just for hand)
 	state.cpos.set(handInfo.getJoints(), cmdHand.cpos); // only set cpos ???
 	return state;
 }
@@ -581,7 +585,8 @@ void Demo::releaseHand(const double openFraction, const SecTmReal duration)
 	double f = 1.0 - openFraction;
 	f = std::max(0.0, std::min(1.0, f));
 
-	golem::Controller::State currentState = lookupState();
+	golem::Controller::State currentState = controller->createState();
+	controller->lookupState(SEC_TM_REAL_MAX, currentState);
 	ConfigMat34 openPose(RealSeq(61, 0.0)); // !!! TODO use proper indices
 	for (size_t i = 0; i < openPose.c.size(); ++i)
 		openPose.c[i] = currentState.cpos.data()[i];
@@ -1040,19 +1045,20 @@ void pacman::Demo::create(const Desc& desc) {
 		UI::addCallback(*this, import);
 
 		// load/import item
-		readPath("Enter file path: ", dataImportPath, import->getFileTypes());
+		
+		readPath("Enter file path: ", dataImportPath, import->getImportFileTypes());
 		data::Item::Ptr item = import->import(dataImportPath);
 
 		ScopeGuard guard([&]() { golem::CriticalSectionWrapper csw(scene.getCS()); objectRenderer.reset(); });
 		RenderBlock renderBlock(*this);
 
 		// compute reference frame and adjust object frame
-		data::Location3D* location = is<data::Location3D>(item.get());
+		data::Point3D* location = is<data::Point3D>(item.get());
 		if (!location)
 			throw Cancel("Object handler does not implement data::Location3D");
 		Vec3Seq points, pointsTrn;
-		for (size_t i = 0; i < location->getNumOfLocations(); ++i)
-			points.push_back(location->getLocation(i));
+		for (size_t i = 0; i < location->getNumOfPoints(); ++i)
+			points.push_back(location->getPoint(i));
 		pointsTrn.resize(points.size());
 		Mat34 frame = RBPose::createFrame(points), frameInv;
 		frameInv.setInverse(frame);
@@ -1178,7 +1184,9 @@ void pacman::Demo::create(const Desc& desc) {
 			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
 		}
 		// set model robot pose
-		to<Data>(dataCurrentPtr)->modelState.reset(new golem::Controller::State(lookupState()));
+		golem::Controller::State begin = controller->createState();
+		controller->lookupState(SEC_TM_REAL_MAX, begin);
+		to<Data>(dataCurrentPtr)->modelState.reset(new golem::Controller::State(begin));
 
 		context.write("Done!\n");
 	}));
@@ -1289,15 +1297,18 @@ void pacman::Demo::create(const Desc& desc) {
 		}
 
 		// compute reference frame and adjust object frame
-		const data::Location3D* location = is<data::Location3D>(ptr);
+		const data::Point3D* location = is<data::Point3D>(ptr);
 		if (!location)
 			throw Message(Message::LEVEL_ERROR, "Object handler does not implement data::Location3D");
 		Vec3Seq points;
-		for (size_t i = 0; i < location->getNumOfLocations(); ++i)
-			points.push_back(location->getLocation(i));
-		data::Location3D::Point::Seq pointsTrn;
+		for (size_t i = 0; i < location->getNumOfPoints(); ++i)
+			points.push_back(location->getPoint(i));
+		data::Point3D::Point::Seq pointsTrn;
 		pointsTrn.resize(points.size());
-		Mat34 frame = forwardTransformArm(lookupState()), frameInv;
+		golem::Controller::State begin = controller->createState();
+		controller->lookupState(SEC_TM_REAL_MAX, begin);
+		Mat34 frame = forwardTransformArm(begin);
+		Mat34 frameInv;
 		frameInv.setInverse(frame);
 
 		// run model tools
@@ -1305,7 +1316,9 @@ void pacman::Demo::create(const Desc& desc) {
 		context.write("%s\n", options.c_str());
 		for (bool finish = false; !finish;) {
 			// attach object to the robot's end-effector
-			frame = forwardTransformArm(lookupState());
+			golem::Controller::State state = controller->createState();
+			controller->lookupState(SEC_TM_REAL_MAX, state);
+			frame = forwardTransformArm(state);
 			const Mat34 trn = frame * frameInv; // frame = trn * frameInit, trn = frame * frameInit^-1
 			for (size_t i = 0; i < points.size(); ++i)
 				trn.multiply(pointsTrn[i], points[i]);
@@ -1358,7 +1371,9 @@ void pacman::Demo::create(const Desc& desc) {
 				contacts.clear();
 				if (model->second->create(*features, to<Data>(dataCurrentPtr)->modelFrame, modelMesh, contacts)) {
 					golem::CriticalSectionWrapper cswData(scene.getCS());
-					Data::Training training(lookupState());
+					golem::Controller::State begin = controller->createState();
+					controller->lookupState(SEC_TM_REAL_MAX, begin);
+					Data::Training training(begin);
 					training.contacts = contacts;
 					training.frame = to<Data>(dataCurrentPtr)->modelFrame;
 					training.locations = pointsTrn;
@@ -1382,9 +1397,11 @@ void pacman::Demo::create(const Desc& desc) {
 				if (!trajectory)
 					throw Message(Message::LEVEL_ERROR, "Trajectory handler does not implement data::Trajectory");
 				// add current state
-				Controller::State::Seq seq = trajectory->getWaypoints();
-				seq.push_back(lookupState());
-				trajectory->setWaypoints(seq);
+				//Controller::Waypoint::Seq seq = trajectory->getWaypoints();
+				golem::Controller::State state = controller->createState();
+				controller->lookupState(SEC_TM_REAL_MAX, begin);
+				//seq.push_back(state);
+				//trajectory->setWaypoints(seq);
 				// done here
 				context.write("Done!\n");
 				break;
@@ -1437,7 +1454,9 @@ void pacman::Demo::create(const Desc& desc) {
 		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
 			throw Message(Message::LEVEL_ERROR, "Object item has not been created");
 		// wrist frame
-		const Mat34 frame = forwardTransformArm(lookupState());
+		golem::Controller::State begin = controller->createState();
+		controller->lookupState(SEC_TM_REAL_MAX, begin);
+		const Mat34 frame = forwardTransformArm(begin);
 		// create query densities
 		createQuery(ptr->second, frame, &to<Data>(dataCurrentPtr)->clusterCounter);
 		createRender();
@@ -1517,7 +1536,9 @@ void pacman::Demo::create(const Desc& desc) {
 			// compute features and add to data bundle
 			ptr = objectProcess(ptr);
 			// wrist frame
-			const Mat34 frame = forwardTransformArm(lookupState());
+			golem::Controller::State begin = controller->createState();
+			controller->lookupState(SEC_TM_REAL_MAX, begin);
+			const Mat34 frame = forwardTransformArm(begin);
 			// create query densities
 			createQuery(ptr->second, frame, &to<Data>(dataCurrentPtr)->clusterCounter);
 			// generate wrist pose solutions
@@ -2264,9 +2285,9 @@ void pacman::Demo::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 		Mat34 trnObj;
 		trnObj.setInverse(frame);
 		density.locations.clear();
-		density.locations.reserve(features->getNumOfLocations());
-		for (size_t i = 0; i < features->getNumOfLocations(); ++i) {
-			grasp::data::Location3D::Point p = features->getLocation(i);
+		density.locations.reserve(features->getNumOfPoints());
+		for (size_t i = 0; i < features->getNumOfPoints(); ++i) {
+			grasp::data::Point3D::Point p = features->getPoint(i);
 			trnObj.multiply(p, p);
 			density.locations.push_back(p);
 		}
@@ -2296,7 +2317,8 @@ void pacman::Demo::generateSolutions() {
 	const SecTmReal t = context.getTimer().elapsed();
 
 	Mat34 referencePose;
-	referencePose.setInverse(manipulator->getBaseFrame());
+	
+	referencePose.setInverse(manipulator->getReferenceFrame());//manipulator->getBaseFrame());
 
 	size_t acceptGreedy = 0, acceptSA = 0;
 
@@ -2370,10 +2392,12 @@ void pacman::Demo::generateSolutions() {
 
 					// transform to the new frame
 					RBCoord inv;
-					inv.setInverse(test.path[0]);
+					inv.setInverse(test.path[0].frame);
 					for (Manipulator::Waypoint::Seq::iterator i = test.path.begin(); i != test.path.end(); ++i) {
-						i->multiply(inv, *i);
-						i->multiply(test.pose * referencePose, *i);
+						
+						//i->multiply(inv, *i);
+						i->frame.multiply(inv, i->frame);
+						i->frame.multiply(test.pose * referencePose, i->frame);
 					}
 
 					// evaluate
@@ -2480,6 +2504,10 @@ void pacman::Demo::selectTrajectory() {
 		createRender();
 		Manipulator::Waypoint::Seq& path = to<Data>(dataCurrentPtr)->solutions[index].path;
 		const RBDist dist(manipulator->find(path));
+
+	//	manipulator->getConfig()
+
+
 		const golem::ConfigspaceCoord approach = manipulator->getConfig(path.back());
 		const bool collides = false;// collisionBounds.collides(approach, manipulator->getArm()->getStateInfo().getJoints().end() - 1); // TODO test approach config using locations
 		const RBDistEx distex(dist, manipulator->getDesc().trajectoryErr.collision && collides);
