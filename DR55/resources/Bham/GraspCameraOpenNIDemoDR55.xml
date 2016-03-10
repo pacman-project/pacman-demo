@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <grasp>
-  <sensor config_joint="0" calibration_file="GraspCameraOpenNIDemoDR55.cal" index="0" buffer_len="60" buffer_off="1" thread_timeout="20000" stream_timeout="1000">
+  <sensor config_joint="0" calibration_file="GraspCameraOpenNIDemo.cal" index="0" buffer_len="60" buffer_off="1" thread_timeout="20000" stream_timeout="1000">
     <property width="640" height="480" fps="30" mode="ir" format="203"/>
     <property width="640" height="480" fps="30" mode="depth" format="101"/>
     <!--<property width="320" height="240" fps="30" mode="ir" format="203"/>
     <property width="320" height="240" fps="30" mode="colour, depth" format="200 101"/>-->
     <colour R="255" G="0" B="0" A="255"/>
 
-    <handler snapshot="Image+ImageDemoDR55" sequence="Video+Video"/>
+    <handler snapshot="Image+Image" sequence="Video+Video"/>
     
-    <calibration file="GraspCameraOpenNIDemoDR55.cal" use_deformation_map="1">
+    <calibration file="GraspCameraOpenNIDemo.cal" use_deformation_map="1">
       <optimisation minimum="1" population_size="100" generations_num="1000000000" de_diff_fac="0.5" de_cross_prob="0.2" test_generations="1000" test_pairs="100" test_variance="1e-7" num_of_threads="-1" thread_priority="lowest">
         <distance_weights lin="10.0" ang="1.0"/>
         <sample_magnitude lin="0.1" ang="0.5"/>

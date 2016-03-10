@@ -80,7 +80,7 @@
       <pose_closed dim="61" c1="2.5" c2="0.0262055" c3="2.67101" c4="-1.23526" c5="1.51494" c6="-1.84566" c7="-2.95382" c8="0.22" c9="0.6" c10="0.1" c11="0.1" c12="0.05" c13="0.8" c14="0.2" c15="0.2" c16="0.05" c17="0.8" c18="0.2" c19="0.2" c20="0" c21="0.8" c22="0.2" c23="0.2" c24="0" c25="0.8" c26="0.2" c27="0.2" c28="0" c29="0" c30="0" c31="0" c32="0" c33="0" c34="0" c35="0" c36="0" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0" c44="0" c45="0" c46="0" c47="0" c48="0" c49="0" c50="0" c51="0" c52="0" c53="0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c60="0" c61="0"/>
     </grasp>
 
-    <object camera="OpenNI+OpenNIDemoDR55" handler_scan="Image+ImageObjectDemoDR55" handler="PointsCurv+PointsCurvDemoDR55" item_scan="ObjectScan" item="Object">
+    <object camera="OpenNI+OpenNIDemoDR55" handler_scan="Image+ImageDemoDR55Object" handler="PointsCurv+PointsCurvDemoDR55" item_scan="ObjectScan" item="Object">
       <scan_pose dim="61" c1="2.47067" c2="-0.850383" c3="2.35997" c4="-1.65389" c5="2.47979" c6="-1.14518" c7="1" c8="0.22" c9="0.6" c10="0.1" c11="0.1" c12="0.05" c13="0.8" c14="0.2" c15="0.2" c16="0.05" c17="0.8" c18="0.2" c19="0.2" c20="0" c21="0.8" c22="0.2" c23="0.2" c24="0" c25="0.8" c26="0.2" c27="0.2" c28="0" c29="0" c30="0" c31="0" c32="0" c33="0" c34="0" c35="0" c36="0" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0" c44="0" c45="0" c46="0" c47="0" c48="0" c49="0" c50="0" c51="0" c52="0" c53="0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c60="0" c61="0"/>
 
       <frame_adjustment lin_keys="wsedrf" ang_keys="WSEDRF" inc_keys="-+">
@@ -265,11 +265,13 @@
     <!--<handler library_path="GraspDataPart3DHoP" config_path="GraspDataPart3DHoP"/>-->
 
     <handler library_path="GraspDataImage" config_path="GraspDataImageDemoDR55"/>
-    <handler library_path="GraspDataImage" config_path="GraspDataImageObjectDemoDR55"/>
+    <handler library_path="GraspDataImage" config_path="GraspDataImageDemoDR55Object"/>
     <handler library_path="GraspDataPointsCurv" config_path="GraspDataPointsCurvDemoDR55"/>
     <handler library_path="GraspDataTrajectory" config_path="GraspDataTrajectoryDemoDR55"/>
     <handler library_path="GraspDataContactModel" config_path="GraspDataContactModelDemoDR55"/>
     <handler library_path="GraspDataContactQuery" config_path="GraspDataContactQueryDemoDR55"/>
+
+    <data path="./data/DemoDR55Data/DemoDR55Data.xml"></data>
   </manager>
 
   <pose name="plate1" dim="61" c1="2.65687" c2="-0.697357" c3="2.10479" c4="-1.66935" c5="2.51138" c6="-1.21987" c7="0.781745" c8="0.155501" c9="0.424863" c10="0.0575874" c11="0.0575874" c12="0.0608995" c13="0.514082" c14="0.0906749" c15="0.0906749" c16="0.0515542" c17="0.689863" c18="0.176525" c19="0.097985" c20="0.0389583" c21="0.773788" c22="0.206936" c23="0.206936" c24="0.00148365" c25="0.720751" c26="0.176006" c27="0.238838" c28="0" c29="0" c30="0" c31="0" c32="0" c33="0" c34="0" c35="0" c36="0" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0" c44="0" c45="0" c46="0" c47="0" c48="0" c49="0" c50="0" c51="0" c52="0" c53="0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c60="0" c61="0"/>

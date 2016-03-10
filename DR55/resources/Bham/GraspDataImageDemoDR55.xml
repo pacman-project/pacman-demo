@@ -55,13 +55,13 @@
 
     <query normal_std_dev="100.0"/>
 
-    <model file="PacmanDemoDR55Container.obj" points="100000" features="1000000" attempts="10" kernels="500000" neighbours="20000" distance_range="20.0" distance_max="0.02" feature_norm_eps="1e-5">
+    <model file="CalibrationCube.obj" points="100000" features="1000000" attempts="10" kernels="500000" neighbours="20000" distance_range="20.0" distance_max="0.02" feature_norm_eps="1e-5">
       <nn_search search_checks="32" search_kdtrees="4"/>
       <covariance dim="7" c1="0.01" c2="0.01" c3="0.01" c4="0.01" c5="0.01" c6="0.01" c7="0.01"/>
       <mean_shift population_size="100" generations_min="20" generations_max="200" distance_diff="1e-4"/>
       <pose_stddev lin="0.0005" ang="2000.0"/>
       <dist prod="0" lin="1.0" ang="1.0" feature="0"/>
-      <!--<optimisation minimum="1" population_size="10" generations_num="10000" de_diff_fac="0.5" de_cross_prob="0.1" test_generations="100" test_pairs="100" test_variance="1e-8" num_of_threads="-1" thread_priority="lowest"/>-->
+      <optimisation minimum="1" population_size="10" generations_num="10000" de_diff_fac="0.5" de_cross_prob="0.1" test_generations="100" test_pairs="100" test_variance="1e-8" num_of_threads="-1" thread_priority="lowest"/>
       <align lin_keys="wsedrf" ang_keys="WSEDRF" inc_keys="-+">
         <increment lin="0.05" ang="0.2617993877991494"/>
         <frame_size v1="0.1" v2="0.1" v3="0.1"/>

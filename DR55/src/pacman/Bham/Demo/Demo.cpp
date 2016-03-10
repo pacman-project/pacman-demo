@@ -335,7 +335,8 @@ void DemoDR55::Data::load(const std::string& prefix, const golem::XMLContext* xm
 			frs.read(solutions, solutions.end());
 		}
 	}
-	catch (const std::exception&) {
+	catch (const std::exception& msg) {
+		context.write("%s/n", msg.what());
 	}
 
 	Data::Cluster::setToDefault(this->owner->clusterMap, clusterCounter, training);

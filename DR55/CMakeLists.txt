@@ -251,7 +251,7 @@ IF (BUILD_PACMAN_DEMO_DR55)
 		${PROJECT_ROOT}/resources/Bham/GraspDemoDR55_RobotBoris.xml
 		${PROJECT_ROOT}/resources/Bham/GraspCameraOpenNIDemoDR55.xml
 		${PROJECT_ROOT}/resources/Bham/GraspDataImageDemoDR55.xml
-		${PROJECT_ROOT}/resources/Bham/GraspDataImageObjectDemoDR55.xml
+		${PROJECT_ROOT}/resources/Bham/GraspDataImageDemoDR55Object.xml
 		${PROJECT_ROOT}/resources/Bham/GraspDataPointsCurvDemoDR55.xml
 		${PROJECT_ROOT}/resources/Bham/GraspDataContactModelDemoDR55.xml
 		${PROJECT_ROOT}/resources/Bham/GraspDataContactQueryDemoDR55.xml
@@ -260,7 +260,7 @@ IF (BUILD_PACMAN_DEMO_DR55)
 	)
 	SET(DEMO_DR55_MODEL_FILES
 		#${PROJECT_ROOT}/resources/Bham/PaCManBhamDemoDrainer.obj
-		${PROJECT_ROOT}/resources/Bham/PacmanDemoDR55Container.obj
+		${PROJECT_ROOT}/resources/Bham/PacmanDemoDR55Drainer.obj
 	)
 	
 	ADD_EXECUTABLE(PacmanDemoDR55 ${DEMO_DR55_SOURCES} ${DEMO_DR55_HEADERS} ${DEMO_DR55_FILES})
