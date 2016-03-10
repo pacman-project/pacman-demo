@@ -80,7 +80,7 @@
       <pose_closed dim="61" c1="2.5" c2="0.0262055" c3="2.67101" c4="-1.23526" c5="1.51494" c6="-1.84566" c7="-2.95382" c8="0.22" c9="0.6" c10="0.1" c11="0.1" c12="0.05" c13="0.8" c14="0.2" c15="0.2" c16="0.05" c17="0.8" c18="0.2" c19="0.2" c20="0" c21="0.8" c22="0.2" c23="0.2" c24="0" c25="0.8" c26="0.2" c27="0.2" c28="0" c29="0" c30="0" c31="0" c32="0" c33="0" c34="0" c35="0" c36="0" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0" c44="0" c45="0" c46="0" c47="0" c48="0" c49="0" c50="0" c51="0" c52="0" c53="0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c60="0" c61="0"/>
     </grasp>
 
-    <object camera="OpenNI+OpenNIChestDemoDR55" handler_scan="Image+ImageDemoDR55Object" handler="PointsCurv+PointsCurvDemoDR55" item_scan="ObjectScan" item="Object">
+    <object camera="OpenNI+OpenNIDemoDR55_right" handler_scan="Image+ImageDemoDR55Object" handler="PointsCurv+PointsCurvDemoDR55" item_scan="ObjectScan" item="Object">
       <scan_pose dim="61" c1="2.47067" c2="-0.850383" c3="2.35997" c4="-1.65389" c5="2.47979" c6="-1.14518" c7="1" c8="0.22" c9="0.6" c10="0.1" c11="0.1" c12="0.05" c13="0.8" c14="0.2" c15="0.2" c16="0.05" c17="0.8" c18="0.2" c19="0.2" c20="0" c21="0.8" c22="0.2" c23="0.2" c24="0" c25="0.8" c26="0.2" c27="0.2" c28="0" c29="0" c30="0" c31="0" c32="0" c33="0" c34="0" c35="0" c36="0" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0" c44="0" c45="0" c46="0" c47="0" c48="0" c49="0" c50="0" c51="0" c52="0" c53="0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c60="0" c61="0"/>
 
       <frame_adjustment lin_keys="wsedrf" ang_keys="WSEDRF" inc_keys="-+">
@@ -123,7 +123,7 @@
     <!-- DLR Justin robot (controller, planner): library_path="GolemDeviceRobotJustin" config_path="GolemDeviceRobotJustin" -->
     <!-- UIBK robot simulation (controller, planner): library_path="GolemDeviceMultiCtrl" config_path="GolemDeviceRobotUIBKSim" -->
     <!-- UIBK robot (controller, planner): library_path="GolemDeviceMultiCtrl" config_path="GolemDeviceRobotUIBK" -->
-    <controller library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotBoris">
+    <controller library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotBorisSim">
       <renderer>
         <joint_appearance line_width="1.0">
           <solid_colour R="192" G="192" B="0" A="100"></solid_colour>
@@ -183,8 +183,8 @@
       </renderer>
     </planner>
 
-    <controller id="KukaLWR+KukaLWRBorisR" begin="0" end="1"/>
-    <controller id="DLRHitHandII+DLRHitHandIIBorisR" begin="1" end="6"/>
+    <controller id="KukaLWRSim+KukaLWRBorisR" begin="0" end="1"/>
+    <controller id="DLRHitHandIISim+DLRHitHandIIBorisR" begin="1" end="6"/>
 
     <sensor id="FTClient+FTClient"/>
     <!--<sensor id="FTDAQ+FTDAQ"/>-->
@@ -234,12 +234,12 @@
   </player>
 
   <recorder>
-    <!--<sensor library_path="GraspCameraDepthSim" config_path="GraspCameraDepthSim"/>-->
+    <sensor library_path="GraspCameraDepthSim" config_path="GraspCameraDepthSim"/>
     <!--<sensor library_path="GraspCameraKinect" config_path="GraspCameraKinect"/>-->
     <!--<sensor library_path="GraspCameraOpenCV" config_path="GraspCameraOpenCV"/>-->
     <sensor library_path="GraspCameraOpenGL" config_path="GraspCameraOpenGL"/>
     <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNIDemoDR55_right"/>
-    <!--<sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNIDemoDR55_left"/>-->
+    <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNIDemoDR55_left"/>
     <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNIChestDemoDR55"/>
     <!--<sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNI"/>-->
     <!--<sensor library_path="GraspCameraPointGrey" config_path="GraspCameraPointGrey"/>-->

@@ -249,14 +249,14 @@ IF (BUILD_PACMAN_DEMO_DR55)
 	)
 	SET(DEMO_DR55_FILES
 		${PROJECT_ROOT}/resources/Bham/GraspDemoDR55_RobotBoris.xml
-		${PROJECT_ROOT}/resources/Bham/GraspCameraOpenNIDemoDR55.xml
+		#${PROJECT_ROOT}/resources/Bham/GraspCameraOpenNIDemoDR55.xml
 		${PROJECT_ROOT}/resources/Bham/GraspDataImageDemoDR55.xml
 		${PROJECT_ROOT}/resources/Bham/GraspDataImageDemoDR55Object.xml
 		${PROJECT_ROOT}/resources/Bham/GraspDataPointsCurvDemoDR55.xml
 		${PROJECT_ROOT}/resources/Bham/GraspDataContactModelDemoDR55.xml
 		${PROJECT_ROOT}/resources/Bham/GraspDataContactQueryDemoDR55.xml
 		${PROJECT_ROOT}/resources/Bham/GraspDataTrajectoryDemoDR55.xml
-		${PROJECT_ROOT}/resources/Bham/GraspCameraOpenNIDemoDR55.cal
+		#${PROJECT_ROOT}/resources/Bham/GraspCameraOpenNIDemoDR55.cal
 	)
 	SET(DEMO_DR55_MODEL_FILES
 		#${PROJECT_ROOT}/resources/Bham/PaCManBhamDemoDrainer.obj

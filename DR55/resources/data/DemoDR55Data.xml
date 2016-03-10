@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <grasp>
-  <data data_name="dataDR55.pacmandemo">
+  <data data_name="data.pacmandemo">
     <item cloud=".pcd" handler="Image+ImageDemoDR55" image="" label="Model" prefix="-item-Model-1" time_stamp="0">
       <config dim="0" m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1" v1="0" v2="0" v3="0"></config>
       <extrinsic m11="-0.990977" m12="0.05864" m13="-0.120524" m21="0.132918" m22="0.545686" m23="-0.827382" m31="0.01725" m32="-0.835936" m33="-0.548556" v1="0.57209" v2="-0.026447" v3="0.146217"></extrinsic>

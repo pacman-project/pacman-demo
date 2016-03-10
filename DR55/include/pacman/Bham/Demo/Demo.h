@@ -625,6 +625,8 @@ protected:
 	/** Model colour wireframe */
 	golem::RGBA modelColourWire;
 
+	/** Enable/disable rendering for the model */
+	bool showModel;
 	/** Model renderer */
 	golem::DebugRenderer modelRenderer;
 

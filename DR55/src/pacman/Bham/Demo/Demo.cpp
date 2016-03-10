@@ -220,81 +220,84 @@ void DemoDR55::Data::createRender() {
 		golem::CriticalSectionWrapper csw(owner->scene.getCS());
 		owner->modelRenderer.reset();
 		// model/query
-		const grasp::Vec3Seq& vertices = mode == MODE_MODEL ? modelVertices : queryVertices;
-		const grasp::TriangleSeq& triangles = mode == MODE_MODEL ? modelTriangles : queryTriangles;
-		const golem::Mat34& frame = mode == MODE_MODEL ? modelFrame : queryFrame;
-		owner->modelRenderer.setColour(owner->modelColourSolid);
-		owner->modelRenderer.addSolid(vertices.data(), (U32)vertices.size(), triangles.data(), (U32)triangles.size());
-		owner->modelRenderer.setColour(owner->modelColourWire);
-		owner->modelRenderer.addWire(vertices.data(), (U32)vertices.size(), triangles.data(), (U32)triangles.size());
-		if (!vertices.empty() && !triangles.empty())
-			owner->modelRenderer.addAxes3D(frame, Vec3(0.2));
-		// training data
-		if (mode == MODE_MODEL) {
-			owner->contactAppearance.relation = contactRelation;
-			Training::Map::iterator ptr = getTrainingItem();
-			if (ptr != training.end()) {
-				grasp::Contact3D::draw(owner->contactAppearance, ptr->second.contacts, modelFrame, owner->modelRenderer);
-				for (auto &i : ptr->second.points)
-					owner->modelRenderer.addPoint(i, RGBA::BLACK);
-			}
-		}
-		// query data
-		else if (mode == MODE_QUERY) {
-			if (!densities.empty()) {
-				if (queryShowDensities) {
-					const Density::Seq::iterator ptr = densities.begin() + indexDensity;
-					for (grasp::Query::Pose::Seq::const_iterator i = ptr->object.begin(); i != ptr->object.end(); ++i)
-						owner->modelRenderer.addAxes(i->toMat34(), Vec3(0.005));
-					for (grasp::Query::Pose::Seq::const_iterator i = ptr->pose.begin(); i != ptr->pose.end(); ++i)
-						owner->modelRenderer.addAxes(i->toMat34(), Vec3(0.02));
+		if (owner->showModel) {
+			const grasp::Vec3Seq& vertices = mode == MODE_MODEL ? modelVertices : queryVertices;
+			const grasp::TriangleSeq& triangles = mode == MODE_MODEL ? modelTriangles : queryTriangles;
+			const golem::Mat34& frame = mode == MODE_MODEL ? modelFrame : queryFrame;
+			owner->modelRenderer.setColour(owner->modelColourSolid);
+			owner->modelRenderer.addSolid(vertices.data(), (U32)vertices.size(), triangles.data(), (U32)triangles.size());
+			owner->modelRenderer.setColour(owner->modelColourWire);
+			owner->modelRenderer.addWire(vertices.data(), (U32)vertices.size(), triangles.data(), (U32)triangles.size());
+			if (!vertices.empty() && !triangles.empty())
+				owner->modelRenderer.addAxes3D(frame, Vec3(0.2));
 
-					//owner->modelRenderer.setPointSize(3);
-					//const Real scaleObj = Real(1.0), scalePose = Real(0.1);
-					//const RBDist deltaObj(owner->optimisation.saDelta.lin*scaleObj, owner->optimisation.saDelta.ang*scaleObj);
-					//const RBDist deltaPose(owner->optimisation.saDelta.lin*scaleObj, owner->optimisation.saDelta.ang*scaleObj);
-
-					//Rand rand(owner->context.getRandSeed());
-					//const size_t samples = 100000;
-					//for (size_t i = 0; i < samples; ++i) {
-					//	RBCoord sample;
-					//	Vec3 v;
-					//	Quat q;
-
-					//	const grasp::Query::Pose::Seq::const_iterator obj = golem::Sample<golem::Real>::sample<golem::Ref1, grasp::Query::Pose::Seq::const_iterator>(ptr->object, rand);
-					//	v.next(rand); // |v|==1
-					//	v.multiply(Math::abs(rand.nextGaussian<Real>(REAL_ZERO, deltaObj.lin*obj->stdDev.lin)), v);
-					//	sample.p.add(obj->p, v);
-					//	q.next(rand, obj->covInv.ang / Math::sqr(deltaObj.ang));
-					//	sample.q.multiply(obj->q, q);
-					//	owner->modelRenderer.addPoint(sample.p, RGBA(255, 0, 0, 50));
-
-					//	const grasp::Query::Pose::Seq::const_iterator pose = golem::Sample<golem::Real>::sample<golem::Ref1, grasp::Query::Pose::Seq::const_iterator>(ptr->pose, rand);
-					//	v.next(rand); // |v|==1
-					//	v.multiply(Math::abs(rand.nextGaussian<Real>(REAL_ZERO, deltaPose.lin*pose->stdDev.lin)), v);
-					//	sample.p.add(pose->p, v);
-					//	q.next(rand, pose->covInv.ang / Math::sqr(deltaPose.ang));
-					//	sample.q.multiply(pose->q, q);
-					//	owner->modelRenderer.addPoint(sample.p, RGBA(0, 255, 0, 50));
-
-					//	ptr->pose;
-					//}
+			// training data
+			if (mode == MODE_MODEL) {
+				owner->contactAppearance.relation = contactRelation;
+				Training::Map::iterator ptr = getTrainingItem();
+				if (ptr != training.end()) {
+					grasp::Contact3D::draw(owner->contactAppearance, ptr->second.contacts, modelFrame, owner->modelRenderer);
+					for (auto &i : ptr->second.points)
+						owner->modelRenderer.addPoint(i, RGBA::BLACK);
 				}
 			}
-		}
-		else if (mode == MODE_SOLUTION) {
-			if (!solutions.empty()) {
-				const Solution::Seq::iterator ptr = solutions.begin() + indexSolution;
-				owner->modelRenderer.addAxes3D(ptr->pose.toMat34(), Vec3(0.1));
-				if (ptr->path.size() > 0) owner->manipulatorAppearance.draw(*owner->manipulator, ptr->path[0], owner->modelRenderer);
-				//if (ptr->path.size() > 1) owner->manipulatorAppearance.draw(*owner->manipulator, ptr->path[1], owner->modelRenderer);
-				if (ptr->queryIndex < densities.size()) {
-					// F = P * r
-					Mat34 trn = ptr->path[0].frame.toMat34() * owner->manipulator->getReferenceFrame();
-					for (auto &i : densities[ptr->queryIndex].points) {
-						Vec3 p;
-						trn.multiply(p, i);
-						owner->modelRenderer.addPoint(p, RGBA::BLACK);
+			// query data
+			else if (mode == MODE_QUERY) {
+				if (!densities.empty()) {
+					if (queryShowDensities) {
+						const Density::Seq::iterator ptr = densities.begin() + indexDensity;
+						for (grasp::Query::Pose::Seq::const_iterator i = ptr->object.begin(); i != ptr->object.end(); ++i)
+							owner->modelRenderer.addAxes(i->toMat34(), Vec3(0.005));
+						for (grasp::Query::Pose::Seq::const_iterator i = ptr->pose.begin(); i != ptr->pose.end(); ++i)
+							owner->modelRenderer.addAxes(i->toMat34(), Vec3(0.02));
+
+						//owner->modelRenderer.setPointSize(3);
+						//const Real scaleObj = Real(1.0), scalePose = Real(0.1);
+						//const RBDist deltaObj(owner->optimisation.saDelta.lin*scaleObj, owner->optimisation.saDelta.ang*scaleObj);
+						//const RBDist deltaPose(owner->optimisation.saDelta.lin*scaleObj, owner->optimisation.saDelta.ang*scaleObj);
+
+						//Rand rand(owner->context.getRandSeed());
+						//const size_t samples = 100000;
+						//for (size_t i = 0; i < samples; ++i) {
+						//	RBCoord sample;
+						//	Vec3 v;
+						//	Quat q;
+
+						//	const grasp::Query::Pose::Seq::const_iterator obj = golem::Sample<golem::Real>::sample<golem::Ref1, grasp::Query::Pose::Seq::const_iterator>(ptr->object, rand);
+						//	v.next(rand); // |v|==1
+						//	v.multiply(Math::abs(rand.nextGaussian<Real>(REAL_ZERO, deltaObj.lin*obj->stdDev.lin)), v);
+						//	sample.p.add(obj->p, v);
+						//	q.next(rand, obj->covInv.ang / Math::sqr(deltaObj.ang));
+						//	sample.q.multiply(obj->q, q);
+						//	owner->modelRenderer.addPoint(sample.p, RGBA(255, 0, 0, 50));
+
+						//	const grasp::Query::Pose::Seq::const_iterator pose = golem::Sample<golem::Real>::sample<golem::Ref1, grasp::Query::Pose::Seq::const_iterator>(ptr->pose, rand);
+						//	v.next(rand); // |v|==1
+						//	v.multiply(Math::abs(rand.nextGaussian<Real>(REAL_ZERO, deltaPose.lin*pose->stdDev.lin)), v);
+						//	sample.p.add(pose->p, v);
+						//	q.next(rand, pose->covInv.ang / Math::sqr(deltaPose.ang));
+						//	sample.q.multiply(pose->q, q);
+						//	owner->modelRenderer.addPoint(sample.p, RGBA(0, 255, 0, 50));
+
+						//	ptr->pose;
+						//}
+					}
+				}
+			}
+			else if (mode == MODE_SOLUTION) {
+				if (!solutions.empty()) {
+					const Solution::Seq::iterator ptr = solutions.begin() + indexSolution;
+					owner->modelRenderer.addAxes3D(ptr->pose.toMat34(), Vec3(0.1));
+					if (ptr->path.size() > 0) owner->manipulatorAppearance.draw(*owner->manipulator, ptr->path[0], owner->modelRenderer);
+					//if (ptr->path.size() > 1) owner->manipulatorAppearance.draw(*owner->manipulator, ptr->path[1], owner->modelRenderer);
+					if (ptr->queryIndex < densities.size()) {
+						// F = P * r
+						Mat34 trn = ptr->path[0].frame.toMat34() * owner->manipulator->getReferenceFrame();
+						for (auto &i : densities[ptr->queryIndex].points) {
+							Vec3 p;
+							trn.multiply(p, i);
+							owner->modelRenderer.addPoint(p, RGBA::BLACK);
+						}
 					}
 				}
 			}
@@ -891,6 +894,8 @@ void grasp::DemoDR55::create(const Desc& desc) {
 	if (!modelHandlerTrj)
 		throw Message(Message::LEVEL_CRIT, "grasp::DemoDR55::create(): unknown model trajectory handler: %s", desc.modelHandlerTrj.c_str());
 	modelItemTrj = desc.modelItemTrj;
+
+	showModel = true;
 
 	grasp::Sensor::Map::const_iterator queryCameraPtr = sensorMap.find(desc.queryCamera);
 	queryCamera = queryCameraPtr != sensorMap.end() ? is<Camera>(queryCameraPtr->second.get()) : nullptr;
