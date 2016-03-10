@@ -2838,6 +2838,19 @@ template <> void golem::Stream::write(const grasp::DemoDR55::Data::Solution::Seq
 	write(value.queryIndex);
 }
 
+template <> void golem::Stream::read(grasp::Manipulator::Waypoint& value) const {
+	read((grasp::Manipulator::Config&)value);
+	read((golem::Sample<golem::Real>&)value);
+	read(value.control);
+	value.control.resize(std::min(value.control.size(), grasp::Manipulator::ControlCoord::N));
+}
+
+template <> void golem::Stream::write(const grasp::Manipulator::Waypoint& value) {
+	write((grasp::Manipulator::Config&)value);
+	write((golem::Sample<golem::Real>&)value);
+	write(value.control);
+}
+
 //------------------------------------------------------------------------------
 
 int main(int argc, char *argv[]) {
