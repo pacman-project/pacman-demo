@@ -248,19 +248,35 @@ IF (BUILD_PACMAN_DEMO_DR55)
 		${PROJECT_ROOT}/include/pacman/Bham/Demo/Demo.h
 	)
 	SET(DEMO_DR55_FILES
-		${PROJECT_ROOT}/resources/Bham/GraspDemoDR55_RobotBoris.xml
-		#${PROJECT_ROOT}/resources/Bham/GraspCameraOpenNIDemoDR55.xml
-		${PROJECT_ROOT}/resources/Bham/GraspDataImageDemoDR55.xml
-		${PROJECT_ROOT}/resources/Bham/GraspDataImageDemoDR55Object.xml
-		${PROJECT_ROOT}/resources/Bham/GraspDataPointsCurvDemoDR55.xml
-		${PROJECT_ROOT}/resources/Bham/GraspDataContactModelDemoDR55.xml
-		${PROJECT_ROOT}/resources/Bham/GraspDataContactQueryDemoDR55.xml
-		${PROJECT_ROOT}/resources/Bham/GraspDataTrajectoryDemoDR55.xml
-		#${PROJECT_ROOT}/resources/Bham/GraspCameraOpenNIDemoDR55.cal
+		${PROJECT_ROOT}/resources/GraspDemoDR55_RobotBoris.xml
+		${PROJECT_ROOT}/resources/GraspDemoDR55_RobotBorisSim.xml
+		${PROJECT_ROOT}/resources/GraspDemoDR55_RobotBorisDepthSim.xml
+		${PROJECT_ROOT}/resources/GraspCameraOpenNIDemoDR55Chest.xml
+		${PROJECT_ROOT}/resources/GraspCameraOpenNIDemoDR55RightArm.xml
+		${PROJECT_ROOT}/resources/GraspCameraOpenNIDemoDR55LeftArm.xml
+		${PROJECT_ROOT}/resources/GraspCameraDepthSimDemoDR55Chest.xml
+		${PROJECT_ROOT}/resources/GraspCameraDepthSimDemoDR55RightArm.xml
+		${PROJECT_ROOT}/resources/GraspCameraDepthSimDemoDR55LeftArm.xml
+		${PROJECT_ROOT}/resources/GraspDataImageDemoDR55.xml
+		${PROJECT_ROOT}/resources/GraspDataImageDemoDR55Object.xml
+		${PROJECT_ROOT}/resources/GraspDataPointsCurvDemoDR55.xml
+		${PROJECT_ROOT}/resources/GraspDataContactModelDemoDR55.xml
+		${PROJECT_ROOT}/resources/GraspDataContactQueryDemoDR55.xml
+		${PROJECT_ROOT}/resources/GraspDataTrajectoryDemoDR55.xml
+		${PROJECT_ROOT}/resources/GraspFTClientDemoDR55.xml
+	)
+	SET(DEMO_DR55_CAL_FILES
+		${PROJECT_ROOT}/resources/cal/GraspCameraOpenNIDemoDR55Chest.cal
+		${PROJECT_ROOT}/resources/cal/GraspCameraOpenNIDemoDR55RightArm.cal
+		${PROJECT_ROOT}/resources/cal/GraspCameraOpenNIDemoDR55LeftArm.cal
+		${PROJECT_ROOT}/resources/cal/GraspCameraDepthSimDemoDR55Chest.cal
+		${PROJECT_ROOT}/resources/cal/GraspCameraDepthSimDemoDR55RightArm.cal
+		${PROJECT_ROOT}/resources/cal/GraspCameraDepthSimDemoDR55LeftArm.cal
+		${PROJECT_ROOT}/resources/cal/GraspFTClientDemoDR55.cal
 	)
 	SET(DEMO_DR55_MODEL_FILES
-		#${PROJECT_ROOT}/resources/Bham/PaCManBhamDemoDrainer.obj
-		${PROJECT_ROOT}/resources/Bham/PacmanDemoDR55Drainer.obj
+		#${PROJECT_ROOT}/resources/PaCManBhamDemoDrainer.obj
+		${PROJECT_ROOT}/resources/PacmanDemoDR55Drainer.obj
 	)
 	
 	ADD_EXECUTABLE(PacmanDemoDR55 ${DEMO_DR55_SOURCES} ${DEMO_DR55_HEADERS} ${DEMO_DR55_FILES})
@@ -335,6 +351,7 @@ IF (BUILD_PACMAN_DEMO_DR55)
 	endif(WIN32)	
 	COPY_FILES(PacmanDemoDR55 ${RUNTIME_OUTPUT_DIRECTORY} ${DEMO_DR55_FILES})
 	COPY_FILES(PacmanDemoDR55 ${RUNTIME_OUTPUT_DIRECTORY} ${DEMO_DR55_MODEL_FILES})
+	COPY_FILES(PacmanDemoDR55 ${RUNTIME_OUTPUT_DIRECTORY} ${DEMO_DR55_CAL_FILES})
 	SET_PROPERTY(TARGET PacmanDemoDR55 PROPERTY RELEASE_POSTFIX ${CMAKE_RELEASE_POSTFIX})
 	SET_PROPERTY(TARGET PacmanDemoDR55 PROPERTY DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
 	

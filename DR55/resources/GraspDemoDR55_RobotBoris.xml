@@ -34,7 +34,7 @@
   </scene>
 
   <demo data_name="data.demo">
-    <model camera="OpenNI+OpenNIChestDemoDR55" handler="Image+ImageDemoDR55" item="Model" item_obj="ModelObj" handler_trj="Trajectory+TrajectoryDemoDR55" item_trj="TrajectoryModel">
+    <model camera="OpenNI+OpenNIDemoDR55Chest" handler="Image+ImageDemoDR55" item="Model" item_obj="ModelObj" handler_trj="Trajectory+TrajectoryDemoDR55" item_trj="TrajectoryModel">
       <scan_pose dim="61" c1="1.7097" c2="-0.944053" c3="1.20653" c4="-0.707639" c5="0.126298" c6="0.751986" c7="0.84115" c8="0" c9="0" c10="0" c11="0" c12="0" c13="0" c14="0" c15="0" c16="0" c17="0" c18="0" c19="0" c20="0" c21="0" c22="0" c23="0" c24="0" c25="0" c26="0" c27="0" c28="0" c29="0" c30="0" c31="0" c32="0" c33="0" c34="0" c35="0" c36="0" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0" c44="0" c45="0" c46="0" c47="0" c48="0" c49="0" c50="0" c51="0" c52="0" c53="0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c60="0" c61="0"/>
       <colour>
         <solid R="0" G="0" B="255" A="32"/>
@@ -57,7 +57,7 @@
       </appearance>
     </model>
 
-    <query camera="OpenNI+OpenNIChestDemoDR55" handler="Image+ImageDemoDR55" item="Query" item_obj="QueryObj" handler_trj="Trajectory+TrajectoryDemoDR55" item_trj="TrajectoryQuery">
+    <query camera="OpenNI+OpenNIDemoDR55Chest" handler="Image+ImageDemoDR55" item="Query" item_obj="QueryObj" handler_trj="Trajectory+TrajectoryDemoDR55" item_trj="TrajectoryQuery">
       <query id="Any" weight="1.0">
         <contact_3d type="feature" kernels="5000" epsilon="1e-10" trials="100" feature_std_dev_max="5.0" pose_std_dev_max="5.0"/>
         <nn_search neighbours="0" search_checks="32" search_kdtrees="1" search_leaf_max_size="10"/>
@@ -74,13 +74,13 @@
       <cluster_map type="cup" slot="2"/>
     </query>
 
-    <grasp sensor="FTClient+FTClient" event_time_wait="2.0" close_duration="2.0">
+    <grasp sensor="FTClient+FTClientDemoDR55" event_time_wait="2.0" close_duration="2.0">
       <threshold v1="0.5" v2="0.5" v3="0.5" w1="0.1" w2="0.1" w3="0.1"/>
       <pose_open dim="61" c1="2.5" c2="0.0262055" c3="2.67101" c4="-1.23526" c5="1.51494" c6="-1.84566" c7="-2.95382" c8="0" c9="0" c10="0" c11="0" c12="0" c13="0" c14="0" c15="0" c16="0" c17="0" c18="0" c19="0" c20="0" c21="0" c22="0" c23="0" c24="0" c25="0" c26="0" c27="0" c28="0" c29="0" c30="0" c31="0" c32="0" c33="0" c34="0" c35="0" c36="0" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0" c44="0" c45="0" c46="0" c47="0" c48="0" c49="0" c50="0" c51="0" c52="0" c53="0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c60="0" c61="0"/>
       <pose_closed dim="61" c1="2.5" c2="0.0262055" c3="2.67101" c4="-1.23526" c5="1.51494" c6="-1.84566" c7="-2.95382" c8="0.22" c9="0.6" c10="0.1" c11="0.1" c12="0.05" c13="0.8" c14="0.2" c15="0.2" c16="0.05" c17="0.8" c18="0.2" c19="0.2" c20="0" c21="0.8" c22="0.2" c23="0.2" c24="0" c25="0.8" c26="0.2" c27="0.2" c28="0" c29="0" c30="0" c31="0" c32="0" c33="0" c34="0" c35="0" c36="0" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0" c44="0" c45="0" c46="0" c47="0" c48="0" c49="0" c50="0" c51="0" c52="0" c53="0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c60="0" c61="0"/>
     </grasp>
 
-    <object camera="OpenNI+OpenNIDemoDR55_right" handler_scan="Image+ImageDemoDR55Object" handler="PointsCurv+PointsCurvDemoDR55" item_scan="ObjectScan" item="Object">
+    <object camera="OpenNI+OpenNIDemoDR55Chest" handler_scan="Image+ImageDemoDR55Object" handler="PointsCurv+PointsCurvDemoDR55" item_scan="ObjectScan" item="Object">
       <scan_pose dim="61" c1="2.47067" c2="-0.850383" c3="2.35997" c4="-1.65389" c5="2.47979" c6="-1.14518" c7="1" c8="0.22" c9="0.6" c10="0.1" c11="0.1" c12="0.05" c13="0.8" c14="0.2" c15="0.2" c16="0.05" c17="0.8" c18="0.2" c19="0.2" c20="0" c21="0.8" c22="0.2" c23="0.2" c24="0" c25="0.8" c26="0.2" c27="0.2" c28="0" c29="0" c30="0" c31="0" c32="0" c33="0" c34="0" c35="0" c36="0" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0" c44="0" c45="0" c46="0" c47="0" c48="0" c49="0" c50="0" c51="0" c52="0" c53="0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c60="0" c61="0"/>
 
       <frame_adjustment lin_keys="wsedrf" ang_keys="WSEDRF" inc_keys="-+">
@@ -123,7 +123,7 @@
     <!-- DLR Justin robot (controller, planner): library_path="GolemDeviceRobotJustin" config_path="GolemDeviceRobotJustin" -->
     <!-- UIBK robot simulation (controller, planner): library_path="GolemDeviceMultiCtrl" config_path="GolemDeviceRobotUIBKSim" -->
     <!-- UIBK robot (controller, planner): library_path="GolemDeviceMultiCtrl" config_path="GolemDeviceRobotUIBK" -->
-    <controller library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotBorisSim">
+    <controller library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotBoris">
       <renderer>
         <joint_appearance line_width="1.0">
           <solid_colour R="192" G="192" B="0" A="100"></solid_colour>
@@ -183,10 +183,10 @@
       </renderer>
     </planner>
 
-    <controller id="KukaLWRSim+KukaLWRBorisR" begin="0" end="1"/>
-    <controller id="DLRHitHandIISim+DLRHitHandIIBorisR" begin="1" end="6"/>
+    <controller id="KukaLWR+KukaLWRBorisR" begin="0" end="1"/>
+    <controller id="DLRHitHandII+DLRHitHandIIBorisR" begin="1" end="6"/>
 
-    <sensor id="FTClient+FTClient"/>
+    <sensor id="FTClient+FTClientDemoDR55"/>
     <!--<sensor id="FTDAQ+FTDAQ"/>-->
 
     <activectrl library_path="GraspJointCtrl" config_path="GraspJointCtrl"/>
@@ -234,16 +234,20 @@
   </player>
 
   <recorder>
-    <sensor library_path="GraspCameraDepthSim" config_path="GraspCameraDepthSim"/>
+    <!--<sensor library_path="GraspCameraDepthSim" config_path="GraspCameraDepthSim"/>-->
+    <sensor library_path="GraspCameraDepthSim" config_path="GraspCameraDepthSimDemoDR55Chest"/>
+    <sensor library_path="GraspCameraDepthSim" config_path="GraspCameraDepthSimDemoDR55LeftArm"/>
+    <sensor library_path="GraspCameraDepthSim" config_path="GraspCameraDepthSimDemoDR55RightArm"/>
     <!--<sensor library_path="GraspCameraKinect" config_path="GraspCameraKinect"/>-->
     <!--<sensor library_path="GraspCameraOpenCV" config_path="GraspCameraOpenCV"/>-->
     <sensor library_path="GraspCameraOpenGL" config_path="GraspCameraOpenGL"/>
-    <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNIDemoDR55_right"/>
-    <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNIDemoDR55_left"/>
-    <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNIChestDemoDR55"/>
+    <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNIDemoDR55RightArm"/>
+    <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNIDemoDR55LeftArm"/>
+    <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNIDemoDR55Chest"/>
     <!--<sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNI"/>-->
     <!--<sensor library_path="GraspCameraPointGrey" config_path="GraspCameraPointGrey"/>-->
     <sensor library_path="GraspFTClient" config_path="GraspFTClient"/>
+    <sensor library_path="GraspFTClient" config_path="GraspFTClientDemoDR55"/>
     <!--<sensor library_path="GraspFTDAQ" config_path="GraspFTDAQ"/>-->
 
     <recording label="recorder">
