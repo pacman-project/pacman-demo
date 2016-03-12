@@ -55,6 +55,24 @@
         <frame_size v1="0.01" v2="0.01" v3="0.01"/>
         <bounds_frame_size v1="0.01" v2="0.01" v3="0.01"/>
       </appearance>
+      <pose_estimation points="10000" features="10000" attempts="10" kernels="10000" neighbours="2000" distance_range="20.0" distance_max="0.02" feature_norm_eps="1e-7" search_checks="32" search_kdtrees="4">
+        <nn_search neighbours="0" search_checks="32" search_kdtrees="4" search_leaf_max_size="10"/>
+        <covariance dim="7" c1="0.001" c2="0.001" c3="0.001" c4="0.001" c5="0.001" c6="0.001" c7="0.001"/>
+        <!--<covariance dim="7" c1="10" c2="10" c3="1" c4="1" c5="1" c6="1" c7="1"/>-->
+        <mean_shift population_size="100" generations_min="20" generations_max="200" distance_diff="1e-4"/>
+        <pose_stddev lin="0.001" ang="500.0"/>
+        <dist prod="0" lin="1.0" ang="1.0" feature="0"/>
+        <optimisation minimum="1" population_size="10" generations_num="1000" de_diff_fac="0.5" de_cross_prob="0.1" test_generations="100" test_pairs="100" test_variance="1e-6" num_of_threads="-1" thread_priority="lowest"/>
+        <align lin_keys="wsedrf" ang_keys="WSEDRF" inc_keys="-+">
+          <increment lin="0.05" ang="0.2617993877991494"/>
+          <frame_size v1="0.1" v2="0.1" v3="0.1"/>
+          <colour>
+            <solid R="0" G="0" B="255" A="32"/>
+            <wire R="0" G="0" B="255" A="255"/>
+          </colour>
+        </align>
+      </pose_estimation>
+
     </model>
 
     <query camera="DepthSim+DepthSimDemoDR55Chest" handler="Image+ImageDemoDR55" item="Query" item_obj="QueryObj" handler_trj="Trajectory+TrajectoryDemoDR55" item_trj="TrajectoryQuery">

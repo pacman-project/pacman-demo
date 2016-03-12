@@ -15,6 +15,7 @@
 #include <pacman/Bham/Demo/Demo.h>
 #include <Grasp/Contact/Model.h>
 #include <Grasp/Data/Image/Image.h>
+#include <Grasp/Data/PointsCurv/PointsCurv.h>
 #include <Grasp/Core/Import.h>
 #include <Grasp/App/Player/Data.h>
 #include <Golem/UI/Data.h>
@@ -447,6 +448,13 @@ void DemoDR55::Desc::load(golem::Context& context, const golem::XMLContext* xmlc
 	golem::XMLData("handler", modelHandler, xmlcontext->getContextFirst("model"));
 	golem::XMLData("item", modelItem, xmlcontext->getContextFirst("model"));
 	golem::XMLData("item_obj", modelItemObj, xmlcontext->getContextFirst("model"));
+	try {
+		XMLData((grasp::RBPose::Desc&)modelRBPoseDesc, xmlcontext->getContextFirst("model pose_estimation"));
+	}
+	catch (const golem::MsgXMLParser& msg) {
+		context.info("%s\n", msg.what());
+	}
+
 
 	modelScanPose.xmlData(xmlcontext->getContextFirst("model scan_pose"));
 	golem::XMLData(modelColourSolid, xmlcontext->getContextFirst("model colour solid"));
@@ -884,6 +892,7 @@ void grasp::DemoDR55::create(const Desc& desc) {
 		throw Message(Message::LEVEL_CRIT, "grasp::DemoDR55::create(): unknown model data handler: %s", desc.modelHandler.c_str());
 	modelItem = desc.modelItem;
 	modelItemObj = desc.modelItemObj;
+	modelRBPoseDesc = desc.modelRBPoseDesc;
 
 	modelScanPose = desc.modelScanPose;
 	modelColourSolid = desc.modelColourSolid;
@@ -1043,6 +1052,29 @@ void grasp::DemoDR55::create(const Desc& desc) {
 		context.write("query density %s\n", to<Data>(dataCurrentPtr)->queryShowDensities ? "ON" : "OFF");
 		createRender();
 	}));
+
+	// data menu control and commands
+	menuCtrlMap.insert(std::make_pair("K", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+		desc = "Press a key to: (E)stimate rack pose, (C)apture scene, (G)rasp object from scene, (O)bserve object from chest camera, run (D)emo ...";
+	}));
+
+	// model pose estimation
+	menuCtrlMap.insert(std::make_pair("KE", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+		desc = "Press a key to: (M)odel/(Q)ery estimation of the rack pose...";
+	}));
+	menuCmdMap.insert(std::make_pair("PEM", [=]() {
+		// estimate
+		(void)estimatePose(Data::MODE_MODEL);
+		// finish
+		context.write("Done!\n");
+	}));
+	menuCmdMap.insert(std::make_pair("PEQ", [=]() {
+		// estimate
+		(void)estimatePose(Data::MODE_QUERY);
+		// finish
+		context.write("Done!\n");
+	}));
+
 
 	// data menu control and commands
 	menuCtrlMap.insert(std::make_pair("P", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
@@ -1962,6 +1994,130 @@ void grasp::DemoDR55::create(const Desc& desc) {
 	// END OF MENUS
 
 }
+
+//------------------------------------------------------------------------------
+
+grasp::data::Item::Map::iterator grasp::DemoDR55::estimatePoseFromCloud(Data::Mode mode, std::string &itemName) {
+	grasp::data::Handler* handler = mode != Data::MODE_MODEL ? queryHandler : modelHandler;
+
+	grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(itemName);
+	if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
+		throw Message(Message::LEVEL_ERROR, "PosePlanner::estimatePose(): Does not find %s.", itemName.c_str());
+
+	// retrive point cloud with curvature
+	grasp::data::ItemPointsCurv *pointsCurv = is<grasp::data::ItemPointsCurv>(ptr->second.get());
+	if (!pointsCurv)
+		throw Message(Message::LEVEL_ERROR, "PosePlanner::estimatePose(): Does not support PointdCurv interface.");
+	grasp::Cloud::PointCurvSeq curvPoints = *pointsCurv->cloud;
+
+	// copy as a vector of points in 3D
+	Vec3Seq mPoints;
+	mPoints.resize(curvPoints.size());
+	I32 idx = 0;
+	std::for_each(curvPoints.begin(), curvPoints.end(), [&](const Cloud::PointCurv& i){
+		mPoints[idx++] = Cloud::getPoint<Real>(i);
+	});
+
+	// copy as a generic point+normal point cloud (Cloud::pointSeq)
+	Cloud::PointSeq points;
+	points.resize(curvPoints.size());
+	Cloud::copy(curvPoints, points);
+	if (mode == Data::MODE_MODEL) {
+		context.write("Create model on %s handler:%s\n", ptr->first.c_str(), pointsCurv->getHandler().getID().c_str());
+		RBPose::Ptr modelRBPosePtr = modelRBPoseDesc->create(context);
+		modelRBPosePtr->createModel(curvPoints);
+		grasp::to<Data>(dataCurrentPtr)->modelFrame = modelRBPosePtr->createFrame(mPoints);
+		grasp::to<Data>(dataCurrentPtr)->modelPoints =  points;
+	}
+	else {
+		context.write("Create query on %s handler:%s\n", ptr->first.c_str(), pointsCurv->getHandler().getID().c_str());
+		if (grasp::to<Data>(dataCurrentPtr)->modelPoints.empty())
+			throw Message(Message::LEVEL_ERROR, "PosePlanner::estimatePose(): no model has been created.");
+
+		modelRBPosePtr->createQuery(points);
+		grasp::to<Data>(dataCurrentPtr)->queryFrame = modelRBPosePtr->maximum().toMat34();
+		grasp::to<Data>(dataCurrentPtr)->queryFrame.multiply(grasp::to<Data>(dataCurrentPtr)->queryFrame, grasp::to<Data>(dataCurrentPtr)->modelFrame);
+	}
+
+	return ptr;
+}
+
+grasp::data::Item::Map::iterator grasp::DemoDR55::objectCapture(const Data::Mode mode, std::string &itemName) {
+	//	std::string& itemName = mode == Data::MODE_DEFAULT ? objectItem : mode != Data::MODE_MODEL ? queryItem : modelItem;
+	const std::string itemNameRaw = itemName + "_raw";
+	grasp::data::Handler* handler = mode == Data::MODE_DEFAULT ? objectHandler : mode != Data::MODE_MODEL ? queryHandler : modelHandler;
+	grasp::data::Handler* handlerScan = handler;
+	grasp::Camera* camera = mode != Data::MODE_MODEL ? queryCamera : modelCamera;
+	// to fix
+	grasp::ConfigMat34::Seq scanPoseSeq = objectScanPoseSeq;// mode != Data::MODE_MODEL ? queryScanPoseSeq : modelScanPoseSeq;
+
+	grasp::data::Capture* capture = is<grasp::data::Capture>(handlerScan);
+	if (!capture)
+		throw Message(Message::LEVEL_ERROR, "Handler %s does not support Capture interface", objectHandlerScan->getID().c_str());
+
+	select(sensorCurrentPtr, sensorMap.begin(), sensorMap.end(), "Select Sensor:\n", [](Sensor::Map::const_iterator ptr) -> const std::string&{
+		return ptr->second->getID();
+	});
+
+	if (is<FT>(sensorCurrentPtr))
+		throw Message(Message::LEVEL_ERROR, "Current sensor %s does not support Scan interface", sensorCurrentPtr->second->getID().c_str());
+
+	// Scan object
+	const bool isEnabledDeformationMap = camera && camera->getCurrentCalibration()->isEnabledDeformationMap();
+	ScopeGuard guard([&]() { if (camera) camera->getCurrentCalibration()->enableDeformationMap(isEnabledDeformationMap); });
+	if (camera && camera->getCurrentCalibration()->hasDeformationMap())
+		camera->getCurrentCalibration()->enableDeformationMap(true);
+
+	ConfigMat34::Seq::const_iterator pose = scanPoseSeq.begin();
+	size_t index = 0, size = scanPoseSeq.size();
+	auto scanPoseCommand = [&]() -> bool {
+		context.write("Going to scan pose #%d/%d\n", index + 1, size);
+		this->gotoPose(*pose++);
+		return ++index < size;
+	};
+	typedef std::vector<grasp::data::Item::Map::iterator> ItemPtrSeq;
+	ItemPtrSeq itemPtrSeq; itemPtrSeq.resize(size);
+	U32 ii = 0;
+	for (bool stop = false; !stop;) {
+		stop = !scanPoseCommand();
+		RenderBlock renderBlock(*this);
+		{
+			golem::CriticalSectionWrapper cswData(scene.getCS());
+			itemPtrSeq[ii] = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), grasp::data::Item::Map::value_type(itemNameRaw, capture->capture(*to<Camera>(sensorCurrentPtr), [&](const grasp::TimeStamp*) -> bool { return true; })));
+			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, itemPtrSeq[ii++], to<Data>(dataCurrentPtr)->getView());
+		}
+	}
+
+	// Transform to point curv
+	// generate features
+	grasp::data::Transform* transform = is<grasp::data::Transform>(handler);
+	if (!transform)
+		throw Message(Message::LEVEL_ERROR, "Handler %s does not support Transform interface", handler->getID().c_str());
+
+	context.write("Transform items to %s\n", handler->getID().c_str());
+	grasp::data::Item::List list;
+	for (auto ptr = itemPtrSeq.begin(); ptr != itemPtrSeq.end(); ptr++)
+		list.insert(list.end(), *ptr);
+	grasp::data::Item::Ptr item = transform->transform(list);
+
+	// item name
+	//	readString("Save point Curv as: ", itemName);
+
+	// insert processed object, remove old one
+	grasp::data::Item::Map::iterator pointCurvPtr;
+	RenderBlock renderBlock(*this);
+	{
+		golem::CriticalSectionWrapper cswData(getCS());
+		// remove the raw point clouds
+		to<Data>(dataCurrentPtr)->itemMap.erase(itemNameRaw);
+		to<Data>(dataCurrentPtr)->itemMap.erase(itemName);
+		pointCurvPtr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), grasp::data::Item::Map::value_type(itemName, item));
+		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, pointCurvPtr, to<Data>(dataCurrentPtr)->getView());
+	}
+
+	return pointCurvPtr;
+}
+
 
 //------------------------------------------------------------------------------
 

@@ -20,6 +20,7 @@
 #include <Grasp/Contact/Model.h>
 #include <Grasp/Core/RBPose.h>
 #include <Grasp/Core/Ctrl.h>
+#include <Grasp/Core/Cloud.h>
 #include <Grasp/Contact/Model.h>
 #include <Grasp/Contact/Query.h>
 #include <Grasp/Contact/Manipulator.h>
@@ -46,6 +47,8 @@ public:
 			MODE_MODEL,
 			/** Query density */
 			MODE_QUERY,
+			/** Default mode */
+			MODE_DEFAULT,
 			/** Solution */
 			MODE_SOLUTION,
 
@@ -195,6 +198,9 @@ public:
 		golem::Mat34 modelFrame;
 		/** Model frame offset */
 		golem::Mat34 modelFrameOffset;
+		/** Model points */
+		grasp::Cloud::PointSeq modelPoints;
+
 
 		/** Model robot state */
 		golem::Controller::State::Ptr modelState;
@@ -205,6 +211,8 @@ public:
 		grasp::TriangleSeq queryTriangles;
 		/** Query frame */
 		golem::Mat34 queryFrame;
+		/** Query points */
+		grasp::Cloud::PointSeq queryPoints;
 
 		/** Training data */
 		Training::Map training;
@@ -358,6 +366,8 @@ public:
 		std::string modelItem;
 		/** Model data item object */
 		std::string modelItemObj;
+		/** Pose estimation description file */
+		grasp::RBPose::Desc::Ptr modelRBPoseDesc;
 
 		/** Model scan pose */
 		grasp::ConfigMat34 modelScanPose;
@@ -617,6 +627,10 @@ protected:
 	std::string modelItem;
 	/** Model data item object */
 	std::string modelItemObj;
+	/** Pose estimation description file */
+	grasp::RBPose::Desc::Ptr modelRBPoseDesc;
+	/** Pose estimation */
+	RBPose::Ptr modelRBPosePtr;
 
 	/** Model scan pose */
 	grasp::ConfigMat34 modelScanPose;
@@ -730,8 +744,12 @@ protected:
 	/** golem::UIRenderer interface */
 	virtual void render() const;
 
-	/** Pose estimation */
-	grasp::data::Item::Map::iterator estimatePose(Data::Mode mode);
+	/** Pose estimation from CAD */
+	grasp::data::Item::Map::iterator estimatePose(const Data::Mode mode);
+	/** Pose estimation from point cloud*/
+	grasp::data::Item::Map::iterator estimatePoseFromCloud(const Data::Mode mode, std::string& itemName);
+	/** Capture object */
+	grasp::data::Item::Map::iterator objectCapture(const Data::Mode mode, std::string& itemName);
 	/** Grasp and capture object */
 	grasp::data::Item::Map::iterator objectGraspAndCapture(const bool stopAtBreakPoint = false);
 	/** Process object image and add to data bundle */
