@@ -194,43 +194,20 @@
     <activectrl library_path="GraspWorkspaceCtrl" config_path="GraspWorkspaceCtrl"/>
     
     <trajectory name="trajectory" handler="Trajectory+Trajectory" idle_begin="0.5" idle_end="1.0" idle_perf="5.0" duration="5.0" trials="5"/>
-  
-    <!--<arm_tool_bounds type="box" group="1">
-      <dimensions v1="0.07" v2="0.07" v3="0.15"/>
-      <pose v1="-0.035" v2="-0.035" v3="0.22" roll="0.0" pitch="0.0" yaw="-2.3561944901994329"/>
-    </arm_tool_bounds>-->
-    <arm_tool_bounds type="convex_mesh" group="1">
-      <pose v1="0.0" v2="0.0" v3="0.2" roll="0.0" pitch="0.0" yaw="-2.3561944901994329"/>
-      <vertex v1="-0.05" v2="-0.07" v3="-0.1"/>
-      <vertex v1="+0.05" v2="-0.07" v3="-0.1"/>
-      <vertex v1="-0.05" v2="+0.07" v3="-0.1"/>
-      <vertex v1="+0.05" v2="+0.07" v3="-0.1"/>
-      <vertex v1="-0.02" v2="-0.06" v3="+0.19"/>
-      <vertex v1="+0.14" v2="+0.01" v3="+0.12"/>
-      <vertex v1="-0.02" v2="+0.06" v3="+0.19"/>
-      <vertex v1="+0.14" v2="+0.07" v3="+0.12"/>
-      <triangle t1="0" t2="3" t3="1"/>
-      <triangle t1="0" t2="2" t3="3"/>
-      <triangle t1="0" t2="1" t3="5"/>
-      <triangle t1="0" t2="5" t3="4"/>
-      <triangle t1="0" t2="4" t3="6"/>
-      <triangle t1="0" t2="6" t3="2"/>
-      <triangle t1="7" t2="4" t3="5"/>
-      <triangle t1="7" t2="6" t3="4"/>
-      <triangle t1="7" t2="5" t3="1"/>
-      <triangle t1="7" t2="1" t3="3"/>
-      <triangle t1="7" t2="3" t3="2"/>
-      <triangle t1="7" t2="2" t3="6"/>
-    </arm_tool_bounds>
 
-    <obstacle_bounds type="plane" distance="0.0" grid_size="10" grid_delta="0.1" group="1">
-      <normal v1="0.0" v2="0.0" v3="1.0"/>
-      <pose v1="0.0" v2="0.0" v3="-0.345" roll="0.0" pitch="0.0" yaw="0.0"/>
-    </obstacle_bounds>
-    <obstacle_bounds type="box" group="1" invisible="1">
-      <dimensions v1="0.15" v2="0.15" v3="0.15"/>
-      <pose v1="0.1" v2="0.0" v3="0.45" roll="0.0" pitch="0.0" yaw="0.0"/>
-    </obstacle_bounds>
+    <objects>
+      <bounds type="plane" distance="0.0" grid_size="10" grid_delta="0.1" group="1">
+        <normal v1="0.0" v2="0.0" v3="1.0"/>
+        <pose v1="0.0" v2="0.0" v3="-0.345" roll="0.0" pitch="0.0" yaw="0.0"/>
+
+      </bounds>
+      <bounds type="box" group="1" invisible="0">
+        <dimensions v1="0.15" v2="0.15" v3="0.15"/>
+        <pose v1="0.1" v2="0.0" v3="0.45" roll="0.0" pitch="0.0" yaw="0.0"/>
+
+      </bounds>
+
+    </objects>
   </player>
 
   <recorder>
