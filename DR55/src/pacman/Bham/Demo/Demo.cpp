@@ -563,7 +563,7 @@ golem::Mat34 DemoDR55::getWristPose() const
 
 golem::Controller::State::Seq DemoDR55::getTrajectoryFromPose(const golem::Mat34& w, const SecTmReal duration)
 {
-	const golem::Mat34 R = controller->getChains()[armInfo.getChains().begin()]->getReferencePose();
+	const golem::Mat34 R = controller->getChains()[getPlanner().armInfo.getChains().begin()]->getReferencePose();
 	const golem::Mat34 wR = w * R;
 
 	golem::Controller::State begin = controller->createState();
@@ -591,7 +591,7 @@ golem::Controller::State DemoDR55::lookupStateArmCommandHand() const
 {
 	golem::Controller::State state = Waypoint::lookup(*controller).state;	// current state
 	golem::Controller::State cmdHand = Waypoint::lookup(*controller).command;	// commanded state (wanted just for hand)
-	state.cpos.set(handInfo.getJoints(), cmdHand.cpos); // only set cpos ???
+	state.cpos.set(getPlanner().handInfo.getJoints(), cmdHand.cpos); // only set cpos ???
 	return state;
 }
 
@@ -603,8 +603,8 @@ void DemoDR55::setHandConfig(Controller::State::Seq& trajectory, const grasp::Co
 	for (Controller::State::Seq::iterator i = trajectory.begin(); i != trajectory.end(); ++i)
 	{
 		Controller::State& state = *i;
-		state.setToDefault(handInfo.getJoints().begin(), handInfo.getJoints().end());
-		state.cpos.set(handInfo.getJoints(), cposHand);
+		state.setToDefault(getPlanner().handInfo.getJoints().begin(), getPlanner().handInfo.getJoints().end());
+		state.cpos.set(getPlanner().handInfo.getJoints(), cposHand);
 	}
 }
 
@@ -613,7 +613,7 @@ void DemoDR55::gotoWristPose(const golem::Mat34& w, const SecTmReal duration)
 	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w, duration);
 	sendTrajectory(trajectory);
 	controller->waitForEnd();
-	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
+	Sleep::msleep(SecToMSec(getPlanner().trajectoryIdleEnd));
 }
 
 void DemoDR55::gotoPose2(const ConfigMat34& pose, const SecTmReal duration)
@@ -628,7 +628,7 @@ void DemoDR55::gotoPose2(const ConfigMat34& pose, const SecTmReal duration)
 	findTrajectory(begin, &end, nullptr, duration, trajectory);
 	sendTrajectory(trajectory);
 	controller->waitForEnd();
-	Sleep::msleep(SecToMSec(trajectoryIdleEnd));
+	Sleep::msleep(SecToMSec(getPlanner().trajectoryIdleEnd));
 }
 
 void DemoDR55::releaseHand(const double openFraction, const SecTmReal duration)
@@ -965,7 +965,7 @@ void grasp::DemoDR55::create(const Desc& desc) {
 	optimisation = desc.optimisation;
 
 	// manipulator
-	manipulator = desc.manipulatorDesc->create(*planner, desc.controllerIDSeq);
+	manipulator = desc.manipulatorDesc->create(*getPlanner().planner, getPlanner().controllerIDSeq);
 	manipulatorAppearance = desc.manipulatorAppearance;
 	manipulatorItemTrj = desc.manipulatorItemTrj;
 
@@ -1627,6 +1627,7 @@ void grasp::DemoDR55::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("ZU", [=]() {
 		context.write("*** Change trajectory duration BEWARE ***\n");
 
+		SecTmReal trajectoryDuration = getPlanner().trajectoryDuration;
 		do
 			readNumber("trajectoryDuration ", trajectoryDuration);
 		while (trajectoryDuration < 1.0);
@@ -2233,7 +2234,7 @@ grasp::data::Item::Map::iterator grasp::DemoDR55::objectGraspAndCapture(const bo
 		}
 	};
 
-	gotoPose2(graspPoseOpen, trajectoryDuration);
+	gotoPose2(graspPoseOpen, getPlanner().trajectoryDuration);
 
 	context.write("Waiting for force event, simulate (F)orce event or <ESC> to cancel\n");
 	ForceEvent forceEvent(graspSensorForce, graspThresholdForce);
@@ -2261,7 +2262,7 @@ grasp::data::Item::Map::iterator grasp::DemoDR55::objectGraspAndCapture(const bo
 	breakPoint("Go to scan pose");
 
 	context.debug("Proceeding to first scan pose!\n");
-	gotoPose2(objectScanPoseSeq.front(), trajectoryDuration);
+	gotoPose2(objectScanPoseSeq.front(), getPlanner().trajectoryDuration);
 
 	data::Capture* capture = is<data::Capture>(objectHandlerScan);
 	if (!capture)
@@ -2789,16 +2790,16 @@ void grasp::DemoDR55::performTrajectory(bool testTrajectory) {
 
 	// create trajectory item
 	data::Item::Ptr itemTrajectory;
-	data::Handler::Map::const_iterator handlerPtr = handlerMap.find(trajectoryHandler);
+	data::Handler::Map::const_iterator handlerPtr = handlerMap.find(getPlanner().trajectoryHandler);
 	if (handlerPtr == handlerMap.end())
-		throw Message(Message::LEVEL_ERROR, "DemoDR55::performTrajectory(): unknown default trajectory handler %s", trajectoryHandler.c_str());
+		throw Message(Message::LEVEL_ERROR, "DemoDR55::performTrajectory(): unknown default trajectory handler %s", getPlanner().trajectoryHandler.c_str());
 	data::Handler* handler = is<data::Handler>(handlerPtr);
 	if (!handler)
-		throw Message(Message::LEVEL_ERROR, "DemoDR55::performTrajectory(): invalid default trajectory handler %s", trajectoryHandler.c_str());
+		throw Message(Message::LEVEL_ERROR, "DemoDR55::performTrajectory(): invalid default trajectory handler %s", getPlanner().trajectoryHandler.c_str());
 	itemTrajectory = handler->create();
 	data::Trajectory* trajectoryIf = is<data::Trajectory>(itemTrajectory.get());
 	if (!trajectoryIf)
-		throw Message(Message::LEVEL_ERROR, "DemoDR55::performTrajectory(): unable to create trajectory using handler %s", trajectoryHandler.c_str());
+		throw Message(Message::LEVEL_ERROR, "DemoDR55::performTrajectory(): unable to create trajectory using handler %s", getPlanner().trajectoryHandler.c_str());
 	trajectoryIf->setWaypoints(Waypoint::make(completeTrajectory, completeTrajectory));
 
 	// remove if failed
@@ -2902,14 +2903,14 @@ void grasp::DemoDR55::performTrajectory(bool testTrajectory) {
 	// open hand and perform withdraw action to a safe pose
 	// translate wrist vertically upwards, keeping orientation constant
 
-	context.debug("Releasing hand by %g%% in %gs...\n", withdrawReleaseFraction*100.0, trajectoryDuration);
-	releaseHand(withdrawReleaseFraction, trajectoryDuration);
+	context.debug("Releasing hand by %g%% in %gs...\n", withdrawReleaseFraction*100.0, getPlanner().trajectoryDuration);
+	releaseHand(withdrawReleaseFraction, getPlanner().trajectoryDuration);
 
 	context.debug("Waiting 1s before withdrawing upwards...\n");
 	Sleep::msleep(SecToMSec(1.0));
 
-	context.debug("Lifting hand by %gm in %gs...\n", withdrawLiftDistance, trajectoryDuration);
-	liftWrist(withdrawLiftDistance, trajectoryDuration);
+	context.debug("Lifting hand by %gm in %gs...\n", withdrawLiftDistance, getPlanner().trajectoryDuration);
+	liftWrist(withdrawLiftDistance, getPlanner().trajectoryDuration);
 
 	// done
 	finished = true;

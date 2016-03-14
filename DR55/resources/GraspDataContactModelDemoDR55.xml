@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <grasp>
-  <data delete_if_moved="1" delete_if_unlinked="1" delete_if_temporary="1" model_suffix=".model">
+  <data planner_index="0" delete_if_moved="1" delete_if_unlinked="1" delete_if_temporary="1" model_suffix=".model">
     <manipulator>
-      <config_map i1="0" i2="0" i3="0" i4="0" i5="0" i6="0" i7="0" i8="0" i9="0" i10="0" i11="10" i12="0" i13="0" i14="0" i15="14" i16="0" i17="0" i18="0" i19="18" i20="0" i21="0" i22="0" i23="22" i24="0" i25="0" i26="0" i27="26"/>
       <trajectory lin="1000.0" ang="1000.0" collision="1" cluster_size="20" timeout="0.1" throw="0"/>
     </manipulator>
 
