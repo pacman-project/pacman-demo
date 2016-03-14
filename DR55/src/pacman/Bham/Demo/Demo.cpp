@@ -449,7 +449,7 @@ void DemoDR55::Desc::load(golem::Context& context, const golem::XMLContext* xmlc
 	golem::XMLData("item", modelItem, xmlcontext->getContextFirst("model"));
 	golem::XMLData("item_obj", modelItemObj, xmlcontext->getContextFirst("model"));
 	try {
-		XMLData((grasp::RBPose::Desc&)modelRBPoseDesc, xmlcontext->getContextFirst("model pose_estimation"));
+		XMLData((grasp::RBPose::Desc&)*modelRBPoseDesc, xmlcontext->getContextFirst("model pose_estimation"));
 	}
 	catch (const golem::MsgXMLParser& msg) {
 		context.info("%s\n", msg.what());
@@ -1063,14 +1063,32 @@ void grasp::DemoDR55::create(const Desc& desc) {
 		desc = "Press a key to: (M)odel/(Q)ery estimation of the rack pose...";
 	}));
 	menuCmdMap.insert(std::make_pair("PEM", [=]() {
+		// item name
+		readString("Enter item name: ", modelItem);
+		// scan, if needed
+		if (option("YN", "Scan? (Y/N)") == 'Y') {
+			try {
+				(void)objectCapture(Data::MODE_MODEL, modelItem);
+			}
+			catch (const Message &msg) { context.write("%s\n", msg.what()); return; }
+		}
 		// estimate
-		(void)estimatePose(Data::MODE_MODEL);
+		(void)estimatePose(Data::MODE_MODEL, modelItem);
 		// finish
 		context.write("Done!\n");
 	}));
 	menuCmdMap.insert(std::make_pair("PEQ", [=]() {
+		// item name
+		readString("Enter item name: ", queryItem);
+		// scan, if needed
+		if (option("YN", "Scan? (Y/N)") == 'Y') {
+			try {
+				(void)objectCapture(Data::MODE_QUERY, queryItem);
+			}
+			catch (const Message &msg) { context.write("%s\n", msg.what()); return; }
+		}
 		// estimate
-		(void)estimatePose(Data::MODE_QUERY);
+		(void)estimatePose(Data::MODE_QUERY, modelItem);
 		// finish
 		context.write("Done!\n");
 	}));
@@ -1998,7 +2016,7 @@ void grasp::DemoDR55::create(const Desc& desc) {
 
 //------------------------------------------------------------------------------
 
-grasp::data::Item::Map::iterator grasp::DemoDR55::estimatePoseFromCloud(Data::Mode mode, std::string &itemName) {
+grasp::data::Item::Map::iterator grasp::DemoDR55::estimatePose(Data::Mode mode, std::string &itemName) {
 	grasp::data::Handler* handler = mode != Data::MODE_MODEL ? queryHandler : modelHandler;
 
 	grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(itemName);
@@ -2025,7 +2043,7 @@ grasp::data::Item::Map::iterator grasp::DemoDR55::estimatePoseFromCloud(Data::Mo
 	Cloud::copy(curvPoints, points);
 	if (mode == Data::MODE_MODEL) {
 		context.write("Create model on %s handler:%s\n", ptr->first.c_str(), pointsCurv->getHandler().getID().c_str());
-		RBPose::Ptr modelRBPosePtr = modelRBPoseDesc->create(context);
+		modelRBPosePtr = modelRBPoseDesc->create(context);
 		modelRBPosePtr->createModel(curvPoints);
 		grasp::to<Data>(dataCurrentPtr)->modelFrame = modelRBPosePtr->createFrame(mPoints);
 		grasp::to<Data>(dataCurrentPtr)->modelPoints =  points;

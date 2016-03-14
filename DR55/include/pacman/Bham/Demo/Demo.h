@@ -484,6 +484,7 @@ public:
 
 			modelHandlerTrj.clear();
 			modelItemTrj.clear();
+			modelRBPoseDesc.reset(new grasp::RBPose::Desc);
 
 			queryCamera.clear();
 			queryHandler.clear();
@@ -747,7 +748,7 @@ protected:
 	/** Pose estimation from CAD */
 	grasp::data::Item::Map::iterator estimatePose(const Data::Mode mode);
 	/** Pose estimation from point cloud*/
-	grasp::data::Item::Map::iterator estimatePoseFromCloud(const Data::Mode mode, std::string& itemName);
+	grasp::data::Item::Map::iterator estimatePose(const Data::Mode mode, std::string& itemName);
 	/** Capture object */
 	grasp::data::Item::Map::iterator objectCapture(const Data::Mode mode, std::string& itemName);
 	/** Grasp and capture object */
