@@ -117,13 +117,29 @@
     </manipulator>
   </demo>
 
-  <player>
-    <!-- Birmingham robot simulation (controller, planner): library_path="GolemDeviceMultiCtrl" config_path="GolemDeviceRobotBhamSim" -->
-    <!-- Birmingham robot (controller, planner): library_path="GolemDeviceMultiCtrl" config_path="GolemDeviceRobotBham" -->
-    <!-- DLR Justin robot simulation (controller, planner): library_path="GolemDeviceMultiCtrl" config_path="GolemDeviceRobotJustin" -->
-    <!-- DLR Justin robot (controller, planner): library_path="GolemDeviceRobotJustin" config_path="GolemDeviceRobotJustin" -->
-    <!-- UIBK robot simulation (controller, planner): library_path="GolemDeviceMultiCtrl" config_path="GolemDeviceRobotUIBKSim" -->
-    <!-- UIBK robot (controller, planner): library_path="GolemDeviceMultiCtrl" config_path="GolemDeviceRobotUIBK" -->
+  <player planner_index="0" trajectory_name="trajectory">
+    <!-- To run robot server uncomment: <server .../> -->
+    <!--<server port="54312" clients="10" message_interval="600.0"/>-->
+
+    <!-- To run robot controller client (controller): library_path="GolemCtrlCtrlClient" -->
+
+    <!-- Boris robot simulation (controller): library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotBorisSim" -->
+    <!-- Boris robot (controller): library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotBoris" -->
+
+    <!-- Baxter robot (controller): library_path="GolemCtrlROSCtrl" config_path="GolemCtrlROSCtrlBaxter" -->
+
+    <!-- Birmingham robot simulation (controller): library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotBhamSim" -->
+    <!-- Birmingham robot (controller): library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotBham" -->
+
+    <!-- Eddie robot simulation (controller): library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotEddieSim" -->
+    <!-- Eddie robot (controller): library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotEddie" -->
+
+    <!-- UIBK robot simulation (controller): library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotUIBKSim" -->
+    <!-- UIBK robot (controller): library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotUIBK" -->
+
+    <!-- DLR Justin robot simulation (controller): library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotJustin" -->
+    <!-- DLR Justin robot (controller): library_path="GolemCtrlRobotJustin" config_path="GolemCtrlRobotJustin" -->
+
     <controller library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotBorisSim">
       <renderer>
         <joint_appearance line_width="1.0">
@@ -145,6 +161,14 @@
       </renderer>
     </controller>
     <planner library_path="GolemPlannerGraphPlanner" config_path="GolemPlannerRobotBorisR">
+      <controller id="KukaLWRSim+KukaLWRBorisR" begin="0" end="1"/>
+      <controller id="DLRHitHandIISim+DLRHitHandIIBorisR" begin="1" end="6"/>
+
+      <sensor id="FTClient+FTClientDemoDR55"/>
+      <!--<sensor id="FTDAQ+FTDAQ"/>-->
+
+      <trajectory handler="Trajectory+TrajectoryDemoDR55" idle_begin="0.5" idle_end="1.0" idle_perf="5.0" duration="5.0" trials="5"/>
+
       <renderer show_duration="600.0">
         <goal_renderer show="1" vertex_position_show="0" vertex_frame_show="1" edge_show="0">
           <vertex_position_colour R="255" G="255" B="0" A="255"></vertex_position_colour>
@@ -202,14 +226,11 @@
       <bounds type="plane" distance="0.0" grid_size="10" grid_delta="0.1" group="1">
         <normal v1="0.0" v2="0.0" v3="1.0"/>
         <pose v1="0.0" v2="0.0" v3="-0.345" roll="0.0" pitch="0.0" yaw="0.0"/>
-
       </bounds>
-      <bounds type="box" group="1" invisible="0">
+      <bounds type="box" group="1" invisible="1">
         <dimensions v1="0.15" v2="0.15" v3="0.15"/>
         <pose v1="0.1" v2="0.0" v3="0.45" roll="0.0" pitch="0.0" yaw="0.0"/>
-
       </bounds>
-
     </objects>
   </player>
 
