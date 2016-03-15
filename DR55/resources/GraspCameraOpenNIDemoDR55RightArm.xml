@@ -6,7 +6,7 @@
     <property width="640" height="480" fps="30" mode="depth" format="101"/>
     <!--<property width="320" height="240" fps="30" mode="ir" format="203"/>
     <property width="320" height="240" fps="30" mode="colour, depth" format="200 101"/>-->
-    <colour R="255" G="0" B="0" A="255"/>
+    <colour R="127" G="127" B="127" A="255"/>
 
     <handler snapshot="Image+ImageDemoDR55" sequence="Video+Video"/>
 
@@ -29,3 +29,4 @@
     </appearance>
   </sensor>
 </grasp>
+

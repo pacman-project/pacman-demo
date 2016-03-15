@@ -904,7 +904,7 @@ void grasp::DemoDR55::create(const Desc& desc) {
 		throw Message(Message::LEVEL_CRIT, "grasp::DemoDR55::create(): unknown model trajectory handler: %s", desc.modelHandlerTrj.c_str());
 	modelItemTrj = desc.modelItemTrj;
 
-	showModel = true;
+	showModel = false;
 
 	grasp::Sensor::Map::const_iterator queryCameraPtr = sensorMap.find(desc.queryCamera);
 	queryCamera = queryCameraPtr != sensorMap.end() ? is<Camera>(queryCameraPtr->second.get()) : nullptr;

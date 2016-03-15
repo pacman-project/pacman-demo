@@ -264,6 +264,8 @@ IF (BUILD_PACMAN_DEMO_DR55)
 		${PROJECT_ROOT}/resources/GraspDataContactQueryDemoDR55.xml
 		${PROJECT_ROOT}/resources/GraspDataTrajectoryDemoDR55.xml
 		${PROJECT_ROOT}/resources/GraspFTClientDemoDR55.xml
+		${PROJECT_ROOT}/resources/GolemCtrlRobotBorisDemoDR55Sim.xml
+		${PROJECT_ROOT}/resources/GolemCtrlRobotDemoDR55Boris.xml
 	)
 	SET(DEMO_DR55_CAL_FILES
 		${PROJECT_ROOT}/resources/cal/GraspCameraOpenNIDemoDR55Chest.cal
