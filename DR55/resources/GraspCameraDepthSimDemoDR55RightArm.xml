@@ -6,7 +6,7 @@
     <property width="100" height="100" fps="10" mode="" format=""/>
     <colour R="127" G="127" B="127" A="255"/>
 
-    <handler snapshot="Image+ImageDemoDR55" sequence="Video+Video"/>
+    <handler snapshot="Image+ImageDemoDR55RightArm" sequence="Video+Video"/>
     
     <sensor v1="0.004" v2="0.003" focal_length="0.004"/>
     <clip near="0.1" far="10.0" inclination="0.342" epsilon="1e-10"/>

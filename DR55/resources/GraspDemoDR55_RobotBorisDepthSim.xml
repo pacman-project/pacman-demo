@@ -337,6 +337,8 @@
     <!--<handler library_path="GraspDataPart3DHoP" config_path="GraspDataPart3DHoP"/>-->
 
     <handler library_path="GraspDataImage" config_path="GraspDataImageDemoDR55"/>
+    <handler library_path="GraspDataImage" config_path="GraspDataImageDemoDR55RightArm"/>
+    <handler library_path="GraspDataImage" config_path="GraspDataImageDemoDR55LeftArm"/>
     <handler library_path="GraspDataImage" config_path="GraspDataImageDemoDR55Object"/>
     <handler library_path="GraspDataPointsCurv" config_path="GraspDataPointsCurvDemoDR55"/>
     <handler library_path="GraspDataTrajectory" config_path="GraspDataTrajectoryDemoDR55"/>
