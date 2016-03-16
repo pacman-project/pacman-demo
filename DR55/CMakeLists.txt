@@ -258,6 +258,8 @@ IF (BUILD_PACMAN_DEMO_DR55)
 		${PROJECT_ROOT}/resources/GraspCameraDepthSimDemoDR55RightArm.xml
 		${PROJECT_ROOT}/resources/GraspCameraDepthSimDemoDR55LeftArm.xml
 		${PROJECT_ROOT}/resources/GraspDataImageDemoDR55.xml
+		${PROJECT_ROOT}/resources/GraspDataImageDemoDR55RightArm.xml
+		${PROJECT_ROOT}/resources/GraspDataImageDemoDR55LeftArm.xml
 		${PROJECT_ROOT}/resources/GraspDataImageDemoDR55Object.xml
 		${PROJECT_ROOT}/resources/GraspDataPointsCurvDemoDR55.xml
 		${PROJECT_ROOT}/resources/GraspDataContactModelDemoDR55.xml
