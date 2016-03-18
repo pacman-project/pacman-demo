@@ -35,7 +35,7 @@
   </scene>
 
   <demo data_name="data.demo">
-    <model camera="DepthSim+DepthSimDemoDR55Chest" handler="Image+ImageDemoDR55" item="Model" item_obj="ModelObj" handler_trj="Trajectory+TrajectoryDemoDR55" item_trj="TrajectoryModel">
+    <model camera="DepthSim+DepthSimDemoDR55Chest" handler="Image+ImageDemoDR55" item="Model" item_obj="ModelObj" item_grasp="grasp-bowl-rim" handler_grasp="ContactModel+ContactModelDemoDR55" handler_trj="Trajectory+TrajectoryDemoDR55" item_trj="TrajectoryModel">
       <scan_pose dim="61" c1="1.7097" c2="-0.944053" c3="1.20653" c4="-0.707639" c5="0.126298" c6="0.751986" c7="0.84115" c8="0" c9="0" c10="0" c11="0" c12="0" c13="0" c14="0" c15="0" c16="0" c17="0" c18="0" c19="0" c20="0" c21="0" c22="0" c23="0" c24="0" c25="0" c26="0" c27="0" c28="0" c29="0" c30="0" c31="0" c32="0" c33="0" c34="0" c35="0" c36="0" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0" c44="0" c45="0" c46="0" c47="0" c48="0" c49="0" c50="0" c51="0" c52="0" c53="0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c60="0" c61="0"/>
       <colour>
         <solid R="0" G="0" B="255" A="32"/>
@@ -77,7 +77,7 @@
 
     </model>
 
-    <query camera="DepthSim+DepthSimDemoDR55Chest" handler="Image+ImageDemoDR55" item="Query" item_obj="QueryObj" handler_trj="Trajectory+TrajectoryDemoDR55" item_trj="TrajectoryQuery">
+    <query camera="DepthSim+DepthSimDemoDR55Chest" handler="Image+ImageDemoDR55" item="Query" item_obj="QueryObj" item_grasp="grasp-jug-5_views-rim" handler_grasp="ContactQuery+ContactQueryDemoDR55" handler_trj="Trajectory+TrajectoryDemoDR55" item_trj="TrajectoryQuery">
       <query id="Any" weight="1.0">
         <contact_3d type="feature" kernels="5000" epsilon="1e-10" trials="100" feature_std_dev_max="5.0" pose_std_dev_max="5.0"/>
         <nn_search neighbours="0" search_checks="32" search_kdtrees="1" search_leaf_max_size="10"/>
@@ -159,8 +159,9 @@
     <!-- DLR Justin robot simulation (controller): library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotJustin" -->
     <!-- DLR Justin robot (controller): library_path="GolemCtrlRobotJustin" config_path="GolemCtrlRobotJustin" -->
 
-    <controller library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotBorisDemoDR55Sim">
-      <renderer>
+    <!--<controller library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotBorisDemoDR55Sim">-->
+    <controller library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotBorisSim">
+        <renderer>
         <joint_appearance line_width="1.0">
           <solid_colour R="192" G="192" B="0" A="100"></solid_colour>
           <wire_colour R="127" G="127" B="127" A="255"></wire_colour>
@@ -229,7 +230,8 @@
 
     <planner library_path="GolemPlannerGraphPlanner" config_path="GolemPlannerRobotBorisL">
       <controller id="KukaLWRSim+KukaLWRBorisL" begin="6" end="7"/>
-      <controller id="PISASoftHandSim+PISASoftHandSim" begin="7" end="12"/>
+      <!--<controller id="PISASoftHandSim+PISASoftHandSim" begin="7" end="12"/>-->
+      <controller id="DLRHitHandIISim+DLRHitHandIIBorisL" begin="7" end="12"/>
 
       <!--<sensor id="FTClient+FTClient"/>-->
       <!--<sensor id="FTDAQ+FTDAQ"/>-->
@@ -284,8 +286,6 @@
     <activectrl library_path="GraspOspaceCtrl" config_path="GraspOspaceCtrl"/>
 
     <trajectory name="trajectory" handler="Trajectory+TrajectoryDemoDR55" idle_begin="0.5" idle_end="1.0" idle_perf="5.0" duration="5.0" trials="5"/>
-
-
 
     <objects>
       <bounds type="plane" distance="0.0" grid_size="10" grid_delta="0.1" group="1">

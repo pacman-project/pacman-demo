@@ -448,6 +448,8 @@ void DemoDR55::Desc::load(golem::Context& context, const golem::XMLContext* xmlc
 	golem::XMLData("handler", modelHandler, xmlcontext->getContextFirst("model"));
 	golem::XMLData("item", modelItem, xmlcontext->getContextFirst("model"));
 	golem::XMLData("item_obj", modelItemObj, xmlcontext->getContextFirst("model"));
+	golem::XMLData("handler_grasp", modelGraspHandler, xmlcontext->getContextFirst("model"));
+	golem::XMLData("item_grasp", modelGraspItem, xmlcontext->getContextFirst("model"));
 	try {
 		XMLData((grasp::RBPose::Desc&)*modelRBPoseDesc, xmlcontext->getContextFirst("model pose_estimation"));
 	}
@@ -467,6 +469,8 @@ void DemoDR55::Desc::load(golem::Context& context, const golem::XMLContext* xmlc
 	golem::XMLData("handler", queryHandler, xmlcontext->getContextFirst("query"));
 	golem::XMLData("item", queryItem, xmlcontext->getContextFirst("query"));
 	golem::XMLData("item_obj", queryItemObj, xmlcontext->getContextFirst("query"));
+	golem::XMLData("handler_grasp", queryGraspHandler, xmlcontext->getContextFirst("query"));
+	golem::XMLData("item_grasp", queryGraspItem, xmlcontext->getContextFirst("query"));
 
 	golem::XMLData("handler_trj", queryHandlerTrj, xmlcontext->getContextFirst("query"));
 	golem::XMLData("item_trj", queryItemTrj, xmlcontext->getContextFirst("query"));
@@ -894,6 +898,12 @@ void grasp::DemoDR55::create(const Desc& desc) {
 	modelItemObj = desc.modelItemObj;
 	modelRBPoseDesc = desc.modelRBPoseDesc;
 
+	grasp::data::Handler::Map::const_iterator modelGraspHandlerPtr = handlerMap.find(desc.modelGraspHandler);
+	modelGraspHandler = modelGraspHandlerPtr != handlerMap.end() ? modelGraspHandlerPtr->second.get() : nullptr;
+	if (!modelGraspHandler)
+		throw Message(Message::LEVEL_CRIT, "grasp::DemoDR55::create(): unknown model data handler: %s", desc.modelHandler.c_str());
+	modelGraspItem = desc.modelGraspItem;
+
 	modelScanPose = desc.modelScanPose;
 	modelColourSolid = desc.modelColourSolid;
 	modelColourWire = desc.modelColourWire;
@@ -904,7 +914,7 @@ void grasp::DemoDR55::create(const Desc& desc) {
 		throw Message(Message::LEVEL_CRIT, "grasp::DemoDR55::create(): unknown model trajectory handler: %s", desc.modelHandlerTrj.c_str());
 	modelItemTrj = desc.modelItemTrj;
 
-	showModel = false;
+	showModel = true;
 
 	grasp::Sensor::Map::const_iterator queryCameraPtr = sensorMap.find(desc.queryCamera);
 	queryCamera = queryCameraPtr != sensorMap.end() ? is<Camera>(queryCameraPtr->second.get()) : nullptr;
@@ -916,6 +926,12 @@ void grasp::DemoDR55::create(const Desc& desc) {
 		throw Message(Message::LEVEL_CRIT, "grasp::DemoDR55::create(): unknown query data handler: %s", desc.queryHandler.c_str());
 	queryItem = desc.queryItem;
 	queryItemObj = desc.queryItemObj;
+
+	grasp::data::Handler::Map::const_iterator queryGraspHandlerPtr = handlerMap.find(desc.queryGraspHandler);
+	queryGraspHandler = queryGraspHandlerPtr != handlerMap.end() ? queryGraspHandlerPtr->second.get() : nullptr;
+	if (!queryGraspHandler)
+		throw Message(Message::LEVEL_CRIT, "spam::PosePlanner::create(): unknown query data handler: %s", desc.queryHandler.c_str());
+	queryGraspItem = desc.queryGraspItem;
 
 	grasp::data::Handler::Map::const_iterator queryHandlerTrjPtr = handlerMap.find(desc.queryHandlerTrj);
 	queryHandlerTrj = queryHandlerTrjPtr != handlerMap.end() ? queryHandlerTrjPtr->second.get() : nullptr;
@@ -992,6 +1008,13 @@ void grasp::DemoDR55::create(const Desc& desc) {
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  <Tab>                                   Query/Model mode switch\n"));
 	scene.getHelp().insert(Scene::StrMapVal("0F5", "  ()                                      Training item selection\n"));
 
+	auto executeCmd = [&](const std::string command) {
+		MenuCmdMap::const_iterator cmd = menuCmdMap.find(command);
+		if (cmd == menuCmdMap.end())
+			throw Cancel(makeString("Error: impossible to execute command %s.", command.c_str()).c_str());
+		cmd->second();
+	};
+
 	menuCmdMap.insert(std::make_pair("\t", [=]() {
 		// set mode
 		to<Data>(dataCurrentPtr)->mode = Data::Mode(to<Data>(dataCurrentPtr)->mode >= Data::MODE_LAST ? (U32)Data::MODE_FIRST : U32(to<Data>(dataCurrentPtr)->mode) + 1);
@@ -1052,6 +1075,12 @@ void grasp::DemoDR55::create(const Desc& desc) {
 		context.write("query density %s\n", to<Data>(dataCurrentPtr)->queryShowDensities ? "ON" : "OFF");
 		createRender();
 	}));
+	menuCmdMap.insert(std::make_pair(".", [=]() {
+		// set mode
+		showModel = !showModel;
+		context.write("show model %s\n", showModel ? "ON" : "OFF");
+		createRender();
+	}));
 
 	// data menu control and commands
 	menuCtrlMap.insert(std::make_pair("K", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
@@ -1062,7 +1091,7 @@ void grasp::DemoDR55::create(const Desc& desc) {
 	menuCtrlMap.insert(std::make_pair("KE", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
 		desc = "Press a key to: (M)odel/(Q)ery estimation of the rack pose...";
 	}));
-	menuCmdMap.insert(std::make_pair("PEM", [=]() {
+	menuCmdMap.insert(std::make_pair("KEM", [=]() {
 		// item name
 		readString("Enter item name: ", modelItem);
 		// scan, if needed
@@ -1077,7 +1106,7 @@ void grasp::DemoDR55::create(const Desc& desc) {
 		// finish
 		context.write("Done!\n");
 	}));
-	menuCmdMap.insert(std::make_pair("PEQ", [=]() {
+	menuCmdMap.insert(std::make_pair("KEQ", [=]() {
 		// item name
 		readString("Enter item name: ", queryItem);
 		// scan, if needed
@@ -1092,6 +1121,64 @@ void grasp::DemoDR55::create(const Desc& desc) {
 		// finish
 		context.write("Done!\n");
 	}));
+
+	menuCmdMap.insert(std::make_pair("KD", [=]() {
+		// debug mode
+		const bool stopAtBreakPoint = option("YN", "Debug mode (Y/N)...") == 'Y';
+		const auto breakPoint = [=](const char* str) {
+			if (stopAtBreakPoint) {
+				if (option("YN", makeString("%s: Continue (Y/N)...", str).c_str()) != 'Y')
+					throw Cancel("Demo cancelled");
+			}
+			else {
+				context.write("%s\n", str);
+				(void)waitKey(0);
+			}
+		};
+
+		// command keys
+		std::string itemTransCmd("IT");
+		std::string itemConvCmd("IC");
+		std::string dataSaveCmd("DS");
+		std::string itemRemoveCmd("IR");
+
+		// estimate pose
+		if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty()) {
+			breakPoint("Dishwasher pose estimation");
+			estimatePose(Data::MODE_QUERY);
+		}
+
+		context.write("Create a predictive contact model for the grasp [%s]...\n", modelGraspItem.c_str());
+		if (option("YN", "Create a new contact model? (Y/N)") == 'Y') {
+			dataItemLabel = modelGraspItem;
+			executeCmd(itemTransCmd);
+			modelGraspItem = dataItemLabel;
+		}
+		context.write("done.\n");
+
+		// run demo
+		for (;;) {
+			// grasp and scan object
+			breakPoint("Object grasp and point cloud capture");
+			grasp::data::Item::Map::iterator ptr = objectCapture(Data::MODE_QUERY, objectItem);
+
+			// wrist frame
+			const Mat34 frame = forwardTransformArm(Waypoint::lookup(*controller).state);
+			// create query densities
+			createQuery(ptr->second, frame, &to<Data>(dataCurrentPtr)->clusterCounter);
+			// generate wrist pose solutions
+			generateSolutions();
+			// select best trajectory
+			selectTrajectory();
+
+			breakPoint("Action execution");
+			// execute trajectory
+			performTrajectory(stopAtBreakPoint);
+		}
+		context.write("Done!\n");
+
+	}));
+
 
 
 	// data menu control and commands

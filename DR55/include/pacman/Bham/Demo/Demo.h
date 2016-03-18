@@ -368,6 +368,10 @@ public:
 		std::string modelItemObj;
 		/** Pose estimation description file */
 		grasp::RBPose::Desc::Ptr modelRBPoseDesc;
+		/** Model data handler */
+		std::string modelGraspHandler;
+		/** Model data item */
+		std::string modelGraspItem;
 
 		/** Model scan pose */
 		grasp::ConfigMat34 modelScanPose;
@@ -389,6 +393,10 @@ public:
 		std::string queryItem;
 		/** Query data item object */
 		std::string queryItemObj;
+		/** Query data handler */
+		std::string queryGraspHandler;
+		/** Query data item */
+		std::string queryGraspItem;
 
 		/** Query trajectory handler */
 		std::string queryHandlerTrj;
@@ -632,6 +640,10 @@ protected:
 	grasp::RBPose::Desc::Ptr modelRBPoseDesc;
 	/** Pose estimation */
 	RBPose::Ptr modelRBPosePtr;
+	/** Model data handler */
+	grasp::data::Handler* modelGraspHandler;
+	/** Model data item */
+	std::string modelGraspItem;
 
 	/** Model scan pose */
 	grasp::ConfigMat34 modelScanPose;
@@ -658,6 +670,10 @@ protected:
 	std::string queryItem;
 	/** Query data item object */
 	std::string queryItemObj;
+	/** Query data handler */
+	grasp::data::Handler* queryGraspHandler;
+	/** Query data item */
+	std::string queryGraspItem;
 
 	/** Query trajectory handler */
 	grasp::data::Handler* queryHandlerTrj;

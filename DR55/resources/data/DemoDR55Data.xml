@@ -2,6 +2,22 @@
 
 <grasp>
   <data data_name="data.pacmandemo">
+    <item cloud=".pcd" handler="PointsCurv+PointsCurv" label="bowllarge-curv-all_views" prefix="-item-bowllarge-curv-all_views-1" time_stamp="0">
+      <config dim="0" m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1" planner_index="0" v1="0" v2="0" v3="0"></config>
+      <model rand_ang="100">
+        <curv_std_dev_fac v1="5" v2="5" v3="1"></curv_std_dev_fac>
+      </model>
+      <query>
+        <pose_std_dev ang="200" lin="0.005"></pose_std_dev>
+      </query>
+    </item>
+    <item handler="Trajectory+Trajectory" label="bowllarge-pinchsupp" path_position="0" prefix="-item-bowllarge-pinchsupp-1" waypoint=".wp">
+      <contact path_interpol="1" path_waypoint="18446744073709551615"></contact>
+    </item>
+    <item handler="Trajectory+Trajectory" label="bowllarge-rim" path_position="2.77556e-017" prefix="-item-bowllarge-rim-1" waypoint=".wp">
+      <contact path_interpol="1" path_waypoint="18446744073709551615"></contact>
+    </item>
+    <item cluster_index="0" config_index="28" handler="ContactQuery+ContactQueryDemoDR55" label="grasp" prefix="-item-grasp-1" query=".query"></item>
     <item cloud=".pcd" handler="Image+ImageDemoDR55" image="" label="Model" prefix="-item-Model-1" time_stamp="0">
       <config dim="0" m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1" planner_index="0" v1="0" v2="0" v3="0"></config>
       <extrinsic m11="-0.990977" m12="0.05864" m13="-0.120524" m21="0.132918" m22="0.545686" m23="-0.827382" m31="0.01725" m32="-0.835936" m33="-0.548556" v1="0.57209" v2="-0.026447" v3="0.146217"></extrinsic>
@@ -101,6 +117,7 @@
         <pose_std_dev ang="200" lin="0.05"></pose_std_dev>
       </query>
     </item>
+    <item data_index="0" handler="ContactModel+ContactModelDemoDR55" label="rim_grasp" model=".model" prefix="-item-rim_grasp-1"></item>
     <item cloud=".pcd" handler="Image+ImageDemoDR55" image="" label="small_rack" prefix="-item-small_rack-1" time_stamp="126.262">
       <config c1="2.24194" c10="0.126831" c11="0.126831" c12="0.0083395" c13="-0.0423822" c14="-0.0113097" c15="-0.0113097" c16="-0.0153185" c17="0.0443788" c18="0.231956" c19="0.153416" c2="-0.780093" c20="0.0836605" c21="0.181101" c22="0.111595" c23="0.111595" c24="0.0621253" c25="0.184126" c26="0.142798" c27="0.20563" c28="-1.76342" c29="0.287963" c3="2.56492" c30="0.452468" c31="-1.71605" c32="0.318045" c33="0.153078" c34="-1.15051" c35="-0" c36="-0" c37="-0" c38="0" c39="-0" c4="-1.99426" c40="-0" c41="-0" c42="-0" c43="-0" c44="-0" c45="-0" c46="-0" c47="-0" c48="-0" c49="-0" c5="0.489681" c50="-0" c51="-0" c52="-0" c53="-0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c6="-1.03589" c60="0" c7="-1.15281" c8="-0.0204085" c9="0.273032" dim="60" m11="-0.178384" m12="0.0903654" m13="0.979803" m21="0.0120434" m22="0.9959" m23="-0.0896574" m31="-0.983887" m32="-0.00419324" m33="-0.178741" planner_index="0" v1="0.418524" v2="-0.368622" v3="0.359351"></config>
       <extrinsic m11="-0.0120303" m12="-0.0764083" m13="0.997004" m21="0.999863" m22="0.0104588" m23="0.0128663" m31="-0.0114106" m32="0.997022" m33="0.076272" v1="0.079456" v2="-0.0390853" v3="0.155802"></extrinsic>
@@ -204,4 +221,13 @@
       </query>
     </item>
   </data>
+  <item cloud=".pcd" handler="PointsCurv+PointsCurvDemoDR55" label="ws_right_curv" prefix="-item-ws_right_curv-1" time_stamp="0">
+    <config c1="2.05576" c10="0.126831" c11="0.126831" c12="0.00722249" c13="-0.0390311" c14="-0.0113097" c15="-0.0113097" c16="-0.0153185" c17="0.0443788" c18="0.229443" c19="0.150903" c2="-0.926671" c20="0.0752829" c21="0.171606" c22="0.110338" c23="0.110338" c24="0.0621253" c25="0.184126" c26="0.139028" c27="0.20186" c28="-1.76342" c29="0.287961" c3="0.688764" c30="0.452468" c31="-1.71604" c32="0.318045" c33="0.15332" c34="-1.15051" c35="-0" c36="-0" c37="-0" c38="0" c39="-0" c4="-1.69531" c40="-0" c41="-0" c42="-0" c43="-0" c44="-0" c45="-0" c46="-0" c47="-0" c48="-0" c49="-0" c5="0.72129" c50="-0" c51="-0" c52="-0" c53="-0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c6="0.409995" c60="0" c7="0.531499" c8="0.00360725" c9="0.275824" dim="60" m11="0.520524" m12="0.82851" m13="-0.206459" m21="0.726448" m22="-0.556783" m23="-0.402822" m31="-0.448695" m32="0.059697" m33="-0.891689" planner_index="0" v1="0.204645" v2="-0.907174" v3="0.239672"></config>
+    <model rand_ang="100">
+      <curv_std_dev_fac v1="50" v2="50" v3="1"></curv_std_dev_fac>
+    </model>
+    <query>
+      <pose_std_dev ang="200" lin="0.005"></pose_std_dev>
+    </query>
+  </item>
 </grasp>
