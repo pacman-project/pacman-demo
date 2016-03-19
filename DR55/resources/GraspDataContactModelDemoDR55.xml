@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <grasp>
-  <data planner_index="0" delete_if_moved="1" delete_if_unlinked="1" delete_if_temporary="1" model_suffix=".model">
+  <data planner_index="0" delete_if_moved="1" delete_if_unlinked="1" delete_if_temporary="1" model_suffix=".model" preproc_suffix="-proc">
     <manipulator>
       <trajectory lin="1000.0" ang="1000.0" collision="1" cluster_size="20" timeout="0.1" throw="0"/>
     </manipulator>
