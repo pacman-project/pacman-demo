@@ -10,7 +10,7 @@
     <!-- x_offs/y_offs: DPI 100% -> 8, DPI 125% -> 10, DPI 150% -> 12 -->
     <!--<window x="0" y="0" width="640" height="480" x_offs="8" y_offs="8"></window>-->
     <!--<window x="0" y="0" width="800" height="600" x_offs="8" y_offs="8"></window>-->
-    <window x="600" y="0" width="1288" height="964" x_offs="8" y_offs="8"></window>
+    <window x="600" y="0" width="1024" height="768" x_offs="8" y_offs="8"></window>
     <simulation fps="30" real_time="0" skin_width="0.005" sleep_lin_vel_squared="0.0025" sleep_ang_vel_squared="0.0025" max_angular_velocity="7.0" bounce_threshold="-2.0"></simulation>
   </universe>
 
@@ -292,7 +292,12 @@
         <normal v1="0.0" v2="0.0" v3="1.0"/>
         <pose v1="0.0" v2="0.0" v3="-0.345" roll="0.0" pitch="0.0" yaw="0.0"/>
       </bounds>
-      <bounds type="box" group="1" invisible="1">
+      <!--Small rack bounding box-->
+      <bounds type="box" group="1" invisible="0">
+        <dimensions v1="0.2" v2="0.2" v3="0.05"/>
+        <pose v1="0.6" v2="-0.5" v3="-0.34" roll="0.0" pitch="0.0" yaw="0.0"/>
+      </bounds>
+    <bounds type="box" group="1" invisible="1">
         <dimensions v1="0.15" v2="0.15" v3="0.15"/>
         <pose v1="0.1" v2="0.0" v3="0.45" roll="0.0" pitch="0.0" yaw="0.0"/>
       </bounds>
