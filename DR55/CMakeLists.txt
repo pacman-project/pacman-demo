@@ -34,6 +34,15 @@ include(CommonBhamSetup)
 
 include(CommonBhamDependencies)
 
+
+###############################################################################
+#
+# Base Demo DR55
+#
+###############################################################################
+
+include(BaseDemo)
+
 #################################################################################
 # 
 #   ActiveSense standalone library
@@ -89,13 +98,13 @@ SET(DEMO_NAME ActiveSenseGrasp)
 
 SET(PACMAN_ACTIVE_SENSE_GRASP_DEMO_SOURCES
         ${PROJECT_ROOT}/src/pacman/Bham/${DEMO_NAME}/Demo/${DEMO_NAME}Demo.cpp
-        ${PROJECT_ROOT}/src/pacman/Bham/${DEMO_NAME}/Demo/BaseDemo.cpp
-		${PROJECT_ROOT}/src/pacman/Bham/Demo/Demo.cpp
+        #${PROJECT_ROOT}/src/pacman/Bham/${DEMO_NAME}/Demo/BaseDemo.cpp
+		#${PROJECT_ROOT}/src/pacman/Bham/Demo/Demo.cpp
 )
 SET(PACMAN_ACTIVE_SENSE_GRASP_DEMO_HEADERS
         ${PROJECT_ROOT}/include/pacman/Bham/${DEMO_NAME}/Demo/${DEMO_NAME}Demo.h
-        ${PROJECT_ROOT}/include/pacman/Bham/${DEMO_NAME}/Demo/BaseDemo.h
-		${PROJECT_ROOT}/include/pacman/Bham/Demo/Demo.h
+        #${PROJECT_ROOT}/include/pacman/Bham/${DEMO_NAME}/Demo/BaseDemo.h
+		#${PROJECT_ROOT}/include/pacman/Bham/Demo/Demo.h
 )
 SET(PACMAN_ACTIVE_SENSE_GRASP_DEMO_FILES
         ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataPointsCurv.xml
@@ -119,7 +128,7 @@ SET(PACMAN_ACTIVE_SENSE_GRASP_DEMO_FILES
 		${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDemo_RobotBorisDepthSim.xml
 )
 
-ADD_EXECUTABLE(${DEMO_NAME} ${PACMAN_ACTIVE_SENSE_GRASP_DEMO_SOURCES} ${PACMAN_ACTIVE_SENSE_GRASP_DEMO_HEADERS} ${PACMAN_ACTIVE_SENSE_GRASP_DEMO_FILES})
+ADD_LIBRARY(${DEMO_NAME} ${PACMAN_ACTIVE_SENSE_GRASP_DEMO_SOURCES} ${PACMAN_ACTIVE_SENSE_GRASP_DEMO_HEADERS} ${PACMAN_ACTIVE_SENSE_GRASP_DEMO_FILES})
 IF (WIN32)
                 SET_TARGET_PROPERTIES(${DEMO_NAME} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS}")
 ELSEIF (UNIX)
@@ -129,10 +138,12 @@ ENDIF()
 IF (WIN32)
                 TARGET_LINK_LIBRARIES(${DEMO_NAME}
                         ${LIB_NAME}Core
+						${BASE_DEMO_DR55_NAME}
 		)
 ELSEIF (UNIX)
                 TARGET_LINK_LIBRARIES(${DEMO_NAME}
                         ${LIB_NAME}Core
+						${BASE_DEMO_DR55_NAME}
 		)
 ENDIF()
 
@@ -141,11 +152,11 @@ ENDIF()
 COPY_FILES(${DEMO_NAME} ${RUNTIME_OUTPUT_DIRECTORY} ${PACMAN_ACTIVE_SENSE_GRASP_DEMO_FILES})
 SET_PROPERTY(TARGET ${DEMO_NAME} PROPERTY RELEASE_POSTFIX ${CMAKE_RELEASE_POSTFIX})
 SET_PROPERTY(TARGET ${DEMO_NAME} PROPERTY DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
-INSTALL(TARGETS ${DEMO_NAME} RUNTIME DESTINATION bin)
+INSTALL(TARGETS ${DEMO_NAME} RUNTIME DESTINATION bin  LIBRARY DESTINATION bin ARCHIVE DESTINATION lib  COMPONENT activesense_demo_execs)
 INSTALL(FILES ${PACMAN_ACTIVE_SENSE_GRASP_DEMO_HEADERS} DESTINATION include/pacman/Bham/Demo/)
 INSTALL(FILES ${PACMAN_ACTIVE_SENSE_GRASP_DEMO_FILES} DESTINATION bin)
 
-SET_PROPERTY(TARGET ${DEMO_NAME} PROPERTY PROJECT_LABEL "${DEMO_NAME}")
+SET_PROPERTY(TARGET ${DEMO_NAME} PROPERTY PROJECT_LABEL "${DEMO_NAME}Demo")
 SET_PROPERTY(TARGET ${DEMO_NAME} PROPERTY FOLDER "Pacman/${DEMO_NAME}")
 SOURCE_GROUP("Include Files" FILES ${PACMAN_ACTIVE_SENSE_GRASP_DEMO_HEADERS})
 SOURCE_GROUP("Resource Files" FILES ${PACMAN_ACTIVE_SENSE_GRASP_DEMO_FILES})
@@ -201,8 +212,9 @@ IF (BUILD_PACMAN_DEMO_DR55)
 		#${PROJECT_ROOT}/resources/PaCManBhamDemoDrainer.obj
 		${PROJECT_ROOT}/resources/PacmanDemoDR55Drainer.obj
 	)
-	
-	ADD_EXECUTABLE(PacmanDemoDR55 ${DEMO_DR55_SOURCES} ${DEMO_DR55_HEADERS} ${DEMO_DR55_FILES})
+
+    ADD_EXECUTABLE(PacmanDemoDR55 ${DEMO_DR55_SOURCES} ${DEMO_DR55_HEADERS} ${DEMO_DR55_FILES})
+
 	if (WIN32)
 		SET_TARGET_PROPERTIES(PacmanDemoDR55 PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS}")
 	elseif (UNIX)
@@ -215,6 +227,7 @@ IF (BUILD_PACMAN_DEMO_DR55)
                 ${GRASP_LIBRARIES}
                 ${GOLEM_LIBRARIES}
                 ${GOLEM_GRASP_3RD_PARTY_LIBRARIES}
+				${DEMO_NAME}
 #                ${ACTIVE_SENSE_LIBRARIES}
 #                ${OCTOMAP_LIBRARIES}
 
@@ -226,6 +239,7 @@ IF (BUILD_PACMAN_DEMO_DR55)
                 ${GRASP_LIBRARIES}
                 ${GOLEM_LIBRARIES}
                 ${GOLEM_GRASP_3RD_PARTY_LIBRARIES}
+				${DEMO_NAME}
 #                ${ACTIVE_SENSE_LIBRARIES}
 #                ${OCTOMAP_LIBRARIES}
         )

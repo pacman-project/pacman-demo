@@ -27,8 +27,8 @@
 
 //------------------------------------------------------------------------------
 
-/** Grasp name space */
-namespace grasp {
+/** Pacman name space */
+namespace pacman {
 
 //------------------------------------------------------------------------------
 
@@ -639,7 +639,7 @@ protected:
 	/** Pose estimation description file */
 	grasp::RBPose::Desc::Ptr modelRBPoseDesc;
 	/** Pose estimation */
-	RBPose::Ptr modelRBPosePtr;
+	grasp::RBPose::Ptr modelRBPosePtr;
 	/** Model data handler */
 	grasp::data::Handler* modelGraspHandler;
 	/** Model data item */
@@ -835,18 +835,18 @@ protected:
 //------------------------------------------------------------------------------
 
 namespace golem {
-	void XMLData(grasp::BaseDemoDR55::Data::Cluster::Map::value_type& val, golem::XMLContext* context, bool create = false);
+	void XMLData(pacman::BaseDemoDR55::Data::Cluster::Map::value_type& val, golem::XMLContext* context, bool create = false);
 
-	void XMLData(grasp::BaseDemoDR55::PoseDensity::Map::value_type& val, golem::XMLContext* context, bool create = false);
+	void XMLData(pacman::BaseDemoDR55::PoseDensity::Map::value_type& val, golem::XMLContext* context, bool create = false);
 
-	template <> void Stream::read(grasp::BaseDemoDR55::Data::Training::Map::value_type& value) const;
-	template <> void Stream::write(const grasp::BaseDemoDR55::Data::Training::Map::value_type& value);
+	template <> void Stream::read(pacman::BaseDemoDR55::Data::Training::Map::value_type& value) const;
+	template <> void Stream::write(const pacman::BaseDemoDR55::Data::Training::Map::value_type& value);
 
-	template <> void Stream::read(grasp::BaseDemoDR55::Data::Density::Seq::value_type& value) const;
-	template <> void Stream::write(const grasp::BaseDemoDR55::Data::Density::Seq::value_type& value);
+	template <> void Stream::read(pacman::BaseDemoDR55::Data::Density::Seq::value_type& value) const;
+	template <> void Stream::write(const pacman::BaseDemoDR55::Data::Density::Seq::value_type& value);
 
-	template <> void Stream::read(grasp::BaseDemoDR55::Data::Solution::Seq::value_type& value) const;
-	template <> void Stream::write(const grasp::BaseDemoDR55::Data::Solution::Seq::value_type& value);
+	template <> void Stream::read(pacman::BaseDemoDR55::Data::Solution::Seq::value_type& value) const;
+	template <> void Stream::write(const pacman::BaseDemoDR55::Data::Solution::Seq::value_type& value);
 
 	template <> void Stream::read(grasp::Manipulator::Waypoint& value) const;
 	template <> void Stream::write(const grasp::Manipulator::Waypoint& value);

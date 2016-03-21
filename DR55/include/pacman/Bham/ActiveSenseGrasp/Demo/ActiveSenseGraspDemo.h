@@ -11,7 +11,7 @@
 #ifndef _ACTIVE_SENSE_GRASP_DEMO_GRASP_H_ // if #pragma once is not supported
 #define _ACTIVE_SENSE_GRASP_DEMO_GRASP_H_
 
-#include "pacman/Bham/ActiveSenseGrasp/Demo/BaseDemo.h"
+#include "pacman/Bham/Demo/BaseDemo.h"
 #include "pacman/Bham/ActiveSenseGrasp/Core/ActiveSense.h"
 #include "pacman/Bham/ActiveSenseGrasp/Core/Collision.h"
 
@@ -25,12 +25,12 @@ namespace pacman {
 //------------------------------------------------------------------------------
 
 /** Grasp demo. */
-class ActiveSenseDemo : public pacman::BaseDemo, public pacman::ActiveSenseController {
+class ActiveSenseDemo : public pacman::BaseDemoDR55, public pacman::ActiveSenseController {
 public:
     friend class ActiveSense;
 
     /** Grasp demo description */
-    class Desc : public pacman::BaseDemo::Desc {
+    class Desc : public pacman::BaseDemoDR55::Desc {
     public:
         typedef golem::shared_ptr<Desc> Ptr;
 
@@ -68,7 +68,7 @@ public:
         }
         /** Sets the parameters to the default values */
         virtual void setToDefault() {
-            pacman::BaseDemo::Desc::setToDefault();
+            pacman::BaseDemoDR55::Desc::setToDefault();
 
             this->activeSense = ActiveSense::Ptr(new ActiveSense());
 
@@ -89,7 +89,7 @@ public:
         }
         /** Assert that the description is valid. */
         virtual void assertValid(const grasp::Assert::Context& ac) const {
-            pacman::BaseDemo::Desc::assertValid(ac);
+            pacman::BaseDemoDR55::Desc::assertValid(ac);
 
 
             this->activeSense->assertValid(ac);

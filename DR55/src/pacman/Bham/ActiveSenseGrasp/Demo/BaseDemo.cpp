@@ -24,14 +24,14 @@ namespace pacman {
 //-----------------------------------------------------------------------------
 
 void BaseDemo::Desc::load(golem::Context& context, const golem::XMLContext* xmlcontext) {
-	DemoDR55::Desc::load(context, xmlcontext);
+	BaseDemoDR55::Desc::load(context, xmlcontext);
 
 
 }
 
 //------------------------------------------------------------------------------
 
-BaseDemo::BaseDemo(Scene &scene) : DemoDR55(scene) {
+BaseDemo::BaseDemo(Scene &scene) : BaseDemoDR55(scene) {
 }
 
 BaseDemo::~BaseDemo() {
@@ -41,13 +41,13 @@ void BaseDemo::create(const Desc& desc) {
 	desc.assertValid(Assert::Context("pacman::BaseDemo::Desc."));
 
 	// create object
-	DemoDR55::create(desc); // throws
+	BaseDemoDR55::create(desc); // throws
 }
 
 //------------------------------------------------------------------------------
 
 void BaseDemo::render() const {
-	DemoDR55::render();
+	BaseDemoDR55::render();
 }
 
 

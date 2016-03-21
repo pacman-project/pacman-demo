@@ -26,7 +26,7 @@ namespace pacman {
 //-----------------------------------------------------------------------------
 
 void ActiveSenseDemo::Desc::load(golem::Context& context, const golem::XMLContext* xmlcontext) {
-    BaseDemo::Desc::load(context, xmlcontext);
+    BaseDemoDR55::Desc::load(context, xmlcontext);
 
     this->activeSense->load(xmlcontext);
 
@@ -53,7 +53,7 @@ void ActiveSenseDemo::Desc::load(golem::Context& context, const golem::XMLContex
 
 //------------------------------------------------------------------------------
 
-ActiveSenseDemo::ActiveSenseDemo(Scene &scene) : BaseDemo(scene) {
+ActiveSenseDemo::ActiveSenseDemo(Scene &scene) : BaseDemoDR55(scene) {
 }
 
 ActiveSenseDemo::~ActiveSenseDemo() {
@@ -63,7 +63,7 @@ void ActiveSenseDemo::create(const Desc& desc) {
     desc.assertValid(grasp::Assert::Context("ActiveSenseDemo::Desc."));
 
     // create object
-    BaseDemo::create(desc); // throws
+    BaseDemoDR55::create(desc); // throws
 
     this->toggleShowCurrentHandler = true;
 
@@ -509,7 +509,7 @@ void ActiveSenseDemo::executeDropOff()
 //------------------------------------------------------------------------------
 
 void ActiveSenseDemo::render() const {
-    BaseDemo::render();
+    BaseDemoDR55::render();
     demoRenderer.render();
 }
 
@@ -955,12 +955,13 @@ void ActiveSenseDemo::setMenus() {
     //                               UTILITIES                                //
     ////////////////////////////////////////////////////////////////////////////
 
-    menuCtrlMap.insert(std::make_pair("Z", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+    menuCtrlMap.insert(std::make_pair("X", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
         desc =
-                "Press a key to: execute (D)rop off, (R)otate, (N)udge, (H)and control, change trajectory d(U)ration, \n(F)inish recording, New (E)xperiment ...";
+                "Press a key to: execute \n(D)rop off, New (E)xperiment, (F)inish recording, (T)ransform all items with selected handler  ...";
     }));
 
-    menuCmdMap.insert(std::make_pair("ZD", [=]() {
+	// active sense drop off
+    menuCmdMap.insert(std::make_pair("XD", [=]() {
 
 
         if (option("YN", "Confirm drop-off action (Y/N)") == 'Y')
@@ -978,7 +979,8 @@ void ActiveSenseDemo::setMenus() {
 
     }));
 
-    menuCmdMap.insert(std::make_pair("ZF", [=]() {
+	// active sense stop recording
+    menuCmdMap.insert(std::make_pair("XF", [=]() {
 
 
         if (recordingActive() && option("YN", "Stop recording video? (Y/N)") == 'Y')
@@ -990,57 +992,8 @@ void ActiveSenseDemo::setMenus() {
 
     }));
 
-
-    menuCmdMap.insert(std::make_pair("ZU", [=]() {
-        context.write("*** Change trajectory duration BEWARE ***\n");
-
-		SecTmReal trajectoryDuration = getPlanner().trajectoryDuration;
-		do
-			readNumber("trajectoryDuration ", trajectoryDuration);
-		while (trajectoryDuration < 1.0);
-
-        context.write("Done!\n");
-    }));
-
-    menuCmdMap.insert(std::make_pair("ZR", [=]() {
-        context.write("rotate object in hand\n");
-        rotateObjectInHand();
-        context.write("Done!\n");
-    }));
-
-    menuCmdMap.insert(std::make_pair("ZN", [=]() {
-        context.write("nudge wrist\n");
-        nudgeWrist();
-        context.write("Done!\n");
-    }));
-
-    menuCmdMap.insert(std::make_pair("ZH", [=]() {
-        context.write("Hand Control\n");
-        for (;;)
-        {
-            const int k = option("+-01 ", "increase grasp:+  relax grasp:-  open:0  close:1  <SPACE> to end");
-            if (k == 32) break;
-            switch (k)
-            {
-            case '+':
-                closeHand(0.1, 1.0);
-                break;
-            case '1':
-                closeHand(1.0, 4.0);
-                break;
-            case '-':
-                releaseHand(0.1, 1.0);
-                break;
-            case '0':
-                releaseHand(1.0, 2.0);
-                break;
-            }
-        }
-        context.write("Done!\n");
-    }));
-
-
-    menuCmdMap.insert(std::make_pair("ZE", [=]() {
+	// active sesne new experiment
+    menuCmdMap.insert(std::make_pair("XE", [=]() {
 
         if( activeSense->out ) fclose(activeSense->out);
 
@@ -1058,8 +1011,8 @@ void ActiveSenseDemo::setMenus() {
         context.write("Done!\n");
     }));
 
-
-    menuCmdMap.insert(std::make_pair("ZT", [&] () {
+	// active sense transform all items with compatible selected handler
+    menuCmdMap.insert(std::make_pair("XT", [&] () {
         // find handlers supporting data::Transform
         typedef std::vector<std::pair<data::Handler*, data::Transform*>> TransformMap;
         TransformMap transformMap;
@@ -1136,7 +1089,7 @@ golem::Controller::State ActiveSenseDemo::lookupCommand() const {
 
 
 void ActiveSenseDemo::postprocess(golem::SecTmReal elapsedTime) {
-    BaseDemo::postprocess(elapsedTime);
+    BaseDemoDR55::postprocess(elapsedTime);
 
     //    golem::CriticalSectionWrapper csw(scene.getCS());
     //    for (size_t i = 0; i < point->getNumOfPoints(); ++i)
@@ -1190,11 +1143,11 @@ void ActiveSenseDemo::clearRender() {
 
     golem::CriticalSectionWrapper csw(scene.getCS());
     this->demoRenderer.reset();
-    BaseDemo::createRender();
+    BaseDemoDR55::createRender();
 }
 
 void ActiveSenseDemo::createRender() {
-    BaseDemo::createRender();
+    BaseDemoDR55::createRender();
 
 
     {
@@ -1738,10 +1691,10 @@ grasp::data::ItemTrajectory::Ptr ActiveSenseDemo::convertToTrajectory(const gole
 } // namespace pacman
 //------------------------------------------------------------------------------
 
-int main(int argc, char *argv[]) {
-    //SomeLib test;
-    //printf("WOW! %d",test.member_func(10));
-
-    //starts Demo (internally calls createRender once)
-    return pacman::ActiveSenseDemo::Desc().main(argc, argv);
-}
+//int main(int argc, char *argv[]) {
+//    //SomeLib test;
+//    //printf("WOW! %d",test.member_func(10));
+//
+//    //starts Demo (internally calls createRender once)
+//    return pacman::ActiveSenseDemo::Desc().main(argc, argv);
+//}

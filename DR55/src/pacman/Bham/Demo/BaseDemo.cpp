@@ -1,4 +1,4 @@
-/** @file BaseDemoDR55.cpp
+/** @file pacman::BaseDemoDR55.cpp
 *
 * Object placement demo
 *
@@ -12,7 +12,7 @@
 *
 */
 
-#include <pacman/Bham/Demo/Demo.h>
+#include <pacman/Bham/Demo/BaseDemo.h>
 #include <Grasp/Contact/Model.h>
 #include <Grasp/Data/Image/Image.h>
 #include <Grasp/Data/PointsCurv/PointsCurv.h>
@@ -139,24 +139,24 @@ namespace {
 
 //-----------------------------------------------------------------------------
 
-const std::string BaseDemoDR55::ID_ANY = "Any";
+const std::string pacman::BaseDemoDR55::ID_ANY = "Any";
 
-const std::string BaseDemoDR55::Data::ModeName[MODE_LAST + 1] = {
+const std::string pacman::BaseDemoDR55::Data::ModeName[MODE_LAST + 1] = {
 	"Model",
 	"Query",
 	"Solution",
 };
 
-data::Data::Ptr BaseDemoDR55::Data::Desc::create(golem::Context &context) const {
-	grasp::data::Data::Ptr data(new BaseDemoDR55::Data(context));
+data::Data::Ptr pacman::BaseDemoDR55::Data::Desc::create(golem::Context &context) const {
+	grasp::data::Data::Ptr data(new pacman::BaseDemoDR55::Data(context));
 	static_cast<BaseDemoDR55::Data*>(data.get())->create(*this);
 	return data;
 }
 
-BaseDemoDR55::Data::Data(golem::Context &context) : grasp::Player::Data(context), owner(nullptr) {
+pacman::BaseDemoDR55::Data::Data(golem::Context &context) : grasp::Player::Data(context), owner(nullptr) {
 }
 
-void BaseDemoDR55::Data::create(const Desc& desc) {
+void pacman::BaseDemoDR55::Data::create(const Desc& desc) {
 	Player::Data::create(desc);
 
 	modelVertices.clear();
@@ -178,11 +178,11 @@ void BaseDemoDR55::Data::create(const Desc& desc) {
 	queryShowDensities = false;
 }
 
-void BaseDemoDR55::Data::setOwner(Manager* owner) {
+void pacman::BaseDemoDR55::Data::setOwner(Manager* owner) {
 	grasp::Player::Data::setOwner(owner);
 	this->owner = is<BaseDemoDR55>(owner);
 	if (!this->owner)
-		throw Message(Message::LEVEL_CRIT, "grasp::BaseDemoDR55::Data::setOwner(): unknown data owner");
+		throw Message(Message::LEVEL_CRIT, "pacman::BaseDemoDR55::Data::setOwner(): unknown data owner");
 
 	// initialise owner-dependent data members
 	dataName = this->owner->dataName;
@@ -190,7 +190,7 @@ void BaseDemoDR55::Data::setOwner(Manager* owner) {
 	this->owner->controller->setToDefault(*modelState);
 }
 
-BaseDemoDR55::Data::Training::Map::iterator BaseDemoDR55::Data::getTrainingItem() {
+pacman::BaseDemoDR55::Data::Training::Map::iterator pacman::BaseDemoDR55::Data::getTrainingItem() {
 	Training::Map::iterator ptr = training.begin();
 	U32 indexType = 0;
 	for (; ptr != training.end() && ptr == --training.end() && indexType < this->indexType; ++indexType, ptr = training.upper_bound(ptr->first));
@@ -201,7 +201,7 @@ BaseDemoDR55::Data::Training::Map::iterator BaseDemoDR55::Data::getTrainingItem(
 	return ptr;
 }
 
-void BaseDemoDR55::Data::setTrainingItem(Training::Map::const_iterator ptr) {
+void pacman::BaseDemoDR55::Data::setTrainingItem(Training::Map::const_iterator ptr) {
 	U32 indexType = 0;
 	for (Training::Map::const_iterator i = training.begin(); i != training.end(); ++indexType, i = training.upper_bound(i->first))
 		if (i->first == ptr->first) {
@@ -215,7 +215,7 @@ void BaseDemoDR55::Data::setTrainingItem(Training::Map::const_iterator ptr) {
 		}
 }
 
-void BaseDemoDR55::Data::createRender() {
+void pacman::BaseDemoDR55::Data::createRender() {
 	Player::Data::createRender();
 	{
 		golem::CriticalSectionWrapper csw(owner->scene.getCS());
@@ -306,7 +306,7 @@ void BaseDemoDR55::Data::createRender() {
 	}
 }
 
-void BaseDemoDR55::Data::load(const std::string& prefix, const golem::XMLContext* xmlcontext, const data::Handler::Map& handlerMap) {
+void pacman::BaseDemoDR55::Data::load(const std::string& prefix, const golem::XMLContext* xmlcontext, const data::Handler::Map& handlerMap) {
 	data::Data::load(prefix, xmlcontext, handlerMap);
 
 	try {
@@ -346,7 +346,7 @@ void BaseDemoDR55::Data::load(const std::string& prefix, const golem::XMLContext
 	Data::Cluster::setToDefault(this->owner->clusterMap, clusterCounter, training);
 }
 
-void BaseDemoDR55::Data::save(const std::string& prefix, golem::XMLContext* xmlcontext) const {
+void pacman::BaseDemoDR55::Data::save(const std::string& prefix, golem::XMLContext* xmlcontext) const {
 	data::Data::save(prefix, xmlcontext);
 
 	if (dataName.length() > 0) {
@@ -372,7 +372,7 @@ void BaseDemoDR55::Data::save(const std::string& prefix, golem::XMLContext* xmlc
 
 //------------------------------------------------------------------------------
 
-void BaseDemoDR55::PoseDensity::load(const golem::XMLContext* xmlcontext) {
+void pacman::BaseDemoDR55::PoseDensity::load(const golem::XMLContext* xmlcontext) {
 	grasp::XMLData(stdDev, xmlcontext->getContextFirst("std_dev"));
 	stdDev.ang = Math::sqrt(REAL_ONE / stdDev.ang);	// stdDev ~ 1/cov
 
@@ -385,7 +385,7 @@ void BaseDemoDR55::PoseDensity::load(const golem::XMLContext* xmlcontext) {
 
 //------------------------------------------------------------------------------
 
-void BaseDemoDR55::Data::Cluster::setToDefault(const Map& map, Counter& counter, const Training::Map& training, bool ordered) {
+void pacman::BaseDemoDR55::Data::Cluster::setToDefault(const Map& map, Counter& counter, const Training::Map& training, bool ordered) {
 	counter.clear();
 
 	if (ordered) {
@@ -402,7 +402,7 @@ void BaseDemoDR55::Data::Cluster::setToDefault(const Map& map, Counter& counter,
 	}
 }
 
-void BaseDemoDR55::Data::Cluster::setOccupied(const Map& map, Counter& counter, const std::string& type, golem::U32 index, bool ordered) {
+void pacman::BaseDemoDR55::Data::Cluster::setOccupied(const Map& map, Counter& counter, const std::string& type, golem::U32 index, bool ordered) {
 	// find cluster
 	Data::Cluster::Map::const_iterator cluster = map.find(type);
 	if (cluster == map.end())
@@ -413,7 +413,7 @@ void BaseDemoDR55::Data::Cluster::setOccupied(const Map& map, Counter& counter, 
 		counter[cluster->second.slot].erase(index + 1);
 }
 
-bool BaseDemoDR55::Data::Cluster::isOccupied(const Map& map, const Counter& counter, const std::string& type, golem::U32 index) {
+bool pacman::BaseDemoDR55::Data::Cluster::isOccupied(const Map& map, const Counter& counter, const std::string& type, golem::U32 index) {
 	// find cluster
 	Data::Cluster::Map::const_iterator cluster = map.find(type);
 	if (cluster == map.end())
@@ -426,7 +426,7 @@ bool BaseDemoDR55::Data::Cluster::isOccupied(const Map& map, const Counter& coun
 
 //------------------------------------------------------------------------------
 
-void BaseDemoDR55::Optimisation::load(const golem::XMLContext* xmlcontext) {
+void pacman::BaseDemoDR55::Optimisation::load(const golem::XMLContext* xmlcontext) {
 	golem::XMLData("runs", runs, const_cast<golem::XMLContext*>(xmlcontext));
 	golem::XMLData("steps", steps, const_cast<golem::XMLContext*>(xmlcontext));
 	golem::XMLData("sa_temp", saTemp, const_cast<golem::XMLContext*>(xmlcontext));
@@ -437,7 +437,7 @@ void BaseDemoDR55::Optimisation::load(const golem::XMLContext* xmlcontext) {
 
 //------------------------------------------------------------------------------
 
-void BaseDemoDR55::Desc::load(golem::Context& context, const golem::XMLContext* xmlcontext) {
+void pacman::BaseDemoDR55::Desc::load(golem::Context& context, const golem::XMLContext* xmlcontext) {
 	Player::Desc::load(context, xmlcontext);
 
 	xmlcontext = xmlcontext->getContextFirst("demo");
@@ -523,17 +523,17 @@ void BaseDemoDR55::Desc::load(golem::Context& context, const golem::XMLContext* 
 
 //------------------------------------------------------------------------------
 
-BaseDemoDR55::BaseDemoDR55(Scene &scene) :
+pacman::BaseDemoDR55::BaseDemoDR55(Scene &scene) :
 Player(scene),
 modelCamera(nullptr), queryCamera(nullptr), modelHandler(nullptr), modelHandlerTrj(nullptr), queryHandler(nullptr), queryHandlerTrj(nullptr), graspSensorForce(nullptr), objectCamera(nullptr), objectHandlerScan(nullptr), objectHandler(nullptr)
 {}
 
-BaseDemoDR55::~BaseDemoDR55() {
+pacman::BaseDemoDR55::~BaseDemoDR55() {
 }
 
 //------------------------------------------------------------------------------
 
-grasp::Camera* BaseDemoDR55::getWristCamera(const bool dontThrow) const
+grasp::Camera* pacman::BaseDemoDR55::getWristCamera(const bool dontThrow) const
 {
 	const std::string id("OpenNI+OpenNI");
 	grasp::Sensor::Map::const_iterator i = sensorMap.find(id);
@@ -557,7 +557,7 @@ grasp::Camera* BaseDemoDR55::getWristCamera(const bool dontThrow) const
 	return camera;
 }
 
-golem::Mat34 BaseDemoDR55::getWristPose() const
+golem::Mat34 pacman::BaseDemoDR55::getWristPose() const
 {
 	const golem::U32 wristJoint = 6; // @@@
 	grasp::ConfigMat34 pose;
@@ -565,7 +565,7 @@ golem::Mat34 BaseDemoDR55::getWristPose() const
 	return pose.w;
 }
 
-golem::Controller::State::Seq BaseDemoDR55::getTrajectoryFromPose(const golem::Mat34& w, const SecTmReal duration)
+golem::Controller::State::Seq pacman::BaseDemoDR55::getTrajectoryFromPose(const golem::Mat34& w, const SecTmReal duration)
 {
 	const golem::Mat34 R = controller->getChains()[getPlanner().armInfo.getChains().begin()]->getReferencePose();
 	const golem::Mat34 wR = w * R;
@@ -579,7 +579,7 @@ golem::Controller::State::Seq BaseDemoDR55::getTrajectoryFromPose(const golem::M
 	return trajectory;
 }
 
-grasp::ConfigMat34 BaseDemoDR55::getConfigFromPose(const golem::Mat34& w)
+grasp::ConfigMat34 pacman::BaseDemoDR55::getConfigFromPose(const golem::Mat34& w)
 {
 	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w, SEC_TM_REAL_ZERO);
 	const golem::Controller::State& last = trajectory.back();
@@ -591,15 +591,15 @@ grasp::ConfigMat34 BaseDemoDR55::getConfigFromPose(const golem::Mat34& w)
 	return cfg;
 }
 
-golem::Controller::State BaseDemoDR55::lookupStateArmCommandHand() const
+golem::Controller::State pacman::BaseDemoDR55::lookupStateArmCommandHand() const
 {
-	golem::Controller::State state = Waypoint::lookup(*controller).state;	// current state
-	golem::Controller::State cmdHand = Waypoint::lookup(*controller).command;	// commanded state (wanted just for hand)
+	golem::Controller::State state = grasp::Waypoint::lookup(*controller).state;	// current state
+	golem::Controller::State cmdHand = grasp::Waypoint::lookup(*controller).command;	// commanded state (wanted just for hand)
 	state.cpos.set(getPlanner().handInfo.getJoints(), cmdHand.cpos); // only set cpos ???
 	return state;
 }
 
-void BaseDemoDR55::setHandConfig(Controller::State::Seq& trajectory, const grasp::ConfigMat34& handPose)
+void pacman::BaseDemoDR55::setHandConfig(Controller::State::Seq& trajectory, const grasp::ConfigMat34& handPose)
 {
 	ConfigspaceCoord cposHand;
 	cposHand.set(handPose.c.data(), handPose.c.data() + std::min(handPose.c.size(), (size_t)info.getJoints().size()));
@@ -612,7 +612,7 @@ void BaseDemoDR55::setHandConfig(Controller::State::Seq& trajectory, const grasp
 	}
 }
 
-void BaseDemoDR55::gotoWristPose(const golem::Mat34& w, const SecTmReal duration)
+void pacman::BaseDemoDR55::gotoWristPose(const golem::Mat34& w, const SecTmReal duration)
 {
 	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w, duration);
 	sendTrajectory(trajectory);
@@ -620,7 +620,7 @@ void BaseDemoDR55::gotoWristPose(const golem::Mat34& w, const SecTmReal duration
 	Sleep::msleep(SecToMSec(getPlanner().trajectoryIdleEnd));
 }
 
-void BaseDemoDR55::gotoPose2(const ConfigMat34& pose, const SecTmReal duration)
+void pacman::BaseDemoDR55::gotoPose2(const ConfigMat34& pose, const SecTmReal duration)
 {
 	context.debug("BaseDemoDR55::gotoPose2: %s\n", toXMLString(pose).c_str());
 
@@ -635,12 +635,12 @@ void BaseDemoDR55::gotoPose2(const ConfigMat34& pose, const SecTmReal duration)
 	Sleep::msleep(SecToMSec(getPlanner().trajectoryIdleEnd));
 }
 
-void BaseDemoDR55::releaseHand(const double openFraction, const SecTmReal duration)
+void pacman::BaseDemoDR55::releaseHand(const double openFraction, const SecTmReal duration)
 {
 	double f = 1.0 - openFraction;
 	f = std::max(0.0, std::min(1.0, f));
 
-	golem::Controller::State currentState = Waypoint::lookup(*controller).state;
+	golem::Controller::State currentState = grasp::Waypoint::lookup(*controller).state;
 	ConfigMat34 openPose(RealSeq(61, 0.0)); // !!! TODO use proper indices
 	for (size_t i = 0; i < openPose.c.size(); ++i)
 		openPose.c[i] = currentState.cpos.data()[i];
@@ -654,7 +654,7 @@ void BaseDemoDR55::releaseHand(const double openFraction, const SecTmReal durati
 	gotoPose2(openPose, duration);
 }
 
-void BaseDemoDR55::closeHand(const double closeFraction, const SecTmReal duration)
+void pacman::BaseDemoDR55::closeHand(const double closeFraction, const SecTmReal duration)
 {
 	// @@@ HACK @@@
 
@@ -689,7 +689,7 @@ void BaseDemoDR55::closeHand(const double closeFraction, const SecTmReal duratio
 	gotoPose2(pose, duration);
 }
 
-void BaseDemoDR55::liftWrist(const double verticalDistance, const SecTmReal duration)
+void pacman::BaseDemoDR55::liftWrist(const double verticalDistance, const SecTmReal duration)
 {
 	// vertically by verticalDistance; to hand zero config
 	Mat34 pose = getWristPose();
@@ -699,7 +699,7 @@ void BaseDemoDR55::liftWrist(const double verticalDistance, const SecTmReal dura
 	// TODO open hand while lifting
 }
 
-void BaseDemoDR55::haltRobot()
+void pacman::BaseDemoDR55::haltRobot()
 {
 	context.debug("STOPPING ROBOT!");
 
@@ -722,7 +722,7 @@ void BaseDemoDR55::haltRobot()
 
 //------------------------------------------------------------------------------
 
-void BaseDemoDR55::nudgeWrist()
+void pacman::BaseDemoDR55::nudgeWrist()
 {
 	auto showPose = [&](const std::string& description, const golem::Mat34& m) {
 		context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
@@ -802,7 +802,7 @@ void BaseDemoDR55::nudgeWrist()
 	context.debug("%s\n", toXMLString(cp, true).c_str());
 }
 
-void BaseDemoDR55::rotateObjectInHand()
+void pacman::BaseDemoDR55::rotateObjectInHand()
 {
 	auto showPose = [&](const std::string& description, const golem::Mat34& m) {
 		context.write("%s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
@@ -878,8 +878,8 @@ void BaseDemoDR55::rotateObjectInHand()
 
 //------------------------------------------------------------------------------
 
-void grasp::BaseDemoDR55::create(const Desc& desc) {
-	desc.assertValid(Assert::Context("grasp::BaseDemoDR55::Desc."));
+void pacman::BaseDemoDR55::create(const Desc& desc) {
+	desc.assertValid(Assert::Context("pacman::BaseDemoDR55::Desc."));
 
 	// create object
 	Player::create(desc); // throws
@@ -889,11 +889,11 @@ void grasp::BaseDemoDR55::create(const Desc& desc) {
 	grasp::Sensor::Map::const_iterator modelCameraPtr = sensorMap.find(desc.modelCamera);
 	modelCamera = modelCameraPtr != sensorMap.end() ? is<Camera>(modelCameraPtr->second.get()) : nullptr;
 	if (!modelCamera)
-		throw Message(Message::LEVEL_CRIT, "grasp::BaseDemoDR55::create(): unknown model pose estimation camera: %s", desc.modelCamera.c_str());
+		throw Message(Message::LEVEL_CRIT, "pacman::BaseDemoDR55::create(): unknown model pose estimation camera: %s", desc.modelCamera.c_str());
 	grasp::data::Handler::Map::const_iterator modelHandlerPtr = handlerMap.find(desc.modelHandler);
 	modelHandler = modelHandlerPtr != handlerMap.end() ? modelHandlerPtr->second.get() : nullptr;
 	if (!modelHandler)
-		throw Message(Message::LEVEL_CRIT, "grasp::BaseDemoDR55::create(): unknown model data handler: %s", desc.modelHandler.c_str());
+		throw Message(Message::LEVEL_CRIT, "pacman::BaseDemoDR55::create(): unknown model data handler: %s", desc.modelHandler.c_str());
 	modelItem = desc.modelItem;
 	modelItemObj = desc.modelItemObj;
 	modelRBPoseDesc = desc.modelRBPoseDesc;
@@ -901,7 +901,7 @@ void grasp::BaseDemoDR55::create(const Desc& desc) {
 	grasp::data::Handler::Map::const_iterator modelGraspHandlerPtr = handlerMap.find(desc.modelGraspHandler);
 	modelGraspHandler = modelGraspHandlerPtr != handlerMap.end() ? modelGraspHandlerPtr->second.get() : nullptr;
 	if (!modelGraspHandler)
-		throw Message(Message::LEVEL_CRIT, "grasp::BaseDemoDR55::create(): unknown model data handler: %s", desc.modelHandler.c_str());
+		throw Message(Message::LEVEL_CRIT, "pacman::BaseDemoDR55::create(): unknown model data handler: %s", desc.modelHandler.c_str());
 	modelGraspItem = desc.modelGraspItem;
 
 	modelScanPose = desc.modelScanPose;
@@ -911,7 +911,7 @@ void grasp::BaseDemoDR55::create(const Desc& desc) {
 	grasp::data::Handler::Map::const_iterator modelHandlerTrjPtr = handlerMap.find(desc.modelHandlerTrj);
 	modelHandlerTrj = modelHandlerTrjPtr != handlerMap.end() ? modelHandlerTrjPtr->second.get() : nullptr;
 	if (!modelHandlerTrj)
-		throw Message(Message::LEVEL_CRIT, "grasp::BaseDemoDR55::create(): unknown model trajectory handler: %s", desc.modelHandlerTrj.c_str());
+		throw Message(Message::LEVEL_CRIT, "pacman::BaseDemoDR55::create(): unknown model trajectory handler: %s", desc.modelHandlerTrj.c_str());
 	modelItemTrj = desc.modelItemTrj;
 
 	showModel = true;
@@ -919,11 +919,11 @@ void grasp::BaseDemoDR55::create(const Desc& desc) {
 	grasp::Sensor::Map::const_iterator queryCameraPtr = sensorMap.find(desc.queryCamera);
 	queryCamera = queryCameraPtr != sensorMap.end() ? is<Camera>(queryCameraPtr->second.get()) : nullptr;
 	if (!queryCamera)
-		throw Message(Message::LEVEL_CRIT, "grasp::BaseDemoDR55::create(): unknown query pose estimation camera: %s", desc.queryCamera.c_str());
+		throw Message(Message::LEVEL_CRIT, "pacman::BaseDemoDR55::create(): unknown query pose estimation camera: %s", desc.queryCamera.c_str());
 	grasp::data::Handler::Map::const_iterator queryHandlerPtr = handlerMap.find(desc.queryHandler);
 	queryHandler = queryHandlerPtr != handlerMap.end() ? queryHandlerPtr->second.get() : nullptr;
 	if (!queryHandler)
-		throw Message(Message::LEVEL_CRIT, "grasp::BaseDemoDR55::create(): unknown query data handler: %s", desc.queryHandler.c_str());
+		throw Message(Message::LEVEL_CRIT, "pacman::BaseDemoDR55::create(): unknown query data handler: %s", desc.queryHandler.c_str());
 	queryItem = desc.queryItem;
 	queryItemObj = desc.queryItemObj;
 
@@ -936,13 +936,13 @@ void grasp::BaseDemoDR55::create(const Desc& desc) {
 	grasp::data::Handler::Map::const_iterator queryHandlerTrjPtr = handlerMap.find(desc.queryHandlerTrj);
 	queryHandlerTrj = queryHandlerTrjPtr != handlerMap.end() ? queryHandlerTrjPtr->second.get() : nullptr;
 	if (!queryHandlerTrj)
-		throw Message(Message::LEVEL_CRIT, "grasp::BaseDemoDR55::create(): unknown query trajectory handler: %s", desc.queryHandlerTrj.c_str());
+		throw Message(Message::LEVEL_CRIT, "pacman::BaseDemoDR55::create(): unknown query trajectory handler: %s", desc.queryHandlerTrj.c_str());
 	queryItemTrj = desc.queryItemTrj;
 
 	grasp::Sensor::Map::const_iterator graspSensorForcePtr = sensorMap.find(desc.graspSensorForce);
 	graspSensorForce = graspSensorForcePtr != sensorMap.end() ? is<FT>(graspSensorForcePtr->second.get()) : nullptr;
 	if (!graspSensorForce)
-		throw Message(Message::LEVEL_CRIT, "grasp::BaseDemoDR55::create(): unknown grasp F/T sensor: %s", desc.graspSensorForce.c_str());
+		throw Message(Message::LEVEL_CRIT, "pacman::BaseDemoDR55::create(): unknown grasp F/T sensor: %s", desc.graspSensorForce.c_str());
 	graspThresholdForce = desc.graspThresholdForce;
 	graspEventTimeWait = desc.graspEventTimeWait;
 	graspCloseDuration = desc.graspCloseDuration;
@@ -952,15 +952,15 @@ void grasp::BaseDemoDR55::create(const Desc& desc) {
 	grasp::Sensor::Map::const_iterator objectCameraPtr = sensorMap.find(desc.objectCamera);
 	objectCamera = objectCameraPtr != sensorMap.end() ? is<Camera>(objectCameraPtr->second.get()) : nullptr;
 	if (!objectCamera)
-		throw Message(Message::LEVEL_CRIT, "grasp::BaseDemoDR55::create(): unknown object capture camera: %s", desc.objectCamera.c_str());
+		throw Message(Message::LEVEL_CRIT, "pacman::BaseDemoDR55::create(): unknown object capture camera: %s", desc.objectCamera.c_str());
 	grasp::data::Handler::Map::const_iterator objectHandlerScanPtr = handlerMap.find(desc.objectHandlerScan);
 	objectHandlerScan = objectHandlerScanPtr != handlerMap.end() ? objectHandlerScanPtr->second.get() : nullptr;
 	if (!objectHandlerScan)
-		throw Message(Message::LEVEL_CRIT, "grasp::BaseDemoDR55::create(): unknown object (scan) data handler: %s", desc.objectHandlerScan.c_str());
+		throw Message(Message::LEVEL_CRIT, "pacman::BaseDemoDR55::create(): unknown object (scan) data handler: %s", desc.objectHandlerScan.c_str());
 	grasp::data::Handler::Map::const_iterator objectHandlerPtr = handlerMap.find(desc.objectHandler);
 	objectHandler = objectHandlerPtr != handlerMap.end() ? objectHandlerPtr->second.get() : nullptr;
 	if (!objectHandler)
-		throw Message(Message::LEVEL_CRIT, "grasp::BaseDemoDR55::create(): unknown object (process) data handler: %s", desc.objectHandler.c_str());
+		throw Message(Message::LEVEL_CRIT, "pacman::BaseDemoDR55::create(): unknown object (process) data handler: %s", desc.objectHandler.c_str());
 	objectItemScan = desc.objectItemScan;
 	objectItem = desc.objectItem;
 	objectScanPoseSeq = desc.objectScanPoseSeq;
@@ -1163,7 +1163,7 @@ void grasp::BaseDemoDR55::create(const Desc& desc) {
 			grasp::data::Item::Map::iterator ptr = objectCapture(Data::MODE_QUERY, objectItem);
 
 			// wrist frame
-			const Mat34 frame = forwardTransformArm(Waypoint::lookup(*controller).state);
+			const Mat34 frame = forwardTransformArm(grasp::Waypoint::lookup(*controller).state);
 			// create query densities
 			createQuery(ptr->second, frame, &to<Data>(dataCurrentPtr)->clusterCounter);
 			// generate wrist pose solutions
@@ -1364,7 +1364,7 @@ void grasp::BaseDemoDR55::create(const Desc& desc) {
 			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
 		}
 		// set model robot pose
-		to<Data>(dataCurrentPtr)->modelState.reset(new golem::Controller::State(Waypoint::lookup(*controller).state));
+		to<Data>(dataCurrentPtr)->modelState.reset(new golem::Controller::State(grasp::Waypoint::lookup(*controller).state));
 
 		context.write("Done!\n");
 	}));
@@ -1483,7 +1483,7 @@ void grasp::BaseDemoDR55::create(const Desc& desc) {
 			points.push_back(point->getPoint(i));
 		data::Point3D::Point::Seq pointsTrn;
 		pointsTrn.resize(points.size());
-		Mat34 frame = forwardTransformArm(Waypoint::lookup(*controller).state), frameInv;
+		Mat34 frame = forwardTransformArm(grasp::Waypoint::lookup(*controller).state), frameInv;
 		frameInv.setInverse(frame);
 
 		// run model tools
@@ -1491,7 +1491,7 @@ void grasp::BaseDemoDR55::create(const Desc& desc) {
 		context.write("%s\n", options.c_str());
 		for (bool finish = false; !finish;) {
 			// attach object to the robot's end-effector
-			frame = forwardTransformArm(Waypoint::lookup(*controller).state);
+			frame = forwardTransformArm(grasp::Waypoint::lookup(*controller).state);
 			const Mat34 trn = frame * frameInv; // frame = trn * frameInit, trn = frame * frameInit^-1
 			for (size_t i = 0; i < points.size(); ++i)
 				trn.multiply(pointsTrn[i], points[i]);
@@ -1544,7 +1544,7 @@ void grasp::BaseDemoDR55::create(const Desc& desc) {
 				contacts.clear();
 				if (model->second->create(data::Point3D::ConstSeq(1, features), to<Data>(dataCurrentPtr)->modelFrame, modelMesh, contacts)) {
 					golem::CriticalSectionWrapper cswData(scene.getCS());
-					Data::Training training(Waypoint::lookup(*controller).state);
+					Data::Training training(grasp::Waypoint::lookup(*controller).state);
 					training.contacts = contacts;
 					training.frame = to<Data>(dataCurrentPtr)->modelFrame;
 					training.points = pointsTrn;
@@ -1568,8 +1568,8 @@ void grasp::BaseDemoDR55::create(const Desc& desc) {
 				if (!trajectory)
 					throw Message(Message::LEVEL_ERROR, "Trajectory handler does not implement data::Trajectory");
 				// add current state
-				Waypoint::Seq seq = trajectory->getWaypoints();
-				seq.push_back(Waypoint::lookup(*controller));
+				grasp::Waypoint::Seq seq = trajectory->getWaypoints();
+				seq.push_back(grasp::Waypoint::lookup(*controller));
 				trajectory->setWaypoints(seq);
 				// done here
 				context.write("Done!\n");
@@ -1623,7 +1623,7 @@ void grasp::BaseDemoDR55::create(const Desc& desc) {
 		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
 			throw Message(Message::LEVEL_ERROR, "Object item has not been created");
 		// wrist frame
-		const Mat34 frame = forwardTransformArm(Waypoint::lookup(*controller).state);
+		const Mat34 frame = forwardTransformArm(grasp::Waypoint::lookup(*controller).state);
 		// create query densities
 		createQuery(ptr->second, frame, &to<Data>(dataCurrentPtr)->clusterCounter);
 		createRender();
@@ -1703,7 +1703,7 @@ void grasp::BaseDemoDR55::create(const Desc& desc) {
 			// compute features and add to data bundle
 			ptr = objectProcess(ptr);
 			// wrist frame
-			const Mat34 frame = forwardTransformArm(Waypoint::lookup(*controller).state);
+			const Mat34 frame = forwardTransformArm(grasp::Waypoint::lookup(*controller).state);
 			// create query densities
 			createQuery(ptr->second, frame, &to<Data>(dataCurrentPtr)->clusterCounter);
 			// generate wrist pose solutions
@@ -2103,7 +2103,7 @@ void grasp::BaseDemoDR55::create(const Desc& desc) {
 
 //------------------------------------------------------------------------------
 
-grasp::data::Item::Map::iterator BaseDemoDR55::estimatePose(Data::Mode mode, std::string &itemName) {
+grasp::data::Item::Map::iterator pacman::BaseDemoDR55::estimatePose(Data::Mode mode, std::string &itemName) {
 	grasp::data::Handler* handler = mode != Data::MODE_MODEL ? queryHandler : modelHandler;
 
 	grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(itemName);
@@ -2148,7 +2148,7 @@ grasp::data::Item::Map::iterator BaseDemoDR55::estimatePose(Data::Mode mode, std
 	return ptr;
 }
 
-grasp::data::Item::Map::iterator BaseDemoDR55::objectCapture(const Data::Mode mode, std::string &itemName) {
+grasp::data::Item::Map::iterator pacman::BaseDemoDR55::objectCapture(const Data::Mode mode, std::string &itemName) {
 	//	std::string& itemName = mode == Data::MODE_DEFAULT ? objectItem : mode != Data::MODE_MODEL ? queryItem : modelItem;
 	const std::string itemNameRaw = itemName + "_raw";
 	grasp::data::Handler* handler = mode == Data::MODE_DEFAULT ? objectHandler : mode != Data::MODE_MODEL ? queryHandler : modelHandler;
@@ -2227,7 +2227,7 @@ grasp::data::Item::Map::iterator BaseDemoDR55::objectCapture(const Data::Mode mo
 
 //------------------------------------------------------------------------------
 
-grasp::data::Item::Map::iterator BaseDemoDR55::estimatePose(Data::Mode mode) {
+grasp::data::Item::Map::iterator pacman::BaseDemoDR55::estimatePose(Data::Mode mode) {
 	if (mode != Data::MODE_MODEL && (to<Data>(dataCurrentPtr)->modelVertices.empty() || to<Data>(dataCurrentPtr)->modelTriangles.empty()))
 		throw Cancel("Model has not been estimated");
 
@@ -2326,7 +2326,7 @@ grasp::data::Item::Map::iterator BaseDemoDR55::estimatePose(Data::Mode mode) {
 // full hand grasp, fingers spread out; thumb in centre
 // 4. move through scan poses and capture object, add as objectScan
 // return ptr to Item
-grasp::data::Item::Map::iterator BaseDemoDR55::objectGraspAndCapture(const bool stopAtBreakPoint)
+grasp::data::Item::Map::iterator pacman::BaseDemoDR55::objectGraspAndCapture(const bool stopAtBreakPoint)
 {
 	const auto breakPoint = [=](const char* str) {
 		if (stopAtBreakPoint) {
@@ -2392,7 +2392,7 @@ grasp::data::Item::Map::iterator BaseDemoDR55::objectGraspAndCapture(const bool 
 //------------------------------------------------------------------------------
 
 // Process object image and add to data bundle
-grasp::data::Item::Map::iterator BaseDemoDR55::objectProcess(grasp::data::Item::Map::iterator ptr) {
+grasp::data::Item::Map::iterator pacman::BaseDemoDR55::objectProcess(grasp::data::Item::Map::iterator ptr) {
 	// generate features
 	data::Transform* transform = is<data::Transform>(objectHandler);
 	if (!transform)
@@ -2413,13 +2413,13 @@ grasp::data::Item::Map::iterator BaseDemoDR55::objectProcess(grasp::data::Item::
 
 //------------------------------------------------------------------------------
 
-std::string BaseDemoDR55::getTrajectoryName(const std::string& prefix, const std::string& type) const {
+std::string pacman::BaseDemoDR55::getTrajectoryName(const std::string& prefix, const std::string& type) const {
 	return prefix + dataDesc->sepName + type;
 }
 
 //------------------------------------------------------------------------------
 
-void BaseDemoDR55::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& frame, const Data::Cluster::Counter* clusterCounter) {
+void pacman::BaseDemoDR55::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& frame, const Data::Cluster::Counter* clusterCounter) {
 	// Features
 	const data::Feature3D* features = is<data::Feature3D>(item.get());
 	if (!features)
@@ -2509,7 +2509,7 @@ void BaseDemoDR55::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 		if (!trajectory)
 			throw Message(Message::LEVEL_ERROR, "BaseDemoDR55::createQuery(): Trajectory handler does not implement data::Trajectory");
 		// waypoints
-		const Waypoint::Seq waypoints = trajectory->getWaypoints();
+		const grasp::Waypoint::Seq waypoints = trajectory->getWaypoints();
 		if (waypoints.size() < 2)
 			throw Message(Message::LEVEL_ERROR, "BaseDemoDR55::createQuery(): Trajectory must have at least two waypoints");
 
@@ -2599,7 +2599,7 @@ void BaseDemoDR55::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& 
 		throw Message(Message::LEVEL_ERROR, "BaseDemoDR55::createQuery(): Unable to normalise query distributions");
 }
 
-void BaseDemoDR55::generateSolutions() {
+void pacman::BaseDemoDR55::generateSolutions() {
 	// training data are required
 	if (to<Data>(dataCurrentPtr)->densities.empty())
 		throw Message(Message::LEVEL_ERROR, "BaseDemoDR55::generateSolutions(): No query densities");
@@ -2729,7 +2729,7 @@ void BaseDemoDR55::generateSolutions() {
 	context.debug("BaseDemoDR55::generateSolutions(): time=%.6f, solutions=%u, steps=%u, energy=%f, greedy_accept=%d, SA_accept=%d\n", context.getTimer().elapsed() - t, optimisation.runs, optimisation.steps, optimisation.saEnergy, acceptGreedy, acceptSA);
 }
 
-void grasp::BaseDemoDR55::sortSolutions(Data::Solution::Seq& seq) const {
+void pacman::BaseDemoDR55::sortSolutions(Data::Solution::Seq& seq) const {
 	if (seq.empty())
 		throw Message(Message::LEVEL_ERROR, "BaseDemoDR55::sortSolutions(): No solutions");
 
@@ -2772,7 +2772,7 @@ void grasp::BaseDemoDR55::sortSolutions(Data::Solution::Seq& seq) const {
 	seq = seqSorted;
 }
 
-void BaseDemoDR55::selectTrajectory() {
+void pacman::BaseDemoDR55::selectTrajectory() {
 	if (to<Data>(dataCurrentPtr)->solutions.empty())
 		throw Message(Message::LEVEL_ERROR, "BaseDemoDR55::selectTrajectory(): No solutions");
 
@@ -2803,7 +2803,7 @@ void BaseDemoDR55::selectTrajectory() {
 	to<Data>(dataCurrentPtr)->indexSolution = val.first;
 	const Data::Solution& solution = to<Data>(dataCurrentPtr)->solutions[val.first];
 	createRender();
-	Waypoint::Seq seq;
+	grasp::Waypoint::Seq seq;
 	manipulator->create(solution.path, seq);
 
 	// add trajectory waypoint
@@ -2838,7 +2838,7 @@ void BaseDemoDR55::selectTrajectory() {
 	}
 }
 
-void BaseDemoDR55::performTrajectory(bool testTrajectory) {
+void pacman::BaseDemoDR55::performTrajectory(bool testTrajectory) {
 	grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(queryItemTrj);
 	if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
 		throw Message(Message::LEVEL_ERROR, "BaseDemoDR55::performTrajectory(): Unable to find query trajectory");
@@ -2846,7 +2846,7 @@ void BaseDemoDR55::performTrajectory(bool testTrajectory) {
 	if (!trajectory)
 		throw Message(Message::LEVEL_ERROR, "BaseDemoDR55::performTrajectory(): Trajectory handler does not implement data::Trajectory");
 
-	Controller::State::Seq seqInv = Waypoint::make(trajectory->getWaypoints(), true);
+	Controller::State::Seq seqInv = grasp::Waypoint::make(trajectory->getWaypoints(), true);
 	if (seqInv.size() < 2)
 		throw Message(Message::LEVEL_ERROR, "BaseDemoDR55::performTrajectory(): At least two waypoints required");
 	// reverse
@@ -2855,8 +2855,8 @@ void BaseDemoDR55::performTrajectory(bool testTrajectory) {
 
 	// profile
 	struct ProfileCallback : Profile::CallbackDist {
-		const BaseDemoDR55* demo;
-		ProfileCallback(const BaseDemoDR55* demo) : demo(demo) {}
+		const pacman::BaseDemoDR55* demo;
+		ProfileCallback(const pacman::BaseDemoDR55* demo) : demo(demo) {}
 		Real distConfigspaceCoord(const ConfigspaceCoord& prev, const ConfigspaceCoord& next) const {
 			RBCoord cprev(demo->forwardTransformArm(prev)), cnext(demo->forwardTransformArm(next));
 			return Math::sqrt(demo->poseCovInv.dot(RBDist(cprev, cnext)));
@@ -2905,7 +2905,7 @@ void BaseDemoDR55::performTrajectory(bool testTrajectory) {
 	data::Trajectory* trajectoryIf = is<data::Trajectory>(itemTrajectory.get());
 	if (!trajectoryIf)
 		throw Message(Message::LEVEL_ERROR, "BaseDemoDR55::performTrajectory(): unable to create trajectory using handler %s", getPlanner().trajectoryHandler.c_str());
-	trajectoryIf->setWaypoints(Waypoint::make(completeTrajectory, completeTrajectory));
+	trajectoryIf->setWaypoints(grasp::Waypoint::make(completeTrajectory, completeTrajectory));
 
 	// remove if failed
 	bool finished = false;
@@ -3024,7 +3024,7 @@ void BaseDemoDR55::performTrajectory(bool testTrajectory) {
 
 //------------------------------------------------------------------------------
 
-void BaseDemoDR55::render() const {
+void pacman::BaseDemoDR55::render() const {
 	Player::render();
 
 	modelRenderer.render();
@@ -3033,19 +3033,19 @@ void BaseDemoDR55::render() const {
 
 //------------------------------------------------------------------------------
 
-void golem::XMLData(grasp::BaseDemoDR55::Data::Cluster::Map::value_type& val, golem::XMLContext* xmlcontext, bool create) {
+void golem::XMLData(pacman::BaseDemoDR55::Data::Cluster::Map::value_type& val, golem::XMLContext* xmlcontext, bool create) {
 	golem::XMLData("type", const_cast<std::string&>(val.first), xmlcontext, create);
 	golem::XMLData("slot", val.second.slot, xmlcontext, create);
 }
 
-void golem::XMLData(grasp::BaseDemoDR55::PoseDensity::Map::value_type& val, golem::XMLContext* xmlcontext, bool create) {
+void golem::XMLData(pacman::BaseDemoDR55::PoseDensity::Map::value_type& val, golem::XMLContext* xmlcontext, bool create) {
 	golem::XMLData("id", const_cast<std::string&>(val.first), xmlcontext, create);
 	val.second.load(xmlcontext->getContextFirst("pose", create));
 }
 
 //------------------------------------------------------------------------------
 
-template <> void golem::Stream::read(grasp::BaseDemoDR55::Data::Training::Map::value_type& value) const {
+template <> void golem::Stream::read(pacman::BaseDemoDR55::Data::Training::Map::value_type& value) const {
 	read(const_cast<std::string&>(value.first));
 	read(value.second.state);
 	read(value.second.frame);
@@ -3055,7 +3055,7 @@ template <> void golem::Stream::read(grasp::BaseDemoDR55::Data::Training::Map::v
 	read(value.second.points, value.second.points.begin());
 }
 
-template <> void golem::Stream::write(const grasp::BaseDemoDR55::Data::Training::Map::value_type& value) {
+template <> void golem::Stream::write(const pacman::BaseDemoDR55::Data::Training::Map::value_type& value) {
 	write(value.first);
 	write(value.second.state);
 	write(value.second.frame);
@@ -3063,7 +3063,7 @@ template <> void golem::Stream::write(const grasp::BaseDemoDR55::Data::Training:
 	write(value.second.points.begin(), value.second.points.end());
 }
 
-template <> void golem::Stream::read(grasp::BaseDemoDR55::Data::Density::Seq::value_type& value) const {
+template <> void golem::Stream::read(pacman::BaseDemoDR55::Data::Density::Seq::value_type& value) const {
 	read(value.type);
 	value.object.clear();
 	read(value.object, value.object.begin());
@@ -3078,7 +3078,7 @@ template <> void golem::Stream::read(grasp::BaseDemoDR55::Data::Density::Seq::va
 	read(value.cdf);
 }
 
-template <> void golem::Stream::write(const grasp::BaseDemoDR55::Data::Density::Seq::value_type& value) {
+template <> void golem::Stream::write(const pacman::BaseDemoDR55::Data::Density::Seq::value_type& value) {
 	write(value.type);
 	write(value.object.begin(), value.object.end());
 	write(value.pose.begin(), value.pose.end());
@@ -3089,7 +3089,7 @@ template <> void golem::Stream::write(const grasp::BaseDemoDR55::Data::Density::
 	write(value.cdf);
 }
 
-template <> void golem::Stream::read(grasp::BaseDemoDR55::Data::Solution::Seq::value_type& value) const {
+template <> void golem::Stream::read(pacman::BaseDemoDR55::Data::Solution::Seq::value_type& value) const {
 	read(value.type);
 	read(value.pose);
 	value.path.clear();
@@ -3098,7 +3098,7 @@ template <> void golem::Stream::read(grasp::BaseDemoDR55::Data::Solution::Seq::v
 	read(value.queryIndex);
 }
 
-template <> void golem::Stream::write(const grasp::BaseDemoDR55::Data::Solution::Seq::value_type& value) {
+template <> void golem::Stream::write(const pacman::BaseDemoDR55::Data::Solution::Seq::value_type& value) {
 	write(value.type);
 	write(value.pose);
 	write(value.path.begin(), value.path.end());
@@ -3122,5 +3122,5 @@ template <> void golem::Stream::write(const grasp::Manipulator::Waypoint& value)
 //------------------------------------------------------------------------------
 
 //int main(int argc, char *argv[]) {
-//	return grasp::BaseDemoDR55::Desc().main(argc, argv);
+//	return pacman::BaseDemoDR55::Desc().main(argc, argv);
 //}
