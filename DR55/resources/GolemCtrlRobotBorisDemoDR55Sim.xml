@@ -21,8 +21,11 @@
       <local_pose v1="0.0" v2="+0.12853" v3="0.20722" roll="0.0" pitch="1.308996939" yaw="1.57079633"/>
     </controller>
     <!-- z = 78(kuka end-effector mounting) + 10 (Kuka mounting plate) + 18+3(F/T sensor and Kinect mounting plates) + 33.3(Gamma FT sensor) + 14(approx. Schunk adapter) -->
-    <controller library_path="GolemCtrlPISASoftHandSim" config_path="GolemCtrlPISASoftHandSim" linked_chain_index="6" enable_io="1" sync_begin="1" sync_end="1">
+    <!--<controller library_path="GolemCtrlPISASoftHandSim" config_path="GolemCtrlPISASoftHandSim" linked_chain_index="6" enable_io="1" sync_begin="1" sync_end="1">
       <local_pose v1="0.0" v2="0.0" v3="0.189" roll="0.0" pitch="0.0" yaw="1.57079633"/>
+    </controller>-->
+    <controller library_path="GolemCtrlDLRHitHandIISim" config_path="GolemCtrlDLRHitHandIIBorisL" linked_chain_index="6" enable_io="1" sync_begin="1" sync_end="1">
+      <local_pose v1="0.0" v2="0.0" v3="0.1563" roll="1.57079633" pitch="0.0" yaw="-2.3561944901994329"/>
     </controller>
 
     <controller library_path="GolemCtrlKITHeadSim" config_path="GolemCtrlKITHeadSim" linked_chain_index="-1" enable_io="1" sync_begin="1" sync_end="1">

@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <grasp>
   <data data_name="data.pacmandemo">
     <item cloud=".pcd" handler="PointsCurv+PointsCurv" label="bowllarge-curv-all_views" prefix="-item-bowllarge-curv-all_views-1" time_stamp="0">
