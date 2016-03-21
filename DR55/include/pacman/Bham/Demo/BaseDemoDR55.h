@@ -1,4 +1,4 @@
-/** @file DemoDR55.h
+/** @file BaseDemoDR55.h
 *
 * Object placement demo
 *
@@ -32,8 +32,8 @@ namespace grasp {
 
 //------------------------------------------------------------------------------
 
-/** DemoDR55. */
-class DemoDR55 : public grasp::Player {
+/** BaseDemoDR55. */
+class BaseDemoDR55 : public grasp::Player {
 public:
 	/** Model/Query any identifier */
 	static const std::string ID_ANY;
@@ -259,8 +259,8 @@ public:
 		virtual void createRender();
 
 	protected:
-		/** DemoDR55 */
-		DemoDR55* owner;
+		/** BaseDemoDR55 */
+		BaseDemoDR55* owner;
 
 		/** Load from xml context */
 		virtual void load(const std::string& prefix, const golem::XMLContext* xmlcontext, const grasp::data::Handler::Map& handlerMap);
@@ -352,7 +352,7 @@ public:
 		void load(const golem::XMLContext* xmlcontext);
 	};
 
-	/** DemoDR55 description */
+	/** BaseDemoDR55 description */
 	class Desc : public grasp::Player::Desc {
 	public:
 		/** Data bundle default name */
@@ -621,7 +621,7 @@ public:
 		virtual void load(golem::Context& context, const golem::XMLContext* xmlcontext);
 
 	protected:
-		GRASP_CREATE_FROM_OBJECT_DESC1(DemoDR55, golem::Object::Ptr, golem::Scene&)
+		GRASP_CREATE_FROM_OBJECT_DESC1(BaseDemoDR55, golem::Object::Ptr, golem::Scene&)
 	};
 
 protected:
@@ -824,8 +824,8 @@ protected:
 
 	virtual void create(const Desc& desc);
 
-	DemoDR55(golem::Scene &scene);
-	virtual ~DemoDR55();
+	BaseDemoDR55(golem::Scene &scene);
+	virtual ~BaseDemoDR55();
 };
 
 //------------------------------------------------------------------------------
@@ -835,18 +835,18 @@ protected:
 //------------------------------------------------------------------------------
 
 namespace golem {
-	void XMLData(grasp::DemoDR55::Data::Cluster::Map::value_type& val, golem::XMLContext* context, bool create = false);
+	void XMLData(grasp::BaseDemoDR55::Data::Cluster::Map::value_type& val, golem::XMLContext* context, bool create = false);
 
-	void XMLData(grasp::DemoDR55::PoseDensity::Map::value_type& val, golem::XMLContext* context, bool create = false);
+	void XMLData(grasp::BaseDemoDR55::PoseDensity::Map::value_type& val, golem::XMLContext* context, bool create = false);
 
-	template <> void Stream::read(grasp::DemoDR55::Data::Training::Map::value_type& value) const;
-	template <> void Stream::write(const grasp::DemoDR55::Data::Training::Map::value_type& value);
+	template <> void Stream::read(grasp::BaseDemoDR55::Data::Training::Map::value_type& value) const;
+	template <> void Stream::write(const grasp::BaseDemoDR55::Data::Training::Map::value_type& value);
 
-	template <> void Stream::read(grasp::DemoDR55::Data::Density::Seq::value_type& value) const;
-	template <> void Stream::write(const grasp::DemoDR55::Data::Density::Seq::value_type& value);
+	template <> void Stream::read(grasp::BaseDemoDR55::Data::Density::Seq::value_type& value) const;
+	template <> void Stream::write(const grasp::BaseDemoDR55::Data::Density::Seq::value_type& value);
 
-	template <> void Stream::read(grasp::DemoDR55::Data::Solution::Seq::value_type& value) const;
-	template <> void Stream::write(const grasp::DemoDR55::Data::Solution::Seq::value_type& value);
+	template <> void Stream::read(grasp::BaseDemoDR55::Data::Solution::Seq::value_type& value) const;
+	template <> void Stream::write(const grasp::BaseDemoDR55::Data::Solution::Seq::value_type& value);
 
 	template <> void Stream::read(grasp::Manipulator::Waypoint& value) const;
 	template <> void Stream::write(const grasp::Manipulator::Waypoint& value);

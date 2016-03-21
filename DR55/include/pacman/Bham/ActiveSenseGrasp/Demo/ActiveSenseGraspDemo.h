@@ -124,22 +124,22 @@ public:
 
     void showRecordingState();
 
-    grasp::Camera* getWristCamera(const bool dontThrow = false) const;
-    golem::Mat34 getWristPose() const;
-    golem::Controller::State::Seq getTrajectoryFromPose(const golem::Mat34& w, const golem::SecTmReal duration);
-    grasp::ConfigMat34 getConfigFromPose(const golem::Mat34& w);
-    golem::Controller::State lookupStateArmCommandHand() const;
+    //grasp::Camera* getWristCamera(const bool dontThrow = false) const;
+    //golem::Mat34 getWristPose() const;
+    //golem::Controller::State::Seq getTrajectoryFromPose(const golem::Mat34& w, const golem::SecTmReal duration);
+    //grasp::ConfigMat34 getConfigFromPose(const golem::Mat34& w);
+    //golem::Controller::State lookupStateArmCommandHand() const;
 
     void setHandConfig(golem::Controller::State::Seq& trajectory, const golem::Controller::State cmdHand);
-    void setHandConfig(golem::Controller::State::Seq& trajectory, const grasp::ConfigMat34& handPose);
-    void gotoWristPose(const golem::Mat34& w, const golem::SecTmReal duration = golem::SEC_TM_REAL_ZERO);
+    //void setHandConfig(golem::Controller::State::Seq& trajectory, const grasp::ConfigMat34& handPose);
+    //void gotoWristPose(const golem::Mat34& w, const golem::SecTmReal duration = golem::SEC_TM_REAL_ZERO);
     void gotoPose2(const grasp::ConfigMat34& pose, const golem::SecTmReal duration, const bool ignoreHand = false);
-    void releaseHand(const double openFraction, const golem::SecTmReal duration);
+    //void releaseHand(const double openFraction, const golem::SecTmReal duration);
     void releaseHand2(const double openFraction, const golem::SecTmReal duration, const golem::Controller::State partReleaseConfig);
-    void closeHand(const double closeFraction, const golem::SecTmReal duration);
+    //void closeHand(const double closeFraction, const golem::SecTmReal duration);
 
-    void nudgeWrist();
-    void rotateObjectInHand();
+    //void nudgeWrist();
+    //void rotateObjectInHand();
 
     void executeDropOff();
 
