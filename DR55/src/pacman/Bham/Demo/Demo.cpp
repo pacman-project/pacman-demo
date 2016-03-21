@@ -523,12 +523,12 @@ void DemoDR55::Desc::load(golem::Context& context, const golem::XMLContext* xmlc
 
 //------------------------------------------------------------------------------
 
-grasp::DemoDR55::DemoDR55(Scene &scene) :
+DemoDR55::DemoDR55(Scene &scene) :
 Player(scene),
 modelCamera(nullptr), queryCamera(nullptr), modelHandler(nullptr), modelHandlerTrj(nullptr), queryHandler(nullptr), queryHandlerTrj(nullptr), graspSensorForce(nullptr), objectCamera(nullptr), objectHandlerScan(nullptr), objectHandler(nullptr)
 {}
 
-grasp::DemoDR55::~DemoDR55() {
+DemoDR55::~DemoDR55() {
 }
 
 //------------------------------------------------------------------------------
@@ -2103,7 +2103,7 @@ void grasp::DemoDR55::create(const Desc& desc) {
 
 //------------------------------------------------------------------------------
 
-grasp::data::Item::Map::iterator grasp::DemoDR55::estimatePose(Data::Mode mode, std::string &itemName) {
+grasp::data::Item::Map::iterator DemoDR55::estimatePose(Data::Mode mode, std::string &itemName) {
 	grasp::data::Handler* handler = mode != Data::MODE_MODEL ? queryHandler : modelHandler;
 
 	grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(itemName);
@@ -2148,7 +2148,7 @@ grasp::data::Item::Map::iterator grasp::DemoDR55::estimatePose(Data::Mode mode, 
 	return ptr;
 }
 
-grasp::data::Item::Map::iterator grasp::DemoDR55::objectCapture(const Data::Mode mode, std::string &itemName) {
+grasp::data::Item::Map::iterator DemoDR55::objectCapture(const Data::Mode mode, std::string &itemName) {
 	//	std::string& itemName = mode == Data::MODE_DEFAULT ? objectItem : mode != Data::MODE_MODEL ? queryItem : modelItem;
 	const std::string itemNameRaw = itemName + "_raw";
 	grasp::data::Handler* handler = mode == Data::MODE_DEFAULT ? objectHandler : mode != Data::MODE_MODEL ? queryHandler : modelHandler;
@@ -2227,7 +2227,7 @@ grasp::data::Item::Map::iterator grasp::DemoDR55::objectCapture(const Data::Mode
 
 //------------------------------------------------------------------------------
 
-grasp::data::Item::Map::iterator grasp::DemoDR55::estimatePose(Data::Mode mode) {
+grasp::data::Item::Map::iterator DemoDR55::estimatePose(Data::Mode mode) {
 	if (mode != Data::MODE_MODEL && (to<Data>(dataCurrentPtr)->modelVertices.empty() || to<Data>(dataCurrentPtr)->modelTriangles.empty()))
 		throw Cancel("Model has not been estimated");
 
@@ -2326,7 +2326,7 @@ grasp::data::Item::Map::iterator grasp::DemoDR55::estimatePose(Data::Mode mode) 
 // full hand grasp, fingers spread out; thumb in centre
 // 4. move through scan poses and capture object, add as objectScan
 // return ptr to Item
-grasp::data::Item::Map::iterator grasp::DemoDR55::objectGraspAndCapture(const bool stopAtBreakPoint)
+grasp::data::Item::Map::iterator DemoDR55::objectGraspAndCapture(const bool stopAtBreakPoint)
 {
 	const auto breakPoint = [=](const char* str) {
 		if (stopAtBreakPoint) {
@@ -2392,7 +2392,7 @@ grasp::data::Item::Map::iterator grasp::DemoDR55::objectGraspAndCapture(const bo
 //------------------------------------------------------------------------------
 
 // Process object image and add to data bundle
-grasp::data::Item::Map::iterator grasp::DemoDR55::objectProcess(grasp::data::Item::Map::iterator ptr) {
+grasp::data::Item::Map::iterator DemoDR55::objectProcess(grasp::data::Item::Map::iterator ptr) {
 	// generate features
 	data::Transform* transform = is<data::Transform>(objectHandler);
 	if (!transform)
@@ -2413,13 +2413,13 @@ grasp::data::Item::Map::iterator grasp::DemoDR55::objectProcess(grasp::data::Ite
 
 //------------------------------------------------------------------------------
 
-std::string grasp::DemoDR55::getTrajectoryName(const std::string& prefix, const std::string& type) const {
+std::string DemoDR55::getTrajectoryName(const std::string& prefix, const std::string& type) const {
 	return prefix + dataDesc->sepName + type;
 }
 
 //------------------------------------------------------------------------------
 
-void grasp::DemoDR55::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& frame, const Data::Cluster::Counter* clusterCounter) {
+void DemoDR55::createQuery(grasp::data::Item::Ptr item, const golem::Mat34& frame, const Data::Cluster::Counter* clusterCounter) {
 	// Features
 	const data::Feature3D* features = is<data::Feature3D>(item.get());
 	if (!features)
@@ -2599,7 +2599,7 @@ void grasp::DemoDR55::createQuery(grasp::data::Item::Ptr item, const golem::Mat3
 		throw Message(Message::LEVEL_ERROR, "DemoDR55::createQuery(): Unable to normalise query distributions");
 }
 
-void grasp::DemoDR55::generateSolutions() {
+void DemoDR55::generateSolutions() {
 	// training data are required
 	if (to<Data>(dataCurrentPtr)->densities.empty())
 		throw Message(Message::LEVEL_ERROR, "DemoDR55::generateSolutions(): No query densities");
@@ -2772,7 +2772,7 @@ void grasp::DemoDR55::sortSolutions(Data::Solution::Seq& seq) const {
 	seq = seqSorted;
 }
 
-void grasp::DemoDR55::selectTrajectory() {
+void DemoDR55::selectTrajectory() {
 	if (to<Data>(dataCurrentPtr)->solutions.empty())
 		throw Message(Message::LEVEL_ERROR, "DemoDR55::selectTrajectory(): No solutions");
 
@@ -2838,7 +2838,7 @@ void grasp::DemoDR55::selectTrajectory() {
 	}
 }
 
-void grasp::DemoDR55::performTrajectory(bool testTrajectory) {
+void DemoDR55::performTrajectory(bool testTrajectory) {
 	grasp::data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(queryItemTrj);
 	if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
 		throw Message(Message::LEVEL_ERROR, "DemoDR55::performTrajectory(): Unable to find query trajectory");
@@ -3024,7 +3024,7 @@ void grasp::DemoDR55::performTrajectory(bool testTrajectory) {
 
 //------------------------------------------------------------------------------
 
-void grasp::DemoDR55::render() const {
+void DemoDR55::render() const {
 	Player::render();
 
 	modelRenderer.render();

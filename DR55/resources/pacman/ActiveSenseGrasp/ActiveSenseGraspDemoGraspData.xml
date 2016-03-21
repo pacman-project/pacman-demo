@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<grasp>
+  <data>
+    <item data_index="0" handler="ContactModel+ActiveSenseGraspDataContactModel" label="model" model=".model" prefix="-item-model-1"></item>
+  </data>
+</grasp>
