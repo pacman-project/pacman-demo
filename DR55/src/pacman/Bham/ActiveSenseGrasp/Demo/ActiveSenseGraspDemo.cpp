@@ -305,7 +305,7 @@ void ActiveSenseDemo::setMenus() {
             }
         };
         //Filter by ContactModel+ContactModel, HandlerID
-        filter(dataCurrentPtr->second->itemMap, "ContactModel+ActiveSenseGraspDataContactModel", contactModelMap);
+        filter(dataCurrentPtr->second->itemMap, activeSense->getParameters().contactHandler, contactModelMap);
         itemContactModelPtr = contactModelMap.begin();
         select(
                     itemContactModelPtr,

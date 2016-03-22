@@ -140,6 +140,7 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 	golem::XMLData("image_handler", this->imageHandler, pxmlcontext->getContextFirst("handler_map"));
 	golem::XMLData("image_handler_no_crop", this->imageHandlerNoCrop, pxmlcontext->getContextFirst("handler_map"));
 	golem::XMLData("point_curv_handler", this->pointCurvHandler, pxmlcontext->getContextFirst("handler_map"));
+	golem::XMLData("trajectory_handler", this->trajectoryHandler, pxmlcontext->getContextFirst("handler_map"));
 
     CoverageMethodMap coverageMethodMap = getCoverageMethodMap();
     StoppingCriteriaMap stoppingCriteriaMap = getStoppingCriteriaMap();
@@ -2597,7 +2598,7 @@ grasp::data::Item::Map::iterator ActiveSense::convertToTrajectory(grasp::data::I
 
 
     // pick up handler
-    data::Handler::Map::iterator handlerPtr = demoOwner->handlerMap.find("Trajectory+ActiveSenseGraspDataTrajectory");//("Trajectory+TrajectoryActiveSense");
+    data::Handler::Map::iterator handlerPtr = demoOwner->handlerMap.find(this->params.trajectoryHandler);
     if (handlerPtr == demoOwner->handlerMap.end())
         throw Message(Message::LEVEL_ERROR, "ActiveSense::convertToTrajectory: Trajectory+TrajectoryActiveSense not in handler map");
 

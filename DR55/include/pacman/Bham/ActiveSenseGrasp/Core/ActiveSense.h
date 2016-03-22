@@ -183,7 +183,7 @@ namespace pacman {
             golem::Real coverageThr, entropyThr;
 
             bool useSimCam;
-			std::string contactHandler, queryHandler, imageHandler, imageHandlerNoCrop, pointCurvHandler;
+			std::string contactHandler, queryHandler, imageHandler, imageHandlerNoCrop, pointCurvHandler, trajectoryHandler;
 
 
 			/** Configuration sequence */
@@ -228,6 +228,7 @@ namespace pacman {
 				this->imageHandler = "Image+ActiveSenseGraspDataImage";
 				this->imageHandlerNoCrop = "Image+ActiveSenseGraspDataImageNoCrop";
 				this->pointCurvHandler = "PointsCurv+ActiveSenseGraspDataPointsCurv";
+				this->trajectoryHandler = "Trajectory+TrajectoryActiveSense";
 
 				configSeq.clear();
 
