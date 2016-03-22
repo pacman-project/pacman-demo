@@ -107,25 +107,25 @@ SET(PACMAN_ACTIVE_SENSE_GRASP_DEMO_HEADERS
 		#${PROJECT_ROOT}/include/pacman/Bham/Demo/Demo.h
 )
 SET(PACMAN_ACTIVE_SENSE_GRASP_DEMO_FILES
-        ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataPointsCurv.xml
-        ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataContactQuery.xml
-        ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataContactModel.xml
-        ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataTrajectory.xml
-        ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDemoGraspData.xml
-        ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDemoGraspData-item-model-1.model
-        ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDemo_RobotBoris.xml
-        ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDemo_RobotBorisSim.xml
-        ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDemo_RobotBorisRealRobot.xml
-        ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspCameraOpenNI.xml
-        ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspCameraOpenNI.cal
-        ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspCameraDepthSim.xml
-        ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspCameraDepthSim.cal
-        ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspCameraPointGrey.xml
-        ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspCameraPointGrey.cal
-        ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataImage.xml
+        # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataPointsCurv.xml
+        # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataContactQuery.xml
+        # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataContactModel.xml
+        # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataTrajectory.xml
+        # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDemoGraspData.xml
+        # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDemoGraspData-item-model-1.model
+        # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDemo_RobotBoris.xml
+        # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDemo_RobotBorisSim.xml
+        # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDemo_RobotBorisRealRobot.xml
+        # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspCameraOpenNI.xml
+        # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspCameraOpenNI.cal
+        # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspCameraDepthSim.xml
+        # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspCameraDepthSim.cal
+        # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspCameraPointGrey.xml
+        # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspCameraPointGrey.cal
+        # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataImage.xml
         ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataImageNoCrop.xml
-        ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/GolemDeviceRobotBorisTactileSim.xml
-		${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDemo_RobotBorisDepthSim.xml
+        # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/GolemDeviceRobotBorisTactileSim.xml
+		# ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDemo_RobotBorisDepthSim.xml
 )
 
 ADD_LIBRARY(${DEMO_NAME} ${PACMAN_ACTIVE_SENSE_GRASP_DEMO_SOURCES} ${PACMAN_ACTIVE_SENSE_GRASP_DEMO_HEADERS} ${PACMAN_ACTIVE_SENSE_GRASP_DEMO_FILES})
