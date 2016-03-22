@@ -13,8 +13,8 @@
 */
 
 #pragma once
-#ifndef _GRASP_DEMO_DR55_PLACEMENT_H_ // if #pragma once is not supported
-#define _GRASP_DEMO_DR55_PLACEMENT_H_
+#ifndef _PACMAN_BASE_DEMO_DR55_PLACEMENT_H_ // if #pragma once is not supported
+#define _PACMAN_BASE_DEMO_DR55_PLACEMENT_H_
 
 #include <Grasp/App/Player/Player.h>
 #include <Grasp/Contact/Model.h>
@@ -854,4 +854,4 @@ namespace golem {
 
 //------------------------------------------------------------------------------
 
-#endif // _GRASP_DEMO_DR55_PLACEMENT_H_
+#endif // _PACMAN_BASE_DEMO_DR55_PLACEMENT_H_

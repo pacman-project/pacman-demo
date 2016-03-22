@@ -13,8 +13,8 @@
  */
 
 #pragma once
-#ifndef _GRASP_DEMO_GRASP_H_ // if #pragma once is not supported
-#define _GRASP_DEMO_GRASP_H_
+#ifndef _PACMAN_DEMO_GRASP_H_ // if #pragma once is not supported
+#define _PACMAN_DEMO_GRASP_H_
 
 #include "pacman/Bham/ActiveSenseGrasp/Demo/ActiveSenseGraspDemo.h"
 
@@ -73,4 +73,4 @@ protected:
 
 };
 
-#endif // _GRASP_DEMO_GRASP_H_
+#endif // _PACMAN_DEMO_GRASP_H_

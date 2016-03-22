@@ -19,7 +19,7 @@
 
 #include <Grasp/Data/Trajectory/Trajectory.h>
 
-/** Grasp name space */
+/** Pacman name space */
 namespace pacman {
 
 //------------------------------------------------------------------------------
