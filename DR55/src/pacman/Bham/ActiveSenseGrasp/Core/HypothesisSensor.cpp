@@ -180,7 +180,7 @@ pacman::PinholeCamera::PinholeCamera(){
     this->f = 2;
 
     this->setFrustum(l,r,b,t,n,f);
-    cv::namedWindow("View");
+    //cv::namedWindow("View");
 
 }
 
