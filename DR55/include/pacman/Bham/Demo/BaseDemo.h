@@ -805,14 +805,14 @@ protected:
 		return likelihood;
 	}
 
-	grasp::Camera* getWristCamera(const bool dontThrow = false) const;
-	golem::Mat34 getWristPose() const;
+	grasp::Camera* getWristCamera(const bool dontThrow = false, const std::string& sensorId = "OpenNI+OpenNI") const;
+	golem::Mat34 getWristPose(golem::U32 wristJoint = 6) const;
 	golem::Controller::State::Seq getTrajectoryFromPose(const golem::Mat34& w, const golem::SecTmReal duration);
 	grasp::ConfigMat34 getConfigFromPose(const golem::Mat34& w);
 	golem::Controller::State lookupStateArmCommandHand() const;
 
 	void setHandConfig(golem::Controller::State::Seq& trajectory, const grasp::ConfigMat34& handPose);
-	void gotoWristPose(const golem::Mat34& w, const golem::SecTmReal duration = golem::SEC_TM_REAL_ZERO);
+	void gotoWristPose(const golem::Mat34& w, golem::U32 plannerIdx = 0, const golem::SecTmReal duration = golem::SEC_TM_REAL_ZERO);
 	void gotoPose2(const grasp::ConfigMat34& pose, const golem::SecTmReal duration);
 	void releaseHand(const double openFraction, const golem::SecTmReal duration);
 	void closeHand(const double closeFraction, const golem::SecTmReal duration);

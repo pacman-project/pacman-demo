@@ -533,10 +533,10 @@ pacman::BaseDemoDR55::~BaseDemoDR55() {
 
 //------------------------------------------------------------------------------
 
-grasp::Camera* pacman::BaseDemoDR55::getWristCamera(const bool dontThrow) const
+grasp::Camera* pacman::BaseDemoDR55::getWristCamera(const bool dontThrow, const std::string& sensorId) const
 {
-	const std::string id("OpenNI+OpenNI");
-	grasp::Sensor::Map::const_iterator i = sensorMap.find(id);
+	const std::string id = sensorId; //("OpenNI+OpenNI");
+	grasp::Sensor::Map::const_iterator i = sensorMap.find(sensorId);
 	if (i == sensorMap.end())
 	{
 		if (dontThrow) return nullptr;
@@ -557,9 +557,9 @@ grasp::Camera* pacman::BaseDemoDR55::getWristCamera(const bool dontThrow) const
 	return camera;
 }
 
-golem::Mat34 pacman::BaseDemoDR55::getWristPose() const
+golem::Mat34 pacman::BaseDemoDR55::getWristPose(golem::U32 wristJoint) const
 {
-	const golem::U32 wristJoint = 6; // @@@
+	//const golem::U32 wristJoint = 6; // @@@
 	grasp::ConfigMat34 pose;
 	getPose(wristJoint, pose);
 	return pose.w;
@@ -612,8 +612,12 @@ void pacman::BaseDemoDR55::setHandConfig(Controller::State::Seq& trajectory, con
 	}
 }
 
-void pacman::BaseDemoDR55::gotoWristPose(const golem::Mat34& w, const SecTmReal duration)
+void pacman::BaseDemoDR55::gotoWristPose(const golem::Mat34& w, golem::U32 plannerIdx, const SecTmReal duration)
 {
+	const golem::U32 currentPlannerIndex = plannerIndex;
+	plannerIndex = plannerIdx;
+	ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
+
 	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w, duration);
 	sendTrajectory(trajectory);
 	controller->waitForEnd();
@@ -1931,6 +1935,8 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 
 	menuCmdMap.insert(std::make_pair("ZP", [=]() {
 		context.write("create arm configs for a set of camera frames\n");
+		golem::U32 plannerIdx = 0;
+		golem::U32 wristJoint = 34;
 		double theta(50), phi1(-180), phi2(160), phiStep(20), R(0.45), cx(0.45), cy(-0.45), cz(-0.30);
 		readNumber("theta ", theta);
 		readNumber("phi1 ", phi1);
@@ -1940,6 +1946,15 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 		readNumber("cx ", cx);
 		readNumber("cy ", cy);
 		readNumber("cz ", cz);
+		readNumber("Planner Index ", plannerIdx);
+		readNumber("Wrist Joint", wristJoint);
+
+		Sensor::Map::iterator sensorPtr;
+		select(sensorPtr, sensorMap.begin(), sensorMap.end(), "Select Sensor:\n", [](Sensor::Map::const_iterator ptr) -> const std::string&{
+			return ptr->second->getID();
+		});
+
+		//context.debug("%s\n", sensorPtr->second->getID().c_str());
 
 		// create a set of poses at co-latitude theta, from phi1 to phi2 (step phiStep)
 		// looking at (cx,cy,cz) at a distance R
@@ -1951,6 +1966,7 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 		const double degToRad = golem::REAL_PI / 180.0;
 		const double sintheta = sin(theta * degToRad);
 		const double costheta = cos(theta * degToRad);
+		int k = 0;
 		for (double phi = phi1; phi <= phi2; phi += phiStep)
 		{
 			const double sinphi = sin(phi * degToRad);
@@ -1977,18 +1993,21 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 			Mat34 trn(
 				Mat33(-0.015082, -0.0709979, 0.997362, 0.999767, 0.0143117, 0.0161371, -0.0154197, 0.997374, 0.0707655),
 				Vec3(0.0920632, -0.0388034, 0.161098));
-			grasp::Camera* camera = getWristCamera(true);
+			grasp::Camera* camera = getWristCamera(true, sensorPtr->second->getID());
 			if (camera != nullptr)
-				trn = getWristCamera()->getCurrentCalibration()->getParameters().pose;
+				trn = getWristCamera(false, sensorPtr->second->getID())->getCurrentCalibration()->getParameters().pose;
 
 			Mat34 invTrn;
 			invTrn.setInverse(trn);
 			wristPose = cameraFrame * invTrn;
 			// get config from wrist pose, by executing trajectory from current pose!!!
-			gotoWristPose(wristPose);
+			gotoWristPose(wristPose, plannerIdx);
 			grasp::ConfigMat34 cfg;
 			getPose(0, cfg);
 			configs.push_back(cfg);
+			if (k >= 5)
+				break;
+			k++;
 		}
 
 		// write out configs in xml format to file
