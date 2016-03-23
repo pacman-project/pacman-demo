@@ -61,6 +61,15 @@ ENDIF(${ACTIVE_SENSE_FOUND})
 INCLUDE_DIRECTORIES(
     ${ACTIVE_SENSE_INCLUDE_DIRS} 
     )
+
+LINK_DIRECTORIES(${ACTIVE_SENSE_LIBRARY_DIRS})
+SET(ACTIVE_SENSE_LIBRARIES 
+  optimized ${ACTIVE_AO_SENSE_LIBRARY}
+  debug ${ACTIVE_AO_SENSE_LIBRARY_DEBUG}
+  optimized ${ACTIVE_AS_SENSE_LIBRARY}
+  debug ${ACTIVE_AS_SENSE_LIBRARY_DEBUG}
+)
+
 	
 #################################################################################
 # 
@@ -76,6 +85,14 @@ add_definitions(-DOCTOMAP_NODEBUGOUT)
 INCLUDE_DIRECTORIES(
     ${OCTOMAP_INCLUDE_DIRS}
     )
+	
+LINK_DIRECTORIES(${OCTOMAP_LIBRARY_DIRS})
+SET(OCTOMAP_LIBRARIES 
+  optimized octomap${CMAKE_RELEASE_POSTFIX}
+  debug octomap${CMAKE_DEBUG_POSTFIX} 
+  optimized octomath${CMAKE_RELEASE_POSTFIX}
+  debug octomath${CMAKE_DEBUG_POSTFIX} 
+)
 
 #################################################################################
 # ActiveSenseGraspCore
