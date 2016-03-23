@@ -2620,6 +2620,9 @@ grasp::data::Item::Map::iterator ActiveSense::computeFeedBackTransform(grasp::da
     grasp::data::Item::List list;
     list.push_back(contactModelItem);
     list.push_back(pointCurvItem);
+	grasp::data::Item::Map::iterator contactModelNew;
+
+	try{
 
     demoOwner->context.debug("ActiveSense: Computing FeedBackQuery!\n");
     //Transforms contactModel and pointCurv into a predictorQuery item
@@ -2629,8 +2632,12 @@ grasp::data::Item::Map::iterator ActiveSense::computeFeedBackTransform(grasp::da
     //Setting current contactQuery
     this->setcontactQueryItem(contactQuery);
 
-    grasp::data::Item::Map::iterator contactModelNew = computeContactModelFeedBack(contactQuery, pointCurvItem);
-
+     contactModelNew = computeContactModelFeedBack(contactQuery, pointCurvItem);
+	
+	}
+	catch (const std::exception& m) {
+		throw golem::Message("%s", m.what());
+	}
     //list.push_back(contactModelItem);
     //this->removeItems(list);
 

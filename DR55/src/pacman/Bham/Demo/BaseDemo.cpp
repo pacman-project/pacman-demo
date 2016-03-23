@@ -1966,7 +1966,7 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 		const double degToRad = golem::REAL_PI / 180.0;
 		const double sintheta = sin(theta * degToRad);
 		const double costheta = cos(theta * degToRad);
-		int k = 0;
+
 		for (double phi = phi1; phi <= phi2; phi += phiStep)
 		{
 			const double sinphi = sin(phi * degToRad);
@@ -2005,9 +2005,7 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 			grasp::ConfigMat34 cfg;
 			getPose(0, cfg);
 			configs.push_back(cfg);
-			if (k >= 5)
-				break;
-			k++;
+			
 		}
 
 		// write out configs in xml format to file

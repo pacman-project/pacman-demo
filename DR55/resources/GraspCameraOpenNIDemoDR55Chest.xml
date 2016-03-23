@@ -12,7 +12,7 @@
 
     <!--<colourToIRFrame m11="0.999949" m12="-0.00521185" m13="0.00871455" m21="0.00539663" m22="0.999758" m23="-0.0213255" m31="-0.0086017" m32="0.0213712" m33="0.999734" v1="-0.0258528" v2="0" v3="0"></colourToIRFrame>-->
 
-    <handler snapshot="Image+ImageDemoDR55" sequence="Video+Video"/>
+    <handler snapshot="Image+ImageDemoDR55LeftArm" sequence="Video+Video"/>
     
     <calibration file="GraspCameraOpenNIDemoDR55Chest.cal" use_deformation_map="1">
       <optimisation minimum="1" population_size="200" generations_num="1000000000" de_diff_fac="0.5" de_cross_prob="0.25" test_generations="1000" test_pairs="100" test_variance="1e-9" num_of_threads="-1" thread_priority="lowest">
