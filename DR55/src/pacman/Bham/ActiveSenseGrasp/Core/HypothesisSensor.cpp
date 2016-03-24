@@ -47,12 +47,13 @@ void pacman::HypothesisSensor::Desc::load(golem::Context& context, const golem::
 }
 
 //------------------------------------------------------------------------------
-pacman::HypothesisSensor::HypothesisSensor(HypothesisSensor::Config config, golem::RGBA shapeColour) : config(config.c, config.w), visited(false) {
+pacman::HypothesisSensor::HypothesisSensor(HypothesisSensor::Config config, golem::RGBA shapeColour, int plannerIdx) : config(config.c, config.w), visited(false) {
 
 
     pacman::HypothesisSensor::Desc desc;
     // value
     this->value = 0;
+	this->plannerIdx = plannerIdx;
 
     //Appearance of the Hypothesis Sensor
     desc.appearance.frameSize.set(0.05, 0.05, 0.05);

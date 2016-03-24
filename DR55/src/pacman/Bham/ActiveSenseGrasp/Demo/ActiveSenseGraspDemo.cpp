@@ -381,6 +381,79 @@ void ActiveSenseDemo::setMenus() {
 
     }));
 
+	menuCmdMap.insert(std::make_pair("CX", [=]()
+	{
+
+		grasp::data::Item::Map contactModelMap;
+		grasp::data::Item::Map::iterator itemContactModelPtr;
+
+		auto filter = [&](const grasp::data::Item::Map& itemMap, const std::string& filterID, grasp::data::Item::Map& outMap) {
+			for (grasp::data::Item::Map::const_iterator it = itemMap.begin(); it != itemMap.end(); it++)
+			{
+				if (it->second->getHandler().getID().compare(filterID) == 0)
+				{
+					outMap.insert(*it);
+				}
+			}
+		};
+		//Filter by ContactModel+ContactModel, HandlerID
+		filter(dataCurrentPtr->second->itemMap, activeSense->getParameters().contactHandler, contactModelMap);
+		itemContactModelPtr = contactModelMap.begin();
+		select(
+			itemContactModelPtr,
+			contactModelMap.begin(),
+			contactModelMap.end(),
+			"Select contactModel:\n",
+			[](grasp::data::Item::Map::iterator ptr) -> std::string{ return ptr->first + ": " + ptr->second->getHandler().getID(); });
+
+		activeSense->setContactModelItem(itemContactModelPtr);
+
+
+
+		activeSense->resetNextBestViewSequential(); // always start from first fixed pose when using sequential selection method
+
+		const int k = option("YN", "Enable user input during execution (Y/N)?");
+		activeSense->setAllowInput(k == 'Y');
+
+		if (!recordingActive())
+		{
+			const int k = option("YN", "Start video recording (Y/N)?");
+			if (k == 'Y')
+			{
+				recordingStart(dataCurrentPtr->first, "ActiveSense-Demo" + this->activeSense->experiment_alias, true);
+				recordingWaitToStart();
+			}
+		}
+
+		showRecordingState();
+
+		if (!activeSense->getParameters().configSeq.empty())
+		{
+			const int k = option("CF", "For the first view, use (C)urrent camera pose, or first (F)ixed pose?");
+			if (k == 'F')
+			{
+				context.debug("ActiveSense: Demo: moving to first fixed NBV pose\n");
+				const grasp::ConfigMat34& pose = activeSense->getParameters().configSeq.front();
+				gotoPoseConfig(pose);
+				// then throw this pose away if using sequential selection method
+				if (activeSense->getParameters().selectionMethod == ActiveSense::ESelectionMethod::S_SEQUENTIAL)
+					activeSense->incrNextBestViewSequential();
+			}
+		}
+
+
+		activeSense->collectData();
+
+		//option("Y", "Pause");
+
+		//activeSense->safetyExploration();
+
+
+		context.write(">>>>>>>> ActiveSense Demo Finished! <<<<<<<<\n");
+
+	}));
+
+
     menuCmdMap.insert(std::make_pair("CSW", [&]() {
 
         this->activeSense->getOnlineModel2().showWorkpaceTree = !this->activeSense->getOnlineModel2().showWorkpaceTree;
