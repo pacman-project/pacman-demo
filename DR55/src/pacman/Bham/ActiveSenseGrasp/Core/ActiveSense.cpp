@@ -2830,7 +2830,7 @@ void pacman::ActiveSense::executeTrajectory2()
 
 	// select collision object
 	CollisionBounds::Ptr collisionBounds = this->selectCollisionBounds(true, this->result.pointCurvs.back());
-	demoOwner->context.debug("ActiveSense: Performing trajectory! \n");
+	demoOwner->context.debug("ActiveSense: Performing trajectory!\n");
 	// perform
 	this->demoOwner->perform2(this->demoOwner->dataCurrentPtr->first, "TmpTraj", seq);
 
