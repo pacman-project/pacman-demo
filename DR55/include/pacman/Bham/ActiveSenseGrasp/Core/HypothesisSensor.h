@@ -189,7 +189,7 @@ namespace pacman{
 
 	public:
 		/** Constructs the Sensor with default configurations */
-		HypothesisSensor(HypothesisSensor::Config config, golem::RGBA shapeColour = golem::RGBA::CYAN);
+		HypothesisSensor(HypothesisSensor::Config config, golem::RGBA shapeColour = golem::RGBA::CYAN, int plannerIdx = 0);
 
 		/** Set OpenGL view point to *this sensor's frame view point*/
 		void setGLView(golem::Scene& scene);
@@ -205,6 +205,7 @@ namespace pacman{
 
         static int next_id;
         int id;
+		int plannerIdx;
 
         static bool compareHypothesisSensor(HypothesisSensor::Ptr h1, HypothesisSensor::Ptr h2);
 	};
