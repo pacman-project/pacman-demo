@@ -452,7 +452,12 @@ void ActiveSenseDemo::setMenus() {
 		context.write(">>>>>>>> ActiveSense Demo Finished! <<<<<<<<\n");
 
 	}));
+	
+	menuCmdMap.insert(std::make_pair("CZ", [&]() {
 
+		this->graspWithActiveSense();
+
+	}));
 
     menuCmdMap.insert(std::make_pair("CSW", [&]() {
 
@@ -843,6 +848,84 @@ void ActiveSenseDemo::setMenus() {
     // END OF MENUS
 }
 
+void ActiveSenseDemo::graspWithActiveSense(){
+
+	grasp::data::Item::Map contactModelMap;
+	grasp::data::Item::Map::iterator itemContactModelPtr;
+
+	auto filter = [&](const grasp::data::Item::Map& itemMap, const std::string& filterID, grasp::data::Item::Map& outMap) {
+		for (grasp::data::Item::Map::const_iterator it = itemMap.begin(); it != itemMap.end(); it++)
+		{
+			if (it->second->getHandler().getID().compare(filterID) == 0)
+			{
+				outMap.insert(*it);
+			}
+		}
+	};
+	//Filter by ContactModel+ContactModel, HandlerID
+	filter(dataCurrentPtr->second->itemMap, activeSense->getParameters().contactHandler, contactModelMap);
+	itemContactModelPtr = contactModelMap.begin();
+	select(
+		itemContactModelPtr,
+		contactModelMap.begin(),
+		contactModelMap.end(),
+		"Select contactModel:\n",
+		[](grasp::data::Item::Map::iterator ptr) -> std::string{ return ptr->first + ": " + ptr->second->getHandler().getID(); });
+
+	activeSense->setContactModelItem(itemContactModelPtr);
+
+
+
+	activeSense->resetNextBestViewSequential(); // always start from first fixed pose when using sequential selection method
+
+	const int k = option("YN", "Enable user input during execution (Y/N)?");
+	activeSense->setAllowInput(k == 'Y');
+
+	if (!recordingActive())
+	{
+		const int k = option("YN", "Start video recording (Y/N)?");
+		if (k == 'Y')
+		{
+			recordingStart(dataCurrentPtr->first, "ActiveSense-Demo" + this->activeSense->experiment_alias, true);
+			recordingWaitToStart();
+		}
+	}
+
+	showRecordingState();
+
+	if (!activeSense->getParameters().configSeq.empty())
+	{
+		const int k = option("CF", "For the first view, use (C)urrent camera pose, or first (F)ixed pose?");
+		if (k == 'F')
+		{
+			context.debug("ActiveSense: Demo: moving to first fixed NBV pose\n");
+			const grasp::ConfigMat34& pose = activeSense->getParameters().configSeq.front();
+			gotoPoseConfig(pose);
+			// then throw this pose away if using sequential selection method
+			if (activeSense->getParameters().selectionMethod == ActiveSense::ESelectionMethod::S_SEQUENTIAL)
+				activeSense->incrNextBestViewSequential();
+		}
+	}
+
+	activeSense->nextBestView3();
+
+	showRecordingState();
+
+	activeSense->executeTrajectory2();
+
+	if (recordingActive() && option("YN", "Stop recording video? (Y/N)") == 'Y')
+	{
+		recordingStop(golem::SEC_TM_REAL_ZERO);
+		recordingWaitToStop();
+		context.write("\n\n\nNOW SAVE THE DATA BUNDLE!!!\n\n\n");
+	}
+
+
+	if (option("YN", "Open hand? (Y/N)") == 'Y')
+		releaseHand(1.0, 2.0);
+
+	context.write(">>>>>>>> ActiveSense Demo Finished! <<<<<<<<\n");
+}
 /*************************USEFUL FUNCTIONS FOR ACTIVE SENS*******************************************************/
 
 golem::Controller::State ActiveSenseDemo::lookupState() const {
@@ -1190,20 +1273,6 @@ void ActiveSenseDemo::scanPoseActiveSensor(grasp::data::Item::List& scannedImage
             grasp::data::Item::Ptr itemImage = capture->capture(*to<Camera>(sensorCurrentPtr), [&](const grasp::TimeStamp*) -> bool { return true; });
 
             const data::Item::Map::iterator ptr = data->itemMap.insert(data->itemMap.end(), data::Item::Map::value_type(dataItemLabel,itemImage ));
-//           grasp::data::ItemImage* image = grasp::to<grasp::data::ItemImage>(ptr);
-
-//            active_sense::PointCloudNormal::Ptr pc(new active_sense::PointCloudNormal());
-
-//            utils::convert(*image->cloud, *pc);
-//            pcl::ModelCoefficients::Ptr model(new pcl::ModelCoefficients());
-//            pcl::PointIndices::Ptr indices(new pcl::PointIndices());
-//            active_sense::segmentPlane(pc, model, indices);
-
-//            for(int i = 0; i < indices->indices.size(); i++){
-//                grasp::Cloud::setNanXYZ(image->cloud->points[indices->indices[i]]);
-//            }
-
-//            Cloud::nanRem(context, *image->cloud, Cloud::isNanXYZNormal<Cloud::Point>);
 
             Data::View::setItem(data->itemMap, ptr, data->getView());
             scannedImageItems.push_back(ptr);
@@ -1242,25 +1311,6 @@ void ActiveSenseDemo::scanPoseActiveFile(grasp::data::Item::List& scannedImageIt
         golem::CriticalSectionWrapper csw(scene.getCS());
         Data::View::setItem(data->itemMap, item_it, data->getView());
     }
-
-//    grasp::data::Item::List preprocess_list;
-//    preprocess_list.push_back(item_it);
-
-//    auto transformPtr = activeSense->getTransformMap()[pacman::ActiveSense::POINT_CURV];
-
-//    std::string label_out = itemLabel+"Transformed";
-//    grasp::data::Item::Ptr item_out;
-//    try{
-//        item_out = transformPtr.second->transform(preprocess_list);
-//    }
-//    catch(const Message m){
-//        this->context.debug("%s",m.what());
-
-//    }
-
-//    auto item_out_ptr = activeSense->addItem(label_out, item_out);
-    //auto item_out = activeSense->reduce(preprocess_list, );
-
 
     scannedImageItems.push_back(item_it);
 
@@ -1325,6 +1375,7 @@ void ActiveSenseDemo::perform2(const std::string& data, const std::string& item,
         createRender();
         // prompt user
         EnableKeyboardMouse enableKeyboardMouse(*this);
+
         option("\x0D", "Press <Enter> to accept trajectory...");
     }
 

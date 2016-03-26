@@ -1126,65 +1126,6 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 		context.write("Done!\n");
 	}));
 
-	menuCmdMap.insert(std::make_pair("KD", [=]() {
-		// debug mode
-		const bool stopAtBreakPoint = option("YN", "Debug mode (Y/N)...") == 'Y';
-		const auto breakPoint = [=](const char* str) {
-			if (stopAtBreakPoint) {
-				if (option("YN", makeString("%s: Continue (Y/N)...", str).c_str()) != 'Y')
-					throw Cancel("Demo cancelled");
-			}
-			else {
-				context.write("%s\n", str);
-				(void)waitKey(0);
-			}
-		};
-
-		// command keys
-		std::string itemTransCmd("IT");
-		std::string itemConvCmd("IC");
-		std::string dataSaveCmd("DS");
-		std::string itemRemoveCmd("IR");
-
-		// estimate pose
-		if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty()) {
-			breakPoint("Dishwasher pose estimation");
-			estimatePose(Data::MODE_QUERY);
-		}
-
-		context.write("Create a predictive contact model for the grasp [%s]...\n", modelGraspItem.c_str());
-		if (option("YN", "Create a new contact model? (Y/N)") == 'Y') {
-			dataItemLabel = modelGraspItem;
-			executeCmd(itemTransCmd);
-			modelGraspItem = dataItemLabel;
-		}
-		context.write("done.\n");
-
-		// run demo
-		for (;;) {
-			// grasp and scan object
-			breakPoint("Object grasp and point cloud capture");
-			grasp::data::Item::Map::iterator ptr = objectCapture(Data::MODE_QUERY, objectItem);
-
-			// wrist frame
-			const Mat34 frame = forwardTransformArm(grasp::Waypoint::lookup(*controller).state);
-			// create query densities
-			createQuery(ptr->second, frame, &to<Data>(dataCurrentPtr)->clusterCounter);
-			// generate wrist pose solutions
-			generateSolutions();
-			// select best trajectory
-			selectTrajectory();
-
-			breakPoint("Action execution");
-			// execute trajectory
-			performTrajectory(stopAtBreakPoint);
-		}
-		context.write("Done!\n");
-
-	}));
-
-
-
 	// data menu control and commands
 	menuCtrlMap.insert(std::make_pair("P", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
 		desc = "Press a key to: (E)stimate pose, (C)apture object, (M)odel, (Q)uery, (T)rajectory, run (D)emo ...";

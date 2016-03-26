@@ -1246,10 +1246,16 @@ NBV:
 
 	// If we have a new trajectory, we need to check for its safety
 	if (result.trajectories.size()){
-
+		golem::shared_ptr<grasp::Manager::InputBlock> inputBlock;
+		if (!this->allowInput) inputBlock = golem::shared_ptr<grasp::Manager::InputBlock>(new grasp::Manager::InputBlock(*demoOwner));
+		
 		std::vector<std::pair<grasp::data::Item::Ptr, float> > bestTrajectories;
 		data::Trajectory* trajectory = getSafestTrajectoryToDate();//is<data::Trajectory>(result.trajectories.back());
+		inputBlock.release();
+		
 		safetyExploration2(trajectory, scannedImageItems, bestTrajectories);
+		
+
 
 		// Get best trajectory
 		auto best_traj = bestTrajectories.front();
@@ -1670,10 +1676,16 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBase
 
 	int index = 0;
 
+	golem::shared_ptr<grasp::Manager::InputBlock> inputBlock;
+	if (!this->allowInput) inputBlock = golem::shared_ptr<grasp::Manager::InputBlock>(new grasp::Manager::InputBlock(*demoOwner));
+
+
 	data::Trajectory* trajectory = is<data::Trajectory>(this->result.trajectories.back());
 	golem::Controller::State::Seq traj;
 	trajectory->createTrajectory(traj);
 	grasp::Manipulator::Waypoint::Seq path = demoOwner->convertToManipulatorWayPoints(traj);
+
+	inputBlock.release();
 
 
 	Real maxValue(golem::REAL_MIN);//minValue(golem::REAL_MAX);
@@ -2664,8 +2676,13 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::computeContactModelFeedBac
 
 	demoOwner->context.debug("ActiveSense: Computing Trajectory!\n");
 
+	golem::shared_ptr<grasp::Manager::InputBlock> inputBlock;
+	if (!this->allowInput) inputBlock = golem::shared_ptr<grasp::Manager::InputBlock>(new grasp::Manager::InputBlock(*demoOwner));
+
 
 	grasp::data::Item::Map::iterator traj = convertToTrajectory(contactQuery);
+
+	inputBlock.release();
 
 	{
 		Manager::RenderBlock renderBlock(*demoOwner);

@@ -232,7 +232,7 @@ golem::Real Collision::evaluateProb(const grasp::Manipulator::Waypoint::Seq &pat
 
 
     grasp::Manipulator::Config config = manipulator.interpolate(path, hi);
-    demoOwner->getManipulatorAppearance().draw(manipulator, config, demoOwner->getDemoRenderer() );
+    //demoOwner->getManipulatorAppearance().draw(manipulator, config, demoOwner->getDemoRenderer() );
     manipulator.getContext().debug("ProbCollision: %lf interp: %lf\n",(golem::Real(1.0)-golem::Math::exp(eval)), 1.0);
     //cv::waitKey(0);
 
