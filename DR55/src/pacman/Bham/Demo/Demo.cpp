@@ -87,6 +87,13 @@ void DemoDR55::create(const Desc& desc) {
 
 		// run demo
 		for (;;) {
+
+
+			// Grasp with Active Sense and lift the object
+			// Outcome (Exepected state of the robot at the end): 
+			// at the end the object should have grasped and lifted an object 
+			//this->graspWithActiveSense();
+
 			// grasp and scan object
 			breakPoint("Object grasp and point cloud capture");
 			grasp::data::Item::Map::iterator ptr = objectCapture(Data::MODE_QUERY, objectItem);
