@@ -13,7 +13,6 @@
 
 #include "ActiveSense/Core/utils3d.h"
 #include "pacman/Bham/ActiveSenseGrasp/Core/HypothesisSensor.h"
-#include "pacman/Bham/ActiveSenseGrasp/Core/ActiveSenseOM.h"
 #include "pacman/Bham/ActiveSenseGrasp/Core/ActiveSenseOM2.h"
 
 
@@ -64,8 +63,6 @@ namespace pacman {
 		enum ESelectionMethod {
 
 			S_RANDOM,
-			S_CONTACT_BASED,
-			S_CONTACT_BASED2,
             S_CONTACT_BASED3,
             S_INFORMATION_GAIN,
 			S_SEQUENTIAL,
@@ -102,8 +99,6 @@ namespace pacman {
                 SelectionMethodMap retMap;
 
 				retMap["random"] = ESelectionMethod::S_RANDOM;
-				retMap["contact_based"] = ESelectionMethod::S_CONTACT_BASED;
-				retMap["contact_based_v2"] = ESelectionMethod::S_CONTACT_BASED2;
                 retMap["contact_based_v3"] = ESelectionMethod::S_CONTACT_BASED3;
                 retMap["information_gain"] = ESelectionMethod::S_INFORMATION_GAIN;
 				retMap["sequential"] = ESelectionMethod::S_SEQUENTIAL;
@@ -213,7 +208,7 @@ namespace pacman {
 
                 this->entropyThr = 100;
 
-				this->selectionMethod = ESelectionMethod::S_CONTACT_BASED;
+				this->selectionMethod = ESelectionMethod::S_CONTACT_BASED3;
 				this->alternativeSelectionMethod = ESelectionMethod::S_RANDOM;
 				this->generationMethod = EGenerationMethod::G_RANDOM_SPHERE;
 				this->coverageMethod = ECoverageMethod::M_AREA_BASED;
@@ -322,8 +317,6 @@ namespace pacman {
 
         \return final Item with ItemPointCurv representing integrated random scans
 		*/
-		grasp::data::Item::Map::iterator nextBestView();
-        grasp::data::Item::Map::iterator nextBestView2();
         grasp::data::Item::Map::iterator nextBestView3();
 
         grasp::data::Item::Map::iterator collectData();
@@ -338,12 +331,6 @@ namespace pacman {
 		
         pacman::HypothesisSensor::Ptr selectNextBestView(grasp::data::Item::Map::iterator contactModelPtr, bool found_contacts = true);
         pacman::HypothesisSensor::Ptr selectNextBestView(int selectionMethod, grasp::data::Item::Map::iterator contactModelPtr);
-
-		/** Greedy selection for next best view based on contact point information */
-        pacman::HypothesisSensor::Ptr selectNextBestViewContactBased(grasp::data::Item::Map::iterator contactModelPtr);
-
-		/** Greedy selection for next best view based on contact point information VERSION 2 with online model */
-        pacman::HypothesisSensor::Ptr selectNextBestViewContactBased2(grasp::data::Item::Map::iterator contactModelPtr);
 
         /** Greedy selection for next best view based on contact point information VERSION 3 with online model */
         pacman::HypothesisSensor::Ptr selectNextBestViewContactBased3(grasp::data::Item::Map::iterator contactModelPtr);
@@ -601,11 +588,6 @@ namespace pacman {
 
         /************************ UTILS Player Robot Sensors *********************************************/
 
-		/**
-		Gets DemoOwner's OPENNI Camera, and also sets it as its demoOwner->sensorCurrentPtr
-        \return Pointer to Openni Camera Sensor
-		*/
-		grasp::CameraDepth* getOwnerOPENNICamera();
 
 		/** Gets a sensor identified by its id=library+configFile, e.g. OpenNI+OpenNI, DepthSim+DepthSim*/
         grasp::Camera* getOwnerSensor(const std::string& sensorId);
@@ -672,7 +654,6 @@ namespace pacman {
 		grasp::data::Item::Map::iterator pointCurvItem;
 		grasp::data::Item::Map::iterator trajectoryItem;
 
-		pacman::ActiveSensOnlineModel onlineModel;
         pacman::ActiveSensOnlineModel2 onlineModel2;
 
 		/**Internal control flags*/

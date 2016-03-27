@@ -10,7 +10,6 @@ SET(LIB_NAME ActiveSenseGrasp)
 SET(PACMAN_ACTIVE_SENSE_GRASP_CORE_HEADERS
         #${PROJECT_ROOT}/include/pacman/${LIB_NAME}/${LIB_NAME}.h
         ${PROJECT_ROOT}/include/pacman/Bham/${LIB_NAME}/Core/ActiveSense.h
-        ${PROJECT_ROOT}/include/pacman/Bham/${LIB_NAME}/Core/ActiveSenseOM.h
         ${PROJECT_ROOT}/include/pacman/Bham/${LIB_NAME}/Core/ActiveSenseOM2.h
         ${PROJECT_ROOT}/include/pacman/Bham/${LIB_NAME}/Core/HypothesisSensor.h
         ${PROJECT_ROOT}/include/pacman/Bham/${LIB_NAME}/Core/Collision.h
@@ -21,7 +20,6 @@ SET(PACMAN_ACTIVE_SENSE_GRASP_CORE_HEADERS
 SET(PACMAN_ACTIVE_SENSE_GRASP_CORE_SOURCES
         #${PROJECT_ROOT}/src/pacman/${LIB_NAME}/${LIB_NAME}.cpp
         ${PROJECT_ROOT}/src/pacman/Bham/${LIB_NAME}/Core/ActiveSense.cpp
-        ${PROJECT_ROOT}/src/pacman/Bham/${LIB_NAME}/Core/ActiveSenseOM.cpp
         ${PROJECT_ROOT}/src/pacman/Bham/${LIB_NAME}/Core/ActiveSenseOM2.cpp
         ${PROJECT_ROOT}/src/pacman/Bham/${LIB_NAME}/Core/HypothesisSensor.cpp
         ${PROJECT_ROOT}/src/pacman/Bham/${LIB_NAME}/Core/Collision.cpp

@@ -439,10 +439,6 @@ golem::Real pacman::ActiveSense::computeCoverage(grasp::Cloud::PointCurvSeq::Ptr
 
 /************************ UTILS Player Robot Sensors *********************************************/
 
-grasp::CameraDepth* ActiveSense::getOwnerOPENNICamera()
-{
-	return grasp::is<grasp::CameraDepth>(getOwnerSensor(params.sensorId));
-}
 
 grasp::Camera* pacman::ActiveSense::getOwnerSensor(const std::string& sensorId)
 {
@@ -496,541 +492,6 @@ golem::Mat34 pacman::ActiveSense::computeGoal(const golem::Mat34& targetFrame, g
 
 
 	return goal;
-}
-
-grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView()
-{
-
-
-
-	this->visitedHypotheses.clear();
-	this->result.pointCurvs.clear();
-	this->result.predQueries.clear();
-	this->result.trajectories.clear();
-	this->result.completeTrajectories.clear();
-	demoOwner->context.debug("ActiveSense: Trial %d!\n", this->experiment_trial);
-
-
-
-
-	if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED3)
-		this->onlineModel2.setToDefault();
-
-
-
-	for (int i = 0; i < this->viewHypotheses.size(); i++)
-		this->viewHypotheses[i]->visited = false;
-
-	grasp::Camera* camera = this->getOwnerSensor(this->params.sensorId);
-
-	if (camera)
-		demoOwner->context.debug("ActiveSense: Camera good!\n");
-
-	//Creating new Data Bundle
-	//grasp::Manager::Data::Map::iterator data = createData();
-
-	size_t index = 0, maxNumViews = this->params.nviews;
-	pacman::HypothesisSensor::Ptr hypothesis = getViewHypothesis(index++);
-
-	grasp::data::Item::List scannedImageItems; // scanned Items List
-
-	//Adding current sensor pose to the sequence of visited hypotheses
-	//    const size_t jointsSize = static_cast<size_t>(demoOwner->info.getJoints().size());
-	//    HypothesisSensor::Config config(RealSeq(jointsSize, 0.0));
-	//    golem::Controller::State begin = demoOwner->lookupState();
-
-	//    begin.cpos.get(config.c.data(), config.c.data() + std::min(config.c.size(), jointsSize));
-	//    hypothesis = this->generateViewFrom(config);
-	//    hypothesis->visited = true;
-	//    visitedHypotheses.push_back(hypothesis);
-	//Finished added current sensor pose as visited
-
-	// performs first scan using current wrist pose: scannedImageItems now has 1 grasp::PointSeq
-	hypothesis->visited = true;
-	visitedHypotheses.push_back(hypothesis);
-	demoOwner->scanPoseActive(scannedImageItems, hypothesis->getLabel());
-
-	pacman::io_adhoc::log_out(this->out, "selected", this->experiment_id, this->experiment_trial, -1, false, hypothesis->id, -1, hypothesis->value);
-
-	//Carry on as if nothing happened
-	//hypothesis = pacman::HypothesisSensor::Ptr();
-
-	if (!this->params.useManualCentroid)
-	{
-		demoOwner->context.debug("ActiveSense: Automatically Computing Centroid From First View\n");
-		this->params.centroid = this->computeCentroid(*scannedImageItems.begin());
-	}
-
-	CollisionBounds::Ptr collisionBounds;
-	//printf("Processing image items\n");
-	//uncomment me later
-	this->pointCurvItem = processItems(scannedImageItems);
-	this->hasPointCurv = true;
-	if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED3
-		|| this->params.selectionMethod == ESelectionMethod::S_INFORMATION_GAIN
-		|| this->params.selectionMethod == ESelectionMethod::S_RANDOM){
-		//printf("Updating online model2\n");
-		this->onlineModel2.setCurrentSensorPose(this->getCameraPose());
-		this->onlineModel2.insertCloud(this->pointCurvItem);
-		this->demoOwner->createRender();
-	}
-	//Testing 10/01/2016
-	//scannedImageItems.clear();
-	//scannedImageItems.push_back(this->pointCurvItem);
-
-	//TODO:
-	//Update contact_based_v3 online model
-	//Should insert scan given current camera pose (this->getCameraPose())
-
-	demoOwner->context.debug("ActiveSense: FEEDBACK COMPUTATION\n");
-
-	//If we dont have a contact model we generate one using either a contactQuery or a trajectory
-	if (!hascontactModel && (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED
-		|| this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2
-		|| this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED3))
-	{
-		if (hascontactQuery)
-			this->setContactModelItem(this->computeContactModelFeedBack(this->contactQueryItem, this->pointCurvItem));
-		else if (hasTrajectory)
-			this->setContactModelItem(this->computeTransformcontactModel(this->trajectoryItem, this->pointCurvItem));
-		else
-			throw Cancel("ActiveSense: Failed to find one of the following required items: contactQueryItem, trajectoryItem");
-	}
-
-	grasp::data::ItemContactModel::Map::iterator ptr;
-	bool stop = maxNumViews > 1 ? false : true; // we could stop after the initial view
-	bool found_contacts = true; //lets assume we have contacts
-	int numViewsAcquired = 1; // we count the initial view
-	while (!stop)
-	{
-		demoOwner->context.debug(
-			"\n\nActiveSense: ************************ STARTING OBSERVATION #%d ************************\n\n",
-			numViewsAcquired + 1);
-
-		if (params.selectionMethod == ESelectionMethod::S_CONTACT_BASED
-			|| params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2
-			|| params.selectionMethod == ESelectionMethod::S_CONTACT_BASED3
-			|| params.selectionMethod == ESelectionMethod::S_INFORMATION_GAIN
-			|| this->params.selectionMethod == ESelectionMethod::S_RANDOM)
-		{
-			try{
-				// Returns a new contact model, and if successful adds a new trajectory to result.trajectories list
-				// and also a new Contact Query
-				// Raises an exception in case trajectory generation fails, or no contacts are found
-				ptr = computeFeedBackTransform(contactModelItem, pointCurvItem);
-				found_contacts = true; // ok, we indeed have contacts
-			}
-			catch (const std::exception& m){
-				demoOwner->context.debug("ActiveSense: computeFeedBackTransform failed because %s\n", m.what());
-				//demoOwner->context.debug("ActiveSense: Couldn't find contacts! Will use alternative view selection instead!\n");
-				found_contacts = false; // we actually don't have contacts...
-			}
-
-		}
-
-		golem::Mat34 goal;
-		goal.setId();
-		collisionBounds = this->selectCollisionBounds(true, *scannedImageItems.begin());
-		bool gotToHypothesis = false;
-		while (!gotToHypothesis)
-		{
-
-			hypothesis = selectNextBestView(ptr, found_contacts);
-
-			//TODO:
-			// - Select NBV based on contacts (if any) and trajectory (result->trajectories)
-
-
-			goal = this->computeGoal(hypothesis->getFrame(), camera);
-
-			try
-			{
-
-				if (this->params.generationMethod == EGenerationMethod::G_RANDOM_SPHERE)
-					gotToHypothesis = demoOwner->gotoPoseWS(goal);
-				if (this->params.generationMethod == EGenerationMethod::G_FIXED)
-					gotToHypothesis = demoOwner->gotoPoseConfig(hypothesis->getConfig());
-
-				if (!gotToHypothesis)
-					demoOwner->context.debug("ActiveSense: Couldnt go to selected hypothesis due to large final pose error, trying next NBV.\n");
-
-
-
-			}
-			catch (const golem::Message& e)
-			{
-				demoOwner->context.debug("ActiveSense: Couldnt go to selected hypothesis due exception %s, trying next NBV.\n", e.what());
-			}
-		}
-		collisionBounds.release();
-		if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED3 || this->params.selectionMethod == ESelectionMethod::S_INFORMATION_GAIN)
-			this->onlineModel2.setCurrentSensorPose(this->getCameraPose());
-
-		//Adding hypotheses to the set of visited hypotheses so far (used for not going to this hypothesis again later)
-		hypothesis->visited = true;
-		visitedHypotheses.push_back(hypothesis);
-		//printf("ScanningPoseActive\n");
-		demoOwner->scanPoseActive(scannedImageItems, hypothesis->getLabel());
-
-		//Integrate views into the current pointCurv
-		//printf("Processing image items\n");
-		//uncomment me later
-		this->pointCurvItem = processItems(scannedImageItems);
-		if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED3 || this->params.selectionMethod == ESelectionMethod::S_INFORMATION_GAIN){
-			//printf("Updating online model2!!!!!!!!-------$$$\n");
-
-			this->onlineModel2.insertCloud(this->pointCurvItem);
-			this->demoOwner->createRender();
-		}
-
-		//Testing 10/01/2016
-		//        scannedImageItems.clear();
-		//        scannedImageItems.push_back(this->pointCurvItem );
-
-		//Number of views increment
-		++numViewsAcquired;
-
-		//Checking stopping criteria
-		if (params.stoppingCriteria == EStoppingCriteria::C_NVIEWS)
-		{
-			if (numViewsAcquired >= maxNumViews)
-			{
-				stop = true;
-				demoOwner->context.debug("ActiveSense: Stopping because used max number of views\n");
-			}
-		}
-		else if (params.stoppingCriteria == EStoppingCriteria::C_COVERAGE || params.stoppingCriteria == EStoppingCriteria::C_NVIEWS_COVERAGE)
-		{
-
-			grasp::data::ItemPointsCurv* image = grasp::is<grasp::data::ItemPointsCurv>(this->pointCurvItem);
-			golem::Real coverage = 0.0;
-			if (image){
-				coverage = computeCoverage(image->cloud);
-			}
-			else
-				demoOwner->context.debug("ActiveSense: This is not an ItemImage.\n");
-
-			if (coverage >= params.coverageThr)
-			{
-				stop = true;
-				demoOwner->context.debug("ActiveSense: Stopping because exceeded coverage threshold\n");
-			}
-			else if (params.stoppingCriteria == EStoppingCriteria::C_NVIEWS_COVERAGE && numViewsAcquired >= maxNumViews)
-			{
-				stop = true;
-				demoOwner->context.debug("ActiveSense: Stopping because used max number of views\n");
-			}
-		}
-		else
-		{
-			demoOwner->context.debug("ActiveSense: Unknown stopping criteria, stopping now.\n");
-			stop = true;
-		}
-	} // loop over views
-
-	demoOwner->context.debug("\n\nActiveSense: ************************ COMPLETED AFTER %d OBSERVATION%s ************************\n\n",
-		numViewsAcquired, numViewsAcquired == 1 ? "" : "S");
-
-	//If we are using a selection method different from contact_based then we generate a queryModel, trajectory and a disposable (feedback)predictorModel as a final result
-	//if (maxNumViews == 1 || !this->result.trajectories.size() || (this->params.selectionMethod != ESelectionMethod::S_CONTACT_BASED && this->params.selectionMethod != ESelectionMethod::S_CONTACT_BASED2 && this->params.selectionMethod != ESelectionMethod::S_CONTACT_BASED3))
-	//uncoment me later
-	//    {
-	try {
-		ptr = this->computeFeedBackTransform(contactModelItem, pointCurvItem);
-	}
-	catch (const std::exception& m){
-		demoOwner->context.debug("ActiveSense: computeFeedBackTransform failed because %s\n", m.what());
-		//demoOwner->context.debug("ActiveSense: Couldn't find contacts! Will use alternative view selection instead!\n");
-		found_contacts = false; // we actually don't have contacts...
-	}
-
-
-	demoOwner->context.debug("ActiveSense: NextBestView Finished! Check this->result attribute member for: %d pointCurvs, %d predQueries and %d best trajectories\n", result.pointCurvs.size(), result.predQueries.size(), result.trajectories.size());
-
-	this->hasPointCurv = this->hascontactModel = this->hasTrajectory = this->hascontactQuery = false;
-
-	this->experiment_trial++;
-
-	return this->pointCurvItem;
-}
-
-grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView2()
-{
-
-	if (!hascontactModel) {
-		throw Cancel("ActiveSense: No contact model set!\n");
-	}
-
-	this->visitedHypotheses.clear();
-	this->result.pointCurvs.clear();
-	this->result.predQueries.clear();
-	this->result.trajectories.clear();
-	this->result.completeTrajectories.clear();
-	demoOwner->context.debug("ActiveSense: Trial %d!\n", this->experiment_trial);
-
-
-	bool found_safe_traj = false;
-
-
-	if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED3)
-		this->onlineModel2.setToDefault();
-
-	for (int i = 0; i < this->viewHypotheses.size(); i++)
-		this->viewHypotheses[i]->visited = false;
-
-	grasp::Camera* camera = this->getOwnerSensor(this->params.sensorId);
-
-	if (camera)
-		demoOwner->context.debug("ActiveSense: Camera good!\n");
-
-	size_t index = 0, maxNumViews = this->params.nviews;
-	pacman::HypothesisSensor::Ptr hypothesis = getViewHypothesis(index++);
-
-	// Scanned Image Items List
-	grasp::data::Item::List scannedImageItems;
-
-	// Performs first scan using current wrist pose: scannedImageItems now has 1 grasp::PointSeq
-	hypothesis->visited = true;
-	visitedHypotheses.push_back(hypothesis);
-	demoOwner->scanPoseActive(scannedImageItems, hypothesis->getLabel());
-
-	pacman::io_adhoc::log_out(this->out, "selected", this->experiment_id, this->experiment_trial, -1, false, hypothesis->id, -1, hypothesis->value);
-
-	// Computes centroid from first scanned item
-	if (!this->params.useManualCentroid)
-	{
-		demoOwner->context.debug("ActiveSense: Automatically Computing Centroid From First View\n");
-		this->params.centroid = this->computeCentroid(*scannedImageItems.begin());
-	}
-
-	// Collision bounds for the getPlanner()
-	//(initialised when we need to plan a trajectory)
-	CollisionBounds::Ptr collisionBounds;
-
-	// Computes integrated point cloud with curvatures from the list of point clouds
-	this->pointCurvItem = processItems(scannedImageItems);
-	this->hasPointCurv = true;
-
-	// Adding current pointCurvItem to our onlineModel
-	if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED3
-		|| this->params.selectionMethod == ESelectionMethod::S_INFORMATION_GAIN
-		|| this->params.selectionMethod == ESelectionMethod::S_RANDOM){
-		this->onlineModel2.setCurrentSensorPose(this->getCameraPose());
-		this->onlineModel2.insertCloud(this->pointCurvItem);
-		this->demoOwner->createRender();
-	}
-
-	grasp::data::ItemContactModel::Map::iterator ptr;
-	bool stop = maxNumViews > 1 ? false : true; // we could stop after the initial view
-	bool found_contacts = true; //lets assume we have contacts
-	int numViewsAcquired = 1; // we count the initial view
-	while (!stop)
-	{
-		demoOwner->context.debug(
-			"\n\nActiveSense: ************************ STARTING OBSERVATION #%d ************************\n\n",
-			numViewsAcquired + 1);
-
-		// Find contact points and grasp trajectory
-		bool new_traj = false;
-		if (params.selectionMethod == ESelectionMethod::S_CONTACT_BASED
-			|| params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2
-			|| params.selectionMethod == ESelectionMethod::S_CONTACT_BASED3
-			|| params.selectionMethod == ESelectionMethod::S_INFORMATION_GAIN
-			|| this->params.selectionMethod == ESelectionMethod::S_RANDOM)
-		{
-			try{
-				// Returns a new contact model, and if successful adds a new trajectory to result.trajectories list
-				// and also a new Contact Query
-				// Raises an exception in case trajectory generation fails, or no contacts are found
-				int traj_size = result.trajectories.size();
-				ptr = computeFeedBackTransform(contactModelItem, pointCurvItem);
-				found_contacts = true; // ok, we indeed have contacts
-				// we have a new trajectory?
-				new_traj = traj_size < result.trajectories.size();
-
-			}
-			catch (const std::exception& m){
-				demoOwner->context.debug("ActiveSense: computeFeedBackTransform failed because %s\n", m.what());
-				//demoOwner->context.debug("ActiveSense: Couldn't find contacts! Will use alternative view selection instead!\n");
-				found_contacts = false; // we actually don't have contacts...
-			}
-
-		}
-
-		// If we have a new trajectory, we need to check for its safety
-		if (new_traj){
-
-			std::vector<std::pair<grasp::data::Item::Ptr, float> > bestTrajectories;
-			data::Trajectory* trajectory = is<data::Trajectory>(result.trajectories.back());
-			safetyExploration2(trajectory, scannedImageItems, bestTrajectories);
-
-			// Get best trajectory
-			auto best_traj = bestTrajectories.front();
-			std::stringstream ss;
-			ss << "Safest Trajectory has collision probability " << best_traj.second << ". Accept (Y/N)?";
-			found_safe_traj = demoOwner->option("YN", ss.str().c_str()) == 'Y';
-
-			if (found_safe_traj){
-
-				result.completeTrajectories.push_back(best_traj);
-
-				break;
-			}
-
-
-		}
-
-		// Select and go to next best view
-		golem::Mat34 goal;
-		goal.setId();
-		collisionBounds = this->selectCollisionBounds(true, *scannedImageItems.begin());
-		bool gotToHypothesis = false;
-		while (!gotToHypothesis)
-		{
-
-			hypothesis = selectNextBestView(ptr, found_contacts);
-
-			//TODO:
-			// - Select NBV based on contacts (if any) and trajectory (result->trajectories)
-
-
-			goal = this->computeGoal(hypothesis->getFrame(), camera);
-
-			try
-			{
-
-				if (this->params.generationMethod == EGenerationMethod::G_RANDOM_SPHERE)
-					gotToHypothesis = demoOwner->gotoPoseWS(goal);
-				if (this->params.generationMethod == EGenerationMethod::G_FIXED)
-					gotToHypothesis = demoOwner->gotoPoseConfig(hypothesis->getConfig());
-
-				if (!gotToHypothesis)
-					demoOwner->context.debug("ActiveSense: Couldnt go to selected hypothesis due to large final pose error, trying next NBV.\n");
-
-
-
-			}
-			catch (const golem::Message& e)
-			{
-				demoOwner->context.debug("ActiveSense: Couldnt go to selected hypothesis due exception %s, trying next NBV.\n", e.what());
-			}
-		}
-		collisionBounds.release();
-
-		//Adding hypotheses to the set of visited hypotheses so far (used for not going to this hypothesis again later)
-		hypothesis->visited = true;
-		visitedHypotheses.push_back(hypothesis);
-
-		//Number of views increment
-		++numViewsAcquired;
-
-		// Perform scan on current view
-		demoOwner->scanPoseActive(scannedImageItems, hypothesis->getLabel());
-
-		//Integrate views into the current pointCurv
-		this->pointCurvItem = processItems(scannedImageItems);
-
-		// Adding current pointCurvItem to our onlineModel
-		if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED3 || this->params.selectionMethod == ESelectionMethod::S_INFORMATION_GAIN){
-			//printf("Updating online model2!!!!!!!!-------$$$\n");
-			this->onlineModel2.setCurrentSensorPose(this->getCameraPose());
-			this->onlineModel2.insertCloud(this->pointCurvItem);
-			this->demoOwner->createRender();
-		}
-
-
-		//Checking stopping criteria
-		if (params.stoppingCriteria == EStoppingCriteria::C_NVIEWS)
-		{
-			if (numViewsAcquired >= maxNumViews)
-			{
-				stop = true;
-				demoOwner->context.debug("ActiveSense: Stopping because used max number of views\n");
-			}
-		}
-		else if (params.stoppingCriteria == EStoppingCriteria::C_COVERAGE || params.stoppingCriteria == EStoppingCriteria::C_NVIEWS_COVERAGE)
-		{
-
-			grasp::data::ItemPointsCurv* image = grasp::is<grasp::data::ItemPointsCurv>(this->pointCurvItem);
-			golem::Real coverage = 0.0;
-			if (image){
-				coverage = computeCoverage(image->cloud);
-			}
-			else
-				demoOwner->context.debug("ActiveSense: This is not an ItemImage.\n");
-
-			if (coverage >= params.coverageThr)
-			{
-				stop = true;
-				demoOwner->context.debug("ActiveSense: Stopping because exceeded coverage threshold\n");
-			}
-			else if (params.stoppingCriteria == EStoppingCriteria::C_NVIEWS_COVERAGE && numViewsAcquired >= maxNumViews)
-			{
-				stop = true;
-				demoOwner->context.debug("ActiveSense: Stopping because used max number of views\n");
-			}
-		}
-		else
-		{
-			demoOwner->context.debug("ActiveSense: Unknown stopping criteria, stopping now.\n");
-			stop = true;
-		}
-	} // View selection loop
-
-	demoOwner->context.debug("\n\nActiveSense: ************************ COMPLETED AFTER %d OBSERVATION%s ************************\n\n",
-		numViewsAcquired, numViewsAcquired == 1 ? "" : "S");
-
-	if (!found_safe_traj){
-		bool new_traj = false;
-		try {
-			int traj_size = result.trajectories.size();
-			ptr = this->computeFeedBackTransform(contactModelItem, pointCurvItem);
-			new_traj = traj_size < result.trajectories.size();
-		}
-		catch (const std::exception& m){
-			demoOwner->context.debug("ActiveSense: computeFeedBackTransform failed because %s\n", m.what());
-			//demoOwner->context.debug("ActiveSense: Couldn't find contacts! Will use alternative view selection instead!\n");
-			found_contacts = false; // we actually don't have contacts...
-		}
-
-		// If we have a new trajectory, we need to check for its safety
-		if (new_traj){
-
-			std::vector<std::pair<grasp::data::Item::Ptr, float> > bestTrajectories;
-			data::Trajectory* trajectory = is<data::Trajectory>(result.trajectories.back());
-			safetyExploration2(trajectory, scannedImageItems, bestTrajectories);
-
-			// Get best trajectory
-			auto best_traj = bestTrajectories.front();
-			std::stringstream ss;
-			ss << "Safest Trajectory has collision probability " << best_traj.second << ". Accept (Y/N)?";
-			found_safe_traj = demoOwner->option("YN", ss.str().c_str()) == 'Y';
-
-			if (found_safe_traj) {
-				result.completeTrajectories.push_back(best_traj);
-
-				demoOwner->context.debug("ActiveSense: Has found safe trajectory at last generated grasp");
-			}
-
-
-		}
-
-	}
-	else{
-
-		demoOwner->context.debug("ActiveSense: finished early because has found safe trajectory");
-
-	}
-
-
-
-	demoOwner->context.debug("ActiveSense: NextBestView Finished! Check this->result attribute member for: %d pointCurvs, %d predQueries and %d best trajectories\n", result.pointCurvs.size(), result.predQueries.size(), result.trajectories.size());
-
-	this->hasPointCurv = this->hascontactModel = this->hasTrajectory = this->hascontactQuery = false;
-
-	this->experiment_trial++;
-
-	return this->pointCurvItem;
 }
 
 grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView3()
@@ -1093,13 +554,10 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView3()
 	this->hasPointCurv = true;
 
 	// Adding current pointCurvItem to our onlineModel
-	if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED3
-		|| this->params.selectionMethod == ESelectionMethod::S_INFORMATION_GAIN
-		|| this->params.selectionMethod == ESelectionMethod::S_RANDOM){
 		this->onlineModel2.setCurrentSensorPose(this->getCameraPose());
 		this->onlineModel2.insertCloud(this->pointCurvItem);
 		this->demoOwner->createRender();
-	}
+	
 
 NBV:
 
@@ -1122,12 +580,6 @@ NBV:
 			numViewsAcquired + 1);
 
 		// Find contact points and grasp trajectory
-		if (params.selectionMethod == ESelectionMethod::S_CONTACT_BASED
-			|| params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2
-			|| params.selectionMethod == ESelectionMethod::S_CONTACT_BASED3
-			|| params.selectionMethod == ESelectionMethod::S_INFORMATION_GAIN
-			|| this->params.selectionMethod == ESelectionMethod::S_RANDOM)
-		{
 			try{
 				// Returns a new contact model, and if successful adds a new trajectory to result.trajectories list
 				// and also a new Contact Query
@@ -1157,7 +609,7 @@ NBV:
 				found_contacts = false; // we actually don't have contacts...
 			}
 
-		}
+		
 
 
 		// Select and go to next best view
@@ -1212,12 +664,11 @@ NBV:
 		this->pointCurvItem = processItems(scannedImageItems);
 
 		// Adding current pointCurvItem to our onlineModel
-		if (this->params.selectionMethod == ESelectionMethod::S_CONTACT_BASED3 || this->params.selectionMethod == ESelectionMethod::S_INFORMATION_GAIN){
-			//printf("Updating online model2!!!!!!!!-------$$$\n");
+		//printf("Updating online model2!!!!!!!!-------$$$\n");
 			this->onlineModel2.setCurrentSensorPose(this->getCameraPose());
 			this->onlineModel2.insertCloud(this->pointCurvItem);
 			this->demoOwner->createRender();
-		}
+		
 
 
 		//Checking stopping criteria
@@ -1495,23 +946,15 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::collectData()
 pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestView(grasp::data::Item::Map::iterator contactModelPtr, bool found_contacts)
 {
 	HypothesisSensor::Ptr hypothesis;
-
-	if ((params.selectionMethod == ESelectionMethod::S_CONTACT_BASED ||
-		params.selectionMethod == ESelectionMethod::S_CONTACT_BASED2 ||
-		params.selectionMethod == ESelectionMethod::S_CONTACT_BASED3) && !found_contacts)
+	
+	int selectionMethod = params.selectionMethod;
+	if (params.selectionMethod == ESelectionMethod::S_CONTACT_BASED3 && !found_contacts)
 	{
-		hypothesis = selectNextBestView(params.alternativeSelectionMethod, contactModelPtr);
-		pacman::io_adhoc::log_out(this->out, "selected", this->experiment_id, this->experiment_trial, params.alternativeSelectionMethod, found_contacts, hypothesis->id, -1, hypothesis->value);
-
-
-	}
-	else
-	{
-		hypothesis = selectNextBestView(params.selectionMethod, contactModelPtr);
-		pacman::io_adhoc::log_out(this->out, "selected", this->experiment_id, this->experiment_trial, params.selectionMethod, found_contacts, hypothesis->id, -1, hypothesis->value);
+		int selectionMethod = params.alternativeSelectionMethod;
 	}
 
-
+	hypothesis = selectNextBestView(selectionMethod, contactModelPtr);
+	pacman::io_adhoc::log_out(this->out, "selected", this->experiment_id, this->experiment_trial, params.alternativeSelectionMethod, found_contacts, hypothesis->id, -1, hypothesis->value);
 
 	return hypothesis;
 }
@@ -1520,32 +963,24 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestView(int select
 {
 	HypothesisSensor::Ptr hypothesis;
 
-	if (selectionMethod == ESelectionMethod::S_CONTACT_BASED)
-	{
-		hypothesis = selectNextBestViewContactBased(contactModelPtr);
+	switch (selectionMethod){
+		case ESelectionMethod::S_CONTACT_BASED3:
+			hypothesis = selectNextBestViewContactBased3(contactModelPtr);
+			break;
+		case ESelectionMethod::S_RANDOM:
+			hypothesis = selectNextBestViewRandom();
+			break;
+		case ESelectionMethod::S_SEQUENTIAL:
+			hypothesis = selectNextBestViewSequential();
+			break;
+		case  ESelectionMethod::S_INFORMATION_GAIN:
+			hypothesis = selectNextBestViewInfGain();
+			break;
+		default:
+			throw Cancel("pacman::ActiveSense::selectNextBestView: unknown selectionMethod");
+			break;
+
 	}
-	else if (selectionMethod == ESelectionMethod::S_CONTACT_BASED2)
-	{
-		hypothesis = selectNextBestViewContactBased2(contactModelPtr);
-	}
-	else if (selectionMethod == ESelectionMethod::S_CONTACT_BASED3)
-	{
-		hypothesis = selectNextBestViewContactBased3(contactModelPtr);
-	}
-	else if (selectionMethod == ESelectionMethod::S_RANDOM)
-	{
-		hypothesis = selectNextBestViewRandom();
-	}
-	else if (selectionMethod == ESelectionMethod::S_SEQUENTIAL)
-	{
-		hypothesis = selectNextBestViewSequential();
-	}
-	else if (selectionMethod == ESelectionMethod::S_INFORMATION_GAIN)
-	{
-		hypothesis = selectNextBestViewInfGain();
-	}
-	else
-		throw Cancel("pacman::ActiveSense::selectNextBestView: unknown selectionMethod");
 
 	if (hypothesis == nullptr)
 		throw Cancel("ActiveSense::selectNextBestView: unable to get hypothesis for next best view");
@@ -1587,83 +1022,6 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewSequential(
 	return ret;
 }
 
-pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBased(grasp::data::Item::Map::iterator contactModelPtr)
-{
-	golem::CriticalSectionWrapper csw(this->csViewHypotheses);
-
-	if (this->params.regenerateViews) this->generateViews();
-
-	int index = 0;
-
-	Real maxValue(-golem::REAL_MAX);
-	for (int i = 0; i < this->viewHypotheses.size(); i++)
-	{
-		if (this->viewHypotheses[i]->visited)
-		{
-			demoOwner->context.debug("ActiveSense: H[%d] Value: ALREADY VISITED\n", i + 1);
-			continue;
-		}
-		if (hasViewed(this->viewHypotheses[i]))
-		{
-			demoOwner->context.debug("ActiveSense: H[%d] Value: ALREADY VISITED WITHIN 5CM\n", i + 1);
-			continue;
-		}
-
-		ActiveSense::ValueTuple valueTuple = this->computeValue(this->viewHypotheses[i], contactModelPtr);
-
-		demoOwner->context.debug("ActiveSense: H[%d] Value: %f\n", i + 1, valueTuple.second);
-
-		if (valueTuple.second > maxValue)
-		{
-			index = i;
-			maxValue = valueTuple.second;
-		}
-	}
-
-	demoOwner->context.debug("\nActiveSense: Best View Was H[%d] Value: %f\n\n", index + 1, maxValue);
-
-	return this->getViewHypothesis(index);
-}
-
-pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBased2(grasp::data::Item::Map::iterator contactModelPtr)
-{
-	golem::CriticalSectionWrapper csw(this->csViewHypotheses);
-
-
-
-	if (this->params.regenerateViews) this->generateViews();
-
-	onlineModel.setTrainingData(contactModelPtr);
-	onlineModel.updateContacts();
-	onlineModel.updateViewingAngles(visitedHypotheses);
-
-	int index = 0;
-
-	Real minValue(golem::REAL_MAX);
-	Real value(0.0);
-	demoOwner->context.debug("ActiveSense: Next Best View Contact Based V2\n");
-	for (int i = 0; i < this->viewHypotheses.size(); i++)
-	{
-		if (this->viewHypotheses[i]->visited || hasViewed(this->viewHypotheses[i]))
-			continue;
-
-		value = onlineModel.computeValue(this->viewHypotheses[i]);
-
-		demoOwner->context.debug("ActiveSense: H[%d] Value: %f\n", i + 1, value);
-
-		if (value < minValue)
-		{
-			index = i;
-			minValue = value;
-		}
-	}
-
-	demoOwner->context.debug("\nActiveSense: Best View Was H[%d] Value: %f\n\n", index + 1, minValue);
-
-
-	return this->getViewHypothesis(index);
-}
-
 pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBased3(grasp::data::Item::Map::iterator contactModelPtr)
 {
 	golem::CriticalSectionWrapper csw(this->csViewHypotheses);
@@ -1687,8 +1045,7 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBase
 
 	inputBlock.release();
 
-
-	Real maxValue(golem::REAL_MIN);//minValue(golem::REAL_MAX);
+	Real maxValue(golem::REAL_MIN);
 	Real value(0.0);
 	demoOwner->context.debug("ActiveSense: Next Best View Contact Based V3\n");
 	for (int i = 0; i < this->viewHypotheses.size(); i++)
@@ -1700,16 +1057,13 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewContactBase
 
 
 		value = onlineModel2.computeValueWithHand(this->viewHypotheses[i], path);
-		// TODO
-		// check if it has trajectory
-
 
 		//demoOwner->context.debug("ActiveSense: H[%d] Value: %f\n", i+1, value);
 
-		if (value > maxValue)//if (value < minValue)
+		if (value > maxValue)
 		{
 			index = i;
-			maxValue = value;//minValue = value;
+			maxValue = value;
 		}
 	}
 
@@ -1785,10 +1139,10 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewInfGain()
 
 		//demoOwner->context.debug("ActiveSense: H[%d] Value: %f\n", i+1, value);
 
-		if (value > maxValue)//if (value < minValue)
+		if (value > maxValue)
 		{
 			index = i;
-			maxValue = value;//minValue = value;
+			maxValue = value;
 		}
 	}
 
@@ -2057,10 +1411,16 @@ bool pacman::ActiveSense::safetyExploration2(data::Trajectory* trajectory, grasp
 		CollisionBounds::Ptr collisionBoundsTraj = this->selectCollisionBounds(true, this->result.pointCurvs.back());
 		//completeTrajectory = demoOwner->completeTrajectory2(*trajectory);
 		completeTrajectory.clear();
+		
+		golem::shared_ptr<grasp::Manager::InputBlock> inputBlock;
+		if (!this->allowInput) inputBlock = golem::shared_ptr<grasp::Manager::InputBlock>(new grasp::Manager::InputBlock(*demoOwner));
+
 		trajectory->createTrajectory(completeTrajectory);
 		trajItem = demoOwner->convertToTrajectory(completeTrajectory);
 		lastTraj = addItem("TempTrajectory", trajItem);
 		grasp::Manipulator::Waypoint::Seq path = demoOwner->convertToManipulatorWayPoints(completeTrajectory);
+		
+		inputBlock.release();
 		collisionBoundsTraj.release();
 		this->demoOwner->createRender();
 		// Computing probability of collision, entropy and other state metrics

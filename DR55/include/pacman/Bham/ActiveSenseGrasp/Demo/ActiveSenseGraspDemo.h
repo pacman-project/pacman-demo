@@ -155,11 +155,6 @@ public:
 
     virtual void perform2(const std::string& data, const std::string& item, const golem::Controller::State::Seq& trajectory,
                           const bool testTrajectory = true, const bool controlRecording = false);
-    //virtual golem::Controller::State::Seq perform3(const std::string& data, grasp::data::Item::Ptr itemTraj, const bool testTrajectory = true, const bool controlRecording = true);
-    /* Performs a complete trajectory given by traj */
-    /*virtual void performCompleteTrajectory(const std::string& data, const std::string& item, const golem::Controller::State::Seq& trajectory,
-                          const bool testTrajectory = true, const bool controlRecording = false);*/
-
 
     // Manipulator::Waypoint::Seq is called a path
     grasp::Manipulator::Waypoint::Seq convertToManipulatorWayPoints(const grasp::Waypoint::Seq& waypoints);
