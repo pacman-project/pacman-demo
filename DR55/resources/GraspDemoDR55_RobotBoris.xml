@@ -22,7 +22,7 @@ enable_coverage_filter_plane = "0" or "1"-->
 
     <parameters sensor_id="OpenNI+OpenNIDemoDR55RightArm" use_sim_cam="0" selection_method="contact_based_v3" alternative_selection_method="information_gain" generation_method="fixed" enable_regeneration="0" use_height_bias="1" use_manual_centroid="0" show_sensor_hypotheses="1" radius="0.35" nsamples="20" nviews="2" maxnviews="7" maxsafetynviews="3" coverage_threshold="0.5" coverage_method="volume_based" stopping_criteria="number_of_views" safety_stopping_criteria="entropy" entropy_threshold="0.80" enable_coverage_filter_plane="1" min_phi="0.0" max_phi="360.0" min_theta="-60.0" max_theta="60.0">
 
-      <handler_map contact_handler="ContactModel+ContactModelDemoDR55" query_handler="ContactQuery+ContactQueryDemoDR55" image_handler="Image+ActiveSenseGraspDataImage" image_handler_no_crop="Image+ActiveSenseGraspDataImageNoCrop" point_curv_handler="PointsCurv+PointsCurvDemoDR55" trajectory_handler="Trajectory+TrajectoryDemoDR55"/>
+      <handler_map contact_handler="ContactModel+ContactModelDemoDR55" query_handler="ContactQuery+ContactQueryDemoDR55" image_handler="Image+ActiveSenseGraspDataImage" image_handler_no_crop="Image+ActiveSenseGraspDataImageNoCrop" point_curv_handler="PointsCurv+ActiveSenseGraspDataPointsCurv" trajectory_handler="Trajectory+TrajectoryDemoDR55"/>
       <centroid v1="0.0" v2="0.0" v3="0.0"/>
 
       <pose name="scan" dim="61" c1="2.05575" c2="-0.926678" c3="0.688772" c4="-1.6953" c5="0.721298" c6="0.410064" c7="0.531536" c8="0" c9="0" c10="0" c11="0" c12="0" c13="0" c14="0" c15="0" c16="0" c17="0" c18="0" c19="0" c20="0" c21="0" c22="0" c23="0" c24="0" c25="0" c26="0" c27="0" c28="0" c29="0" c30="0" c31="0" c32="0" c33="0" c34="0" c35="0" c36="0" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0" c44="0" c45="0" c46="0" c47="0" c48="0" c49="0" c50="0" c51="0" c52="0" c53="0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c60="0" c61="0"/>
@@ -445,6 +445,7 @@ enable_coverage_filter_plane = "0" or "1"-->
 
     <handler library_path="GraspDataImage" config_path="ActiveSenseGraspDataImageNoCrop"/>
     <handler library_path="GraspDataImage" config_path="ActiveSenseGraspDataImage"/>
+    <handler library_path="GraspDataPointsCurv" config_path="ActiveSenseGraspDataPointsCurv"/>
 
     <data path="./data/DemoDR55Data/DemoDR55Data.xml"></data>
   </manager>
