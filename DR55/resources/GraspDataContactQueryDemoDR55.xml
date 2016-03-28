@@ -13,6 +13,7 @@
       <type type="power" name="Default"/>
       <type type="powertube" name="Default"/>
       <type type="rim" name="Default"/>
+      <type type="bowllarge-rim" name="Default"/>
 
       <contact name="Default" penalty_exp="1.2">
         <query id="Base" weight="1.0">

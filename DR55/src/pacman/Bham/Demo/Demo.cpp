@@ -106,6 +106,8 @@ void DemoDR55::create(const Desc& desc) {
 			list.insert(list.end(), modelPtr); // grasp on model
 			grasp::data::Item::Ptr queryGraspItemPtr = transform->transform(list);
 
+			
+
 			// insert processed object, remove old one
 			grasp::data::Item::Map::iterator queryContactPtr;
 			RenderBlock renderBlock0(*this);
