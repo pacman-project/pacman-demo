@@ -534,7 +534,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView3()
 	// Performs first scan using current wrist pose: scannedImageItems now has 1 grasp::PointSeq
 	hypothesis->visited = true;
 	visitedHypotheses.push_back(hypothesis);
-	demoOwner->scanPoseActive(scannedImageItems, hypothesis->getLabel());
+	demoOwner->scanPoseActive(scannedImageItems, hypothesis->getLabel(), params.imageHandler);
 
 	pacman::io_adhoc::log_out(this->out, "selected", this->experiment_id, this->experiment_trial, -1, false, hypothesis->id, -1, hypothesis->value);
 
@@ -658,7 +658,7 @@ NBV:
 		this->nbvViews++;
 
 		// Perform scan on current view
-		demoOwner->scanPoseActive(scannedImageItems, hypothesis->getLabel());
+		demoOwner->scanPoseActive(scannedImageItems, hypothesis->getLabel(),params.imageHandler);
 
 		//Integrate views into the current pointCurv
 		this->pointCurvItem = processItems(scannedImageItems);
@@ -829,7 +829,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::collectData()
 	// Performs first scan using current wrist pose: scannedImageItems now has 1 grasp::PointSeq
 	hypothesis->visited = true;
 	visitedHypotheses.push_back(hypothesis);
-	demoOwner->scanPoseActive(scannedImageItems, hypothesis->getLabel(), "", nullptr, data);
+	demoOwner->scanPoseActive(scannedImageItems, hypothesis->getLabel(), params.imageHandler, nullptr, data);
 
 	// Computes centroid from first scanned item
 	if (!this->params.useManualCentroid)
@@ -901,7 +901,7 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::collectData()
 		++numViewsAcquired;
 
 		// Perform scan on current view
-		demoOwner->scanPoseActive(scannedImageItems, hypothesis->getLabel(), "", nullptr, data);
+		demoOwner->scanPoseActive(scannedImageItems, hypothesis->getLabel(), params.imageHandler, nullptr, data);
 
 
 		//        grasp::data::Item::Ptr item;
@@ -1516,7 +1516,7 @@ bool pacman::ActiveSense::safetyExploration2(data::Trajectory* trajectory, grasp
 			}
 
 
-			demoOwner->scanPoseActive(localScannedImageItems, hypothesis->getLabel(), "Image+ActiveSenseGraspDataImageNoCrop");
+			demoOwner->scanPoseActive(localScannedImageItems, hypothesis->getLabel(), params.imageHandlerNoCrop);
 
 			// Integrate local point curv item (performing a new measurement for that)
 			demoOwner->scanPoseActive(scannedImageItems, hypothesis->getLabel());

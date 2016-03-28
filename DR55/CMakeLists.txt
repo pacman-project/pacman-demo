@@ -124,7 +124,7 @@ SET(PACMAN_ACTIVE_SENSE_GRASP_DEMO_HEADERS
 		#${PROJECT_ROOT}/include/pacman/Bham/Demo/Demo.h
 )
 SET(PACMAN_ACTIVE_SENSE_GRASP_DEMO_FILES
-        # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataPointsCurv.xml
+        ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataPointsCurv.xml
         # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataContactQuery.xml
         # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataContactModel.xml
         # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataTrajectory.xml
