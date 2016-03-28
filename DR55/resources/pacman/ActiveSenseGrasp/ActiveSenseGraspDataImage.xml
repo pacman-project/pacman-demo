@@ -33,7 +33,7 @@
 
         <bounds type="box" group="1" invisible="0">
         <dimensions v1="0.5" v2="0.5" v3="0.15"/>
-        <pose v1="0.6" v2="-0.5" v3="-0.135" roll="0.0" pitch="0.0" yaw="0.0"/>
+        <pose v1="0.6" v2="-0.5" v3="-0.1" roll="0.0" pitch="0.0" yaw="0.0"/>
         </bounds>
         <!--<bounds type="box" group="1">-->
         <!--  <bounds type="box" group="1" invisible="0">
