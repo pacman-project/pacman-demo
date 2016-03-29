@@ -88,60 +88,78 @@ void DemoDR55::create(const Desc& desc) {
 		// run demo
 		for (;;) {
 			// Contact query
-			grasp::data::Transform* transform = is<grasp::data::Transform>(queryGraspHandler);
-			if (!transform)
-				throw Message(Message::LEVEL_ERROR, "Handler %s does not support Transform interface", queryGraspHandler->getID().c_str());
+			//grasp::data::Transform* transform = is<grasp::data::Transform>(queryGraspHandler);
+			//if (!transform)
+			//	throw Message(Message::LEVEL_ERROR, "Handler %s does not support Transform interface", queryGraspHandler->getID().c_str());
 
 
-			grasp::data::Item::List list;
-			grasp::data::Item::Map::iterator mptr = to<Data>(dataCurrentPtr)->itemMap.find(modelGraspItem);
-			if (mptr == to<Data>(dataCurrentPtr)->itemMap.end())
-				throw Message(Message::LEVEL_ERROR, "DemoDR55::estimatePose(): Does not find %s.", modelGraspItem.c_str());
-			list.insert(list.end(), mptr);
+			//grasp::data::Item::List list;
+			//grasp::data::Item::Map::iterator mptr = to<Data>(dataCurrentPtr)->itemMap.find(modelGraspItem);
+			//if (mptr == to<Data>(dataCurrentPtr)->itemMap.end())
+			//	throw Message(Message::LEVEL_ERROR, "DemoDR55::estimatePose(): Does not find %s.", modelGraspItem.c_str());
+			//list.insert(list.end(), mptr);
 
-			// retrieve model point cloud
-			grasp::data::Item::Map::iterator modelPtr = to<Data>(dataCurrentPtr)->itemMap.find(modelItem);
-			if (modelPtr == to<Data>(dataCurrentPtr)->itemMap.end())
-				throw Message(Message::LEVEL_ERROR, "DemoDR55::estimatePose(): Does not find %s.", modelItem.c_str());
-			list.insert(list.end(), modelPtr); // grasp on model
-			grasp::data::Item::Ptr queryGraspItemPtr = transform->transform(list);
+			//// retrieve model point cloud
+			//grasp::data::Item::Map::iterator modelPtr = to<Data>(dataCurrentPtr)->itemMap.find(modelItem);
+			//if (modelPtr == to<Data>(dataCurrentPtr)->itemMap.end())
+			//	throw Message(Message::LEVEL_ERROR, "DemoDR55::estimatePose(): Does not find %s.", modelItem.c_str());
+			//list.insert(list.end(), modelPtr); // grasp on model
+			//grasp::data::Item::Ptr queryGraspItemPtr = transform->transform(list);
 
-			
+			//
 
-			// insert processed object, remove old one
-			grasp::data::Item::Map::iterator queryContactPtr;
-			RenderBlock renderBlock0(*this);
-			{
-				golem::CriticalSectionWrapper cswData(getCS());
-				to<Data>(dataCurrentPtr)->itemMap.erase(queryGraspItem);
-				queryContactPtr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), grasp::data::Item::Map::value_type(queryGraspItem, queryGraspItemPtr));
-				Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, queryContactPtr, to<Data>(dataCurrentPtr)->getView());
-			}
-			context.write("Transform: handler %s, inputs %s, %s...\n", queryGraspHandler->getID().c_str(), queryContactPtr->first.c_str(), modelItem.c_str());
+			//// insert processed object, remove old one
+			//grasp::data::Item::Map::iterator queryContactPtr;
+			//RenderBlock renderBlock0(*this);
+			//{
+			//	golem::CriticalSectionWrapper cswData(getCS());
+			//	to<Data>(dataCurrentPtr)->itemMap.erase(queryGraspItem);
+			//	queryContactPtr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), grasp::data::Item::Map::value_type(queryGraspItem, queryGraspItemPtr));
+			//	Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, queryContactPtr, to<Data>(dataCurrentPtr)->getView());
+			//}
+			//context.write("Transform: handler %s, inputs %s, %s...\n", queryGraspHandler->getID().c_str(), queryContactPtr->first.c_str(), modelItem.c_str());
 
 			// Grasp with Active Sense and lift the object
 			// Outcome (Exepected state of the robot at the end): 
 			// at the end the object should have grasped and lifted an object 
-			//this->graspWithActiveSense();
+			this->graspWithActiveSense();
+
+			breakPoint("Did it grasp?");
+
+			grasp::ConfigMat34 pose = getPoseFromConfig(this->objPassingPose, 7);
+			this->gotoPoseWS2(pose);
+
 
 			// grasp and scan object
-			breakPoint("Object grasp and point cloud capture");
-			grasp::data::Item::Map::iterator ptr = objectCapture(Data::MODE_QUERY, objectItem);
+			//breakPoint("Object grasp and point cloud capture");
+			//grasp::data::Item::Map::iterator ptr = objectCapture(Data::MODE_QUERY, objectItem);
 
-			// wrist frame
-			const Mat34 frame = forwardTransformArm(grasp::Waypoint::lookup(*controller).state);
-			// create query densities
-			createQuery(ptr->second, frame, &to<Data>(dataCurrentPtr)->clusterCounter);
-			// generate wrist pose solutions
-			generateSolutions();
-			// select best trajectory
-			selectTrajectory();
+			//// wrist frame
+			//const Mat34 frame = forwardTransformArm(grasp::Waypoint::lookup(*controller).state);
+			//// create query densities
+			//createQuery(ptr->second, frame, &to<Data>(dataCurrentPtr)->clusterCounter);
+			//// generate wrist pose solutions
+			//generateSolutions();
+			//// select best trajectory
+			//selectTrajectory();
 
-			breakPoint("Action execution");
-			// execute trajectory
-			performTrajectory(stopAtBreakPoint);
+			//breakPoint("Action execution");
+			//// execute trajectory
+			//performTrajectory(stopAtBreakPoint);
 		}
 		context.write("Done!\n");
+
+	}));
+
+
+	menuCmdMap.insert(std::make_pair("KT", [=]() {
+
+		grasp::ConfigMat34 pose = getPoseFromConfig(this->objPassingPose, 7);
+
+		bool success = this->gotoPoseWS2(pose);
+
+		
+		context.write("Success? %d\n", success);
 
 	}));
 

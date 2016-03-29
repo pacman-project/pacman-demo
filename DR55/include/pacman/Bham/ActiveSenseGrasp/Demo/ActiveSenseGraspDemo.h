@@ -136,11 +136,14 @@ public:
 	void graspWithActiveSense();
 
     virtual bool gotoPoseWS(const grasp::ConfigMat34& pose, const golem::Real& linthr = 0.0000001, const golem::Real& angthr = 0.0000001);
+	virtual bool gotoPoseWS2(const grasp::ConfigMat34& pose, const golem::Real& linthr = 0.0000001, const golem::Real& angthr = 0.0000001);
     virtual bool gotoPoseConfig(const grasp::ConfigMat34& config, const golem::Real& linthr = 0.0000001, const golem::Real& angthr = 0.0000001);
     virtual void scanPoseActive(grasp::data::Item::List& scannedImageItems, const std::string& itemLabel = ActiveSense::DFT_IMAGE_ITEM_LABEL, const std::string& handler = std::string(), ScanPoseCommand scanPoseCommand = nullptr, grasp::Manager::Data::Ptr dataPtr = grasp::Manager::Data::Ptr());
     void scanPoseActiveSensor(grasp::data::Item::List& scannedImageItems, const std::string& itemLabel = ActiveSense::DFT_IMAGE_ITEM_LABEL, const std::string& handler = std::string(), ScanPoseCommand scanPoseCommand = nullptr, grasp::Manager::Data::Ptr dataPtr = grasp::Manager::Data::Ptr());
     void scanPoseActiveFile(grasp::data::Item::List& scannedImageItems, const std::string& itemLabel, const std::string& handler = std::string());
   
+	
+	grasp::ConfigMat34 getPoseFromConfig(const grasp::ConfigMat34& config, int jointIdx);
 
 	/** golem::Object (Post)processing function called AFTER every physics simulation step and before randering. */
     /** This function is useful to draw stuff that changes dinamically **/

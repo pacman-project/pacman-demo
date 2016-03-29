@@ -1067,6 +1067,64 @@ bool ActiveSenseDemo::gotoPoseWS(const grasp::ConfigMat34& pose, const Real& lin
     return true;
 }
 
+bool ActiveSenseDemo::gotoPoseWS2(const grasp::ConfigMat34& pose, const Real& linthr, const golem::Real& angthr) {
+	// current state
+	golem::Controller::State begin = lookupStateArmCommandHand();
+
+	// find trajectory
+	golem::Controller::State::Seq trajectory;
+	grasp::RBDist err = findTrajectory(begin, nullptr, &pose.w, getPlanner().trajectoryDuration, trajectory);
+
+	//grasp::data::Trajectory()
+
+
+
+
+	if (err.lin >= linthr || err.ang >= angthr)
+	{
+		return false;
+	}
+
+	sendTrajectory(trajectory);
+	// wait for end
+	controller->waitForEnd();
+	// sleep
+	Sleep::msleep(SecToMSec(getPlanner().trajectoryIdleEnd));
+
+
+
+
+	return true;
+}
+
+
+grasp::ConfigMat34 ActiveSenseDemo::getPoseFromConfig(const grasp::ConfigMat34& config, int jointIdx)
+{
+	grasp::ConfigMat34 poseOut = config;
+
+	//Show pose lambda
+	typedef std::function<void(const std::string&, const golem::Mat34& m)> ShowPoseFunc;
+	ShowPoseFunc showPose = [&](const std::string& description, const golem::Mat34& m) {
+		demoOwner->context.debug("ActiveSense: %s: p={(%f, %f, %f)}, R={(%f, %f, %f), (%f, %f, %f), (%f, %f, %f)}\n", description.c_str(), m.p.x, m.p.y, m.p.z, m.R.m11, m.R.m12, m.R.m13, m.R.m21, m.R.m22, m.R.m23, m.R.m31, m.R.m32, m.R.m33);
+	};
+
+	// Construct state from configuration input
+	golem::Controller::State state = this->controller->createState();
+	state.cpos.set(config.c.data(), config.c.data() + std::min(config.c.size(), static_cast<size_t>(this->info.getJoints().size())));
+
+	// Forward transform
+	golem::WorkspaceJointCoord wjc;
+	demoOwner->controller->jointForwardTransform(state.cpos, wjc);
+
+	// Setting SE(3) pose
+	poseOut.w = wjc[this->info.getJoints().begin() + jointIdx - 1];
+
+	//showPose("sensor pose", config.w);
+
+	return poseOut;
+
+}
+
 /////////////////////////////// SANDBOX TRAJECTORY INTERPOLATION /////////////////////////////////////
 /// \brief ActiveSenseDemo::sandBoxTrajInterp
 /// \param trajectory

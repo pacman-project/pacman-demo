@@ -459,6 +459,8 @@ void pacman::BaseDemoDR55::Desc::load(golem::Context& context, const golem::XMLC
 
 
 	modelScanPose.xmlData(xmlcontext->getContextFirst("model scan_pose"));
+	objPassingPose.xmlData(xmlcontext->getContextFirst("model passing_pose"));
+
 	golem::XMLData(modelColourSolid, xmlcontext->getContextFirst("model colour solid"));
 	golem::XMLData(modelColourWire, xmlcontext->getContextFirst("model colour wire"));
 
@@ -909,6 +911,7 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 	modelGraspItem = desc.modelGraspItem;
 
 	modelScanPose = desc.modelScanPose;
+	objPassingPose = desc.objPassingPose;
 	modelColourSolid = desc.modelColourSolid;
 	modelColourWire = desc.modelColourWire;
 
