@@ -1071,28 +1071,58 @@ bool ActiveSenseDemo::gotoPoseWS2(const grasp::ConfigMat34& pose, const Real& li
 	// current state
 	golem::Controller::State begin = lookupStateArmCommandHand();
 
+	grasp::RealSeq handCmd; handCmd.assign(getPlanner().handInfo.getJoints().size(), REAL_ZERO);
+	for (auto i = getPlanner().handInfo.getJoints().begin(); i != getPlanner().handInfo.getJoints().end(); ++i) {
+		const U32 k = i - getPlanner().handInfo.getJoints().begin();
+		handCmd[k] = begin.cpos[i];
+	}
+	context.write("Thumb command pose: [%f %f %f %f]\n", handCmd[0], handCmd[1], handCmd[2], handCmd[3]);
 	// find trajectory
 	golem::Controller::State::Seq trajectory;
 	grasp::RBDist err = findTrajectory(begin, nullptr, &pose.w, getPlanner().trajectoryDuration, trajectory);
-
-	//grasp::data::Trajectory()
-
-
 
 
 	if (err.lin >= linthr || err.ang >= angthr)
 	{
 		return false;
 	}
+	// profiling
+	if (trajectory.size() < 2)
+		throw Message(Message::LEVEL_ERROR, "HandlerTrajectory::profile(): At least two waypoints required");
 
+	trajectory.front().t = golem::SEC_TM_REAL_ZERO;
+	trajectory.back().t = getPlanner().trajectoryDuration;
+	getPlanner().planner->getProfile()->profile(trajectory);
+
+	// send trajectory
 	sendTrajectory(trajectory);
-	// wait for end
-	controller->waitForEnd();
+
+	auto thumb = getPlanner().handInfo.getChains().begin();
+	for (U32 i = 0; controller->waitForBegin(); ++i) {
+		if (universe.interrupted())
+			throw Exit();
+		if (controller->waitForEnd(0))
+			break;
+
+		// print every 10th robot state
+		if (i % 10 == 0) {
+			Controller::State state = lookupState();
+			Controller::State cmd = lookupCommand();
+
+			grasp::RealSeq handCommand; handCommand.assign(getPlanner().handInfo.getJoints().size(), REAL_ZERO);
+			grasp::RealSeq handstate; handstate.assign(getPlanner().handInfo.getJoints().size(), REAL_ZERO);
+			for (auto i = getPlanner().handInfo.getJoints(thumb).begin(); i != getPlanner().handInfo.getJoints(thumb).end(); ++i) {
+				const U32 k = i - getPlanner().handInfo.getJoints(thumb).begin();
+				handCommand[k] = cmd.cpos[i];
+				handstate[k] = state.cpos[i];
+			}
+			context.write("State %d\n", i);
+			context.write("Thumb state pose: [%f %f %f %f]\n", handstate[0], handstate[1], handstate[2], handstate[3]);
+			context.write("Thumb command pose: [%f %f %f %f]\n", handCommand[0], handCommand[1], handCommand[2], handCommand[3]);
+		}
+	}
 	// sleep
-	Sleep::msleep(SecToMSec(getPlanner().trajectoryIdleEnd));
-
-
-
+//	Sleep::msleep(SecToMSec(getPlanner().trajectoryIdleEnd));
 
 	return true;
 }
