@@ -1069,18 +1069,29 @@ bool ActiveSenseDemo::gotoPoseWS(const grasp::ConfigMat34& pose, const Real& lin
 
 bool ActiveSenseDemo::gotoPoseWS2(const grasp::ConfigMat34& pose, const Real& linthr, const golem::Real& angthr) {
 	// current state
-	golem::Controller::State begin = lookupStateArmCommandHand();
+	grasp::Waypoint waypoint = grasp::Waypoint::lookup(*controller);
+	golem::Controller::State begin = waypoint.command;// lookupStateArmCommandHand();
 
-	grasp::RealSeq handCmd; handCmd.assign(getPlanner().handInfo.getJoints().size(), REAL_ZERO);
-	for (auto i = getPlanner().handInfo.getJoints().begin(); i != getPlanner().handInfo.getJoints().end(); ++i) {
-		const U32 k = i - getPlanner().handInfo.getJoints().begin();
-		handCmd[k] = begin.cpos[i];
-	}
-	context.write("Thumb command pose: [%f %f %f %f]\n", handCmd[0], handCmd[1], handCmd[2], handCmd[3]);
+	//grasp::RealSeq handCmd; handCmd.assign(getPlanner().handInfo.getJoints().size(), REAL_ZERO);
+	//for (auto i = getPlanner().handInfo.getJoints().begin(); i != getPlanner().handInfo.getJoints().end(); ++i) {
+	//	const U32 k = i - getPlanner().handInfo.getJoints().begin();
+	//	handCmd[k] = begin.cpos[i];
+	//}
+	//context.write("Thumb command pose: [%f %f %f %f]\n", handCmd[0], handCmd[1], handCmd[2], handCmd[3]);
 	// find trajectory
 	golem::Controller::State::Seq trajectory;
 	grasp::RBDist err = findTrajectory(begin, nullptr, &pose.w, getPlanner().trajectoryDuration, trajectory);
 
+	for (auto&i : trajectory) {
+		i.reserved = waypoint.command.reserved;
+		auto h = i.cpos.data() + *getPlanner().handInfo.getJoints().begin();
+		context.write("trajectory: %f %f %f %f\n", h[0], h[1], h[2], h[3]);
+	}
+
+	auto h = waypoint.state.cpos.data() + *getPlanner().handInfo.getJoints().begin();
+	context.write("state: %f %f %f %f\n", h[0], h[1], h[2], h[3]);
+	h = waypoint.command.cpos.data() + *getPlanner().handInfo.getJoints().begin();
+	context.write("command: %f %f %f %f\n", h[0], h[1], h[2], h[3]);
 
 	if (err.lin >= linthr || err.ang >= angthr)
 	{
@@ -1106,19 +1117,27 @@ bool ActiveSenseDemo::gotoPoseWS2(const grasp::ConfigMat34& pose, const Real& li
 
 		// print every 10th robot state
 		if (i % 10 == 0) {
-			Controller::State state = lookupState();
-			Controller::State cmd = lookupCommand();
+			grasp::Waypoint w = grasp::Waypoint::lookup(*controller);
 
-			grasp::RealSeq handCommand; handCommand.assign(getPlanner().handInfo.getJoints().size(), REAL_ZERO);
-			grasp::RealSeq handstate; handstate.assign(getPlanner().handInfo.getJoints().size(), REAL_ZERO);
-			for (auto i = getPlanner().handInfo.getJoints(thumb).begin(); i != getPlanner().handInfo.getJoints(thumb).end(); ++i) {
-				const U32 k = i - getPlanner().handInfo.getJoints(thumb).begin();
-				handCommand[k] = cmd.cpos[i];
-				handstate[k] = state.cpos[i];
-			}
 			context.write("State %d\n", i);
-			context.write("Thumb state pose: [%f %f %f %f]\n", handstate[0], handstate[1], handstate[2], handstate[3]);
-			context.write("Thumb command pose: [%f %f %f %f]\n", handCommand[0], handCommand[1], handCommand[2], handCommand[3]);
+			h = w.state.cpos.data() + *getPlanner().handInfo.getJoints().begin();
+			context.write("state: %f %f %f %f\n", h[0], h[1], h[2], h[3]);
+			h = w.command.cpos.data() + *getPlanner().handInfo.getJoints().begin();
+			context.write("command: %f %f %f %f\n", h[0], h[1], h[2], h[3]);
+
+			//Controller::State state = lookupState();
+			//Controller::State cmd = lookupCommand();
+
+			//grasp::RealSeq handCommand; handCommand.assign(getPlanner().handInfo.getJoints().size(), REAL_ZERO);
+			//grasp::RealSeq handstate; handstate.assign(getPlanner().handInfo.getJoints().size(), REAL_ZERO);
+			//for (auto i = getPlanner().handInfo.getJoints(thumb).begin(); i != getPlanner().handInfo.getJoints(thumb).end(); ++i) {
+			//	const U32 k = i - getPlanner().handInfo.getJoints(thumb).begin();
+			//	handCommand[k] = cmd.cpos[i];
+			//	handstate[k] = state.cpos[i];
+			//}
+			//context.write("State %d\n", i);
+			//context.write("Thumb state pose: [%f %f %f %f]\n", handstate[0], handstate[1], handstate[2], handstate[3]);
+			//context.write("Thumb command pose: [%f %f %f %f]\n", handCommand[0], handCommand[1], handCommand[2], handCommand[3]);
 		}
 	}
 	// sleep

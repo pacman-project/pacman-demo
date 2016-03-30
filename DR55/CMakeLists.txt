@@ -195,6 +195,7 @@ IF (BUILD_PACMAN_DEMO_DR55)
 		${PROJECT_ROOT}/include/pacman/Bham/Demo/Demo.h
 	)
 	SET(DEMO_DR55_FILES
+		${PROJECT_ROOT}/resources/GraspDemoDR55_RobotBorisSchunk.xml
 		${PROJECT_ROOT}/resources/GraspDemoDR55_RobotBoris.xml
 		${PROJECT_ROOT}/resources/GraspDemoDR55_RobotBorisSim.xml
 		${PROJECT_ROOT}/resources/GraspDemoDR55_RobotBorisDepthSim.xml
@@ -215,6 +216,7 @@ IF (BUILD_PACMAN_DEMO_DR55)
 		${PROJECT_ROOT}/resources/GraspFTClientDemoDR55.xml
 		${PROJECT_ROOT}/resources/GolemCtrlRobotBorisDemoDR55Sim.xml
 		${PROJECT_ROOT}/resources/GolemCtrlRobotBorisDemoDR55.xml
+
 	)
 	SET(DEMO_DR55_CAL_FILES
 		${PROJECT_ROOT}/resources/cal/GraspCameraOpenNIDemoDR55Chest.cal
