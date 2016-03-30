@@ -186,9 +186,10 @@ enable_coverage_filter_plane = "0" or "1"-->
     </model>
 
     <query camera="DepthSim+DepthSimDemoDR55Chest" handler="Image+ImageDemoDR55" item="Query" item_obj="QueryObj" item_grasp="grasp-jug-5_views-rim" handler_grasp="ContactQuery+ContactQueryDemoDR55" handler_trj="Trajectory+TrajectoryDemoDR55" item_trj="TrajectoryQuery">
-      <query id="Any" weight="1.0">
-        <contact_3d type="feature" kernels="5000" epsilon="1e-10" trials="100" feature_std_dev_max="5.0" pose_std_dev_max="5.0"/>
-        <nn_search neighbours="0" search_checks="32" search_kdtrees="1" search_leaf_max_size="10"/>
+      <query id="Any">
+        <contact_3d type="feature" weight="1.0" kernels="5000" epsilon="1e-10" trials="100" feature_std_dev_max="5.0" pose_std_dev_max="5.0">
+          <nn_search neighbours="0" search_checks="32" search_kdtrees="1" search_leaf_max_size="10"/>
+        </contact_3d>
         <pose kernels="100">
           <std_dev lin="0.1" ang="10.0"/>
           <path_dist lin="0.075" ang="100.0" std_dev="0.01"/>
