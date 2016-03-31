@@ -186,14 +186,16 @@ enable_coverage_filter_plane = "0" or "1"-->
     </model>
 
     <query camera="DepthSim+DepthSimDemoDR55Chest" handler="Image+ImageDemoDR55" item="Query" item_obj="QueryObj" item_grasp="grasp-jug-5_views-rim" handler_grasp="ContactQuery+ContactQueryDemoDR55" handler_trj="Trajectory+TrajectoryDemoDR55" item_trj="TrajectoryQuery">
-      <query id="Any" weight="1.0">
-        <contact_3d type="feature" kernels="5000" epsilon="1e-10" trials="100" feature_std_dev_max="5.0" pose_std_dev_max="5.0"/>
-        <nn_search neighbours="0" search_checks="32" search_kdtrees="1" search_leaf_max_size="10"/>
+      <query id="Any">
+        <contact_3d type="feature" weight="1.0" kernels="5000" epsilon="1e-10" trials="100" feature_std_dev_max="5.0" pose_std_dev_max="5.0">
+          <nn_search neighbours="0" search_checks="32" search_kdtrees="1" search_leaf_max_size="10"/>
+        </contact_3d>
         <pose kernels="100">
           <std_dev lin="0.1" ang="10.0"/>
           <path_dist lin="0.075" ang="100.0" std_dev="0.01"/>
         </pose>
       </query>
+
 
       <optimisation runs="1000" steps="1000" sa_temp="0.1" sa_delta_lin="1.0" sa_delta_ang="0.2" sa_energy="0.1" epsilon="1.e-10"/>
 
@@ -268,7 +270,7 @@ enable_coverage_filter_plane = "0" or "1"-->
     <!-- DLR Justin robot (controller): library_path="GolemCtrlRobotJustin" config_path="GolemCtrlRobotJustin" -->
 
     <!--<controller library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotBorisDemoDR55Sim">-->
-    <controller library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotBorisSchunkDemoDR55Sim">
+    <controller library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotBorisSPGSim">
         <renderer>
         <joint_appearance line_width="1.0">
           <solid_colour R="192" G="192" B="0" A="100"></solid_colour>
@@ -288,7 +290,7 @@ enable_coverage_filter_plane = "0" or "1"-->
         </state_renderer>
       </renderer>
     </controller>
-    <planner library_path="GolemPlannerGraphPlanner" config_path="GolemPlannerRobotBorisR">
+    <planner library_path="GolemPlannerGraphPlanner" config_path="GolemPlannerRobotBorisSPGR">
       <controller id="KukaLWRSim+KukaLWRBorisR" begin="0" end="1"/>
       <controller id="DLRHitHandIISim+DLRHitHandIIBorisR" begin="1" end="6"/>
 
@@ -336,7 +338,7 @@ enable_coverage_filter_plane = "0" or "1"-->
       </renderer>
     </planner>
 
-    <planner library_path="GolemPlannerGraphPlanner" config_path="GolemPlannerRobotBorisL">
+    <planner library_path="GolemPlannerGraphPlanner" config_path="GolemPlannerRobotBorisSPGL">
       <controller id="KukaLWRSim+KukaLWRBorisL" begin="6" end="7"/>
       <!--<controller id="PISASoftHandSim+PISASoftHandSim" begin="7" end="12"/>-->
       <controller id="GolemCtrlSim+GolemCtrlSchunkParallelGripper" begin="7" end="8"/>
