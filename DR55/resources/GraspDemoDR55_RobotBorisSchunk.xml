@@ -247,7 +247,7 @@ enable_coverage_filter_plane = "0" or "1"-->
     <!-- DLR Justin robot simulation (controller): library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotJustin" -->
     <!-- DLR Justin robot (controller): library_path="GolemCtrlRobotJustin" config_path="GolemCtrlRobotJustin" -->
 
-    <controller library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotBorisSchunk">
+    <controller library_path="GolemCtrlMultiCtrl" config_path="GolemCtrlRobotBorisSchunkDemoDR55">
       <renderer>
         <joint_appearance line_width="1.0">
           <solid_colour R="192" G="192" B="0" A="100"></solid_colour>
