@@ -25,7 +25,7 @@
       <local_pose v1="0.0" v2="0.0" v3="0.189" roll="0.0" pitch="0.0" yaw="1.57079633"/>
     </controller>-->
     <controller library_path="GolemCtrlSim" config_path="GolemCtrlSchunkParallelGripper" linked_chain_index="6" enable_io="1" sync_begin="1" sync_end="1">
-      <local_pose v1="0.0" v2="0.0" v3="0.1563" roll="1.57079633" pitch="0.0" yaw="-2.3561944901994329"/>
+      <local_pose v1="0.0" v2="0.0" v3="0.143" roll="1.5707963267948966192313216916398.0" pitch="0.0" yaw="0.0"/>
     </controller>
 
     <controller library_path="GolemCtrlKITHeadSim" config_path="GolemCtrlKITHeadSim" linked_chain_index="-1" enable_io="1" sync_begin="1" sync_end="1">
