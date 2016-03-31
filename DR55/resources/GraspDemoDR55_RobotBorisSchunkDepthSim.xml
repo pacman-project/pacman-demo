@@ -339,7 +339,7 @@ enable_coverage_filter_plane = "0" or "1"-->
     <planner library_path="GolemPlannerGraphPlanner" config_path="GolemPlannerRobotBorisL">
       <controller id="KukaLWRSim+KukaLWRBorisL" begin="6" end="7"/>
       <!--<controller id="PISASoftHandSim+PISASoftHandSim" begin="7" end="12"/>-->
-      <controller id="GolemCtrlSchunkParallelGripper+GolemCtrlSchunkParallelGripper" begin="7" end="8"/>
+      <controller id="GolemCtrlSim+GolemCtrlSchunkParallelGripper" begin="7" end="8"/>
 
       <!--<sensor id="FTClient+FTClient"/>-->
       <!--<sensor id="FTDAQ+FTDAQ"/>-->
