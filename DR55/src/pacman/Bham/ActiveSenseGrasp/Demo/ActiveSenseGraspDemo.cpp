@@ -1146,31 +1146,17 @@ bool ActiveSenseDemo::gotoPoseWS2(const grasp::ConfigMat34& pose, const Real& li
 	return true;
 }
 
-void ActiveSenseDemo::processTrajectory(golem::Controller::State::Seq& trajectory, const grasp::Waypoint& waypoint, golem::U32 plannerIdx){
-
-
-	const golem::U32 currentPlannerIndex = plannerIndex;
-	plannerIndex = plannerIdx; 
-	ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
-
-	// Overwritting commands for planner selected by plannerIdx (0 - right arm, 1 - left arm)
-	for (auto&i : trajectory) {
+void ActiveSenseDemo::processTrajectory(golem::Controller::State::Seq& trajectory, const grasp::Waypoint& waypoint) const {
+	// Overwritting commands
+	for (auto&i : trajectory)
 		i.reserved = waypoint.command.reserved;
-		auto h = i.cpos.data() + *getPlanner().handInfo.getJoints().begin();
-		context.write("trajectory: %f %f %f %f\n", h[0], h[1], h[2], h[3]);
-	}
-
-
 }
 
-void ActiveSenseDemo::processTrajectory(golem::Controller::State::Seq& trajectory){
+void ActiveSenseDemo::processTrajectory(golem::Controller::State::Seq& trajectory) const {
+	// retrieve state and command config of the robot
 	grasp::Waypoint waypoint = grasp::Waypoint::lookup(*controller);
-	golem::Controller::State cmd = waypoint.command;
-
-	// Overwritting commands for right arm
-	processTrajectory(trajectory, waypoint,0);
-	// Overwritting commands for left arm
-	processTrajectory(trajectory, waypoint, 1);
+	// Overwritting commands
+	processTrajectory(trajectory, waypoint);
 }
 
 grasp::ConfigMat34 ActiveSenseDemo::getPoseFromConfig(const grasp::ConfigMat34& config, int jointIdx)
