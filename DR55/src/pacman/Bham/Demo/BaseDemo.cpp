@@ -221,7 +221,8 @@ void pacman::BaseDemoDR55::Data::createRender() {
 		golem::CriticalSectionWrapper csw(owner->scene.getCS());
 		owner->modelRenderer.reset();
 		// model/query
-		if (owner->showModel) {
+		//if (owner->showModel)
+		{
 			const grasp::Vec3Seq& vertices = mode == MODE_MODEL ? modelVertices : queryVertices;
 			const grasp::TriangleSeq& triangles = mode == MODE_MODEL ? modelTriangles : queryTriangles;
 			const golem::Mat34& frame = mode == MODE_MODEL ? modelFrame : queryFrame;
@@ -988,9 +989,16 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 	optimisation = desc.optimisation;
 
 	// manipulator
-	manipulator = desc.manipulatorDesc->create(*getPlanner().planner, getPlanner().controllerIDSeq);
-	manipulatorAppearance = desc.manipulatorAppearance;
-	manipulatorItemTrj = desc.manipulatorItemTrj;
+	{
+		const golem::U32 currentPlannerIndex = plannerIndex;
+		plannerIndex = 1;
+		ScopeGuard guard([&]() { plannerIndex = currentPlannerIndex; });
+
+		manipulator = desc.manipulatorDesc->create(*getPlanner().planner, getPlanner().controllerIDSeq);
+		manipulatorAppearance = desc.manipulatorAppearance;
+		manipulatorItemTrj = desc.manipulatorItemTrj;
+	}
+	
 
 	poseCovInv.lin = REAL_ONE / (poseCov.lin = Math::sqr(desc.manipulatorPoseStdDev.lin));
 	poseCovInv.ang = REAL_ONE / (poseCov.ang = Math::sqr(desc.manipulatorPoseStdDev.ang));
@@ -1326,6 +1334,11 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 					throw Message(Message::LEVEL_ERROR, "Model object item has not been created");
 				Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
 			}
+
+		const golem::U32 currentPlannerIndex = plannerIndex;
+		plannerIndex = 1;
+		ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
+
 		// go to model robot pose
 		gotoConfig(*to<Data>(dataCurrentPtr)->modelState);
 
@@ -1404,8 +1417,16 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 		if (modelAny == modelMap.end())
 			throw Message(Message::LEVEL_ERROR, "Unable to find Model %s", ID_ANY.c_str());
 
+
+		const golem::U32 currentPlannerIndex = plannerIndex;
+		plannerIndex = 1;
 		// clear
-		ScopeGuard guard([&]() { golem::CriticalSectionWrapper csw(scene.getCS()); objectRenderer.reset(); });
+		ScopeGuard guard([&]() {
+			plannerIndex = currentPlannerIndex;
+			golem::CriticalSectionWrapper csw(scene.getCS()); objectRenderer.reset();
+		});
+
+
 		RenderBlock renderBlock(*this);
 
 		// select model type
@@ -1559,6 +1580,10 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 
 	// query operations
 	menuCtrlMap.insert(std::make_pair("PQ", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+		const golem::U32 currentPlannerIndex = plannerIndex;
+		plannerIndex = 1;
+		ScopeGuard guard([&]() { plannerIndex = currentPlannerIndex; });
+
 		// set mode
 		to<Data>(dataCurrentPtr)->mode = Data::MODE_QUERY;
 		createRender();
@@ -1566,6 +1591,10 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 		desc = "Press a key to: create (D)ensities, generate (S)olutions ...";
 	}));
 	menuCmdMap.insert(std::make_pair("PQD", [=]() {
+		const golem::U32 currentPlannerIndex = plannerIndex;
+		plannerIndex = 1;
+		ScopeGuard guard([&]() { plannerIndex = currentPlannerIndex; });
+
 		// load object item
 		data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.find(objectItem);
 		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
@@ -1579,6 +1608,11 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 		context.write("Done!\n");
 	}));
 	menuCmdMap.insert(std::make_pair("PQS", [=]() {
+
+		const golem::U32 currentPlannerIndex = plannerIndex;
+		plannerIndex = 1;
+		ScopeGuard guard([&]() { plannerIndex = currentPlannerIndex; });
+
 		// generate wrist pose solutions
 		generateSolutions();
 
@@ -1597,6 +1631,11 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 		desc = "Press a key to: trajectory (S)elect/(P)erform/(C)lear occupied slots...";
 	}));
 	menuCmdMap.insert(std::make_pair("PTS", [=]() {
+
+		const golem::U32 currentPlannerIndex = plannerIndex;
+		plannerIndex = 1;
+		ScopeGuard guard([&]() { plannerIndex = currentPlannerIndex; });
+
 		// select best trajectory
 		selectTrajectory();
 		createRender();
@@ -1604,6 +1643,11 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 		context.write("Done!\n");
 	}));
 	menuCmdMap.insert(std::make_pair("PTP", [=]() {
+
+		const golem::U32 currentPlannerIndex = plannerIndex;
+		plannerIndex = 1;
+		ScopeGuard guard([&]() { plannerIndex = currentPlannerIndex; });
+
 		// perform trajectory
 		performTrajectory(true);
 		createRender();
@@ -2203,7 +2247,7 @@ grasp::data::Item::Map::iterator pacman::BaseDemoDR55::estimatePose(Data::Mode m
 	to<Data>(dataCurrentPtr)->mode = mode;
 
 	// run robot
-	gotoPose(modelScanPose);
+	//gotoPose(modelScanPose);
 
 	// block keyboard and mouse interaction
 	InputBlock inputBlock(*this);
@@ -2299,6 +2343,12 @@ grasp::data::Item::Map::iterator pacman::BaseDemoDR55::objectGraspAndCapture(con
 			(void)waitKey(0);
 		}
 	};
+
+	// Selecting planner for left arm
+	const golem::U32 currentPlannerIndex = plannerIndex;
+	plannerIndex = 1;
+	ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
+
 
 	gotoPose2(graspPoseOpen, getPlanner().trajectoryDuration);
 
@@ -2578,6 +2628,7 @@ void pacman::BaseDemoDR55::generateSolutions() {
 	ParallelsTask(context.getParallels(), [&](ParallelsTask*) {
 		const U32 jobId = context.getParallels()->getCurrentJob()->getJobId();
 		Rand rand(RandSeed(this->context.getRandSeed()._U32[0] + jobId, (U32)0));
+
 
 		Data::Solution *solution = nullptr, test;
 

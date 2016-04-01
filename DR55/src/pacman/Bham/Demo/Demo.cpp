@@ -163,6 +163,40 @@ void DemoDR55::create(const Desc& desc) {
 
 	}));
 
+	menuCmdMap.insert(std::make_pair("KP", [&]() {
+		data::Item::Map::const_iterator item = to<Data>(dataCurrentPtr)->getItem<data::Item::Map::const_iterator>(true);
+		data::Trajectory* trajectory = is<data::Trajectory>(item->second.get());
+		// play
+		Controller::State::Seq seq;
+		trajectory->createTrajectory(seq);
+
+		processTrajectory(seq);
+
+		// select collision object
+		CollisionBounds::Ptr collisionBounds = selectCollisionBounds();
+		// perform
+		perform(dataCurrentPtr->first, item->first, seq);
+		// done!
+		createRender();
+		context.write("Done!\n");
+	}));
+
+
+	//menuCmdMap.insert(std::make_pair("TE", [&]() {
+	//	grasp::ConfigMat34::Range range = selectPoseRange(poseMap);
+	//	grasp:ConfigMat34::Seq seq;
+	//	for (ConfigMat34::Map::const_iterator i = range.first; i != range.second; ++i) seq.push_back(i->second);
+	//	if (seq.empty()) throw Cancel("No poses");
+	//	// select and go
+	//	size_t index = 1;
+
+	//	Menu::selectIndex(seq, index, "pose");
+	//	gotoPose(seq[index - 1]);
+	//	// done!
+	//	createRender();
+	//	context.write("Done!\n");
+	//}));
+
 }
 
 //------------------------------------------------------------------------------

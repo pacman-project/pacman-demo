@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<grasp>
+  <activectrl planner_index="1" active="1">
+    <ctrl>
+      <frame>
+        <increment lin="0.05" ang="0.0872664625997165"/>
+        <size v1="0.1" v2="0.1" v3="0.1"/>
+      </frame>
+      <sim pred_time="0.4" reac_time="0.3">
+        <gain v1="0.00005" v2="0.00005" v3="0.0005" w1="0.0005" w2="0.0005" w3="0.005"/>
+      </sim>
+    </ctrl>
+  </activectrl>
+</grasp>
