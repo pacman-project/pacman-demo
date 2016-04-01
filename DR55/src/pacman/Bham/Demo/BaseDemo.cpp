@@ -340,7 +340,7 @@ void pacman::BaseDemoDR55::Data::load(const std::string& prefix, const golem::XM
 		}
 	}
 	catch (const std::exception& msg) {
-		context.write("%s/n", msg.what());
+		context.write("%s\n", msg.what());
 	}
 
 	Data::Cluster::setToDefault(this->owner->clusterMap, clusterCounter, training);
@@ -2205,27 +2205,36 @@ grasp::data::Item::Map::iterator pacman::BaseDemoDR55::estimatePose(Data::Mode m
 	// run robot
 	gotoPose(modelScanPose);
 
-	// block keyboard and mouse interaction
-	InputBlock inputBlock(*this);
-	{
-		RenderBlock renderBlock(*this);
-		golem::CriticalSectionWrapper cswData(scene.getCS());
-		to<Data>(dataCurrentPtr)->itemMap.erase(itemName);
-		vertices.clear();
-		triangles.clear();
-	}
-	// capture and insert data
-	data::Capture* capture = is<data::Capture>(handler);
-	if (!capture)
-		throw Message(Message::LEVEL_ERROR, "Handler %s does not support Capture interface", handler->getID().c_str());
 	data::Item::Map::iterator ptr;
-	data::Item::Ptr item = capture->capture(*camera, [&](const grasp::TimeStamp*) -> bool { return true; });
-	{
-		RenderBlock renderBlock(*this);
-		golem::CriticalSectionWrapper cswData(scene.getCS());
-		to<Data>(dataCurrentPtr)->itemMap.erase(itemName);
-		ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(itemName, item));
-		Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+	data::Item::Ptr item;
+	// scan, if needed
+	if (option("YN", "Scan? (Y/N)") == 'Y') {
+		// block keyboard and mouse interaction
+		InputBlock inputBlock(*this);
+		{
+			RenderBlock renderBlock(*this);
+			golem::CriticalSectionWrapper cswData(scene.getCS());
+			to<Data>(dataCurrentPtr)->itemMap.erase(itemName);
+			vertices.clear();
+			triangles.clear();
+		}
+		// capture and insert data
+		data::Capture* capture = is<data::Capture>(handler);
+		if (!capture)
+			throw Message(Message::LEVEL_ERROR, "Handler %s does not support Capture interface", handler->getID().c_str());
+		item = capture->capture(*camera, [&](const grasp::TimeStamp*) -> bool { return true; });
+		{
+			RenderBlock renderBlock(*this);
+			golem::CriticalSectionWrapper cswData(scene.getCS());
+			to<Data>(dataCurrentPtr)->itemMap.erase(itemName);
+			ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(itemName, item));
+			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+		}
+	}
+	else {
+		ptr = to<Data>(dataCurrentPtr)->itemMap.find(itemName);
+		if (ptr == to<Data>(dataCurrentPtr)->itemMap.end())
+			throw Message(Message::LEVEL_ERROR, "DemoDR55::estimatePose(): Does not find %s.", itemName.c_str());
 	}
 	// generate features
 	data::Transform* transform = is<data::Transform>(handler);

@@ -34,6 +34,12 @@
     </item>
     <item cloud=".pcd" handler="Image+ImageDemoDR55" image="" label="Query" prefix="-item-Query-1" time_stamp="0">
       <config dim="0" m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1" planner_index="0" v1="0" v2="0" v3="0"></config>
+      <extrinsic m11="0.621833" m12="-0.585441" m13="0.520175" m21="-0.781001" m22="-0.414406" m23="0.467232" m31="-0.0579735" m32="-0.696797" m33="-0.714922" v1="0.188315" v2="0.0988878" v3="0.272018"></extrinsic>
+      <intrinsic cx="314.65" cy="247.578" f="6" fx="574.805" fy="576.237" h="480" k1="-0.0439675" k2="0.0938188" k3="0" p1="0.00240521" p2="-0.000365937" w="640"></intrinsic>
+      <query normal_std_dev="100"></query>
+    </item>
+    <item cloud=".pcd" handler="Image+ImageDemoDR55" image="" label="Query2" prefix="-item-Query2-1" time_stamp="0">
+      <config dim="0" m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1" planner_index="0" v1="0" v2="0" v3="0"></config>
       <extrinsic m11="-0.689817" m12="-0.351147" m13="0.633124" m21="-0.723807" m22="0.353741" m23="-0.592427" m31="-0.015934" m32="-0.866928" m33="-0.49818" v1="0.216904" v2="-0.05854" v3="0.281856"></extrinsic>
       <intrinsic cx="322.909" cy="218.759" f="6" fx="583.881" fy="575.522" h="480" k1="-0.0425434" k2="0.0370772" k3="0" p1="-0.000270336" p2="0.00213542" w="640"></intrinsic>
       <query normal_std_dev="100"></query>
@@ -63,13 +69,7 @@
     <item handler="Trajectory+TrajectoryDemoDR55" label="grasp-light-plate-left-traj2" path_position="0" prefix="-item-grasp-light-plate-left-traj2-1" waypoint=".wp">
       <contact path_interpol="1" path_waypoint="18446744073709551615"></contact>
     </item>
-    <item cloud=".pcd" handler="Image+ImageDemoDR55LeftArm" image="" label="large_rack" prefix="-item-large_rack-1" time_stamp="388.972">
-      <config dim="0" m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1" planner_index="0" v1="0" v2="0" v3="0"></config>
-      <extrinsic m11="0.621833" m12="-0.585441" m13="0.520175" m21="-0.781001" m22="-0.414406" m23="0.467232" m31="-0.0579735" m32="-0.696797" m33="-0.714922" v1="0.188315" v2="0.0988878" v3="0.272018"></extrinsic>
-      <intrinsic cx="314.65" cy="247.578" f="6" fx="574.805" fy="576.237" h="480" k1="-0.0439675" k2="0.0938188" k3="0" p1="0.00240521" p2="-0.000365937" w="640"></intrinsic>
-      <query normal_std_dev="100"></query>
-    </item>
-    <item cloud=".pcd" handler="PointsCurv+PointsCurvDemoDR55LeftArm" label="light-plate-left-curv" prefix="-item-light-plate-left-curv-1" time_stamp="0">
+    <item cloud=".pcd" handler="PointsCurv+PointsCurv" label="light-plate-left-curv" prefix="-item-light-plate-left-curv-1" time_stamp="0">
       <config c1="2.92518" c10="0.102173" c11="0.102173" c12="0.000574078" c13="0.538395" c14="0.0578053" c15="0.0578053" c16="-0.0259841" c17="0.768902" c18="0.224652" c19="0.146112" c2="-0.340707" c20="0.0213804" c21="0.788833" c22="0.190444" c23="0.190444" c24="-0.0267671" c25="0.631534" c26="0.177509" c27="0.240341" c28="-2.39717" c29="1.17545" c3="-1.23825" c30="0.417882" c31="-0.963693" c32="-1.87711" c33="-1.97851" c34="-1.70549" c35="-2.50015e-007" c36="-2.50015e-007" c37="0" c38="0" c39="0" c4="2.05354" c40="0" c41="0" c42="0" c43="0" c5="-0.266604" c6="-0.719258" c7="0.992049" c8="0.160821" c9="0.505032" dim="43" m11="0.241228" m12="0.962768" m13="0.122009" m21="0.804382" m22="-0.268694" m23="0.52988" m31="0.542935" m32="-0.0296804" m33="-0.83925" planner_index="0" v1="0.561227" v2="0.291039" v3="0.68285"></config>
       <model rand_ang="100">
         <curv_std_dev_fac v1="50" v2="50" v3="1"></curv_std_dev_fac>
@@ -84,13 +84,13 @@
       <intrinsic cx="319.995" cy="247.101" f="6" fx="572.306" fy="572.119" h="480" k1="-0.0307625" k2="0.0381676" k3="0" p1="-0.000840654" p2="-0.00121145" w="640"></intrinsic>
       <query normal_std_dev="100"></query>
     </item>
-    <item cloud=".pcd" handler="Image+ImageDemoDR55LeftArmScan" image="" label="object_left" prefix="-item-object_left-1" time_stamp="31.4933">
+    <item cloud=".pcd" handler="Image+Image" image="" label="object_left" prefix="-item-object_left-1" time_stamp="31.4933">
       <config dim="0" m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1" planner_index="0" v1="0" v2="0" v3="0"></config>
       <extrinsic m11="0.621833" m12="-0.585441" m13="0.520175" m21="-0.781001" m22="-0.414406" m23="0.467232" m31="-0.0579735" m32="-0.696797" m33="-0.714922" v1="0.188315" v2="0.0988878" v3="0.272018"></extrinsic>
       <intrinsic cx="314.65" cy="247.578" f="6" fx="574.805" fy="576.237" h="480" k1="-0.0439675" k2="0.0938188" k3="0" p1="0.00240521" p2="-0.000365937" w="640"></intrinsic>
       <query normal_std_dev="100"></query>
     </item>
-    <item data_index="0" handler="ContactModel+ContactModelDemoDR55LeftArm" label="pinch-light-plate-gripper-cm" model=".model" prefix="-item-pinch-light-plate-gripper-cm-1"></item>
+    <item data_index="0" handler="ContactModel+ContactModel" label="pinch-light-plate-gripper-cm" model=".model" prefix="-item-pinch-light-plate-gripper-cm-1"></item>
     <item cloud=".pcd" handler="Image+ImageDemoDR55" image="" label="query_from_chest_rack2" prefix="-item-query_from_chest_rack2-1" time_stamp="1188.47">
       <config dim="0" m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1" planner_index="0" v1="0" v2="0" v3="0"></config>
       <extrinsic m11="-0.689817" m12="-0.351147" m13="0.633124" m21="-0.723807" m22="0.353741" m23="-0.592427" m31="-0.015934" m32="-0.866928" m33="-0.49818" v1="0.216904" v2="-0.05854" v3="0.281856"></extrinsic>
