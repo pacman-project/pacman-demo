@@ -231,6 +231,7 @@ IF (BUILD_PACMAN_DEMO_DR55)
 		${PROJECT_ROOT}/resources/GolemPlannerRobotBorisSPGL.xml
 		${PROJECT_ROOT}/resources/GolemPlannerRobotBorisSPGR.xml
 		${PROJECT_ROOT}/resources/GraspWorkspaceCtrlDR55.xml
+		${PROJECT_ROOT}/resources/GraspArmHandForceDR55.xml
 		
 	)
 	SET(DEMO_DR55_CAL_FILES

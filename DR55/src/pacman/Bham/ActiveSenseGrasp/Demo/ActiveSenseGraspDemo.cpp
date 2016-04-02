@@ -150,9 +150,9 @@ void ActiveSenseDemo::setHandConfig(Controller::State::Seq& trajectory, const go
     }
 }
 
-void ActiveSenseDemo::gotoPose2(const ConfigMat34& pose, const SecTmReal duration, const bool ignoreHand)
+void ActiveSenseDemo::gotoPose3(const ConfigMat34& pose, const SecTmReal duration, const bool ignoreHand)
 {
-    context.debug("Demo::gotoPose2: %s\n", toXMLString(pose).c_str());
+    context.debug("Demo::gotoPose3: %s\n", toXMLString(pose).c_str());
 
     // always start with hand in commanded config, not actual
     golem::Controller::State begin = lookupStateArmCommandHand();	// current state but commanded state for hand
@@ -169,7 +169,26 @@ void ActiveSenseDemo::gotoPose2(const ConfigMat34& pose, const SecTmReal duratio
 	Sleep::msleep(SecToMSec(getPlanner().trajectoryIdleEnd));
 }
 
-void ActiveSenseDemo::releaseHand2(const double openFraction, const SecTmReal duration, const golem::Controller::State partReleaseConfig)
+void ActiveSenseDemo::releaseRightHand(const double openFraction, const SecTmReal duration)
+{
+	double f = 1.0 - openFraction;
+	f = std::max(0.0, std::min(1.0, f));
+
+	golem::Controller::State currentState = grasp::Waypoint::lookup(*controller).state;
+	ConfigMat34 openPose(RealSeq(61, 0.0)); // !!! TODO use proper indices
+	for (size_t i = 0; i < openPose.c.size(); ++i)
+		openPose.c[i] = currentState.cpos.data()[i];
+
+	// TODO use proper indices - handInfo.getJoints()
+	const size_t handIndexBegin = 7;
+	const size_t handIndexEnd = handIndexBegin + 5 * 4;
+	for (size_t i = handIndexBegin; i < handIndexEnd; ++i)
+		openPose.c[i] *= f;
+
+	gotoPose3(openPose, duration);
+}
+
+void ActiveSenseDemo::releaseRightHand2(const double openFraction, const SecTmReal duration, const golem::Controller::State partReleaseConfig)
 {
     golem::Controller::State currentState = lookupStateArmCommandHand();
 	currentState.cpos.set(getPlanner().handInfo.getJoints(), partReleaseConfig.cpos);
@@ -181,16 +200,51 @@ void ActiveSenseDemo::releaseHand2(const double openFraction, const SecTmReal du
 
     //context.debug("Demo::releaseHand2: %s\n", toXMLString(openPose).c_str());
     //if (option("YN", "OK? (Y/N)") == 'Y')
-    gotoPose2(openPose, duration);
+    gotoPose3(openPose, duration);
 
     //if (option("YN", "release hand OK? (Y/N)") == 'Y')
-    releaseHand(openFraction, duration);
+    releaseRightHand(openFraction, duration);
+}
+
+void ActiveSenseDemo::closeRightHand(const double closeFraction, const SecTmReal duration)
+{
+	// @@@ HACK @@@
+
+	const double f = std::max(0.0, std::min(1.0, closeFraction));
+
+	// !!! TODO use proper indices
+	ConfigMat34 pose(RealSeq(61, 0.0)), finalPose(RealSeq(61, 0.0));
+	golem::Controller::State currentState = lookupStateArmCommandHand();
+	for (size_t i = 0; i < pose.c.size(); ++i)
+		pose.c[i] = currentState.cpos.data()[i];
+
+	// TODO use proper indices - handInfo.getJoints()
+	const size_t handIndexBegin = 7;
+	const size_t handIndexEnd = handIndexBegin + 5 * 4;
+	for (size_t i = handIndexBegin; i < handIndexEnd; i += 4)
+	{
+		finalPose.c[i + 1] = 0.85;
+		finalPose.c[i + 2] = 0.2;
+		finalPose.c[i + 3] = 0.2;
+	}
+	// ease off the thumb
+	finalPose.c[handIndexBegin + 0] = 0.22;
+	finalPose.c[handIndexBegin + 1] = 0.6;
+	finalPose.c[handIndexBegin + 2] = 0.1;
+	finalPose.c[handIndexBegin + 3] = 0.1;
+
+	//context.debug("BaseDemoDR55::closeHand: finalPose: %s\n", toXMLString(finalPose).c_str());
+
+	for (size_t i = handIndexBegin; i < handIndexEnd; ++i)
+		pose.c[i] += f * (finalPose.c[i] - pose.c[i]);
+
+	gotoPose3(pose, duration);
 }
 
 void ActiveSenseDemo::executeDropOff()
 {
     context.debug("Moving to drop-off point...\n");
-    gotoPose2(activeSense->getParameters().dropOffPose, getPlanner().trajectoryDuration, true);
+    gotoPose3(activeSense->getParameters().dropOffPose, getPlanner().trajectoryDuration, true);
 
     //context.debug("Waiting 1s before releasing grasp...\n");
     //Sleep::msleep(SecToMSec(1.0));
@@ -201,7 +255,7 @@ void ActiveSenseDemo::executeDropOff()
 
     if (activeSense->pLastExecutedWaypoint != nullptr)
     {
-        releaseHand2(withdrawReleaseFraction, getPlanner().trajectoryDuration, *(activeSense->pLastExecutedWaypoint));
+		releaseRightHand2(withdrawReleaseFraction, getPlanner().trajectoryDuration, *(activeSense->pLastExecutedWaypoint));
     }
 
     context.write("Done!\n");
@@ -224,7 +278,10 @@ void ActiveSenseDemo::setMenus() {
                 "(E) Goto to Camera Hypothesis Pose\n"
                 "(V) Set OpenGL View Point to Camera Hypothesis View\n(N) View from Next-Best-View Hypothesis\n(K) View from wrist-mounted sensor\n(H) Print Sensor Hypothesis Matrices\n"
                 "(C) Set contact points\n"
-                "(S) Show/Suppress octree components points";
+                "(S) Show/Suppress octree components points"
+				"(X) Collect data"
+				"(Z) Execute Demo";
+				"(Y) Right hand menu";
         //menuCmdMap.erase("CE");
         //menuCmdMap.erase("CV");
     }));
@@ -375,7 +432,7 @@ void ActiveSenseDemo::setMenus() {
 
 
         if( option("YN", "Open hand? (Y/N)") == 'Y' )
-            releaseHand(1.0, 2.0);
+			releaseRightHand(1.0, 2.0);
 
         context.write(">>>>>>>> ActiveSense Demo Finished! <<<<<<<<\n");
 
@@ -453,6 +510,34 @@ void ActiveSenseDemo::setMenus() {
 
 	}));
 	
+
+	menuCmdMap.insert(std::make_pair("CY", [=]() {
+		context.write("Right Hand Control\n");
+		for (;;)
+		{
+			const int k = option("+-01 ", "increase grasp:+  relax grasp:-  open:0  close:1  <SPACE> to end");
+			if (k == 32) break;
+			switch (k)
+			{
+			case '+':
+				closeRightHand(0.1, 1.0);
+				break;
+			case '1':
+				closeRightHand(1.0, 4.0);
+				break;
+			case '-':
+				releaseRightHand(0.1, 1.0);
+				break;
+			case '0':
+				releaseRightHand(1.0, 2.0);
+				break;
+			}
+		}
+		context.write("Done!\n");
+	}));
+
+
+
 	menuCmdMap.insert(std::make_pair("CZ", [&]() {
 
 		this->graspWithActiveSense();
@@ -922,7 +1007,7 @@ void ActiveSenseDemo::graspWithActiveSense(){
 
 
 	if (option("YN", "Open hand? (Y/N)") == 'Y')
-		releaseHand(1.0, 2.0);
+		releaseRightHand(1.0, 2.0);
 
 	context.write(">>>>>>>> ActiveSense Demo Finished! <<<<<<<<\n");
 }

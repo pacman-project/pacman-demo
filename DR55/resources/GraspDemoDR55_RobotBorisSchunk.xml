@@ -375,7 +375,7 @@ enable_coverage_filter_plane = "0" or "1"-->
     <!--<sensor id="FTDAQ+FTDAQ"/>-->
 
     <activectrl library_path="GraspJointCtrl" config_path="GraspJointCtrl"/>
-    <activectrl library_path="GraspArmHandForce" config_path="GraspArmHandForce"/>
+    <activectrl library_path="GraspArmHandForce" config_path="GraspArmHandForceDR55"/>
     <activectrl library_path="GraspWorkspaceCtrl" config_path="GraspWorkspaceCtrlDR55"/>
     <activectrl library_path="GraspOspaceCtrl" config_path="GraspOspaceCtrl"/>
 

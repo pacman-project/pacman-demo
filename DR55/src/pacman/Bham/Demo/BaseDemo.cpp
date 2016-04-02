@@ -627,9 +627,9 @@ void pacman::BaseDemoDR55::gotoWristPose(const golem::Mat34& w, golem::U32 plann
 	Sleep::msleep(SecToMSec(getPlanner().trajectoryIdleEnd));
 }
 
-void pacman::BaseDemoDR55::gotoPose2(const ConfigMat34& pose, const SecTmReal duration)
+void pacman::BaseDemoDR55::gotoPoseLeft(const ConfigMat34& pose, const SecTmReal duration)
 {
-	context.debug("BaseDemoDR55::gotoPose2: %s\n", toXMLString(pose).c_str());
+	context.debug("BaseDemoDR55::gotoPoseLeft: %s\n", toXMLString(pose).c_str());
 
 	// always start with hand in commanded config, not actual
 	golem::Controller::State begin = lookupStateArmCommandHand();	// current state but commanded state for hand
@@ -642,7 +642,7 @@ void pacman::BaseDemoDR55::gotoPose2(const ConfigMat34& pose, const SecTmReal du
 	Sleep::msleep(SecToMSec(getPlanner().trajectoryIdleEnd));
 }
 
-void pacman::BaseDemoDR55::releaseHand(const double openFraction, const SecTmReal duration)
+void pacman::BaseDemoDR55::releaseLeftHand(const double openFraction, const SecTmReal duration)
 {
 	double f = 1.0 - openFraction;
 	f = std::max(0.0, std::min(1.0, f));
@@ -658,10 +658,10 @@ void pacman::BaseDemoDR55::releaseHand(const double openFraction, const SecTmRea
 	for (size_t i = handIndexBegin; i < handIndexEnd; ++i)
 		openPose.c[i] *= f;
 
-	gotoPose2(openPose, duration);
+	gotoPoseLeft(openPose, duration);
 }
 
-void pacman::BaseDemoDR55::closeHand(const double closeFraction, const SecTmReal duration)
+void pacman::BaseDemoDR55::closeLeftHand(const double closeFraction, const SecTmReal duration)
 {
 	// @@@ HACK @@@
 
@@ -693,10 +693,10 @@ void pacman::BaseDemoDR55::closeHand(const double closeFraction, const SecTmReal
 	for (size_t i = handIndexBegin; i < handIndexEnd; ++i)
 		pose.c[i] += f * (finalPose.c[i] - pose.c[i]);
 
-	gotoPose2(pose, duration);
+	gotoPoseLeft(pose, duration);
 }
 
-void pacman::BaseDemoDR55::liftWrist(const double verticalDistance, const SecTmReal duration)
+void pacman::BaseDemoDR55::liftLeftWrist(const double verticalDistance, const SecTmReal duration)
 {
 	// vertically by verticalDistance; to hand zero config
 	Mat34 pose = getWristPose();
@@ -1759,16 +1759,16 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 			switch (k)
 			{
 			case '+':
-				closeHand(0.1, 1.0);
+				closeLeftHand(0.1, 1.0);
 				break;
 			case '1':
-				closeHand(1.0, 4.0);
+				closeLeftHand(1.0, 4.0);
 				break;
 			case '-':
-				releaseHand(0.1, 1.0);
+				releaseLeftHand(0.1, 1.0);
 				break;
 			case '0':
-				releaseHand(1.0, 2.0);
+				releaseLeftHand(1.0, 2.0);
 				break;
 			}
 		}
@@ -2350,7 +2350,7 @@ grasp::data::Item::Map::iterator pacman::BaseDemoDR55::objectGraspAndCapture(con
 	ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
 
 
-	gotoPose2(graspPoseOpen, getPlanner().trajectoryDuration);
+	gotoPoseLeft(graspPoseOpen, getPlanner().trajectoryDuration);
 
 	context.write("Waiting for force event, simulate (F)orce event or <ESC> to cancel\n");
 	ForceEvent forceEvent(graspSensorForce, graspThresholdForce);
@@ -2371,14 +2371,14 @@ grasp::data::Item::Map::iterator pacman::BaseDemoDR55::objectGraspAndCapture(con
 	}
 
 	context.debug("Closing hand!\n");
-	gotoPose2(graspPoseClosed, graspCloseDuration);
+	gotoPoseLeft(graspPoseClosed, graspCloseDuration);
 
 	Sleep::msleep(SecToMSec(graspEventTimeWait));
 
 	breakPoint("Go to scan pose");
 
 	context.debug("Proceeding to first scan pose!\n");
-	gotoPose2(objectScanPoseSeq.front(), getPlanner().trajectoryDuration);
+	gotoPoseLeft(objectScanPoseSeq.front(), getPlanner().trajectoryDuration);
 
 	data::Capture* capture = is<data::Capture>(objectHandlerScan);
 	if (!capture)
@@ -3021,13 +3021,13 @@ void pacman::BaseDemoDR55::performTrajectory(bool testTrajectory) {
 	// translate wrist vertically upwards, keeping orientation constant
 
 	context.debug("Releasing hand by %g%% in %gs...\n", withdrawReleaseFraction*100.0, getPlanner().trajectoryDuration);
-	releaseHand(withdrawReleaseFraction, getPlanner().trajectoryDuration);
+	releaseLeftHand(withdrawReleaseFraction, getPlanner().trajectoryDuration);
 
 	context.debug("Waiting 1s before withdrawing upwards...\n");
 	Sleep::msleep(SecToMSec(1.0));
 
 	context.debug("Lifting hand by %gm in %gs...\n", withdrawLiftDistance, getPlanner().trajectoryDuration);
-	liftWrist(withdrawLiftDistance, getPlanner().trajectoryDuration);
+	liftLeftWrist(withdrawLiftDistance, getPlanner().trajectoryDuration);
 
 	// done
 	finished = true;

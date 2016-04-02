@@ -817,10 +817,10 @@ protected:
 
 	void setHandConfig(golem::Controller::State::Seq& trajectory, const grasp::ConfigMat34& handPose);
 	void gotoWristPose(const golem::Mat34& w, golem::U32 plannerIdx = 0, const golem::SecTmReal duration = golem::SEC_TM_REAL_ZERO);
-	void gotoPose2(const grasp::ConfigMat34& pose, const golem::SecTmReal duration);
-	void releaseHand(const double openFraction, const golem::SecTmReal duration);
-	void closeHand(const double closeFraction, const golem::SecTmReal duration);
-	void liftWrist(const double verticalDistance, const golem::SecTmReal duration);
+	void gotoPoseLeft(const grasp::ConfigMat34& pose, const golem::SecTmReal duration);
+	void releaseLeftHand(const double openFraction, const golem::SecTmReal duration);
+	void closeLeftHand(const double closeFraction, const golem::SecTmReal duration);
+	void liftLeftWrist(const double verticalDistance, const golem::SecTmReal duration);
 	void haltRobot();
 
 	void nudgeWrist();
