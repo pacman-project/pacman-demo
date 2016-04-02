@@ -622,6 +622,9 @@ void pacman::BaseDemoDR55::gotoWristPose(const golem::Mat34& w, golem::U32 plann
 	ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
 
 	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(w, duration);
+
+	processTrajectory(trajectory);
+
 	sendTrajectory(trajectory);
 	controller->waitForEnd();
 	Sleep::msleep(SecToMSec(getPlanner().trajectoryIdleEnd));
@@ -642,6 +645,8 @@ void pacman::BaseDemoDR55::gotoPoseLeft(const ConfigMat34& pose, const SecTmReal
 	end.cpos.set(pose.c.data(), pose.c.data() + std::min(pose.c.size(), (size_t)info.getJoints().size()));
 	golem::Controller::State::Seq trajectory;
 	findTrajectory(begin, &end, nullptr, duration, trajectory);
+
+	processTrajectory(trajectory);
 
 	// process trajectory?
 

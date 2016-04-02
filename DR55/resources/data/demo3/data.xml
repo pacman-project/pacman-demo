@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<grasp>
+  <data data_name="data.demo">
+    <item cloud=".pcd" handler="Image+ImageDemoDR55LeftArm" image="" label="Model" prefix="-item-Model-1" time_stamp="0">
+      <config dim="0" m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1" planner_index="0" v1="0" v2="0" v3="0"></config>
+      <extrinsic m11="0.621833" m12="-0.585441" m13="0.520175" m21="-0.781001" m22="-0.414406" m23="0.467232" m31="-0.0579735" m32="-0.696797" m33="-0.714922" v1="0.188315" v2="0.0988878" v3="0.272018"></extrinsic>
+      <intrinsic cx="314.65" cy="247.578" f="6" fx="574.805" fy="576.237" h="480" k1="-0.0439675" k2="0.0938188" k3="0" p1="0.00240521" p2="-0.000365937" w="640"></intrinsic>
+      <query normal_std_dev="100"></query>
+    </item>
+    <item cloud=".pcd" handler="PointsCurv+PointsCurvDemoDR55LeftArmScan" label="ModelObj" prefix="-item-ModelObj-1" time_stamp="0">
+      <config dim="0" m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1" planner_index="0" v1="0" v2="0" v3="0"></config>
+      <model rand_ang="100">
+        <curv_std_dev_fac v1="50" v2="50" v3="1"></curv_std_dev_fac>
+      </model>
+      <query>
+        <pose_std_dev ang="200" lin="0.005"></pose_std_dev>
+      </query>
+    </item>
+    <item cloud=".pcd" handler="PointsCurv+PointsCurvDemoDR55LeftArmScan" label="Object" prefix="-item-Object-1" time_stamp="0">
+      <config dim="0" m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1" planner_index="0" v1="0" v2="0" v3="0"></config>
+      <model rand_ang="100">
+        <curv_std_dev_fac v1="50" v2="50" v3="1"></curv_std_dev_fac>
+      </model>
+      <query>
+        <pose_std_dev ang="200" lin="0.005"></pose_std_dev>
+      </query>
+    </item>
+    <item cloud=".pcd" handler="Image+ImageDemoDR55LeftArmScan" image="" label="ObjectScan" prefix="-item-ObjectScan-1" time_stamp="64.4366">
+      <config dim="0" m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1" planner_index="0" v1="0" v2="0" v3="0"></config>
+      <extrinsic m11="0.621833" m12="-0.585441" m13="0.520175" m21="-0.781001" m22="-0.414406" m23="0.467232" m31="-0.0579735" m32="-0.696797" m33="-0.714922" v1="0.188315" v2="0.0988878" v3="0.272018"></extrinsic>
+      <intrinsic cx="314.65" cy="247.578" f="6" fx="574.805" fy="576.237" h="480" k1="-0.0439675" k2="0.0938188" k3="0" p1="0.00240521" p2="-0.000365937" w="640"></intrinsic>
+      <query normal_std_dev="100"></query>
+    </item>
+    <item cloud=".pcd" handler="Image+ImageDemoDR55LeftArm" image="" label="Query" prefix="-item-Query-1" time_stamp="0">
+      <config dim="0" m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1" planner_index="0" v1="0" v2="0" v3="0"></config>
+      <extrinsic m11="0.621833" m12="-0.585441" m13="0.520175" m21="-0.781001" m22="-0.414406" m23="0.467232" m31="-0.0579735" m32="-0.696797" m33="-0.714922" v1="0.188315" v2="0.0988878" v3="0.272018"></extrinsic>
+      <intrinsic cx="314.65" cy="247.578" f="6" fx="574.805" fy="576.237" h="480" k1="-0.0439675" k2="0.0938188" k3="0" p1="0.00240521" p2="-0.000365937" w="640"></intrinsic>
+      <query normal_std_dev="100"></query>
+    </item>
+    <item handler="Trajectory+TrajectoryDemoDR55" label="TrajectoryModel-plate" path_position="1" prefix="-item-TrajectoryModel-plate-1" waypoint=".wp">
+      <contact path_interpol="1" path_waypoint="18446744073709551615"></contact>
+    </item>
+  </data>
+</grasp>
