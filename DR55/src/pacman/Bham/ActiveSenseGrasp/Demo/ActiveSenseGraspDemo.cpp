@@ -1231,18 +1231,6 @@ bool ActiveSenseDemo::gotoPoseWS2(const grasp::ConfigMat34& pose, const Real& li
 	return true;
 }
 
-void ActiveSenseDemo::processTrajectory(golem::Controller::State::Seq& trajectory, const grasp::Waypoint& waypoint) const {
-	// Overwritting commands
-	for (auto&i : trajectory)
-		i.reserved = waypoint.command.reserved;
-}
-
-void ActiveSenseDemo::processTrajectory(golem::Controller::State::Seq& trajectory) const {
-	// retrieve state and command config of the robot
-	grasp::Waypoint waypoint = grasp::Waypoint::lookup(*controller);
-	// Overwritting commands
-	processTrajectory(trajectory, waypoint);
-}
 
 grasp::ConfigMat34 ActiveSenseDemo::getPoseFromConfig(const grasp::ConfigMat34& config, int jointIdx)
 {
@@ -1630,6 +1618,7 @@ void ActiveSenseDemo::perform2(const std::string& data, const std::string& item,
 
     context.write("Performance finished!\n");
 }
+
 
 grasp::Manipulator::Waypoint::Seq ActiveSenseDemo::convertToManipulatorWayPoints(const grasp::Waypoint::Seq& waypoints){
     // create path

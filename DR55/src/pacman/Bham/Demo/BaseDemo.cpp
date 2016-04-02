@@ -3062,6 +3062,117 @@ void pacman::BaseDemoDR55::performTrajectory(bool testTrajectory) {
 	context.write("Performance finished!\n");
 }
 
+void pacman::BaseDemoDR55::processTrajectory(golem::Controller::State::Seq& trajectory, const grasp::Waypoint& waypoint) const {
+	// Overwritting commands
+	for (auto&i : trajectory)
+		i.reserved = waypoint.command.reserved;
+}
+
+void pacman::BaseDemoDR55::processTrajectory(golem::Controller::State::Seq& trajectory) const {
+	// retrieve state and command config of the robot
+	grasp::Waypoint waypoint = grasp::Waypoint::lookup(*controller);
+	// Overwritting commands
+	processTrajectory(trajectory, waypoint);
+}
+
+void pacman::BaseDemoDR55::performAndProcess(const std::string& data, const std::string& item, const golem::Controller::State::Seq& trajectory, bool testTrajectory) {
+	if (trajectory.size() < 2)
+		throw Message(Message::LEVEL_ERROR, "Player::perform(): At least two waypoints required");
+
+	golem::Controller::State::Seq initTrajectory;
+	findTrajectory(grasp::Waypoint::lookup(*controller).state, &trajectory.front(), nullptr, SEC_TM_REAL_ZERO, initTrajectory);
+
+	golem::Controller::State::Seq completeTrajectory = initTrajectory;
+	completeTrajectory.insert(completeTrajectory.end(), trajectory.begin(), trajectory.end());
+
+	// create trajectory item
+	data::Item::Ptr itemTrajectory;
+	data::Handler::Map::const_iterator handlerPtr = handlerMap.find(getPlanner().trajectoryHandler);
+	if (handlerPtr == handlerMap.end())
+		throw Message(Message::LEVEL_ERROR, "Player::perform(): unknown default trajectory handler %s", getPlanner().trajectoryHandler.c_str());
+	data::Handler* handler = is<data::Handler>(handlerPtr);
+	if (!handler)
+		throw Message(Message::LEVEL_ERROR, "Player::perform(): invalid default trajectory handler %s", getPlanner().trajectoryHandler.c_str());
+	itemTrajectory = handler->create();
+	data::Trajectory* trajectoryIf = is<data::Trajectory>(itemTrajectory.get());
+	if (!trajectoryIf)
+		throw Message(Message::LEVEL_ERROR, "Player::perform(): unable to create trajectory using handler %s", getPlanner().trajectoryHandler.c_str());
+	trajectoryIf->setWaypoints(grasp::Waypoint::make(completeTrajectory, completeTrajectory));
+
+	// block displaying the current item
+	RenderBlock renderBlock(*this);
+
+	// test trajectory
+	if (testTrajectory) {
+		// insert trajectory to data with temporary name
+		const std::string itemLabelTmp = item + dataDesc->sepName + makeString("%f", context.getTimer().elapsed());
+		ScopeGuard removeItem([&]() {
+			UI::removeCallback(*this, getCurrentHandler());
+			{
+				golem::CriticalSectionWrapper csw(scene.getCS());
+				to<Data>(dataCurrentPtr)->itemMap.erase(itemLabelTmp);
+			}
+			createRender();
+		});
+		{
+			golem::CriticalSectionWrapper csw(scene.getCS());
+			const data::Item::Map::iterator ptr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(itemLabelTmp, itemTrajectory));
+			Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, ptr, to<Data>(dataCurrentPtr)->getView());
+		}
+		// enable GUI interaction and refresh
+		UI::addCallback(*this, getCurrentHandler());
+		createRender();
+		// prompt user
+		EnableKeyboardMouse enableKeyboardMouse(*this);
+		option("\x0D", "Press <Enter> to accept trajectory...");
+	}
+
+	// go to initial state
+	processTrajectory(initTrajectory);
+	sendTrajectory(initTrajectory);
+	// wait until the last trajectory segment is sent
+	controller->waitForEnd();
+
+	{
+		// start recording
+		recordingStart(data, item, true);
+		recordingWaitToStart();
+		ScopeGuard recordingGuard([&]() {
+			// stop recording
+			recordingStop(getPlanner().trajectoryIdlePerf);
+			recordingWaitToStop();
+		});
+
+		// send trajectory
+		golem::Controller::State::Seq processedTrajectory = trajectory;
+		processTrajectory(processedTrajectory);
+		sendTrajectory(processedTrajectory);
+
+		// repeat every send waypoint until trajectory end
+		for (U32 i = 0; controller->waitForBegin(); ++i) {
+			if (universe.interrupted())
+				throw Exit();
+			if (controller->waitForEnd(0))
+				break;
+
+			// print every 10th robot state
+			if (i % 10 == 0)
+				context.write("State #%d\r", i);
+		}
+	}
+
+	// insert trajectory
+	{
+		golem::CriticalSectionWrapper csw(scene.getCS());
+		data::Data::Map::iterator data = dataMap.find(recorderData);
+		if (data == dataMap.end())
+			throw Message(Message::LEVEL_ERROR, "Player::perform(): unable to find Data %s", recorderData.c_str());
+		data->second->itemMap.insert(std::make_pair(recorderItem + makeString("%s%.3f", dataDesc->sepName.c_str(), recorderStart), itemTrajectory));
+	}
+
+	context.write("Performance finished!\n");
+}
+
 //------------------------------------------------------------------------------
 
 void pacman::BaseDemoDR55::render() const {
