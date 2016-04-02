@@ -3042,8 +3042,15 @@ void pacman::BaseDemoDR55::performTrajectory(bool testTrajectory) {
 	context.debug("Waiting 1s before withdrawing upwards...\n");
 	Sleep::msleep(SecToMSec(1.0));
 
-	context.debug("Lifting hand by %gm in %gs...\n", withdrawLiftDistance, getPlanner().trajectoryDuration);
-	liftLeftWrist(withdrawLiftDistance, getPlanner().trajectoryDuration);
+	SecTmReal duration;
+	{
+		const golem::U32 currentPlannerIndex = plannerIndex;
+		plannerIndex = 1;
+		ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
+		duration = getPlanner().trajectoryDuration;
+	}
+	context.debug("Lifting hand by %gm in %gs...\n", withdrawLiftDistance, duration);
+	liftLeftWrist(withdrawLiftDistance, duration);
 
 	// done
 	finished = true;
