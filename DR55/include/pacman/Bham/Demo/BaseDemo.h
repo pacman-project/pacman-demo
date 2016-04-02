@@ -810,7 +810,7 @@ protected:
 	}
 
 	grasp::Camera* getWristCamera(const bool dontThrow = false, const std::string& sensorId = "OpenNI+OpenNI") const;
-	golem::Mat34 getWristPose(golem::U32 wristJoint = 34) const;
+	golem::Mat34 getWristPose(golem::U32 wristJoint = 33) const;
 	golem::Controller::State::Seq getTrajectoryFromPose(const golem::Mat34& w, const golem::SecTmReal duration);
 	grasp::ConfigMat34 getConfigFromPose(const golem::Mat34& w);
 	golem::Controller::State lookupStateArmCommandHand() const;

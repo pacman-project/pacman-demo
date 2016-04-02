@@ -571,7 +571,7 @@ golem::Mat34 pacman::BaseDemoDR55::getWristPose(golem::U32 wristJoint) const
 golem::Controller::State::Seq pacman::BaseDemoDR55::getTrajectoryFromPose(const golem::Mat34& w, const SecTmReal duration)
 {
 	const golem::Mat34 R = controller->getChains()[getPlanner().armInfo.getChains().begin()]->getReferencePose();
-	const golem::Mat34 wR = w * R;
+	const golem::Mat34 wR = w *R;
 
 	golem::Controller::State begin = controller->createState();
 	controller->lookupState(SEC_TM_REAL_MAX, begin);
