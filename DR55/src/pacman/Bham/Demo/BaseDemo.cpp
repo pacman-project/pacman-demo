@@ -500,8 +500,8 @@ void pacman::BaseDemoDR55::Desc::load(golem::Context& context, const golem::XMLC
 
 	queryDescMap.clear();
 	golem::XMLData(queryDescMap, queryDescMap.max_size(), xmlcontext->getContextFirst("query"), "query", false);
-	poseMap.clear();
-	golem::XMLData(poseMap, poseMap.max_size(), xmlcontext->getContextFirst("query"), "query", false);
+	poseDensityMap.clear();
+	golem::XMLData(poseDensityMap, poseDensityMap.max_size(), xmlcontext->getContextFirst("query"), "query", false);
 
 	optimisation.load(xmlcontext->getContextFirst("query optimisation"));
 
@@ -998,7 +998,7 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 	queryMap.clear();
 	for (Query::Desc::Map::const_iterator i = desc.queryDescMap.begin(); i != desc.queryDescMap.end(); ++i)
 		queryMap.insert(std::make_pair(i->first, i->second->create(context, i->first)));
-	poseMap = desc.poseMap;
+	poseDensityMap = desc.poseDensityMap;
 
 	optimisation = desc.optimisation;
 
@@ -2132,6 +2132,20 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 		context.write("Done!\n");
 	}));
 
+	menuCmdMap.insert(std::make_pair("ZX", [&]() {
+
+		grasp::ConfigMat34::Range range = selectPoseRange(this->poseMap);
+		ConfigMat34::Seq seq;
+		for (ConfigMat34::Map::const_iterator i = range.first; i != range.second; ++i) seq.push_back(i->second);
+		if (seq.empty()) throw Cancel("No poses");
+		// select and go
+		size_t index = 1;
+		Menu::selectIndex(seq, index, "pose");
+		gotoPoseLeft(seq[index - 1]);
+		// done!
+		createRender();
+		context.write("Done!\n");
+	}));
 	// END OF MENUS
 
 }
@@ -2213,7 +2227,7 @@ grasp::data::Item::Map::iterator pacman::BaseDemoDR55::objectCapture(const Data:
 	size_t index = 0, size = scanPoseSeq.size();
 	auto scanPoseCommand = [&]() -> bool {
 		context.write("Going to scan pose #%d/%d\n", index + 1, size);
-		this->gotoPose(*pose++);
+		this->gotoPoseLeft(*pose++);
 		return ++index < size;
 	};
 	typedef std::vector<grasp::data::Item::Map::iterator> ItemPtrSeq;
@@ -2480,8 +2494,8 @@ void pacman::BaseDemoDR55::createQuery(grasp::data::Item::Ptr item, const golem:
 	if (queryAny == queryMap.end())
 		throw Message(Message::LEVEL_ERROR, "BaseDemoDR55::createQuery(): Unable to find Query %s", ID_ANY.c_str());
 	// select pose std dev any
-	const PoseDensity::Map::const_iterator poseAny = poseMap.find(ID_ANY);
-	if (poseAny == poseMap.end())
+	const PoseDensity::Map::const_iterator poseAny = poseDensityMap.find(ID_ANY);
+	if (poseAny == poseDensityMap.end())
 		throw Message(Message::LEVEL_ERROR, "BaseDemoDR55::createQuery(): Unable to find pose density %s", ID_ANY.c_str());
 
 	to<Data>(dataCurrentPtr)->densities.clear();
@@ -2538,8 +2552,8 @@ void pacman::BaseDemoDR55::createQuery(grasp::data::Item::Ptr item, const golem:
 		}
 
 		// select pose any
-		PoseDensity::Map::const_iterator pose = poseMap.find(i->first);
-		if (pose == poseMap.end()) pose = poseAny;
+		PoseDensity::Map::const_iterator pose = poseDensityMap.find(i->first);
+		if (pose == poseDensityMap.end()) pose = poseAny;
 
 		// trajectory
 		const std::string trjName = getTrajectoryName(modelItemTrj, i->first);
@@ -2997,6 +3011,7 @@ void pacman::BaseDemoDR55::performTrajectory(bool testTrajectory) {
 	RenderBlock renderBlock(*this);
 
 	// go to initial state
+	processTrajectory(initTrajectory);
 	sendTrajectory(initTrajectory);
 	// wait until the last trajectory segment is sent
 	controller->waitForEnd();
@@ -3006,6 +3021,7 @@ void pacman::BaseDemoDR55::performTrajectory(bool testTrajectory) {
 	forceEvent.setBias();
 
 	// send trajectory
+	processTrajectory(seq);
 	sendTrajectory(seq);
 
 	// repeat every send waypoint until trajectory end

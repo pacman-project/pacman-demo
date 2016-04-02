@@ -441,7 +441,7 @@ public:
 		/** Query descriptions */
 		grasp::Query::Desc::Map queryDescMap;
 		/** Pose descriptions */
-		PoseDensity::Map poseMap;
+		PoseDensity::Map poseDensityMap;
 
 		/** Optimisation description */
 		Optimisation optimisation;
@@ -523,7 +523,7 @@ public:
 			contactAppearance.setToDefault();
 
 			queryDescMap.clear();
-			poseMap.clear();
+			poseDensityMap.clear();
 
 			optimisation.setToDefault();
 
@@ -596,9 +596,9 @@ public:
 				grasp::Assert::valid(i->second != nullptr, ac, "queryDescMap[]: null");
 				i->second->assertValid(grasp::Assert::Context(ac, "queryDescMap[]->"));
 			}
-			grasp::Assert::valid(!poseMap.empty(), ac, "poseMap: empty");
-			for (PoseDensity::Map::const_iterator i = poseMap.begin(); i != poseMap.end(); ++i) {
-				i->second.assertValid(grasp::Assert::Context(ac, "poseMap[]->"));
+			grasp::Assert::valid(!poseDensityMap.empty(), ac, "poseDensityMap: empty");
+			for (PoseDensity::Map::const_iterator i = poseDensityMap.begin(); i != poseDensityMap.end(); ++i) {
+				i->second.assertValid(grasp::Assert::Context(ac, "poseDensityMap[]->"));
 			}
 
 			optimisation.assertValid(grasp::Assert::Context(ac, "optimisation."));
@@ -722,7 +722,7 @@ protected:
 	/** Query densities */
 	grasp::Query::Map queryMap;
 	/** Pose descriptions */
-	PoseDensity::Map poseMap;
+	PoseDensity::Map poseDensityMap;
 
 	/** Optimisation description */
 	Optimisation optimisation;
@@ -817,7 +817,7 @@ protected:
 
 	void setHandConfig(golem::Controller::State::Seq& trajectory, const grasp::ConfigMat34& handPose);
 	void gotoWristPose(const golem::Mat34& w, golem::U32 plannerIdx = 1, const golem::SecTmReal duration = golem::SEC_TM_REAL_ZERO);
-	void gotoPoseLeft(const grasp::ConfigMat34& pose, const golem::SecTmReal duration);
+	void gotoPoseLeft(const grasp::ConfigMat34& pose, const golem::SecTmReal duration = golem::SEC_TM_REAL_ZERO);
 	void releaseLeftHand(const double openFraction, const golem::SecTmReal duration);
 	void closeLeftHand(const double closeFraction, const golem::SecTmReal duration);
 	void liftLeftWrist(const double verticalDistance, const golem::SecTmReal duration);

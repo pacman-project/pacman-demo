@@ -187,20 +187,7 @@ void DemoDR55::create(const Desc& desc) {
 	}));
 
 
-	//menuCmdMap.insert(std::make_pair("TE", [&]() {
-	//	grasp::ConfigMat34::Range range = selectPoseRange(poseMap);
-	//	grasp:ConfigMat34::Seq seq;
-	//	for (ConfigMat34::Map::const_iterator i = range.first; i != range.second; ++i) seq.push_back(i->second);
-	//	if (seq.empty()) throw Cancel("No poses");
-	//	// select and go
-	//	size_t index = 1;
 
-	//	Menu::selectIndex(seq, index, "pose");
-	//	gotoPose(seq[index - 1]);
-	//	// done!
-	//	createRender();
-	//	context.write("Done!\n");
-	//}));
 
 }
 
