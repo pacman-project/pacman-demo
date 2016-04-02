@@ -629,6 +629,11 @@ void pacman::BaseDemoDR55::gotoWristPose(const golem::Mat34& w, golem::U32 plann
 
 void pacman::BaseDemoDR55::gotoPoseLeft(const ConfigMat34& pose, const SecTmReal duration)
 {
+
+	const golem::U32 currentPlannerIndex = plannerIndex;
+	plannerIndex = 1;
+	ScopeGuard guard([&]() { plannerIndex = currentPlannerIndex; });
+
 	context.debug("BaseDemoDR55::gotoPoseLeft: %s\n", toXMLString(pose).c_str());
 
 	// always start with hand in commanded config, not actual
@@ -637,6 +642,9 @@ void pacman::BaseDemoDR55::gotoPoseLeft(const ConfigMat34& pose, const SecTmReal
 	end.cpos.set(pose.c.data(), pose.c.data() + std::min(pose.c.size(), (size_t)info.getJoints().size()));
 	golem::Controller::State::Seq trajectory;
 	findTrajectory(begin, &end, nullptr, duration, trajectory);
+
+	// process trajectory?
+
 	sendTrajectory(trajectory);
 	controller->waitForEnd();
 	Sleep::msleep(SecToMSec(getPlanner().trajectoryIdleEnd));
@@ -644,19 +652,20 @@ void pacman::BaseDemoDR55::gotoPoseLeft(const ConfigMat34& pose, const SecTmReal
 
 void pacman::BaseDemoDR55::releaseLeftHand(const double openFraction, const SecTmReal duration)
 {
-	double f = 1.0 - openFraction;
-	f = std::max(0.0, std::min(1.0, f));
+	double MAX_CPOS = 0.03;
+	double f = std::max(0.0, std::min(1.0, openFraction));
 
 	golem::Controller::State currentState = grasp::Waypoint::lookup(*controller).state;
-	ConfigMat34 openPose(RealSeq(61, 0.0)); // !!! TODO use proper indices
+	//context.debug("Number of joints %d",currentState.cpos.data.si);
+	ConfigMat34 openPose(RealSeq(43, 0.0)); // !!! TODO use proper indices
 	for (size_t i = 0; i < openPose.c.size(); ++i)
 		openPose.c[i] = currentState.cpos.data()[i];
 
 	// TODO use proper indices - handInfo.getJoints()
-	const size_t handIndexBegin = 7;
-	const size_t handIndexEnd = handIndexBegin + 5 * 4;
+	const size_t handIndexBegin = 34;
+	const size_t handIndexEnd = handIndexBegin + 2; // gripper has two joints
 	for (size_t i = handIndexBegin; i < handIndexEnd; ++i)
-		openPose.c[i] *= f;
+		openPose.c[i] = f*MAX_CPOS - (1.0 - f)*openPose.c[i];
 
 	gotoPoseLeft(openPose, duration);
 }
@@ -664,29 +673,24 @@ void pacman::BaseDemoDR55::releaseLeftHand(const double openFraction, const SecT
 void pacman::BaseDemoDR55::closeLeftHand(const double closeFraction, const SecTmReal duration)
 {
 	// @@@ HACK @@@
+	double MIN_CPOS = 0.001;
 
 	const double f = std::max(0.0, std::min(1.0, closeFraction));
 
 	// !!! TODO use proper indices
-	ConfigMat34 pose(RealSeq(61, 0.0)), finalPose(RealSeq(61, 0.0));
+	ConfigMat34 pose(RealSeq(43, 0.0)), finalPose(RealSeq(43, 0.0));
 	golem::Controller::State currentState = lookupStateArmCommandHand();
 	for (size_t i = 0; i < pose.c.size(); ++i)
 		pose.c[i] = currentState.cpos.data()[i];
 
 	// TODO use proper indices - handInfo.getJoints()
-	const size_t handIndexBegin = 7;
-	const size_t handIndexEnd = handIndexBegin + 5 * 4;
-	for (size_t i = handIndexBegin; i < handIndexEnd; i += 4)
+	const size_t handIndexBegin = 34;
+	const size_t handIndexEnd = handIndexBegin + 2;
+	for (size_t i = handIndexBegin; i < handIndexEnd; i++)
 	{
-		finalPose.c[i + 1] = 0.85;
-		finalPose.c[i + 2] = 0.2;
-		finalPose.c[i + 3] = 0.2;
+		finalPose.c[i] = MIN_CPOS;
+		finalPose.c[i] = MIN_CPOS;
 	}
-	// ease off the thumb
-	finalPose.c[handIndexBegin + 0] = 0.22;
-	finalPose.c[handIndexBegin + 1] = 0.6;
-	finalPose.c[handIndexBegin + 2] = 0.1;
-	finalPose.c[handIndexBegin + 3] = 0.1;
 
 	//context.debug("BaseDemoDR55::closeHand: finalPose: %s\n", toXMLString(finalPose).c_str());
 
@@ -1765,7 +1769,7 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 				closeLeftHand(1.0, 4.0);
 				break;
 			case '-':
-				releaseLeftHand(0.1, 1.0);
+				releaseLeftHand(0.5, 1.0);
 				break;
 			case '0':
 				releaseLeftHand(1.0, 2.0);
