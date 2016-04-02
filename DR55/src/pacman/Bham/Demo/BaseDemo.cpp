@@ -1945,7 +1945,7 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("ZP", [=]() {
 		context.write("create arm configs for a set of camera frames\n");
 		golem::U32 plannerIdx = 0;
-		golem::U32 wristJoint = 34;
+		golem::U32 wristJoint = 33;
 		double theta(50), phi1(-180), phi2(160), phiStep(20), R(0.45), cx(0.45), cy(-0.45), cz(-0.30);
 		readNumber("theta ", theta);
 		readNumber("phi1 ", phi1);
