@@ -826,6 +826,12 @@ protected:
 	void nudgeWrist();
 	void rotateObjectInHand();
 
+	void processTrajectory(golem::Controller::State::Seq& trajectory, const grasp::Waypoint& waypoint) const;
+	void processTrajectory(golem::Controller::State::Seq& trajectory) const;
+
+	virtual void performAndProcess(const std::string& data, const std::string& item, const golem::Controller::State::Seq& trajectory, bool testTrajectory = true);
+
+
 	virtual void create(const Desc& desc);
 
 	BaseDemoDR55(golem::Scene &scene);

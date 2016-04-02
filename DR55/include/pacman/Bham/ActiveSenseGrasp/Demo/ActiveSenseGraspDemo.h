@@ -144,9 +144,6 @@ public:
     void scanPoseActiveSensor(grasp::data::Item::List& scannedImageItems, const std::string& itemLabel = ActiveSense::DFT_IMAGE_ITEM_LABEL, const std::string& handler = std::string(), ScanPoseCommand scanPoseCommand = nullptr, grasp::Manager::Data::Ptr dataPtr = grasp::Manager::Data::Ptr());
     void scanPoseActiveFile(grasp::data::Item::List& scannedImageItems, const std::string& itemLabel, const std::string& handler = std::string());
 	
-	void processTrajectory(golem::Controller::State::Seq& trajectory, const grasp::Waypoint& waypoint) const;
-	void processTrajectory(golem::Controller::State::Seq& trajectory) const;
-
 	grasp::ConfigMat34 getPoseFromConfig(const grasp::ConfigMat34& config, int jointIdx);
 
 	/** golem::Object (Post)processing function called AFTER every physics simulation step and before randering. */
