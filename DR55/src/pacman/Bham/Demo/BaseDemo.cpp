@@ -703,6 +703,10 @@ void pacman::BaseDemoDR55::closeLeftHand(const double closeFraction, const SecTm
 void pacman::BaseDemoDR55::liftLeftWrist(const double verticalDistance, const SecTmReal duration)
 {
 
+	const golem::U32 currentPlannerIndex = plannerIndex;
+	plannerIndex = 1;
+	ScopeGuard guard([&]() { plannerIndex = currentPlannerIndex; });
+
 	// vertically by verticalDistance; to hand zero config
 	Mat34 pose = getWristPose();
 	pose.p.z += std::max(0.0, verticalDistance);
@@ -1774,6 +1778,7 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 				break;
 			case '0':
 				releaseLeftHand(1.0, 2.0);
+				break;
 			case 'l':
 				SecTmReal duration;
 				{
