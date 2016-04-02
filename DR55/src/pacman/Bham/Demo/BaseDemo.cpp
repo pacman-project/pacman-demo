@@ -702,10 +702,11 @@ void pacman::BaseDemoDR55::closeLeftHand(const double closeFraction, const SecTm
 
 void pacman::BaseDemoDR55::liftLeftWrist(const double verticalDistance, const SecTmReal duration)
 {
+
 	// vertically by verticalDistance; to hand zero config
 	Mat34 pose = getWristPose();
 	pose.p.z += std::max(0.0, verticalDistance);
-	gotoWristPose(pose, duration);
+	gotoWristPose(pose, 1, duration);
 
 	// TODO open hand while lifting
 }
@@ -1755,10 +1756,10 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 	}));
 
 	menuCmdMap.insert(std::make_pair("ZH", [=]() {
-		context.write("Hand Control\n");
+		context.write("Right Hand Control\n");
 		for (;;)
 		{
-			const int k = option("+-01 ", "increase grasp:+  relax grasp:-  open:0  close:1  <SPACE> to end");
+			const int k = option("+-01l ", "increase grasp:+  relax grasp:-  open:0  close:1 lift-wrist:l  <SPACE> to end");
 			if (k == 32) break;
 			switch (k)
 			{
@@ -1773,6 +1774,17 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 				break;
 			case '0':
 				releaseLeftHand(1.0, 2.0);
+			case 'l':
+				SecTmReal duration;
+				{
+					const golem::U32 currentPlannerIndex = plannerIndex;
+					plannerIndex = 1;
+					ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
+					duration = getPlanner().trajectoryDuration;
+				}
+				liftLeftWrist(withdrawLiftDistance, duration);
+				break;
+			default:
 				break;
 			}
 		}
