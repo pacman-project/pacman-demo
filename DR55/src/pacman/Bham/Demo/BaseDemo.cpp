@@ -571,7 +571,7 @@ golem::Mat34 pacman::BaseDemoDR55::getWristPose(golem::U32 wristJoint) const
 golem::Controller::State::Seq pacman::BaseDemoDR55::getTrajectoryFromPose(const golem::Mat34& w, const SecTmReal duration)
 {
 	const golem::Mat34 R = controller->getChains()[getPlanner().armInfo.getChains().begin()]->getReferencePose();
-	const golem::Mat34 wR = w * R;
+	const golem::Mat34 wR = w *R;
 
 	golem::Controller::State begin = controller->createState();
 	controller->lookupState(SEC_TM_REAL_MAX, begin);
@@ -702,6 +702,10 @@ void pacman::BaseDemoDR55::closeLeftHand(const double closeFraction, const SecTm
 
 void pacman::BaseDemoDR55::liftLeftWrist(const double verticalDistance, const SecTmReal duration)
 {
+
+	const golem::U32 currentPlannerIndex = plannerIndex;
+	plannerIndex = 1;
+	ScopeGuard guard([&]() { plannerIndex = currentPlannerIndex; });
 
 	// vertically by verticalDistance; to hand zero config
 	Mat34 pose = getWristPose();
@@ -1778,6 +1782,7 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 				break;
 			case '0':
 				releaseLeftHand(1.0, 2.0);
+				break;
 			case 'l':
 				SecTmReal duration;
 				{
@@ -1944,7 +1949,7 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 	menuCmdMap.insert(std::make_pair("ZP", [=]() {
 		context.write("create arm configs for a set of camera frames\n");
 		golem::U32 plannerIdx = 0;
-		golem::U32 wristJoint = 34;
+		golem::U32 wristJoint = 33;
 		double theta(50), phi1(-180), phi2(160), phiStep(20), R(0.45), cx(0.45), cy(-0.45), cz(-0.30);
 		readNumber("theta ", theta);
 		readNumber("phi1 ", phi1);
