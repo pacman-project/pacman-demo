@@ -209,16 +209,29 @@ IF (BUILD_PACMAN_DEMO_DR55)
 		${PROJECT_ROOT}/resources/GraspDataImageDemoDR55.xml
 		${PROJECT_ROOT}/resources/GraspDataImageDemoDR55RightArm.xml
 		${PROJECT_ROOT}/resources/GraspDataImageDemoDR55LeftArm.xml
-		${PROJECT_ROOT}/resources/GraspDataImageDemoDR55Object.xml
+		#${PROJECT_ROOT}/resources/GraspDataImageDemoDR55Object.xml
 		${PROJECT_ROOT}/resources/GraspDataPointsCurvDemoDR55.xml
 		${PROJECT_ROOT}/resources/GraspDataContactModelDemoDR55.xml
 		${PROJECT_ROOT}/resources/GraspDataContactQueryDemoDR55.xml
 		${PROJECT_ROOT}/resources/GraspDataTrajectoryDemoDR55.xml
 		${PROJECT_ROOT}/resources/GraspFTClientDemoDR55.xml
-		${PROJECT_ROOT}/resources/GolemCtrlRobotBorisDemoDR55Sim.xml
-		${PROJECT_ROOT}/resources/GolemCtrlRobotBorisDemoDR55.xml
+		
+		${PROJECT_ROOT}/resources/GolemCtrlRobotBorisSchunkDemoDR55.xml
 		${PROJECT_ROOT}/resources/GolemCtrlRobotBorisSchunkDemoDR55Sim.xml
-
+		${PROJECT_ROOT}/resources/GolemCtrlSchunkParallelGripper.xml
+		${PROJECT_ROOT}/resources/GraspCameraOpenNIDemoDR55LeftArmScanPassing.xml
+		${PROJECT_ROOT}/resources/GraspCameraOpenNIDemoDR55ChestScan.xml
+		${PROJECT_ROOT}/resources/GraspDataImageDemoDR55LeftArm.xml
+		${PROJECT_ROOT}/resources/GraspDataImageDemoDR55LeftArmScan.xml
+		${PROJECT_ROOT}/resources/GraspDataImageDemoDR55LeftArmScanPassing.xml
+		${PROJECT_ROOT}/resources/GraspDataPointsCurvDemoDR55LeftArmScan.xml
+		${PROJECT_ROOT}/resources/GraspDataPointsCurvDemoDR55LeftArm.xml
+		${PROJECT_ROOT}/resources/GraspDataContactModelDemoDR55LeftArm.xml
+		${PROJECT_ROOT}/resources/GraspDataContactQueryDemoDR55LeftArm.xml
+		${PROJECT_ROOT}/resources/GolemPlannerRobotBorisSPGL.xml
+		${PROJECT_ROOT}/resources/GolemPlannerRobotBorisSPGR.xml
+		${PROJECT_ROOT}/resources/GraspWorkspaceCtrlDR55.xml
+		
 	)
 	SET(DEMO_DR55_CAL_FILES
 		${PROJECT_ROOT}/resources/cal/GraspCameraOpenNIDemoDR55Chest.cal
