@@ -1683,6 +1683,10 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 			}
 		};
 
+		const golem::U32 currentPlannerIndex = plannerIndex;
+		plannerIndex = 1;
+		ScopeGuard guard([&]() { plannerIndex = currentPlannerIndex; });
+
 		// estimate pose
 		if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty()) {
 			breakPoint("Dishwasher pose estimation");

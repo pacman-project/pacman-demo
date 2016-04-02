@@ -484,7 +484,7 @@ enable_coverage_filter_plane = "0" or "1"-->
     <handler library_path="GraspDataImage" config_path="ActiveSenseGraspDataImage"/>
     <handler library_path="GraspDataPointsCurv" config_path="ActiveSenseGraspDataPointsCurv"/>
 
-    <data path="./data/demo1/data.xml"></data>
+    <data path="./data/demo3/data.xml"></data>
     <!--<data path="./data/DemoDR55Data/DemoDR55Data.xml"></data>-->
   </manager>
 
