@@ -153,6 +153,9 @@ void DemoDR55::setMenus(){
 			// Grasp with Active Sense and lift the object
 			// Outcome (Exepected state of the robot at the end): 
 			// at the end the object should have grasped and lifted an object 
+
+			this->setArmsToDefault();
+
 			this->graspWithActiveSense();
 
 			this->executePassing();
