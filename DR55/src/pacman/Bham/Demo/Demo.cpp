@@ -438,9 +438,15 @@ void DemoDR55::executePassing(bool stopAtBreakPoint){
 	breakPoint("Transformed scan to point curv");
 
 	//**** Transform point curv with contact model to create contact query
-	// Contact query
-	grasp::data::Item::List list; list.push_back(ptrObjItem);
+	//Getting grasp contact model
+	data::Item::Map::iterator ptrGraspContactModel = to<grasp::Manager::Data>(dataCurrentPtr)->itemMap.find(this->passingGraspModelItem);
+	if (ptrGraspContactModel == to<grasp::Manager::Data>(dataCurrentPtr)->itemMap.end())
+		throw Message(Message::LEVEL_ERROR, "Grasp contact model item with label %s was not found in data bundle", this->passingGraspModelItem.c_str());
 
+	grasp::data::Item::List list; 
+	list.push_back(ptrObjItem); list.push_back(ptrGraspContactModel);
+	
+	// Contact query
 	grasp::data::Item::Ptr queryGraspItem = transformItems(list, this->passingGraspHandler);
 
 	data::Item::Map::iterator ptrQueryGraspItem = addItem(this->passingCQueryItem, queryGraspItem);
