@@ -1,3 +1,6 @@
 [submodule "DR53"]
 	path = DR53
 	url = https://github.com/CentroEPiaggio/pacman-DR53
+[submodule "DR54"]
+	path = DR54
+	url = https://github.com/CentroEPiaggio/pacman-DR54.git
