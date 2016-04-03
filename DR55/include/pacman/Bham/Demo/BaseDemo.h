@@ -375,8 +375,6 @@ public:
 
 		/** Model scan pose */
 		grasp::ConfigMat34 modelScanPose;
-		/** Object passing pose */
-		grasp::ConfigMat34 objPassingPose;
 		/** Model colour solid */
 		golem::RGBA modelColourSolid;
 		/** Model colour wireframe */
@@ -649,8 +647,6 @@ protected:
 
 	/** Model scan pose */
 	grasp::ConfigMat34 modelScanPose;
-	/** Object passing pose */
-	grasp::ConfigMat34 objPassingPose;
 	/** Model colour solid */
 	golem::RGBA modelColourSolid;
 	/** Model colour wireframe */

@@ -34,6 +34,40 @@ public:
 	public:
 		typedef golem::shared_ptr<Desc> Ptr;
 
+		/** Object passing pose */
+		grasp::ConfigMat34 objPassingPose;
+
+		/** Scan passing pose */
+		grasp::ConfigMat34 scanPassingPose;
+
+		/** Passing camera */
+		std::string passingCamera;
+
+		/** Passing image handler */
+		std::string passingImageHandler;
+
+		/** Passing point curv handler */
+		std::string passingPointCurvHandler;
+
+		/** Passing grasp handler (Contact query) */
+		std::string passingGraspHandler;
+
+		/** Passing trajectory handler */
+		std::string passingTrajectoryHandler;
+
+		/** Passing grasp model item (Contact model) */
+		std::string passingGraspModelItem;
+
+		/** Passing contact query item */
+		std::string passingCQueryItem;
+
+		/** Passing grasp trajectory item */
+		std::string passingGraspTrajectoryItem;
+
+		/** Passing object item */
+		std::string passingObjItem;
+
+
 
 		/** Constructs from description object */
 		Desc() {
@@ -59,7 +93,48 @@ public:
 
 protected:
 	
+	/** Model pose estimation camera */
+	grasp::Camera* passingCamera;
+	/** Image handler */
+	grasp::data::Handler* passingImageHandler;
 
+	/** PointsCurv handler */
+	grasp::data::Handler* passingPointCurvHandler;
+
+	/** Contact query (grasp) handler */
+	grasp::data::Handler* passingGraspHandler;
+
+	/** Passing trajectory handler */
+	grasp::data::Handler* passingTrajectoryHandler;
+
+	/** Passing grasp model item (Contact model) */
+	std::string passingGraspModelItem;
+
+	/** Passing object item */
+	std::string passingObjItem;
+
+	/** Passing contact query item */
+	std::string passingCQueryItem;
+
+	/** Passing grasp trajectory item */
+	std::string passingGraspTrajectoryItem;
+
+
+	/** Object passing pose */
+	grasp::ConfigMat34 objPassingPose;
+
+	/** Scan passing pose */
+	grasp::ConfigMat34 scanPassingPose;
+
+	/** Executes passing demo */
+	void executePassing();
+	void executePlacement(bool stopAtBreakPoint);
+
+	void setArmsToDefault();
+
+	virtual void setMenus();
+
+	void executeCmd(const std::string& command);
 	/** golem::UIRenderer interface */
 	virtual void render() const;
 

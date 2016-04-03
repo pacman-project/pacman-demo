@@ -141,8 +141,6 @@ enable_coverage_filter_plane = "0" or "1"-->
   <demo data_name="data.demo">
     <model camera="DepthSim+DepthSimDemoDR55Chest" handler="Image+ImageDemoDR55LeftArm" item="Model" item_obj="ModelObj" item_grasp="grasp-bowl-rim" handler_grasp="ContactModel+ContactModelDemoDR55" handler_trj="Trajectory+TrajectoryDemoDR55" item_trj="TrajectoryModel">
       <scan_pose dim="61" c1="1.7097" c2="-0.944053" c3="1.20653" c4="-0.707639" c5="0.126298" c6="0.751986" c7="0.84115" c8="0" c9="0" c10="0" c11="0" c12="0" c13="0" c14="0" c15="0" c16="0" c17="0" c18="0" c19="0" c20="0" c21="0" c22="0" c23="0" c24="0" c25="0" c26="0" c27="0" c28="0" c29="0" c30="0" c31="0" c32="0" c33="0" c34="0" c35="0" c36="0" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0" c44="0" c45="0" c46="0" c47="0" c48="0" c49="0" c50="0" c51="0" c52="0" c53="0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c60="0" c61="0"/>
-      <passing_pose dim="61" planner_index="0" c1="2.23668" c2="-0.341927" c3="2.58833" c4="-2.07195" c5="2.5426" c6="-0.580608" c7="1.27164" c8="-0.100806" c9="0.772423" c10="0.263202" c11="0.263202" c12="0.0114861" c13="-0.0351784" c14="0.00125664" c15="0.00125664" c16="-0.0263968" c17="0.182484" c18="0.226579" c19="0.148039" c20="0.0785496" c21="0.261595" c22="0.17936" c23="0.17936" c24="-0.0212942" c25="0.112143" c26="0.465779" c27="0.528611" c28="-2.2966" c29="1.23099" c30="0.424875" c31="-1.73939" c32="-2.29471" c33="-1.22043" c34="-2.70926" c35="0" c36="0" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0" c44="0" c45="0" c46="0" c47="0" c48="0" c49="0" c50="0" c51="0" c52="0" c53="0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c60="0" c61="0"/>
-
       <colour>
         <solid R="0" G="0" B="255" A="32"/>
         <wire R="0" G="0" B="255" A="255"/>
@@ -202,6 +200,11 @@ enable_coverage_filter_plane = "0" or "1"-->
       </frame_adjustment>
     </object>
 
+    <passing camera="DepthSim+DepthSimDemoDR55LeftArm" handler_scan="Image+ImageDemoDR55LeftArmScan" handler_processing="PointsCurv+PointsCurvDemoDR55LeftArm" item_obj="ObjectPassingScan" item_grasp="SomeContactModelItemLabel" item_cquery="PassingContactQuery" item_trajectory="PassingGraspTrajectory" handler_grasp="ContactQuery+ContactQueryDemoDR55LeftArm" handler_trajectory="Trajectory+TrajectoryDemoDR55">
+      <scan_pose dim="43" planner_index="1" c1="2.92518" c2="-0.340707" c3="-1.23825" c4="2.05354" c5="-0.266604" c6="-0.719258" c7="0.992049" c8="0.169757" c9="0.499447" c10="0.0984032" c11="0.0984032" c12="0.0273824" c13="0.573023" c14="0.059062" c15="0.059062" c16="-0.0293351" c17="0.770019" c18="0.224652" c19="0.146112" c20="0.0146783" c21="0.769843" c22="0.186674" c23="0.186674" c24="-0.0295597" c25="0.65555" c26="0.181279" c27="0.244111" c28="-2.39717" c29="1.17546" c30="0.417886" c31="-0.963687" c32="-1.87711" c33="-1.97837" c34="-1.70539" c35="-2.50015e-007" c36="-2.50015e-007" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0"/>
+      <passing_pose dim="61" planner_index="0" c1="2.23668" c2="-0.341927" c3="2.58833" c4="-2.07195" c5="2.5426" c6="-0.580608" c7="1.27164" c8="-0.100806" c9="0.772423" c10="0.263202" c11="0.263202" c12="0.0114861" c13="-0.0351784" c14="0.00125664" c15="0.00125664" c16="-0.0263968" c17="0.182484" c18="0.226579" c19="0.148039" c20="0.0785496" c21="0.261595" c22="0.17936" c23="0.17936" c24="-0.0212942" c25="0.112143" c26="0.465779" c27="0.528611" c28="-2.2966" c29="1.23099" c30="0.424875" c31="-1.73939" c32="-2.29471" c33="-1.22043" c34="-2.70926" c35="0" c36="0" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0" c44="0" c45="0" c46="0" c47="0" c48="0" c49="0" c50="0" c51="0" c52="0" c53="0" c54="0" c55="0" c56="0" c57="0" c58="0" c59="0" c60="0" c61="0"/>
+    </passing>
+    
     <manipulator item_trj="TrajecstoryManip">
       <config_map i1="0" i2="0" i3="0" i4="0" i5="0" i6="0" i7="0" i8="0" i9="0" i10="0" i11="10" i12="0" i13="0" i14="0" i15="14" i16="0" i17="0" i18="0" i19="18" i20="0" i21="0" i22="0" i23="22" i24="0" i25="0" i26="0" i27="26"/>
       <trajectory lin="5000.0" ang="2000.0" collision="1" cluster_size="10" timeout="2.0" duration="10.0" throw="0"/>
@@ -486,7 +489,7 @@ enable_coverage_filter_plane = "0" or "1"-->
     <handler library_path="GraspDataImage" config_path="ActiveSenseGraspDataImage"/>
     <handler library_path="GraspDataPointsCurv" config_path="ActiveSenseGraspDataPointsCurv"/>
 
-    <data path="./data/demo1/data.xml"></data>
+    <data path="./data/demo3/data.xml"></data>
     <!--<data path="./data/DemoDR55Data/DemoDR55Data.xml"></data>-->
   </manager>
 

@@ -460,7 +460,6 @@ void pacman::BaseDemoDR55::Desc::load(golem::Context& context, const golem::XMLC
 
 
 	modelScanPose.xmlData(xmlcontext->getContextFirst("model scan_pose"));
-	objPassingPose.xmlData(xmlcontext->getContextFirst("model passing_pose"));
 
 	golem::XMLData(modelColourSolid, xmlcontext->getContextFirst("model colour solid"));
 	golem::XMLData(modelColourWire, xmlcontext->getContextFirst("model colour wire"));
@@ -926,7 +925,6 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 	modelGraspItem = desc.modelGraspItem;
 
 	modelScanPose = desc.modelScanPose;
-	objPassingPose = desc.objPassingPose;
 	modelColourSolid = desc.modelColourSolid;
 	modelColourWire = desc.modelColourWire;
 
@@ -2394,30 +2392,30 @@ grasp::data::Item::Map::iterator pacman::BaseDemoDR55::objectGraspAndCapture(con
 	ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
 
 
-	gotoPoseLeft(graspPoseOpen, getPlanner().trajectoryDuration);
+	//gotoPoseLeft(graspPoseOpen, getPlanner().trajectoryDuration);
 
-	context.write("Waiting for force event, simulate (F)orce event or <ESC> to cancel\n");
-	ForceEvent forceEvent(graspSensorForce, graspThresholdForce);
-	forceEvent.setBias();
-	for (;;)
-	{
-		const int k = waitKey(10); // poll FT every 10ms
-		if (k == 27) // <Esc>
-			throw Cancel("Cancelled");
-		if (k == 'F')
-		{
-			context.debug("Simulated force event\n");
-			break;
-		}
+	//context.write("Waiting for force event, simulate (F)orce event or <ESC> to cancel\n");
+	//ForceEvent forceEvent(graspSensorForce, graspThresholdForce);
+	//forceEvent.setBias();
+	//for (;;)
+	//{
+	//	const int k = waitKey(10); // poll FT every 10ms
+	//	if (k == 27) // <Esc>
+	//		throw Cancel("Cancelled");
+	//	if (k == 'F')
+	//	{
+	//		context.debug("Simulated force event\n");
+	//		break;
+	//	}
 
-		if (forceEvent.detected(&context))
-			break;
-	}
+	//	if (forceEvent.detected(&context))
+	//		break;
+	//}
 
-	context.debug("Closing hand!\n");
-	gotoPoseLeft(graspPoseClosed, graspCloseDuration);
+	//context.debug("Closing hand!\n");
+	//gotoPoseLeft(graspPoseClosed, graspCloseDuration);
 
-	Sleep::msleep(SecToMSec(graspEventTimeWait));
+	//Sleep::msleep(SecToMSec(graspEventTimeWait));
 
 	breakPoint("Go to scan pose");
 

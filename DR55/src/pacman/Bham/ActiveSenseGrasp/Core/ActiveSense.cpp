@@ -319,6 +319,7 @@ void pacman::ActiveSense::removeItem(grasp::data::Item::Map::iterator itemPtr)
 	//grasp::UI::addCallback(*demoOwner, demoOwner->getCurrentHandler());
 	demoOwner->createRender();
 }
+
 void pacman::ActiveSense::removeData(grasp::data::Data::Map::iterator data)
 {
 

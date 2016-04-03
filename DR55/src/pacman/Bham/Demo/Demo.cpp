@@ -26,6 +26,23 @@ namespace pacman {
 void DemoDR55::Desc::load(golem::Context& context, const golem::XMLContext* xmlcontext) {
 	ActiveSenseDemo::Desc::load(context, xmlcontext);
 
+	xmlcontext = xmlcontext->getContextFirst("demo");
+
+	scanPassingPose.xmlData(xmlcontext->getContextFirst("passing scan_pose"));
+	objPassingPose.xmlData(xmlcontext->getContextFirst("passing passing_pose"));
+
+	
+
+	golem::XMLData("camera", passingCamera, xmlcontext->getContextFirst("passing"));
+	golem::XMLData("handler_scan", passingImageHandler, xmlcontext->getContextFirst("passing"));
+	golem::XMLData("handler_processing", passingPointCurvHandler, xmlcontext->getContextFirst("passing"));
+	golem::XMLData("handler_grasp", passingGraspHandler, xmlcontext->getContextFirst("passing"));
+	golem::XMLData("handler_trajectory", passingTrajectoryHandler, xmlcontext->getContextFirst("passing"));
+	golem::XMLData("item_obj", passingObjItem, xmlcontext->getContextFirst("passing"));
+	golem::XMLData("item_grasp", passingGraspModelItem, xmlcontext->getContextFirst("passing"));
+	golem::XMLData("item_cquery", passingCQueryItem, xmlcontext->getContextFirst("passing"));
+	golem::XMLData("item_trajectory", passingGraspTrajectoryItem, xmlcontext->getContextFirst("passing"));
+	
 
 }
 
@@ -43,12 +60,57 @@ void DemoDR55::create(const Desc& desc) {
 	// create object
 	ActiveSenseDemo::create(desc); // throws
 
-	auto executeCmd = [&](const std::string command) {
-		MenuCmdMap::const_iterator cmd = menuCmdMap.find(command);
-		if (cmd == menuCmdMap.end())
-			throw Cancel(makeString("Error: impossible to execute command %s.", command.c_str()).c_str());
-		cmd->second();
-	};
+	objPassingPose = desc.objPassingPose;
+	scanPassingPose = desc.scanPassingPose;
+
+	// Contact model item
+	passingGraspModelItem = desc.passingGraspModelItem;
+	passingObjItem = desc.passingObjItem;
+	passingCQueryItem = desc.passingCQueryItem;
+	passingGraspTrajectoryItem = desc.passingGraspTrajectoryItem;
+
+
+	grasp::Sensor::Map::const_iterator cameraPtr = sensorMap.find(desc.passingCamera);
+	passingCamera = cameraPtr != sensorMap.end() ? is<Camera>(cameraPtr->second.get()) : nullptr;
+	if (!passingCamera)
+		throw Message(Message::LEVEL_CRIT, "pacman::DemoDR55::create(): unknown passing camera: %s", desc.passingCamera.c_str());
+	
+
+	grasp::data::Handler::Map::const_iterator passingImageHandlerPtr = handlerMap.find(desc.passingImageHandler);
+	passingImageHandler = passingImageHandlerPtr != handlerMap.end() ? passingImageHandlerPtr->second.get() : nullptr;
+	if (!passingImageHandler)
+		throw Message(Message::LEVEL_CRIT, "pacman::DemoDR55::create(): unknown passing image handler: %s", desc.passingImageHandler.c_str());
+
+	grasp::data::Handler::Map::const_iterator passingPointCurvHandlerPtr = handlerMap.find(desc.passingPointCurvHandler);
+	passingPointCurvHandler = passingPointCurvHandlerPtr != handlerMap.end() ? passingPointCurvHandlerPtr->second.get() : nullptr;
+	if (!passingPointCurvHandler)
+		throw Message(Message::LEVEL_CRIT, "pacman::DemoDR55::create(): unknown passing points curv handler: %s", desc.passingPointCurvHandler.c_str());
+	
+
+	grasp::data::Handler::Map::const_iterator passingGraspHandlerPtr = handlerMap.find(desc.passingGraspHandler);
+	passingGraspHandler = passingGraspHandlerPtr != handlerMap.end() ? passingGraspHandlerPtr->second.get() : nullptr;
+	if (!passingGraspHandler)
+		throw Message(Message::LEVEL_CRIT, "pacman::DemoDR55::create(): unknown passing grasp contact query handler: %s", desc.modelGraspHandler.c_str());
+
+	grasp::data::Handler::Map::const_iterator passingTrajectoryHandlerPtr = handlerMap.find(desc.passingTrajectoryHandler);
+	passingTrajectoryHandler = passingTrajectoryHandlerPtr != handlerMap.end() ? passingTrajectoryHandlerPtr->second.get() : nullptr;
+	if (!passingTrajectoryHandler)
+		throw Message(Message::LEVEL_CRIT, "pacman::DemoDR55::create(): unknown passing trajectory query handler: %s", desc.passingTrajectoryHandler.c_str());
+
+
+
+	setMenus();
+}
+
+void DemoDR55::executeCmd(const std::string& command) {
+	MenuCmdMap::const_iterator cmd = menuCmdMap.find(command);
+	if (cmd == menuCmdMap.end())
+		throw Cancel(makeString("Error: impossible to execute command %s.", command.c_str()).c_str());
+	cmd->second();
+}
+
+void DemoDR55::setMenus(){
+	ActiveSenseDemo::setMenus();
 
 
 	menuCmdMap.insert(std::make_pair("KD", [=]() {
@@ -87,65 +149,15 @@ void DemoDR55::create(const Desc& desc) {
 
 		// run demo
 		for (;;) {
-			// Contact query
-			//grasp::data::Transform* transform = is<grasp::data::Transform>(queryGraspHandler);
-			//if (!transform)
-			//	throw Message(Message::LEVEL_ERROR, "Handler %s does not support Transform interface", queryGraspHandler->getID().c_str());
-
-
-			//grasp::data::Item::List list;
-			//grasp::data::Item::Map::iterator mptr = to<Data>(dataCurrentPtr)->itemMap.find(modelGraspItem);
-			//if (mptr == to<Data>(dataCurrentPtr)->itemMap.end())
-			//	throw Message(Message::LEVEL_ERROR, "DemoDR55::estimatePose(): Does not find %s.", modelGraspItem.c_str());
-			//list.insert(list.end(), mptr);
-
-			//// retrieve model point cloud
-			//grasp::data::Item::Map::iterator modelPtr = to<Data>(dataCurrentPtr)->itemMap.find(modelItem);
-			//if (modelPtr == to<Data>(dataCurrentPtr)->itemMap.end())
-			//	throw Message(Message::LEVEL_ERROR, "DemoDR55::estimatePose(): Does not find %s.", modelItem.c_str());
-			//list.insert(list.end(), modelPtr); // grasp on model
-			//grasp::data::Item::Ptr queryGraspItemPtr = transform->transform(list);
-
-			//
-
-			//// insert processed object, remove old one
-			//grasp::data::Item::Map::iterator queryContactPtr;
-			//RenderBlock renderBlock0(*this);
-			//{
-			//	golem::CriticalSectionWrapper cswData(getCS());
-			//	to<Data>(dataCurrentPtr)->itemMap.erase(queryGraspItem);
-			//	queryContactPtr = to<Data>(dataCurrentPtr)->itemMap.insert(to<Data>(dataCurrentPtr)->itemMap.end(), grasp::data::Item::Map::value_type(queryGraspItem, queryGraspItemPtr));
-			//	Data::View::setItem(to<Data>(dataCurrentPtr)->itemMap, queryContactPtr, to<Data>(dataCurrentPtr)->getView());
-			//}
-			//context.write("Transform: handler %s, inputs %s, %s...\n", queryGraspHandler->getID().c_str(), queryContactPtr->first.c_str(), modelItem.c_str());
-
+			
 			// Grasp with Active Sense and lift the object
 			// Outcome (Exepected state of the robot at the end): 
 			// at the end the object should have grasped and lifted an object 
 			this->graspWithActiveSense();
 
-			breakPoint("Did it grasp?");
+			this->executePassing();
 
-			grasp::ConfigMat34 pose = getPoseFromConfig(this->objPassingPose, 7);
-			this->gotoPoseWS2(pose);
-
-
-			// grasp and scan object
-			//breakPoint("Object grasp and point cloud capture");
-			//grasp::data::Item::Map::iterator ptr = objectCapture(Data::MODE_QUERY, objectItem);
-
-			//// wrist frame
-			//const Mat34 frame = forwardTransformArm(grasp::Waypoint::lookup(*controller).state);
-			//// create query densities
-			//createQuery(ptr->second, frame, &to<Data>(dataCurrentPtr)->clusterCounter);
-			//// generate wrist pose solutions
-			//generateSolutions();
-			//// select best trajectory
-			//selectTrajectory();
-
-			//breakPoint("Action execution");
-			//// execute trajectory
-			//performTrajectory(stopAtBreakPoint);
+			this->executePlacement(stopAtBreakPoint);
 		}
 		context.write("Done!\n");
 
@@ -158,7 +170,6 @@ void DemoDR55::create(const Desc& desc) {
 
 		bool success = this->gotoPoseWS2(pose);
 
-		
 		context.write("Success? %d\n", success);
 
 	}));
@@ -188,7 +199,6 @@ void DemoDR55::create(const Desc& desc) {
 
 
 
-
 }
 
 //------------------------------------------------------------------------------
@@ -197,7 +207,127 @@ void DemoDR55::render() const {
 	ActiveSenseDemo::render();
 }
 
+void DemoDR55::setArmsToDefault(){
+	//TODO: Send arms to default position
+}
 
+void DemoDR55::executePlacement(bool stopAtBreakPoint){
+	const auto breakPoint = [=](const char* str) {
+		if (stopAtBreakPoint) {
+			if (option("YN", makeString("%s: Continue (Y/N)...", str).c_str()) != 'Y')
+				throw Cancel("Demo cancelled");
+		}
+		else {
+			context.write("%s\n", str);
+			(void)waitKey(0);
+		}
+	};
+
+
+	// grasp and scan object
+	breakPoint("Object grasp and point cloud capture");
+	grasp::data::Item::Map::iterator ptr = objectGraspAndCapture(stopAtBreakPoint);
+
+	//breakPoint("Action planning");
+
+	// compute features and add to data bundle
+	ptr = objectProcess(ptr);
+	// wrist frame
+	const Mat34 frame = forwardTransformArm(grasp::Waypoint::lookup(*controller).state);
+	// create query densities
+	createQuery(ptr->second, frame, &to<Data>(dataCurrentPtr)->clusterCounter);
+	// generate wrist pose solutions
+	generateSolutions();
+	// select best trajectory
+	selectTrajectory();
+
+	breakPoint("Action execution");
+	// execute trajectory
+	performTrajectory(stopAtBreakPoint);
+}
+
+void DemoDR55::executePassing(){
+
+	auto addItem = [&](const std::string& itemLabel, grasp::data::Item::Ptr& item){
+		// add item to data bundle
+		data::Item::Map::iterator ptr;
+		{
+			golem::CriticalSectionWrapper cswData(scene.getCS());
+			to<grasp::Manager::Data>(dataCurrentPtr)->itemMap.erase(itemLabel);
+			ptr = to<grasp::Manager::Data>(dataCurrentPtr)->itemMap.insert(to<grasp::Manager::Data>(dataCurrentPtr)->itemMap.end(), data::Item::Map::value_type(itemLabel, item));
+			grasp::Manager::Data::View::setItem(to<grasp::Manager::Data>(dataCurrentPtr)->itemMap, ptr, to<grasp::Manager::Data>(dataCurrentPtr)->getView());
+		}
+
+		return ptr;
+	};
+
+	auto transformItems = [&](const grasp::data::Item::List& itemList, grasp::data::Handler* handler){
+
+		grasp::data::Transform* transform = is<grasp::data::Transform>(handler);
+		if (!transform)
+			throw Message(Message::LEVEL_ERROR, "Handler %s does not support Transform interface", handler->getID().c_str());
+
+		grasp::data::Item::Ptr transformedItem = transform->transform(itemList);
+		return transformedItem;
+	};
+
+	auto convertToTrajectory = [&]() {};
+
+	//**** Moves right hand to the passing pose
+		{
+			const golem::U32 currentPlannerIndex = plannerIndex;
+			plannerIndex = 0; // Explicitly setting right side planner
+			ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
+			
+			grasp::ConfigMat34 pose = getPoseFromConfig(this->objPassingPose, 7);
+			bool success = this->gotoPoseWS2(pose);
+		}
+
+	
+	//**** Send left arm to scanning pose
+	gotoPoseLeft(this->scanPassingPose);
+
+	//**** Perform scan
+	grasp::data::Item::List itemList;
+	scanPoseActiveSensor(itemList, this->passingObjItem, this->passingImageHandler->getID());
+
+	//**** Transform scan to point curv
+	// Point Curv Transform
+	grasp::data::Item::Ptr pointCurvItem  = transformItems(itemList, this->passingPointCurvHandler);
+
+	data::Item::Map::iterator ptrObjItem = addItem(this->passingObjItem, pointCurvItem);
+
+	//**** Transform point curv with contact model to create contact query
+	// Contact query
+	grasp::data::Item::List list; list.push_back(ptrObjItem);
+
+	grasp::data::Item::Ptr queryGraspItem = transformItems(itemList, this->passingGraspHandler);
+
+	data::Item::Map::iterator ptrQueryGraspItem = addItem(this->passingCQueryItem, queryGraspItem);
+
+	//**** Convert contact query into trajectory
+	// pick up handler
+	grasp::data::Convert* convert = grasp::is<grasp::data::Convert>(ptrQueryGraspItem);
+	if (!convert)
+		throw Message(Message::LEVEL_ERROR, "Input item does not support Convert interface");
+	// convert
+	data::Item::Ptr graspTrajectory = convert->convert(*passingTrajectoryHandler);
+
+	data::Item::Map::iterator ptrGraspTrajectory = addItem(this->passingGraspTrajectoryItem, graspTrajectory);
+
+
+	//**** Execute passing grasp
+	data::Trajectory* trajectory = is<data::Trajectory>(ptrGraspTrajectory->second.get());
+	// play
+	Controller::State::Seq seq;
+	trajectory->createTrajectory(seq);
+
+	// select collision object (TODO: Set rack point cloud)
+	CollisionBounds::Ptr collisionBounds = selectCollisionBounds();
+	// perform and process (prevent right hand from opening)
+	performAndProcess(dataCurrentPtr->first, ptrGraspTrajectory->first, seq);	
+
+}
 
 }// namespace pacman
 

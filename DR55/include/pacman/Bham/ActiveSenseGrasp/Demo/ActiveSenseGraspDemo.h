@@ -133,7 +133,7 @@ public:
     void releaseRightHand2(const double openFraction, const golem::SecTmReal duration, const golem::Controller::State partReleaseConfig);
 
     void executeDropOff();
-    void setMenus();
+    virtual void setMenus();
 
 	void graspWithActiveSense();
 
