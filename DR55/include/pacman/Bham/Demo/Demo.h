@@ -40,6 +40,10 @@ public:
 		/** Scan passing pose */
 		grasp::ConfigMat34 scanPassingPose;
 
+		/** Default pose left and right arm */
+		grasp::ConfigMat34 dtfLeftPose;
+		grasp::ConfigMat34 dtfRightPose;
+
 		/** Passing camera */
 		std::string passingCamera;
 
@@ -126,11 +130,17 @@ protected:
 	/** Scan passing pose */
 	grasp::ConfigMat34 scanPassingPose;
 
+	/** Default pose left and right arm */
+	grasp::ConfigMat34 dtfLeftPose;
+	grasp::ConfigMat34 dtfRightPose;
+
 	/** Executes passing demo */
-	void executePassing();
+	void executePassing(bool stopAtBreakPoint);
 	void executePlacement(bool stopAtBreakPoint);
 
-	void setArmsToDefault();
+	void setLeftArmDeault(bool stopAtBreakPoint);
+	void setRightArmDeault(bool stopAtBreakPoint);
+	void setArmsToDefault(bool stopAtBreakPoint);
 
 	virtual void setMenus();
 

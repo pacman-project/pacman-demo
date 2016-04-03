@@ -30,6 +30,8 @@ void DemoDR55::Desc::load(golem::Context& context, const golem::XMLContext* xmlc
 
 	scanPassingPose.xmlData(xmlcontext->getContextFirst("passing scan_pose"));
 	objPassingPose.xmlData(xmlcontext->getContextFirst("passing passing_pose"));
+	dtfLeftPose.xmlData(xmlcontext->getContextFirst("passing dft_pose_left"));
+	dtfRightPose.xmlData(xmlcontext->getContextFirst("passing dft_pose_right"));
 
 	
 
@@ -62,6 +64,8 @@ void DemoDR55::create(const Desc& desc) {
 
 	objPassingPose = desc.objPassingPose;
 	scanPassingPose = desc.scanPassingPose;
+	dtfLeftPose = desc.dtfLeftPose;
+	dtfRightPose = desc.dtfRightPose;
 
 	// Contact model item
 	passingGraspModelItem = desc.passingGraspModelItem;
@@ -154,11 +158,11 @@ void DemoDR55::setMenus(){
 			// Outcome (Exepected state of the robot at the end): 
 			// at the end the object should have grasped and lifted an object 
 
-			this->setArmsToDefault();
+			this->setArmsToDefault(stopAtBreakPoint);
 
 			this->graspWithActiveSense();
 
-			this->executePassing();
+			this->executePassing(stopAtBreakPoint);
 
 			this->executePlacement(stopAtBreakPoint);
 		}
@@ -210,8 +214,59 @@ void DemoDR55::render() const {
 	ActiveSenseDemo::render();
 }
 
-void DemoDR55::setArmsToDefault(){
+void DemoDR55::setArmsToDefault(bool stopAtBreakPoint){
 	//TODO: Send arms to default position
+	const auto breakPoint = [=](const char* str) {
+		if (stopAtBreakPoint) {
+			if (option("YN", makeString("%s: Continue (Y/N)...", str).c_str()) != 'Y')
+				throw Cancel("Demo cancelled");
+		}
+		else {
+			context.write("%s\n", str);
+			(void)waitKey(0);
+		}
+	};
+
+	setRightArmDeault(stopAtBreakPoint);
+	setLeftArmDeault(stopAtBreakPoint);
+}
+
+void DemoDR55::setLeftArmDeault(bool stopAtBreakPoint){
+	//TODO: Send arms to default position
+	const auto breakPoint = [=](const char* str) {
+		if (stopAtBreakPoint) {
+			if (option("YN", makeString("%s: Continue (Y/N)...", str).c_str()) != 'Y')
+				throw Cancel("Demo cancelled");
+		}
+		else {
+			context.write("%s\n", str);
+			(void)waitKey(0);
+		}
+	};
+
+	gotoPoseLeft(this->dtfLeftPose);
+
+	breakPoint("Went to default pose left arm");
+
+}
+
+void DemoDR55::setRightArmDeault(bool stopAtBreakPoint){
+	//TODO: Send arms to default position
+	const auto breakPoint = [=](const char* str) {
+		if (stopAtBreakPoint) {
+			if (option("YN", makeString("%s: Continue (Y/N)...", str).c_str()) != 'Y')
+				throw Cancel("Demo cancelled");
+		}
+		else {
+			context.write("%s\n", str);
+			(void)waitKey(0);
+		}
+	};
+
+	gotoPose3(this->dtfRightPose, golem::SEC_TM_REAL_ZERO, true);
+	breakPoint("Went to default pose right arm");
+
+
 }
 
 void DemoDR55::executePlacement(bool stopAtBreakPoint){
@@ -249,7 +304,18 @@ void DemoDR55::executePlacement(bool stopAtBreakPoint){
 	performTrajectory(stopAtBreakPoint);
 }
 
-void DemoDR55::executePassing(){
+void DemoDR55::executePassing(bool stopAtBreakPoint){
+
+	const auto breakPoint = [=](const char* str) {
+		if (stopAtBreakPoint) {
+			if (option("YN", makeString("%s: Continue (Y/N)...", str).c_str()) != 'Y')
+				throw Cancel("Demo cancelled");
+		}
+		else {
+			context.write("%s\n", str);
+			(void)waitKey(0);
+		}
+	};
 
 	auto addItem = [&](const std::string& itemLabel, grasp::data::Item::Ptr& item){
 		// add item to data bundle
@@ -290,15 +356,21 @@ void DemoDR55::executePassing(){
 	//**** Send left arm to scanning pose
 	gotoPoseLeft(this->scanPassingPose);
 
+	breakPoint("Gone to scan pose left arm");
+
 	//**** Perform scan
 	grasp::data::Item::List itemList;
 	scanPoseActiveSensor(itemList, this->passingObjItem, this->passingImageHandler->getID());
+
+	breakPoint("Performed scan");
 
 	//**** Transform scan to point curv
 	// Point Curv Transform
 	grasp::data::Item::Ptr pointCurvItem  = transformItems(itemList, this->passingPointCurvHandler);
 
 	data::Item::Map::iterator ptrObjItem = addItem(this->passingObjItem, pointCurvItem);
+
+	breakPoint("Transformed scan to point curv");
 
 	//**** Transform point curv with contact model to create contact query
 	// Contact query
@@ -308,6 +380,7 @@ void DemoDR55::executePassing(){
 
 	data::Item::Map::iterator ptrQueryGraspItem = addItem(this->passingCQueryItem, queryGraspItem);
 
+	breakPoint("Generated contact query");
 	//**** Convert contact query into trajectory
 	// pick up handler
 	grasp::data::Convert* convert = grasp::is<grasp::data::Convert>(ptrQueryGraspItem);
@@ -318,7 +391,7 @@ void DemoDR55::executePassing(){
 
 	data::Item::Map::iterator ptrGraspTrajectory = addItem(this->passingGraspTrajectoryItem, graspTrajectory);
 
-
+	breakPoint("Converted contact query to trajectory");
 	//**** Execute passing grasp
 	data::Trajectory* trajectory = is<data::Trajectory>(ptrGraspTrajectory->second.get());
 	// play
@@ -329,7 +402,7 @@ void DemoDR55::executePassing(){
 	CollisionBounds::Ptr collisionBounds = selectCollisionBounds();
 	// perform and process (prevent right hand from opening)
 	performAndProcess(dataCurrentPtr->first, ptrGraspTrajectory->first, seq);	
-
+	breakPoint("Executed trajectory");
 }
 
 }// namespace pacman

@@ -1414,6 +1414,7 @@ bool ActiveSenseDemo::gotoPoseConfig(const grasp::ConfigMat34& config, const Rea
         return false;
     }
 
+	processTrajectory(trajectory);
     sendTrajectory(trajectory);
     // wait for end
     controller->waitForEnd();
