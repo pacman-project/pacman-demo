@@ -856,6 +856,9 @@ namespace golem {
 
 	template <> void Stream::read(grasp::Manipulator::Waypoint& value) const;
 	template <> void Stream::write(const grasp::Manipulator::Waypoint& value);
+
+	template <> void golem::Stream::read(grasp::Query::Pose::Seq::value_type& value) const;
+	template <> void golem::Stream::write(const grasp::Query::Pose::Seq::value_type& value);
 };	// namespace
 
 //------------------------------------------------------------------------------

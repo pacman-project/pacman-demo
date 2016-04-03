@@ -3293,6 +3293,32 @@ template <> void golem::Stream::write(const grasp::Manipulator::Waypoint& value)
 	write(value.control);
 }
 
+// Legacy conversion
+template <> void golem::Stream::read(grasp::Query::Pose::Seq::value_type& value) const {
+		read((RBCoord&)value);
+		read(value.cov);
+		read(value.stdDev);
+		read(value.covInv);
+		read(value.distMax);
+		//read(value.model);//ignore
+		read(value.weight);
+		read(value.cdf);
+		//fprintf(stderr, "%f, %f\n", value.weight, value.cdf);
+}
+
+template <> void golem::Stream::write(const grasp::Query::Pose::Seq::value_type& value) {
+	write((RBCoord&)value);
+	write(value.cov);
+	write(value.stdDev);
+	write(value.covInv);
+	write(value.distMax);
+	//write(value.model);//ignore
+	write(value.weight);
+	write(value.cdf);
+}
+
+	
+
 //------------------------------------------------------------------------------
 
 //int main(int argc, char *argv[]) {
