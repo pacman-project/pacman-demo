@@ -1204,8 +1204,8 @@ bool ActiveSenseDemo::gotoPoseWS2(const grasp::ConfigMat34& pose, const Real& li
 	//}
 	//context.write("Thumb command pose: [%f %f %f %f]\n", handCmd[0], handCmd[1], handCmd[2], handCmd[3]);
 	// find trajectory
-	golem::Controller::State::Seq trajectory;
-	grasp::RBDist err = findTrajectory(begin, nullptr, &pose.w, getPlanner().trajectoryDuration, trajectory);
+	golem::Controller::State::Seq trajectory = getTrajectoryFromPose(pose.w, golem::SEC_TM_REAL_ZERO);
+	//grasp::RBDist err = findTrajectory(begin, nullptr, &pose.w, getPlanner().trajectoryDuration, trajectory);
 
 	for (auto&i : trajectory) {
 		i.reserved = waypoint.command.reserved;
@@ -1218,10 +1218,10 @@ bool ActiveSenseDemo::gotoPoseWS2(const grasp::ConfigMat34& pose, const Real& li
 	h = waypoint.command.cpos.data() + *getPlanner().handInfo.getJoints().begin();
 	context.write("command: %f %f %f %f\n", h[0], h[1], h[2], h[3]);
 
-	if (err.lin >= linthr || err.ang >= angthr)
+	/*if (err.lin >= linthr || err.ang >= angthr)
 	{
 		return false;
-	}
+	}*/
 	// profiling
 	if (trajectory.size() < 2)
 		throw Message(Message::LEVEL_ERROR, "HandlerTrajectory::profile(): At least two waypoints required");

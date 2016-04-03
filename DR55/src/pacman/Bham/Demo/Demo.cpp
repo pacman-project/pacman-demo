@@ -176,8 +176,9 @@ void DemoDR55::setMenus(){
 		grasp::ConfigMat34 pose = getPoseFromConfig(this->objPassingPose, 7);
 
 		bool success = this->gotoPoseWS2(pose);
+		//this->gotoPose3(this->objPassingPose);
 
-		context.write("Success? %d\n", success);
+		//context.write("Success? %d\n", success);
 
 	}));
 
@@ -193,6 +194,12 @@ void DemoDR55::setMenus(){
 		scanFromSensor(itemList, this->passingCamera, this->passingObjItem, this->passingImageHandler->getID());
 		
 		context.debug("Handler ID: %s\n", this->passingImageHandler->getID().c_str());
+
+	}));
+
+	menuCmdMap.insert(std::make_pair("KB", [=]() {
+
+		moveRightWristBackwards(0.2, golem::SEC_TM_REAL_ZERO);
 
 	}));
 
@@ -368,6 +375,20 @@ void DemoDR55::executePlacement(bool stopAtBreakPoint){
 	performTrajectory(stopAtBreakPoint);
 }
 
+void DemoDR55::moveRightWristBackwards(const double horizontalDistance, const SecTmReal duration){
+
+	const golem::U32 currentPlannerIndex = plannerIndex;
+	plannerIndex = 0;
+	ScopeGuard guard([&]() { plannerIndex = currentPlannerIndex; });
+
+	// vertically by verticalDistance; to hand zero config
+	Mat34 pose = getWristPose(6);
+	pose.p.y -= std::max(0.0, horizontalDistance);
+	this->gotoPoseWS2(pose);
+
+
+}
+
 void DemoDR55::executePassing(bool stopAtBreakPoint){
 
 	const auto breakPoint = [=](const char* str) {
@@ -413,8 +434,9 @@ void DemoDR55::executePassing(bool stopAtBreakPoint){
 			plannerIndex = 0; // Explicitly setting right side planner
 			ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
 			
+			//this->gotoWristPose(this->objPassingPose, 0);
 			grasp::ConfigMat34 pose = getPoseFromConfig(this->objPassingPose, 7);
-			bool success = this->gotoPoseWS2(pose);
+			this->gotoPoseWS2(pose);
 		}
 
 	
@@ -481,6 +503,9 @@ void DemoDR55::executePassing(bool stopAtBreakPoint){
 		performAndProcess(dataCurrentPtr->first, ptrGraspTrajectory->first, seq);
 		breakPoint("Executed trajectory");
 	}
+
+	releaseRightHand(1.0, 2.0);
+	moveRightWristBackwards(0.2, golem::SEC_TM_REAL_ZERO);
 
 }
 

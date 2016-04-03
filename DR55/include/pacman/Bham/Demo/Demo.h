@@ -142,6 +142,8 @@ protected:
 	void setRightArmDeault(bool stopAtBreakPoint);
 	void setArmsToDefault(bool stopAtBreakPoint);
 
+	void moveRightWristBackwards(const double horizontalDistance, const golem::SecTmReal duration);
+	
 	virtual void setMenus();
 
 	void executeCmd(const std::string& command);

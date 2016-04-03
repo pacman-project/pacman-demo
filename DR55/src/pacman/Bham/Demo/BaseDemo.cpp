@@ -572,8 +572,8 @@ golem::Controller::State::Seq pacman::BaseDemoDR55::getTrajectoryFromPose(const 
 	const golem::Mat34 R = controller->getChains()[getPlanner().armInfo.getChains().begin()]->getReferencePose();
 	const golem::Mat34 wR = w *R;
 
-	golem::Controller::State begin = controller->createState();
-	controller->lookupState(SEC_TM_REAL_MAX, begin);
+	grasp::Waypoint waypoint = grasp::Waypoint::lookup(*controller);
+	golem::Controller::State begin = waypoint.command;
 
 	golem::Controller::State::Seq trajectory;
 	const grasp::RBDist err = findTrajectory(begin, nullptr, &wR, duration, trajectory);
@@ -598,7 +598,7 @@ golem::Controller::State pacman::BaseDemoDR55::lookupStateArmCommandHand() const
 	golem::Controller::State state = grasp::Waypoint::lookup(*controller).state;	// current state
 	golem::Controller::State cmdHand = grasp::Waypoint::lookup(*controller).command;	// commanded state (wanted just for hand)
 	state.cpos.set(getPlanner().handInfo.getJoints(), cmdHand.cpos); // only set cpos ???
-	return state;
+	return cmdHand;
 }
 
 void pacman::BaseDemoDR55::setHandConfig(Controller::State::Seq& trajectory, const grasp::ConfigMat34& handPose)
@@ -3103,7 +3103,7 @@ void pacman::BaseDemoDR55::performAndProcess(const std::string& data, const std:
 		throw Message(Message::LEVEL_ERROR, "Player::perform(): At least two waypoints required");
 
 	golem::Controller::State::Seq initTrajectory;
-	findTrajectory(grasp::Waypoint::lookup(*controller).state, &trajectory.front(), nullptr, SEC_TM_REAL_ZERO, initTrajectory);
+	findTrajectory(grasp::Waypoint::lookup(*controller).command, &trajectory.front(), nullptr, SEC_TM_REAL_ZERO, initTrajectory);
 
 	golem::Controller::State::Seq completeTrajectory = initTrajectory;
 	completeTrajectory.insert(completeTrajectory.end(), trajectory.begin(), trajectory.end());
@@ -3219,6 +3219,30 @@ void golem::XMLData(pacman::BaseDemoDR55::PoseDensity::Map::value_type& val, gol
 
 //------------------------------------------------------------------------------
 
+// Legacy conversion
+template <> void golem::Stream::read(grasp::Query::Pose::Seq::value_type& value) const {
+		read((RBCoord&)value);
+		read(value.cov);
+		read(value.stdDev);
+		read(value.covInv);
+		read(value.distMax);
+		//read(value.model);//ignore
+		read(value.weight);
+		read(value.cdf);
+		//fprintf(stderr, "%f, %f\n", value.weight, value.cdf);
+}
+
+template <> void golem::Stream::write(const grasp::Query::Pose::Seq::value_type& value) {
+	write((RBCoord&)value);
+	write(value.cov);
+	write(value.stdDev);
+	write(value.covInv);
+	write(value.distMax);
+	//write(value.model);//ignore
+	write(value.weight);
+	write(value.cdf);
+}
+
 template <> void golem::Stream::read(pacman::BaseDemoDR55::Data::Training::Map::value_type& value) const {
 	read(const_cast<std::string&>(value.first));
 	read(value.second.state);
@@ -3291,30 +3315,6 @@ template <> void golem::Stream::write(const grasp::Manipulator::Waypoint& value)
 	write((grasp::Manipulator::Config&)value);
 	write((golem::Sample<golem::Real>&)value);
 	write(value.control);
-}
-
-// Legacy conversion
-template <> void golem::Stream::read(grasp::Query::Pose::Seq::value_type& value) const {
-		read((RBCoord&)value);
-		read(value.cov);
-		read(value.stdDev);
-		read(value.covInv);
-		read(value.distMax);
-		//read(value.model);//ignore
-		read(value.weight);
-		read(value.cdf);
-		//fprintf(stderr, "%f, %f\n", value.weight, value.cdf);
-}
-
-template <> void golem::Stream::write(const grasp::Query::Pose::Seq::value_type& value) {
-	write((RBCoord&)value);
-	write(value.cov);
-	write(value.stdDev);
-	write(value.covInv);
-	write(value.distMax);
-	//write(value.model);//ignore
-	write(value.weight);
-	write(value.cdf);
 }
 
 	

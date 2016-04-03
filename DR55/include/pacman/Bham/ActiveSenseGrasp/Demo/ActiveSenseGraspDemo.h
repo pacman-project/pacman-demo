@@ -126,7 +126,7 @@ public:
 
     void setHandConfig(golem::Controller::State::Seq& trajectory, const golem::Controller::State cmdHand);
 
-    void gotoPose3(const grasp::ConfigMat34& pose, const golem::SecTmReal duration, const bool ignoreHand = false);
+	void gotoPose3(const grasp::ConfigMat34& pose, const golem::SecTmReal duration = golem::SEC_TM_REAL_ZERO, const bool ignoreHand = false);
 
 	void releaseRightHand(const double openFraction, const golem::SecTmReal duration);
 	void closeRightHand(const double closeFraction, const golem::SecTmReal duration);
