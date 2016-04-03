@@ -472,8 +472,16 @@ void DemoDR55::executePassing(bool stopAtBreakPoint){
 	// select collision object (TODO: Set rack point cloud)
 	CollisionBounds::Ptr collisionBounds = selectCollisionBounds();
 	// perform and process (prevent right hand from opening)
-	performAndProcess(dataCurrentPtr->first, ptrGraspTrajectory->first, seq);	
-	breakPoint("Executed trajectory");
+
+	{
+		const golem::U32 currentPlannerIndex = plannerIndex;
+		plannerIndex = 1; // Explicitly setting left side planner
+		ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
+
+		performAndProcess(dataCurrentPtr->first, ptrGraspTrajectory->first, seq);
+		breakPoint("Executed trajectory");
+	}
+
 }
 
 }// namespace pacman
