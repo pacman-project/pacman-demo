@@ -142,6 +142,11 @@ void ActiveSenseDemo::showRecordingState()
 
 void ActiveSenseDemo::setHandConfig(Controller::State::Seq& trajectory, const golem::Controller::State cmdHand)
 {
+	const golem::U32 currentPlannerIndex = plannerIndex;
+	plannerIndex = 0;
+	ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
+
+
     for (Controller::State::Seq::iterator i = trajectory.begin(); i != trajectory.end(); ++i)
     {
         Controller::State& state = *i;
@@ -152,6 +157,11 @@ void ActiveSenseDemo::setHandConfig(Controller::State::Seq& trajectory, const go
 
 void ActiveSenseDemo::gotoPose3(const ConfigMat34& pose, const SecTmReal duration, const bool ignoreHand)
 {
+	const golem::U32 currentPlannerIndex = plannerIndex;
+	plannerIndex = 0;
+	ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
+
+
     context.debug("Demo::gotoPose3: %s\n", toXMLString(pose).c_str());
 
     // always start with hand in commanded config, not actual
@@ -171,6 +181,12 @@ void ActiveSenseDemo::gotoPose3(const ConfigMat34& pose, const SecTmReal duratio
 
 void ActiveSenseDemo::releaseRightHand(const double openFraction, const SecTmReal duration)
 {
+
+	const golem::U32 currentPlannerIndex = plannerIndex;
+	plannerIndex = 0;
+	ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
+
+
 	double f = 1.0 - openFraction;
 	f = std::max(0.0, std::min(1.0, f));
 
@@ -190,6 +206,11 @@ void ActiveSenseDemo::releaseRightHand(const double openFraction, const SecTmRea
 
 void ActiveSenseDemo::releaseRightHand2(const double openFraction, const SecTmReal duration, const golem::Controller::State partReleaseConfig)
 {
+	const golem::U32 currentPlannerIndex = plannerIndex;
+	plannerIndex = 0;
+	ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
+
+
     golem::Controller::State currentState = lookupStateArmCommandHand();
 	currentState.cpos.set(getPlanner().handInfo.getJoints(), partReleaseConfig.cpos);
 
@@ -208,6 +229,11 @@ void ActiveSenseDemo::releaseRightHand2(const double openFraction, const SecTmRe
 
 void ActiveSenseDemo::closeRightHand(const double closeFraction, const SecTmReal duration)
 {
+	const golem::U32 currentPlannerIndex = plannerIndex;
+	plannerIndex = 0;
+	ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
+
+
 	// @@@ HACK @@@
 
 	const double f = std::max(0.0, std::min(1.0, closeFraction));
@@ -243,6 +269,11 @@ void ActiveSenseDemo::closeRightHand(const double closeFraction, const SecTmReal
 
 void ActiveSenseDemo::executeDropOff()
 {
+	const golem::U32 currentPlannerIndex = plannerIndex;
+	plannerIndex = 0;
+	ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
+
+
     context.debug("Moving to drop-off point...\n");
     gotoPose3(activeSense->getParameters().dropOffPose, getPlanner().trajectoryDuration, true);
 
@@ -1125,7 +1156,13 @@ void ActiveSenseDemo::createRender() {
 }
 
 bool ActiveSenseDemo::gotoPoseWS(const grasp::ConfigMat34& pose, const Real& linthr, const golem::Real& angthr) {
-    // current state
+    
+	const golem::U32 currentPlannerIndex = plannerIndex;
+	plannerIndex = 0;
+	ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
+
+	
+	// current state
     golem::Controller::State begin = controller->createState();
     controller->lookupState(SEC_TM_REAL_MAX, begin);
 

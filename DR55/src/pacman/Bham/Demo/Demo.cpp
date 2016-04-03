@@ -181,6 +181,12 @@ void DemoDR55::setMenus(){
 
 	}));
 
+	menuCmdMap.insert(std::make_pair("KL", [=]() {
+
+		gotoPoseLeft(this->scanPassingPose);
+
+	}));
+
 	menuCmdMap.insert(std::make_pair("KP", [&]() {
 
 
@@ -203,6 +209,7 @@ void DemoDR55::setMenus(){
 		createRender();
 		context.write("Done!\n");
 	}));
+
 
 
 
