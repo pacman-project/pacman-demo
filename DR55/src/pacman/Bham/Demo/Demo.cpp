@@ -158,9 +158,9 @@ void DemoDR55::setMenus(){
 			// Outcome (Exepected state of the robot at the end): 
 			// at the end the object should have grasped and lifted an object 
 
-			this->setArmsToDefault(stopAtBreakPoint);
+			//this->setArmsToDefault(stopAtBreakPoint);
 
-			this->graspWithActiveSense();
+			//this->graspWithActiveSense();
 
 			this->executePassing(stopAtBreakPoint);
 
@@ -184,6 +184,15 @@ void DemoDR55::setMenus(){
 	menuCmdMap.insert(std::make_pair("KL", [=]() {
 
 		gotoPoseLeft(this->scanPassingPose);
+
+	}));
+
+	menuCmdMap.insert(std::make_pair("KS", [=]() {
+
+		grasp::data::Item::List itemList;
+		scanFromSensor(itemList, this->passingCamera, this->passingObjItem, this->passingImageHandler->getID());
+		
+		context.debug("Handler ID: %s\n", this->passingImageHandler->getID().c_str());
 
 	}));
 
@@ -213,6 +222,8 @@ void DemoDR55::setMenus(){
 
 
 
+
+
 }
 
 //------------------------------------------------------------------------------
@@ -220,6 +231,52 @@ void DemoDR55::setMenus(){
 void DemoDR55::render() const {
 	ActiveSenseDemo::render();
 }
+
+void DemoDR55::scanFromSensor(grasp::data::Item::List& scannedImageItems, Camera* camera, const std::string& itemLabel, const std::string& handler, ScanPoseCommand scanPoseCommand, grasp::Manager::Data::Ptr dataPtr) {
+	data::Handler::Map::const_iterator handlerSnapshotPtr = handlerMap.find(handler.empty() ? camera->getSnapshotHandler() : handler);
+	if (handlerSnapshotPtr == handlerMap.end())
+		throw Message(Message::LEVEL_ERROR, "Unknown snapshot handler %s", camera->getSnapshotHandler().c_str());
+	data::Capture* capture = is<data::Capture>(handlerSnapshotPtr);
+	if (!capture)
+		throw Message(Message::LEVEL_ERROR, "Handler %s does not support Capture interface", camera->getSnapshotHandler().c_str());
+
+	this->dataItemLabel = itemLabel;
+
+	const bool isEnabledDeformationMap = camera && camera->getCurrentCalibration()->isEnabledDeformationMap();
+	ScopeGuard guard([&]() { if (camera) camera->getCurrentCalibration()->enableDeformationMap(isEnabledDeformationMap); });
+	if (camera && camera->getCurrentCalibration()->hasDeformationMap())
+	{
+		context.write("ActiveSenseDemo::scanPoseActive: **** USING DEFORMATION MAP ****\n");
+		camera->getCurrentCalibration()->enableDeformationMap(true);
+	}
+
+	grasp::Manager::Data* data;
+	auto data_it = this->dataCurrentPtr;
+
+	if (dataPtr.get())
+		data = to<grasp::Manager::Data>(dataPtr);
+	else
+		data = to<grasp::Manager::Data>(data_it);
+
+
+	for (bool stop = false; !stop;) {
+		stop = scanPoseCommand == nullptr || !scanPoseCommand();
+		RenderBlock renderBlock(*this);
+		{
+			golem::CriticalSectionWrapper cswData(scene.getCS());
+			grasp::data::Item::Ptr itemImage = capture->capture(*camera, [&](const grasp::TimeStamp*) -> bool { return true; });
+
+			const data::Item::Map::iterator ptr = data->itemMap.insert(data->itemMap.end(), data::Item::Map::value_type(dataItemLabel, itemImage));
+
+			Data::View::setItem(data->itemMap, ptr, data->getView());
+			scannedImageItems.push_back(ptr);
+		}
+	}
+
+	context.write("Done!\n");
+}
+
+
 
 void DemoDR55::setArmsToDefault(bool stopAtBreakPoint){
 	//TODO: Send arms to default position
@@ -327,6 +384,7 @@ void DemoDR55::executePassing(bool stopAtBreakPoint){
 	auto addItem = [&](const std::string& itemLabel, grasp::data::Item::Ptr& item){
 		// add item to data bundle
 		data::Item::Map::iterator ptr;
+		RenderBlock renderBlock(*this);
 		{
 			golem::CriticalSectionWrapper cswData(scene.getCS());
 			to<grasp::Manager::Data>(dataCurrentPtr)->itemMap.erase(itemLabel);
@@ -367,7 +425,7 @@ void DemoDR55::executePassing(bool stopAtBreakPoint){
 
 	//**** Perform scan
 	grasp::data::Item::List itemList;
-	scanPoseActiveSensor(itemList, this->passingObjItem, this->passingImageHandler->getID());
+	scanFromSensor(itemList, this->passingCamera, this->passingObjItem, this->passingImageHandler->getID());
 
 	breakPoint("Performed scan");
 
@@ -383,7 +441,7 @@ void DemoDR55::executePassing(bool stopAtBreakPoint){
 	// Contact query
 	grasp::data::Item::List list; list.push_back(ptrObjItem);
 
-	grasp::data::Item::Ptr queryGraspItem = transformItems(itemList, this->passingGraspHandler);
+	grasp::data::Item::Ptr queryGraspItem = transformItems(list, this->passingGraspHandler);
 
 	data::Item::Map::iterator ptrQueryGraspItem = addItem(this->passingCQueryItem, queryGraspItem);
 

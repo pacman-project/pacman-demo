@@ -145,6 +145,9 @@ protected:
 	virtual void setMenus();
 
 	void executeCmd(const std::string& command);
+
+	void scanFromSensor(grasp::data::Item::List& scannedImageItems, grasp::Camera* camera, const std::string& itemLabel = ActiveSense::DFT_IMAGE_ITEM_LABEL, const std::string& handler = std::string(), ScanPoseCommand scanPoseCommand = nullptr, grasp::Manager::Data::Ptr dataPtr = grasp::Manager::Data::Ptr());
+
 	/** golem::UIRenderer interface */
 	virtual void render() const;
 
