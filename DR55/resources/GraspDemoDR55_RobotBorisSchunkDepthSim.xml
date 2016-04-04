@@ -351,8 +351,8 @@ enable_coverage_filter_plane = "0" or "1"-->
           <vertex_frame_size v1="0.05" v2="0.05" v3="0.05"></vertex_frame_size>
           <edge_colour R="127" G="127" B="127" A="255"></edge_colour>
         </goal_population_renderer>
-        <global_graph_renderer show="0" vertex_position_show="1" vertex_frame_show="0" edge_show="0">
-          <vertex_position_colour R="255" G="255" B="0" A="255"></vertex_position_colour>
+        <global_graph_renderer show="1" vertex_position_show="1" vertex_frame_show="0" edge_show="0">
+          <vertex_position_colour R="0" G="0" B="0" A="255"></vertex_position_colour>
           <vertex_frame_size v1="0.05" v2="0.05" v3="0.05"></vertex_frame_size>
           <edge_colour R="127" G="127" B="127" A="255"></edge_colour>
         </global_graph_renderer>
@@ -393,6 +393,10 @@ enable_coverage_filter_plane = "0" or "1"-->
 
 
     <objects>
+      <bounds type="plane" distance="0.0" grid_size="10" grid_delta="0.1" group="1" invisible="0">
+        <normal v1="0.0" v2="0.0" v3="1.0"/>
+        <pose v1="-0.3" v2="0.0" v3="0.0" roll="0.0" pitch="1.5707963268" yaw="0.0"/>
+      </bounds>
       <bounds type="plane" distance="0.0" grid_size="10" grid_delta="0.1" group="1">
         <normal v1="0.0" v2="0.0" v3="1.0"/>
         <pose v1="0.0" v2="0.0" v3="-0.345" roll="0.0" pitch="0.0" yaw="0.0"/>
@@ -422,10 +426,10 @@ enable_coverage_filter_plane = "0" or "1"-->
       </bounds>-->
 
 
-      <bounds type="box" group="1" invisible="0">
+      <!--<bounds type="box" group="1" invisible="0">
         <dimensions v1="0.15" v2="0.15" v3="0.15"/>
         <pose v1="0.1" v2="0.0" v3="0.45" roll="0.0" pitch="0.0" yaw="0.0"/>
-      </bounds>
+      </bounds>-->
       <bounds type="box" group="1" invisible="0">
         <dimensions v1="0.24" v2="0.09" v3="0.3"/>
         <pose v1="0.0" v2="0.0" v3="0.0" roll="0.0" pitch="0.0" yaw="0.0"/>
