@@ -595,9 +595,9 @@ grasp::ConfigMat34 pacman::BaseDemoDR55::getConfigFromPose(const golem::Mat34& w
 
 golem::Controller::State pacman::BaseDemoDR55::lookupStateArmCommandHand() const
 {
-	golem::Controller::State state = grasp::Waypoint::lookup(*controller).state;	// current state
+	//golem::Controller::State state = grasp::Waypoint::lookup(*controller).state;	// current state
 	golem::Controller::State cmdHand = grasp::Waypoint::lookup(*controller).command;	// commanded state (wanted just for hand)
-	state.cpos.set(getPlanner().handInfo.getJoints(), cmdHand.cpos); // only set cpos ???
+	//state.cpos.set(getPlanner().handInfo.getJoints(), cmdHand.cpos); // only set cpos ???
 	return cmdHand;
 }
 
@@ -1767,7 +1767,7 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 	}));
 
 	menuCmdMap.insert(std::make_pair("ZH", [=]() {
-		context.write("Right Hand Control\n");
+		context.write("Left Hand Control\n");
 		for (;;)
 		{
 			const int k = option("+-01l ", "increase grasp:+  relax grasp:-  open:0  close:1 lift-wrist:l  <SPACE> to end");
@@ -3151,7 +3151,14 @@ void pacman::BaseDemoDR55::performAndProcess(const std::string& data, const std:
 	}
 
 	// go to initial state
-	processTrajectory(initTrajectory);
+	//processTrajectory(initTrajectory);
+	grasp::Waypoint waypoint = grasp::Waypoint::lookup(*controller);
+	for (auto&i : initTrajectory){
+		i.reserved = waypoint.command.reserved;
+		i.cpos.set(plannerInfoSeq[0].handInfo.getJoints(), waypoint.command.cpos);
+	}
+		
+
 	sendTrajectory(initTrajectory);
 	// wait until the last trajectory segment is sent
 	controller->waitForEnd();
@@ -3168,7 +3175,11 @@ void pacman::BaseDemoDR55::performAndProcess(const std::string& data, const std:
 
 		// send trajectory
 		golem::Controller::State::Seq processedTrajectory = trajectory;
-		processTrajectory(processedTrajectory);
+		//processTrajectory(processedTrajectory);
+		for (auto&i : initTrajectory){
+			i.reserved = waypoint.command.reserved;
+			i.cpos.set(plannerInfoSeq[0].handInfo.getJoints(), waypoint.command.cpos);
+		}
 		sendTrajectory(processedTrajectory);
 
 		// repeat every send waypoint until trajectory end

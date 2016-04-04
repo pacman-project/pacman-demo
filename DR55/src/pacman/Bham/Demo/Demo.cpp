@@ -30,6 +30,8 @@ void DemoDR55::Desc::load(golem::Context& context, const golem::XMLContext* xmlc
 
 	scanPassingPose.xmlData(xmlcontext->getContextFirst("passing scan_pose"));
 	objPassingPose.xmlData(xmlcontext->getContextFirst("passing passing_pose"));
+	intermediatePassingPose.xmlData(xmlcontext->getContextFirst("passing intermediate_pose"));
+
 	dtfLeftPose.xmlData(xmlcontext->getContextFirst("passing dft_pose_left"));
 	dtfRightPose.xmlData(xmlcontext->getContextFirst("passing dft_pose_right"));
 
@@ -63,6 +65,7 @@ void DemoDR55::create(const Desc& desc) {
 	ActiveSenseDemo::create(desc); // throws
 
 	objPassingPose = desc.objPassingPose;
+	intermediatePassingPose = desc.intermediatePassingPose;
 	scanPassingPose = desc.scanPassingPose;
 	dtfLeftPose = desc.dtfLeftPose;
 	dtfRightPose = desc.dtfRightPose;
@@ -117,7 +120,11 @@ void DemoDR55::setMenus(){
 	ActiveSenseDemo::setMenus();
 
 
+
 	menuCmdMap.insert(std::make_pair("KD", [=]() {
+
+		static int counter = 0;
+
 		// debug mode
 		const bool stopAtBreakPoint = option("YN", "Debug mode (Y/N)...") == 'Y';
 		const auto breakPoint = [=](const char* str) {
@@ -131,25 +138,14 @@ void DemoDR55::setMenus(){
 			}
 		};
 
-		// command keys
-		std::string itemTransCmd("IT");
-		std::string itemConvCmd("IC");
-		std::string dataSaveCmd("DS");
-		std::string itemRemoveCmd("IR");
+		this->setArmsToDefault(stopAtBreakPoint);
 
 		// estimate pose
-		if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty()) {
+		if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty() || counter == 0) {
 			breakPoint("Dishwasher pose estimation");
 			estimatePose(Data::MODE_QUERY);
+			counter++;
 		}
-
-		context.write("Create a predictive contact model for the grasp [%s]...\n", modelGraspItem.c_str());
-		if (option("YN", "Create a new contact model? (Y/N)") == 'Y') {
-			dataItemLabel = modelGraspItem;
-			executeCmd(itemTransCmd);
-			modelGraspItem = dataItemLabel;
-		}
-		context.write("done.\n");
 
 		// run demo
 		for (;;) {
@@ -158,13 +154,12 @@ void DemoDR55::setMenus(){
 			// Outcome (Exepected state of the robot at the end): 
 			// at the end the object should have grasped and lifted an object 
 
-			//this->setArmsToDefault(stopAtBreakPoint);
-
 			//this->graspWithActiveSense();
 
 			this->executePassing(stopAtBreakPoint);
 
 			this->executePlacement(stopAtBreakPoint);
+
 		}
 		context.write("Done!\n");
 
@@ -353,26 +348,34 @@ void DemoDR55::executePlacement(bool stopAtBreakPoint){
 	};
 
 
-	// grasp and scan object
-	breakPoint("Object grasp and point cloud capture");
-	grasp::data::Item::Map::iterator ptr = objectGraspAndCapture(stopAtBreakPoint);
+	{
+		const golem::U32 currentPlannerIndex = plannerIndex;
+		plannerIndex = 1; // Explicitly setting right side planner
+		ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
+	
 
-	//breakPoint("Action planning");
+		// grasp and scan object
+		breakPoint("Object grasp and point cloud capture");
+		grasp::data::Item::Map::iterator ptr = objectGraspAndCapture(stopAtBreakPoint);
 
-	// compute features and add to data bundle
-	ptr = objectProcess(ptr);
-	// wrist frame
-	const Mat34 frame = forwardTransformArm(grasp::Waypoint::lookup(*controller).state);
-	// create query densities
-	createQuery(ptr->second, frame, &to<Data>(dataCurrentPtr)->clusterCounter);
-	// generate wrist pose solutions
-	generateSolutions();
-	// select best trajectory
-	selectTrajectory();
+		//breakPoint("Action planning");
 
-	breakPoint("Action execution");
-	// execute trajectory
-	performTrajectory(stopAtBreakPoint);
+		// compute features and add to data bundle
+		ptr = objectProcess(ptr);
+		// wrist frame
+		const Mat34 frame = forwardTransformArm(grasp::Waypoint::lookup(*controller).state);
+		// create query densities
+		createQuery(ptr->second, frame, &to<Data>(dataCurrentPtr)->clusterCounter);
+		// generate wrist pose solutions
+		generateSolutions();
+		// select best trajectory
+		selectTrajectory();
+
+		breakPoint("Action execution");
+		// execute trajectory
+		performTrajectory(stopAtBreakPoint);
+
+	}
 }
 
 void DemoDR55::moveRightWristBackwards(const double horizontalDistance, const SecTmReal duration){
@@ -450,6 +453,8 @@ void DemoDR55::executePassing(bool stopAtBreakPoint){
 	scanFromSensor(itemList, this->passingCamera, this->passingObjItem, this->passingImageHandler->getID());
 
 	breakPoint("Performed scan");
+
+	//gotoPoseLeft(this->intermediatePassingPose);
 
 	//**** Transform scan to point curv
 	// Point Curv Transform

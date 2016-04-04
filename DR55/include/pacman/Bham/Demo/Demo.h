@@ -39,6 +39,8 @@ public:
 
 		/** Scan passing pose */
 		grasp::ConfigMat34 scanPassingPose;
+		/** Intermediate passing pose */
+		grasp::ConfigMat34 intermediatePassingPose;
 
 		/** Default pose left and right arm */
 		grasp::ConfigMat34 dtfLeftPose;
@@ -129,6 +131,8 @@ protected:
 
 	/** Scan passing pose */
 	grasp::ConfigMat34 scanPassingPose;
+	/** Intermediate passing pose */
+	grasp::ConfigMat34 intermediatePassingPose;
 
 	/** Default pose left and right arm */
 	grasp::ConfigMat34 dtfLeftPose;

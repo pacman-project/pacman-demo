@@ -969,6 +969,11 @@ void ActiveSenseDemo::setMenus() {
 
 void ActiveSenseDemo::graspWithActiveSense(){
 
+
+	const golem::U32 currentPlannerIndex = plannerIndex;
+	plannerIndex = 0; // Explicitly setting right side planner
+	ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
+
 	grasp::data::Item::Map contactModelMap;
 	grasp::data::Item::Map::iterator itemContactModelPtr;
 

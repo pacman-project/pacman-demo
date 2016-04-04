@@ -498,6 +498,15 @@ golem::Mat34 pacman::ActiveSense::computeGoal(const golem::Mat34& targetFrame, g
 grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView3()
 {
 
+	/*const auto breakPoint = [=](const char* str) {
+		
+	if (demoOwner->option("YN", makeString("%s: Continue (Y/N)...", str).c_str()) != 'Y')
+				throw Cancel("Demo cancelled");
+
+		
+	};*/
+
+
 	if (!hascontactModel) {
 		throw Cancel("ActiveSense: No contact model set!\n");
 	}
@@ -536,6 +545,8 @@ grasp::data::Item::Map::iterator pacman::ActiveSense::nextBestView3()
 	hypothesis->visited = true;
 	visitedHypotheses.push_back(hypothesis);
 	demoOwner->scanPoseActive(scannedImageItems, hypothesis->getLabel(), params.imageHandler);
+
+	//breakPoint("Scanned from first pose"); 
 
 	pacman::io_adhoc::log_out(this->out, "selected", this->experiment_id, this->experiment_trial, -1, false, hypothesis->id, -1, hypothesis->value);
 
@@ -610,6 +621,7 @@ NBV:
 				found_contacts = false; // we actually don't have contacts...
 			}
 
+			//breakPoint("Processed contacts");
 		
 
 
@@ -632,6 +644,7 @@ NBV:
 			try
 			{
 
+				//breakPoint("Going to NBV");
 				if (this->params.generationMethod == EGenerationMethod::G_RANDOM_SPHERE)
 					gotToHypothesis = demoOwner->gotoPoseWS(goal);
 				if (this->params.generationMethod == EGenerationMethod::G_FIXED)
