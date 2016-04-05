@@ -443,7 +443,7 @@ enable_coverage_filter_plane = "0" or "1"-->
       </bounds>
       <!--Small rack bounding box-->
       <bounds type="box" group="1" invisible="0">
-        <dimensions v1="0.5" v2="0.5" v3="0.15"/> <!-- 0.05 -->
+        <dimensions v1="0.5" v2="0.5" v3="0.155"/> <!-- 0.05 -->
         <pose v1="0.6" v2="-0.5" v3="-0.3" roll="0.0" pitch="0.0" yaw="0.0"/>
       </bounds>
       <!--<bounds type="box" group="1" invisible="0">

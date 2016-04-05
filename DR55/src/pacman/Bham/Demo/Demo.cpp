@@ -166,7 +166,7 @@ void DemoDR55::setMenus(){
 			this->executePassing(stopAtBreakPoint);
 
 			this->executePlacement(stopAtBreakPoint);
-			releaseLeftHand(0.5, 1.0);
+			//releaseLeftHand(0.5, 1.0);
 
 		}
 		context.write("Done!\n");
