@@ -967,7 +967,7 @@ void ActiveSenseDemo::setMenus() {
     // END OF MENUS
 }
 
-void ActiveSenseDemo::graspWithActiveSense(){
+void ActiveSenseDemo::graspWithActiveSense(bool stopAtBreakPoint){
 
 
 	const golem::U32 currentPlannerIndex = plannerIndex;
@@ -987,14 +987,23 @@ void ActiveSenseDemo::graspWithActiveSense(){
 		}
 	};
 	//Filter by ContactModel+ContactModel, HandlerID
-	filter(dataCurrentPtr->second->itemMap, activeSense->getParameters().contactHandler, contactModelMap);
-	itemContactModelPtr = contactModelMap.begin();
-	select(
-		itemContactModelPtr,
-		contactModelMap.begin(),
-		contactModelMap.end(),
-		"Select contactModel:\n",
-		[](grasp::data::Item::Map::iterator ptr) -> std::string{ return ptr->first + ": " + ptr->second->getHandler().getID(); });
+
+	if (stopAtBreakPoint){
+		filter(dataCurrentPtr->second->itemMap, activeSense->getParameters().contactHandler, contactModelMap);
+		itemContactModelPtr = contactModelMap.begin();
+		select(
+			itemContactModelPtr,
+			contactModelMap.begin(),
+			contactModelMap.end(),
+			"Select contactModel:\n",
+			[](grasp::data::Item::Map::iterator ptr) -> std::string{ return ptr->first + ": " + ptr->second->getHandler().getID(); });
+	}
+
+
+	//Getting grasp contact model
+	itemContactModelPtr = to<grasp::Manager::Data>(dataCurrentPtr)->itemMap.find(this->activeSense->getParameters().contactModelItemLabel);
+	if (itemContactModelPtr == to<grasp::Manager::Data>(dataCurrentPtr)->itemMap.end())
+		throw Message(Message::LEVEL_ERROR, "Grasp contact model item with label %s was not found in data bundle", this->activeSense->getParameters().contactModelItemLabel.c_str());
 
 	activeSense->setContactModelItem(itemContactModelPtr);
 
@@ -1002,25 +1011,25 @@ void ActiveSenseDemo::graspWithActiveSense(){
 
 	activeSense->resetNextBestViewSequential(); // always start from first fixed pose when using sequential selection method
 
-	const int k = option("YN", "Enable user input during execution (Y/N)?");
-	activeSense->setAllowInput(k == 'Y');
+	/*const int k = option("YN", "Enable user input during execution (Y/N)?");*/
+	activeSense->setAllowInput(stopAtBreakPoint);//(k == 'Y');
 
-	if (!recordingActive())
-	{
-		const int k = option("YN", "Start video recording (Y/N)?");
-		if (k == 'Y')
-		{
-			recordingStart(dataCurrentPtr->first, "ActiveSense-Demo" + this->activeSense->experiment_alias, true);
-			recordingWaitToStart();
-		}
-	}
+	//if (!recordingActive())
+	//{
+	//	const int k = option("YN", "Start video recording (Y/N)?");
+	//	if (k == 'Y')
+	//	{
+	//		recordingStart(dataCurrentPtr->first, "ActiveSense-Demo" + this->activeSense->experiment_alias, true);
+	//		recordingWaitToStart();
+	//	}
+	//}
 
-	showRecordingState();
+	//showRecordingState();
 
 	if (!activeSense->getParameters().configSeq.empty())
 	{
-		const int k = option("CF", "For the first view, use (C)urrent camera pose, or first (F)ixed pose?");
-		if (k == 'F')
+		//const int k = option("CF", "For the first view, use (C)urrent camera pose, or first (F)ixed pose?");
+		//if (k == 'F')
 		{
 			context.debug("ActiveSense: Demo: moving to first fixed NBV pose\n");
 			const grasp::ConfigMat34& pose = activeSense->getParameters().configSeq.front();
@@ -1033,11 +1042,11 @@ void ActiveSenseDemo::graspWithActiveSense(){
 
 	activeSense->nextBestView3();
 
-	showRecordingState();
+	//showRecordingState();
 
 	activeSense->executeTrajectory2();
 
-	if (recordingActive() && option("YN", "Stop recording video? (Y/N)") == 'Y')
+	/*if (recordingActive() && option("YN", "Stop recording video? (Y/N)") == 'Y')
 	{
 		recordingStop(golem::SEC_TM_REAL_ZERO);
 		recordingWaitToStop();
@@ -1046,7 +1055,7 @@ void ActiveSenseDemo::graspWithActiveSense(){
 
 
 	if (option("YN", "Open hand? (Y/N)") == 'Y')
-		releaseRightHand(1.0, 2.0);
+		releaseRightHand(1.0, 2.0);*/
 
 	context.write(">>>>>>>> ActiveSense Demo Finished! <<<<<<<<\n");
 }

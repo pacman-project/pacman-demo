@@ -135,7 +135,7 @@ public:
     void executeDropOff();
     virtual void setMenus();
 
-	void graspWithActiveSense();
+	void graspWithActiveSense(bool stopAtBreakPoint = false);
 
     virtual bool gotoPoseWS(const grasp::ConfigMat34& pose, const golem::Real& linthr = 0.0000001, const golem::Real& angthr = 0.0000001);
 	virtual bool gotoPoseWS2(const grasp::ConfigMat34& pose, const golem::Real& linthr = 0.0000001, const golem::Real& angthr = 0.0000001);
@@ -158,7 +158,7 @@ public:
     void clearItemsView();
 
     virtual void perform2(const std::string& data, const std::string& item, const golem::Controller::State::Seq& trajectory,
-                          const bool testTrajectory = true, const bool controlRecording = false);
+                          const bool testTrajectory = false, const bool controlRecording = false);
 
     // Manipulator::Waypoint::Seq is called a path
     grasp::Manipulator::Waypoint::Seq convertToManipulatorWayPoints(const grasp::Waypoint::Seq& waypoints);

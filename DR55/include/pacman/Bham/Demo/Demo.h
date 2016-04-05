@@ -38,7 +38,10 @@ public:
 		grasp::ConfigMat34 objPassingPose;
 
 		/** Scan passing pose */
-		grasp::ConfigMat34 scanPassingPose;
+		grasp::ConfigMat34 scanPassingPose1;
+		grasp::ConfigMat34 scanPassingPose2;
+		grasp::ConfigMat34 scanPassingPose3;
+
 		/** Intermediate passing pose */
 		grasp::ConfigMat34 intermediatePassingPose;
 
@@ -130,7 +133,10 @@ protected:
 	grasp::ConfigMat34 objPassingPose;
 
 	/** Scan passing pose */
-	grasp::ConfigMat34 scanPassingPose;
+	grasp::ConfigMat34 scanPassingPose1;
+	grasp::ConfigMat34 scanPassingPose2;
+	grasp::ConfigMat34 scanPassingPose3;
+
 	/** Intermediate passing pose */
 	grasp::ConfigMat34 intermediatePassingPose;
 

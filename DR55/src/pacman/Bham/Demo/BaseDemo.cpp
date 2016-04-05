@@ -2653,6 +2653,7 @@ void pacman::BaseDemoDR55::createQuery(grasp::data::Item::Ptr item, const golem:
 }
 
 void pacman::BaseDemoDR55::generateSolutions() {
+	//printf("1 planner index %d\n", plannerIndex);
 	// training data are required
 	if (to<Data>(dataCurrentPtr)->densities.empty())
 		throw Message(Message::LEVEL_ERROR, "BaseDemoDR55::generateSolutions(): No query densities");
@@ -2675,6 +2676,7 @@ void pacman::BaseDemoDR55::generateSolutions() {
 		Data::Solution *solution = nullptr, test;
 
 		for (;;) {
+			//printf("2\n");
 			// select next pointer
 				{
 					CriticalSectionWrapper csw(cs);
@@ -2686,6 +2688,7 @@ void pacman::BaseDemoDR55::generateSolutions() {
 			// sample query density
 			Data::Density::Seq::const_iterator query;
 			for (;;) {
+				//printf("3\n");
 				query = golem::Sample<golem::Real>::sample<golem::Ref1, Data::Density::Seq::const_iterator>(to<Data>(dataCurrentPtr)->densities, rand);
 				if (query == to<Data>(dataCurrentPtr)->densities.end()) {
 					context.error("BaseDemoDR55::generateSolutions(): Query density sampling error\n");
@@ -2696,6 +2699,7 @@ void pacman::BaseDemoDR55::generateSolutions() {
 			// sample pose density
 			grasp::Query::Pose::Seq::const_iterator pose;
 			for (;;) {
+				//printf("4\n");
 				pose = golem::Sample<golem::Real>::sample<golem::Ref1, grasp::Query::Pose::Seq::const_iterator>(query->pose, rand);
 				if (pose == query->pose.end()) {
 					context.error("BaseDemoDR55::generateSolutions(): Pose density sampling error\n");
@@ -2709,6 +2713,7 @@ void pacman::BaseDemoDR55::generateSolutions() {
 
 			// local search: try to find better solution using simulated annealing
 			for (size_t s = 0; s <= optimisation.steps; ++s) {
+				//printf("5\n");
 				const bool init = s == 0;
 
 				// linear schedule
@@ -2719,6 +2724,7 @@ void pacman::BaseDemoDR55::generateSolutions() {
 
 				// generate test solution
 				for (;;) {
+					//printf("6\n");
 					// Linear component
 					Vec3 v;
 					v.next(rand); // |v|==1
@@ -2744,10 +2750,15 @@ void pacman::BaseDemoDR55::generateSolutions() {
 					// evaluate
 					test.likelihood.setToDefault();
 					// comment out to turn off expert
+					//printf("7\n");
 					if (!Data::Solution::Likelihood::isValid(test.likelihood.contact = evaluateSample(query->object.begin(), query->object.end(), test.pose)))
 						continue;
+					
+					//printf("8\n");
 					if (!Data::Solution::Likelihood::isValid(test.likelihood.pose = evaluateSample(query->pose.begin(), query->pose.end(), test.pose)))
 						continue;
+
+					//printf("9\n");
 					if (!Data::Solution::Likelihood::isValid(test.likelihood.collision = golem::numeric_const<golem::Real>::ONE))
 						continue;
 
@@ -3176,7 +3187,7 @@ void pacman::BaseDemoDR55::performAndProcess(const std::string& data, const std:
 		// send trajectory
 		golem::Controller::State::Seq processedTrajectory = trajectory;
 		//processTrajectory(processedTrajectory);
-		for (auto&i : initTrajectory){
+		for (auto&i : processedTrajectory){
 			i.reserved = waypoint.command.reserved;
 			i.cpos.set(plannerInfoSeq[0].handInfo.getJoints(), waypoint.command.cpos);
 		}

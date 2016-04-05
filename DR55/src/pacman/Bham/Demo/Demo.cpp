@@ -28,8 +28,12 @@ void DemoDR55::Desc::load(golem::Context& context, const golem::XMLContext* xmlc
 
 	xmlcontext = xmlcontext->getContextFirst("demo");
 
-	scanPassingPose.xmlData(xmlcontext->getContextFirst("passing scan_pose"));
+	scanPassingPose1.xmlData(xmlcontext->getContextFirst("passing scan_pose1"));
+	scanPassingPose2.xmlData(xmlcontext->getContextFirst("passing scan_pose2"));
+	scanPassingPose3.xmlData(xmlcontext->getContextFirst("passing scan_pose3"));
+
 	objPassingPose.xmlData(xmlcontext->getContextFirst("passing passing_pose"));
+
 	intermediatePassingPose.xmlData(xmlcontext->getContextFirst("passing intermediate_pose"));
 
 	dtfLeftPose.xmlData(xmlcontext->getContextFirst("passing dft_pose_left"));
@@ -65,8 +69,11 @@ void DemoDR55::create(const Desc& desc) {
 	ActiveSenseDemo::create(desc); // throws
 
 	objPassingPose = desc.objPassingPose;
+
 	intermediatePassingPose = desc.intermediatePassingPose;
-	scanPassingPose = desc.scanPassingPose;
+	scanPassingPose1 = desc.scanPassingPose1;
+	scanPassingPose2 = desc.scanPassingPose2;
+	scanPassingPose3 = desc.scanPassingPose3;
 	dtfLeftPose = desc.dtfLeftPose;
 	dtfRightPose = desc.dtfRightPose;
 
@@ -140,7 +147,7 @@ void DemoDR55::setMenus(){
 
 		this->setArmsToDefault(stopAtBreakPoint);
 
-		// estimate pose
+		//// estimate pose
 		if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty() || counter == 0) {
 			breakPoint("Dishwasher pose estimation");
 			estimatePose(Data::MODE_QUERY);
@@ -154,7 +161,7 @@ void DemoDR55::setMenus(){
 			// Outcome (Exepected state of the robot at the end): 
 			// at the end the object should have grasped and lifted an object 
 
-			//this->graspWithActiveSense();
+			this->graspWithActiveSense();
 
 			this->executePassing(stopAtBreakPoint);
 
@@ -170,16 +177,41 @@ void DemoDR55::setMenus(){
 
 		grasp::ConfigMat34 pose = getPoseFromConfig(this->objPassingPose, 7);
 
-		bool success = this->gotoPoseWS2(pose);
+		//bool success = this->gotoPoseWS2(pose);
 		//this->gotoPose3(this->objPassingPose);
+		//this->gotoWristPose(this->objPassingPose.w, 0);
+		gotoPose3(this->objPassingPose, golem::SEC_TM_REAL_ZERO, true);
 
 		//context.write("Success? %d\n", success);
 
 	}));
 
+	//menuCmdMap.insert(std::make_pair("KY", [=]() {
+
+	//	grasp::ConfigMat34 pose = getPoseFromConfig(this->objPassingPose2, 7);
+
+	//	bool success = this->gotoPoseWS2(pose);
+	//	//this->gotoPose3(this->objPassingPose);
+
+	//	//context.write("Success? %d\n", success);
+
+	//}));
+
+	menuCmdMap.insert(std::make_pair("KJ", [=]() {
+
+		gotoPoseLeft(this->scanPassingPose1);
+
+	}));
+
+	menuCmdMap.insert(std::make_pair("KK", [=]() {
+
+		gotoPoseLeft(this->scanPassingPose2);
+
+	}));
+
 	menuCmdMap.insert(std::make_pair("KL", [=]() {
 
-		gotoPoseLeft(this->scanPassingPose);
+		gotoPoseLeft(this->scanPassingPose3);
 
 	}));
 
@@ -394,6 +426,10 @@ void DemoDR55::moveRightWristBackwards(const double horizontalDistance, const Se
 
 void DemoDR55::executePassing(bool stopAtBreakPoint){
 
+
+	golem::shared_ptr<grasp::Manager::InputBlock> inputBlock;
+	if (!stopAtBreakPoint) inputBlock = golem::shared_ptr<grasp::Manager::InputBlock>(new grasp::Manager::InputBlock(*demoOwner));
+
 	const auto breakPoint = [=](const char* str) {
 		if (stopAtBreakPoint) {
 			if (option("YN", makeString("%s: Continue (Y/N)...", str).c_str()) != 'Y')
@@ -431,28 +467,43 @@ void DemoDR55::executePassing(bool stopAtBreakPoint){
 
 	auto convertToTrajectory = [&]() {};
 
-	//**** Moves right hand to the passing pose
+	setRightArmDeault(stopAtBreakPoint);
+	//**** Moves right hand to the passing pose2
 		{
 			const golem::U32 currentPlannerIndex = plannerIndex;
 			plannerIndex = 0; // Explicitly setting right side planner
 			ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
 			
-			//this->gotoWristPose(this->objPassingPose, 0);
-			grasp::ConfigMat34 pose = getPoseFromConfig(this->objPassingPose, 7);
-			this->gotoPoseWS2(pose);
+			gotoPose3(this->objPassingPose, golem::SEC_TM_REAL_ZERO, true);
+			//this->gotoWristPose(this->objPassingPose.w, 0);
+			//this->gotoPose3(this->objPassingPose);
+			//grasp::ConfigMat34 pose = getPoseFromConfig(this->objPassingPose, 7);
+			//this->gotoPoseWS2(pose);
 		}
 
 	
 	//**** Send left arm to scanning pose
-	gotoPoseLeft(this->scanPassingPose);
+	gotoPoseLeft(this->scanPassingPose1);
 
-	breakPoint("Gone to scan pose left arm");
+	breakPoint("Gone to scan pose 1 left arm");
 
 	//**** Perform scan
 	grasp::data::Item::List itemList;
-	scanFromSensor(itemList, this->passingCamera, this->passingObjItem, this->passingImageHandler->getID());
+	scanFromSensor(itemList, this->passingCamera, this->passingObjItem + "1", this->passingImageHandler->getID());
 
-	breakPoint("Performed scan");
+	gotoPoseLeft(this->scanPassingPose2);
+
+	breakPoint("Gone to scan pose 2 left arm");
+
+	scanFromSensor(itemList, this->passingCamera, this->passingObjItem + "2", this->passingImageHandler->getID());
+
+	gotoPoseLeft(this->scanPassingPose3);
+
+	breakPoint("Gone to scan pose 3 left arm");
+
+	scanFromSensor(itemList, this->passingCamera, this->passingObjItem + "3", this->passingImageHandler->getID());
+
+	breakPoint("Performed 3 scans");
 
 	//gotoPoseLeft(this->intermediatePassingPose);
 
@@ -481,6 +532,7 @@ void DemoDR55::executePassing(bool stopAtBreakPoint){
 	breakPoint("Generated contact query");
 	//**** Convert contact query into trajectory
 	// pick up handler
+
 	grasp::data::Convert* convert = grasp::is<grasp::data::Convert>(ptrQueryGraspItem);
 	if (!convert)
 		throw Message(Message::LEVEL_ERROR, "Input item does not support Convert interface");
@@ -497,7 +549,7 @@ void DemoDR55::executePassing(bool stopAtBreakPoint){
 	trajectory->createTrajectory(seq);
 
 	// select collision object (TODO: Set rack point cloud)
-	CollisionBounds::Ptr collisionBounds = selectCollisionBounds();
+	//CollisionBounds::Ptr collisionBounds = selectCollisionBounds();
 	// perform and process (prevent right hand from opening)
 
 	{
@@ -505,12 +557,23 @@ void DemoDR55::executePassing(bool stopAtBreakPoint){
 		plannerIndex = 1; // Explicitly setting left side planner
 		ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
 
-		performAndProcess(dataCurrentPtr->first, ptrGraspTrajectory->first, seq);
+		performAndProcess(dataCurrentPtr->first, ptrGraspTrajectory->first, seq, stopAtBreakPoint);
 		breakPoint("Executed trajectory");
 	}
 
 	releaseRightHand(1.0, 2.0);
 	moveRightWristBackwards(0.2, golem::SEC_TM_REAL_ZERO);
+
+	SecTmReal duration;
+	{
+		const golem::U32 currentPlannerIndex = plannerIndex;
+		plannerIndex = 1;
+		ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
+		duration = getPlanner().trajectoryDuration;
+	}
+	liftLeftWrist(withdrawLiftDistance, duration);
+
+	inputBlock.release();
 
 }
 

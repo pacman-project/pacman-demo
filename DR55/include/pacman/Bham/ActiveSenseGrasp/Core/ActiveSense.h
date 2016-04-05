@@ -189,6 +189,8 @@ namespace pacman {
 			/** Sensor to be used for active control */
 			std::string sensorId;
 
+			std::string contactModelItemLabel;
+
             /** Show sensor hypotheses */
             bool showSensorHypotheses;
 
@@ -224,6 +226,8 @@ namespace pacman {
 				this->imageHandlerNoCrop = "Image+ActiveSenseGraspDataImageNoCrop";
 				this->pointCurvHandler = "PointsCurv+ActiveSenseGraspDataPointsCurv";
 				this->trajectoryHandler = "Trajectory+TrajectoryActiveSense";
+
+				this->contactModelItemLabel = "SomeContactModel";
 
 				configSeq.clear();
 

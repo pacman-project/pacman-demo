@@ -131,6 +131,7 @@ void ActiveSense::Parameters::load(const golem::XMLContext* xmlcontext)
 	XMLData("min_theta", this->minTheta, pxmlcontext);
 	XMLData("max_theta", this->maxTheta, pxmlcontext);
 	XMLData("use_sim_cam", this->useSimCam, pxmlcontext);
+	XMLData("contact_model_item", this->contactModelItemLabel, pxmlcontext);
 
 	XMLData(this->centroid, pxmlcontext->getContextFirst("centroid"), false);
 
@@ -581,9 +582,9 @@ NBV:
 	bool found_contacts = true; //lets assume we have contacts
 	int numViewsAcquired = 1; // we count the initial view
 
-	if (this->nbvViews >= this->params.maxnviews){
-		goto FINISH;
-	}
+	//if (this->nbvViews >= this->params.maxnviews){
+	//	goto FINISH;
+	//}
 
 	while (!stop)
 	{
@@ -725,8 +726,13 @@ NBV:
 		// Get best trajectory
 		auto best_traj = bestTrajectories.front();
 		std::stringstream ss;
-		ss << "Safest Trajectory has collision probability " << best_traj.second << ". Number NBV Views is " << this->nbvViews << " Accept (Y/N)?";
-		found_safe_traj = demoOwner->option("YN", ss.str().c_str()) == 'Y';
+		if (this->allowInput){
+			ss << "Safest Trajectory has collision probability " << best_traj.second << ". Number NBV Views is " << this->nbvViews << " Accept (Y/N)?";
+			found_safe_traj = demoOwner->option("YN", ss.str().c_str()) == 'Y';
+		}
+		else{
+			found_safe_traj = true;//best_traj.second <= 0.1;
+		}
 
 		if (found_safe_traj) {
 			result.completeTrajectories.push_back(best_traj);
@@ -735,6 +741,7 @@ NBV:
 		}
 		else{
 			result.trajectories.pop_front();
+			demoOwner->context.debug("ActiveSense: Couldn't find safe trajectory: repeating");
 			goto NBV;
 		}
 
@@ -964,11 +971,11 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestView(grasp::dat
 	int selectionMethod = params.selectionMethod;
 	if (params.selectionMethod == ESelectionMethod::S_CONTACT_BASED3 && !found_contacts)
 	{
-		int selectionMethod = params.alternativeSelectionMethod;
+		selectionMethod = params.alternativeSelectionMethod;
 	}
-
+	//printf("selectNextBestView() %d bool %d\n", selectionMethod, found_contacts);
 	hypothesis = selectNextBestView(selectionMethod, contactModelPtr);
-	pacman::io_adhoc::log_out(this->out, "selected", this->experiment_id, this->experiment_trial, params.alternativeSelectionMethod, found_contacts, hypothesis->id, -1, hypothesis->value);
+	//pacman::io_adhoc::log_out(this->out, "selected", this->experiment_id, this->experiment_trial, params.alternativeSelectionMethod, found_contacts, hypothesis->id, -1, hypothesis->value);
 
 	return hypothesis;
 }
@@ -979,18 +986,23 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestView(int select
 
 	switch (selectionMethod){
 		case ESelectionMethod::S_CONTACT_BASED3:
+			printf("contactBased()\n");
 			hypothesis = selectNextBestViewContactBased3(contactModelPtr);
 			break;
 		case ESelectionMethod::S_RANDOM:
+			printf("random()\n");
 			hypothesis = selectNextBestViewRandom();
 			break;
 		case ESelectionMethod::S_SEQUENTIAL:
+			printf("sequential()\n");
 			hypothesis = selectNextBestViewSequential();
 			break;
+			printf("infgain()\n");
 		case  ESelectionMethod::S_INFORMATION_GAIN:
 			hypothesis = selectNextBestViewInfGain();
 			break;
 		default:
+			printf("unknwon()\n");
 			throw Cancel("pacman::ActiveSense::selectNextBestView: unknown selectionMethod");
 			break;
 
@@ -1133,7 +1145,7 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewInfGain()
 	this->onlineModel2.lastResult = collisionResult;
 	this->demoOwner->createRender();
 	demoOwner->context.debug("ActiveSense: Retrieved %d voxels\n", collisionResult->voxels.size());
-	demoOwner->option("\x0D", "Press <Enter> to continue...");
+	//demoOwner->option("\x0D", "Press <Enter> to continue...");
 
 
 	int index = 0;
@@ -2118,7 +2130,7 @@ grasp::CollisionBounds::Ptr pacman::ActiveSense::selectCollisionBounds(bool draw
 	else
 		demoOwner->context.debug("ActiveSense: Object collisions unsupported: UNSUPPORTED!!!!!!!!!!!!!!!!\n");
 
-
+	demoOwner->context.debug("ActiveSense: done selectCollisionBounds...\n");
 	return collisionBounds;
 }
 
@@ -2127,8 +2139,9 @@ grasp::data::Item::Map::iterator ActiveSense::reduce(grasp::data::Item::List& li
 	demoOwner->context.debug("ActiveSense: ---[computeFeedBackTransform]: List Size: %d---\n", list.size());
 	// transform
 	// Modified 29/12/2015
-	golem::shared_ptr<grasp::Manager::InputBlock> inputBlock;
-	if (!this->allowInput) inputBlock = golem::shared_ptr<grasp::Manager::InputBlock>(new grasp::Manager::InputBlock(*demoOwner));
+	//golem::shared_ptr<grasp::Manager::InputBlock> inputBlock;
+	//if (!this->allowInput) inputBlock = golem::shared_ptr<grasp::Manager::InputBlock>(new grasp::Manager::InputBlock(*demoOwner));
+	grasp::Manager::InputBlock inputBlock(*demoOwner);
 	data::Item::Map::iterator ptr;
 	//grasp::Manager::RenderBlock renderBlock(*demoOwner);
 
@@ -2150,7 +2163,7 @@ grasp::data::Item::Map::iterator ActiveSense::reduce(grasp::data::Item::List& li
 	}
 	catch (const Message m){
 		demoOwner->context.debug("%s", m.what());
-
+		//inputBlock.release();
 		throw Message("%s", m.what());
 
 	}
@@ -2158,7 +2171,7 @@ grasp::data::Item::Map::iterator ActiveSense::reduce(grasp::data::Item::List& li
 
 
 	// Modified 29/12/2015
-	inputBlock.release();
+	//inputBlock.release();
 	return ptr;
 }
 
