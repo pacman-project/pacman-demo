@@ -321,7 +321,7 @@ enable_coverage_filter_plane = "0" or "1"-->
     </controller>
     <planner library_path="GolemPlannerGraphPlanner" config_path="GolemPlannerRobotBorisSPGR">
       <controller id="KukaLWR+KukaLWRBorisR" begin="0" end="1"/>
-      <controller id="DLRHitHandII+DLRHitHandIIBorisR" begin="1" end="6"/>
+      <controller id="DLRHitHandIISim+DLRHitHandIIBorisR" begin="1" end="6"/>
       <!--<controller id="KukaLWRSim+KukaLWRBorisR" begin="0" end="1"/>
       <controller id="DLRHitHandIISim+DLRHitHandIIBorisR" begin="1" end="6"/>-->
 
@@ -371,7 +371,7 @@ enable_coverage_filter_plane = "0" or "1"-->
 
     <planner library_path="GolemPlannerGraphPlanner" config_path="GolemPlannerRobotBorisSPGL">
       <controller id="KukaLWR+KukaLWRBorisL" begin="6" end="7"/>
-      <controller id="SchunkParallelGripper+SchunkParallelGripper" begin="7" end="9"/>
+      <controller id="Sim+SchunkParallelGripper" begin="7" end="9"/>
       <!--<controller id="KukaLWRSim+KukaLWRBorisL" begin="6" end="7"/>
       <controller id="Sim+SchunkParallelGripper" begin="7" end="9"/>-->
 

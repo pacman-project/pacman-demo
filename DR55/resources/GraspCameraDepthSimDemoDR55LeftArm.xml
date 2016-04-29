@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <grasp>
-  <sensor config_joint="34" calibration_file="GraspCameraDepthSimDemoDR55LeftArm.cal" index="2" buffer_len="10" thread_timeout="10000">
+  <sensor config_joint="34" calibration_file="GraspCameraDepthSimDemoDR55LeftArm.cal" index="0" buffer_len="10" thread_timeout="10000">
     <property width="100" height="100" fps="10" mode="" format=""/>
     <property width="100" height="100" fps="10" mode="" format=""/>
     <colour R="127" G="127" B="127" A="255"/>

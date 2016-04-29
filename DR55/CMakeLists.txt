@@ -141,6 +141,7 @@ SET(PACMAN_ACTIVE_SENSE_GRASP_DEMO_FILES
         # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspCameraPointGrey.cal
         ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataImage.xml
         ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDataImageNoCrop.xml
+		${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/GraspCameraOpenNIDemoActiveSenseDR55RightArm.xml
         # ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/GolemDeviceRobotBorisTactileSim.xml
 		# ${PROJECT_ROOT}/resources/pacman/${DEMO_NAME}/ActiveSenseGraspDemo_RobotBorisDepthSim.xml
 )
