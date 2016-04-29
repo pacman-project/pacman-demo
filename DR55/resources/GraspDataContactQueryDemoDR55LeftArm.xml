@@ -3,7 +3,7 @@
 <grasp>
   <data planner_index="1" collision_points="1" delete_if_moved="1" delete_if_unlinked="1" delete_if_temporary="1" query_suffix=".query">
     <manipulator>
-      <trajectory lin="1000.0" ang="1000.0" collision="1" cluster_size="20" timeout="0.1" throw="0"/>
+      <trajectory lin="1000.0" ang="1000.0" collision="1" cluster_size="30" timeout="0.1" throw="0"/>
     </manipulator>
 
     <classifier name="Default">
@@ -17,12 +17,12 @@
 
       <contact name="Default" penalty_exp="1.2">
         <query id="Base">
-          <contact_3d type="feature" weight="1.0" kernels="5000" epsilon="1e-10" trials="100" feature_std_dev_max="5.0" pose_std_dev_max="5.0">
+          <contact_3d type="feature" weight="1.0" kernels="10000" epsilon="1e-10" trials="100" feature_std_dev_max="5.0" pose_std_dev_max="5.0">
             <nn_search neighbours="0" search_checks="32" search_kdtrees="1" search_leaf_max_size="10"/>
           </contact_3d>
         </query>
         <query id="Any">
-          <contact_3d type="feature" weight="1.0" kernels="5000" epsilon="1e-10" trials="100" feature_std_dev_max="5.0" pose_std_dev_max="5.0">
+          <contact_3d type="feature" weight="1.0" kernels="10000" epsilon="1e-10" trials="100" feature_std_dev_max="5.0" pose_std_dev_max="5.0">
             <nn_search neighbours="0" search_checks="32" search_kdtrees="1" search_leaf_max_size="10"/>
           </contact_3d>
         </query>
@@ -39,7 +39,7 @@
           <waypoint path_dist="7.0" points="15000" depth_stddev="1000.0" likelihood="10.0"/>
         </collision>
 
-        <optimisation name="CPU" runs="10000" steps="500" tries="1" sa_temp="0.1" sa_delta_lin="1.0" sa_delta_ang="1.0" sa_energy="0.1" epsilon="1.e-10" collision_last="1" collision_all="0"/>
+        <optimisation name="CPU" runs="20000" steps="500" tries="1" sa_temp="0.1" sa_delta_lin="1.0" sa_delta_ang="1.0" sa_energy="0.1" epsilon="1.e-10" collision_last="1" collision_all="0"/>
       </contact>
 
       <selection size="0.1" begin="0.0" end="0.1"/>
