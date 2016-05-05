@@ -160,15 +160,110 @@ void DemoDR55::setMenus(){
 			// Grasp with Active Sense and lift the object
 			// Outcome (Exepected state of the robot at the end): 
 			// at the end the object should have grasped and lifted an object 
+			//this->graspWithActiveSense();
 
-			this->graspWithActiveSense();
-
-			this->executePassing(stopAtBreakPoint);
+			//this->executePassing(stopAtBreakPoint);
 
 			this->executePlacement(stopAtBreakPoint);
 			//releaseLeftHand(0.5, 1.0);
 
 		}
+		context.write("Done!\n");
+
+	}));
+
+	menuCmdMap.insert(std::make_pair("KR", [=]() {
+
+		static int counter = 0;
+
+		// debug mode
+		const bool stopAtBreakPoint = option("YN", "Debug mode (Y/N)...") == 'Y';
+		const auto breakPoint = [=](const char* str) {
+			if (stopAtBreakPoint) {
+				if (option("YN", makeString("%s: Continue (Y/N)...", str).c_str()) != 'Y')
+					throw Cancel("Demo cancelled");
+			}
+			else {
+				context.write("%s\n", str);
+				(void)waitKey(0);
+			}
+		};
+
+		this->setArmsToDefault(stopAtBreakPoint);
+
+		//// estimate pose
+		if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty() || counter == 0) {
+			breakPoint("Dishwasher pose estimation");
+			estimatePose(Data::MODE_QUERY);
+			counter++;
+		}
+
+		// run demo
+		for (;;) {
+
+			// Grasp with Active Sense and lift the object
+			// Outcome (Exepected state of the robot at the end): 
+			// at the end the object should have grasped and lifted an object 
+			//this->graspWithActiveSense();
+
+			//this->executePassing(stopAtBreakPoint);
+
+			this->executePlacement(stopAtBreakPoint);
+			//releaseLeftHand(0.5, 1.0);
+
+		}
+		context.write("Done!\n");
+
+	}));
+
+
+	menuCmdMap.insert(std::make_pair("KT", [=]() {
+
+		grasp::ConfigMat34 pose = getPoseFromConfig(this->objPassingPose, 7);
+
+		//bool success = this->gotoPoseWS2(pose);
+		//this->gotoPose3(this->objPassingPose);
+		//this->gotoWristPose(this->objPassingPose.w, 0);
+		gotoPose3(this->objPassingPose, golem::SEC_TM_REAL_ZERO, true);
+
+		//context.write("Success? %d\n", success);
+
+	}));
+
+	menuCmdMap.insert(std::make_pair("KR", [=]() {
+
+		static int counter = 0;
+
+		// debug mode
+		const bool stopAtBreakPoint = option("YN", "Debug mode (Y/N)...") == 'Y';
+		const auto breakPoint = [=](const char* str) {
+			if (stopAtBreakPoint) {
+				if (option("YN", makeString("%s: Continue (Y/N)...", str).c_str()) != 'Y')
+					throw Cancel("Demo cancelled");
+			}
+			else {
+				context.write("%s\n", str);
+				(void)waitKey(0);
+			}
+		};
+
+		//this->setArmsToDefault(stopAtBreakPoint);
+
+		//// estimate pose
+		if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty() || counter == 0) {
+			breakPoint("Dishwasher pose estimation");
+			estimatePose(Data::MODE_QUERY);
+			counter++;
+		}
+
+
+		moveRightWristBackwards(0.2, golem::SEC_TM_REAL_ZERO);
+		setRightArmDeault(stopAtBreakPoint);
+
+		this->executePlacement(stopAtBreakPoint);
+		//releaseLeftHand(0.5, 1.0);
+
+		
 		context.write("Done!\n");
 
 	}));
@@ -480,9 +575,16 @@ void DemoDR55::executePassing(bool stopAtBreakPoint){
 			//this->gotoPose3(this->objPassingPose);
 			//grasp::ConfigMat34 pose = getPoseFromConfig(this->objPassingPose, 7);
 			//this->gotoPoseWS2(pose);
+
+
+			//breakPoint("Close Hand");
+
+			//closeRightHand(1.0, 4.0);
+
+			//breakPoint("Continue...");
 		}
 
-	
+
 	//**** Send left arm to scanning pose
 	gotoPoseLeft(this->scanPassingPose1);
 
@@ -564,6 +666,7 @@ void DemoDR55::executePassing(bool stopAtBreakPoint){
 
 	releaseRightHand(1.0, 2.0);
 	moveRightWristBackwards(0.2, golem::SEC_TM_REAL_ZERO);
+	setRightArmDeault(stopAtBreakPoint);
 
 	SecTmReal duration;
 	{

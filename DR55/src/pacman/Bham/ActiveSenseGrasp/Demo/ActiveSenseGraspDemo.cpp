@@ -167,7 +167,7 @@ void ActiveSenseDemo::gotoPose3(const ConfigMat34& pose, const SecTmReal duratio
     // always start with hand in commanded config, not actual
     golem::Controller::State begin = lookupStateArmCommandHand();	// current state but commanded state for hand
     golem::Controller::State end = begin;
-    end.cpos.set(pose.c.data(), pose.c.data() + std::min(pose.c.size(), (size_t)info.getJoints().size()));
+    end.cpos.set(pose.c.data(), pose.c.data() + std::min(pose.c.size(), (size_t)info.getJoints().size()-4));
     golem::Controller::State::Seq trajectory;
     findTrajectory(begin, &end, nullptr, duration, trajectory);
 
