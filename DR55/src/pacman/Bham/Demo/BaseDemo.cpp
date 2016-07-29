@@ -1205,7 +1205,7 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 		if (!point)
 			throw Cancel("Object handler does not implement data::Point3D");
 		Vec3Seq points, pointsTrn;
-		for (size_t i = 0; i < point->getNumOfPoints(); ++i)
+		for (size_t i = 0; i < point->getSize(); ++i)
 			points.push_back(point->getPoint(i));
 		pointsTrn.resize(points.size());
 		Mat34 frame = RBPose::createFrame(points), frameInv;
@@ -1460,7 +1460,7 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 		if (!point)
 			throw Message(Message::LEVEL_ERROR, "Object handler does not implement data::Point3D");
 		Vec3Seq points;
-		for (size_t i = 0; i < point->getNumOfPoints(); ++i)
+		for (size_t i = 0; i < point->getSize(); ++i)
 			points.push_back(point->getPoint(i));
 		data::Point3D::Point::Seq pointsTrn;
 		pointsTrn.resize(points.size());
@@ -2628,8 +2628,8 @@ void pacman::BaseDemoDR55::createQuery(grasp::data::Item::Ptr item, const golem:
 		Mat34 trnObj;
 		trnObj.setInverse(frame);
 		density.points.clear();
-		density.points.reserve(features->getNumOfPoints());
-		for (size_t i = 0; i < features->getNumOfPoints(); ++i) {
+		density.points.reserve(features->getSize());
+		for (size_t i = 0; i < features->getSize(); ++i) {
 			grasp::data::Point3D::Point p = features->getPoint(i);
 			trnObj.multiply(p, p);
 			density.points.push_back(p);

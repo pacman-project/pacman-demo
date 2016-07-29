@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <grasp>
+  <activectrl planner_index="1" active="1" cache_file="GraspWorkspaceCtrl.cache" simple_mode="0">
+    <frame global="0" lin_keys="wsedrf" ang_keys="tgyhuj" wpt_keys="">
+      <increment lin="0.02" ang="0.0872664625997165" low="4"/>
+      <size v1="0.1" v2="0.1" v3="0.1"/>
+    </frame>
+    <sim pred_time="0.1" reac_time="0.08">
+      <gain v1="0.002" v2="0.002" v3="0.04" w1="0.01" w2="0.01" w3="0.2"/>
+    </sim>
+  </activectrl>
+</grasp>
+
+<!--<grasp>
   <activectrl planner_index="1" active="1">
     <ctrl>
       <frame>
@@ -12,4 +24,4 @@
       </sim>
     </ctrl>
   </activectrl>
-</grasp>
+</grasp>-->

@@ -77,7 +77,7 @@ public:
 
 
 
-        resContactTree = 0.0005;
+		resContactTree = 0.001;//0.0005;
         contactTree = active_sense::Model::Ptr(new active_sense::Model(resContactTree));
         // Setting very low clamping
         contactTree->params.thres_min_ = 0.00000001;
@@ -88,7 +88,7 @@ public:
     }
 
     void resetWorkspaceTree() {
-        resWorkspacetree = 0.0025;
+		resWorkspacetree = 0.01;//0.0025;
         workspaceTree = active_sense::Model::Ptr(new active_sense::Model(resWorkspacetree));
         workspaceTree->params.thres_min_ = 0.00000001;
         //workspaceTree->params.thres_max_ = 0.99999999;
@@ -109,7 +109,7 @@ public:
 
         // aspect ratio = 640/480, near 0.8 m, far 3.5 m (primesense spec)
         //before 0.25
-        camera_model.setFrustum(45,1.333333f,0.4,3.5);//before 0.8, 4.5
+		camera_model.setFrustum(45, 1.333333f, 0.4, 1.5); // 3.5//before 0.8, 4.5
 
 
 

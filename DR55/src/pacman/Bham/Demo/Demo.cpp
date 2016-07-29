@@ -160,9 +160,9 @@ void DemoDR55::setMenus(){
 			// Grasp with Active Sense and lift the object
 			// Outcome (Exepected state of the robot at the end): 
 			// at the end the object should have grasped and lifted an object 
-			//this->graspWithActiveSense();
+			this->graspWithActiveSense();
 
-			//this->executePassing(stopAtBreakPoint);
+			this->executePassing(stopAtBreakPoint);
 
 			this->executePlacement(stopAtBreakPoint);
 			//releaseLeftHand(0.5, 1.0);
@@ -204,9 +204,9 @@ void DemoDR55::setMenus(){
 			// Grasp with Active Sense and lift the object
 			// Outcome (Exepected state of the robot at the end): 
 			// at the end the object should have grasped and lifted an object 
-			//this->graspWithActiveSense();
+			this->graspWithActiveSense();
 
-			//this->executePassing(stopAtBreakPoint);
+			this->executePassing(stopAtBreakPoint);
 
 			this->executePlacement(stopAtBreakPoint);
 			//releaseLeftHand(0.5, 1.0);

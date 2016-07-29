@@ -469,6 +469,8 @@ void ActiveSenseDemo::setMenus() {
 
     }));
 
+
+	// Collect data!
 	menuCmdMap.insert(std::make_pair("CX", [=]()
 	{
 
@@ -568,7 +570,7 @@ void ActiveSenseDemo::setMenus() {
 	}));
 
 
-
+	// Short-cut for grasping with active sense (Same as CD option)
 	menuCmdMap.insert(std::make_pair("CZ", [&]() {
 
 		this->graspWithActiveSense();
@@ -1082,7 +1084,7 @@ void ActiveSenseDemo::postprocess(golem::SecTmReal elapsedTime) {
     BaseDemoDR55::postprocess(elapsedTime);
 
     //    golem::CriticalSectionWrapper csw(scene.getCS());
-    //    for (size_t i = 0; i < point->getNumOfPoints(); ++i)
+    //    for (size_t i = 0; i < point->size(); ++i)
     //        objectRenderer.addPoint(point->getPoint(i), golem::RGBA::BLACK);
 
     //      context.debug("postprocess method\n");

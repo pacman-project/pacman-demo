@@ -74,8 +74,8 @@ Collision::Collision(const grasp::Manipulator& manipulator, pacman::ActiveSenseD
 //void Collision::create(golem::Rand& rand, const grasp::data::Point3D& points) {
 //    // points
 //    this->points.clear();
-//    this->points.reserve(points.getNumOfPoints());
-//    for (size_t i = 0, size = points.getNumOfPoints(); i < size; ++i){
+//    this->points.reserve(points.size());
+//    for (size_t i = 0, size = points.size(); i < size; ++i){
 
 //        golem::Vec3 p(points.getPoint(i).x, points.getPoint(i).y, points.getPoint(i).z);
 //        this->points.push_back(Feature(p));

@@ -322,8 +322,8 @@ enable_coverage_filter_plane = "0" or "1"-->
     <planner library_path="GolemPlannerGraphPlanner" config_path="GolemPlannerRobotBorisSPGR">
       <controller id="KukaLWR+KukaLWRBorisR" begin="0" end="1"/>
       <controller id="DLRHitHandII+DLRHitHandIIBorisR" begin="1" end="6"/>
-      <!--<controller id="KukaLWRSim+KukaLWRBorisR" begin="0" end="1"/>
-      <controller id="DLRHitHandIISim+DLRHitHandIIBorisR" begin="1" end="6"/>-->
+      <!--<controller id="KukaLWRSim+KukaLWRBorisR" begin="0" end="1"/>-->
+      <!--<controller id="DLRHitHandIISim+DLRHitHandIIBorisR" begin="1" end="6"/>-->
 
       <sensor id="FTClient+FTClientDemoDR55"/>
       <!--<sensor id="FTDAQ+FTDAQ"/>-->
@@ -366,14 +366,24 @@ enable_coverage_filter_plane = "0" or "1"-->
           <vertex_frame_size v1="0.02" v2="0.02" v3="0.02"></vertex_frame_size>
           <edge_colour R="0" G="0" B="0" A="255"></edge_colour>
         </optimised_path_rendererex>
+        <collision_bounds>
+          <chain show_solid="0" show_wire="1" wire_width="2">
+            <solid_colour R="0" G="0" B="255" A="255"/>
+            <wire_colour R="0" G="0" B="255" A="255"/>
+          </chain>
+          <joint show_solid="0" show_wire="1" wire_width="2">
+            <solid_colour R="0" G="0" B="255" A="255"/>
+            <wire_colour R="0" G="0" B="255" A="255"/>
+          </joint>
+        </collision_bounds>
       </renderer>
     </planner>
 
     <planner library_path="GolemPlannerGraphPlanner" config_path="GolemPlannerRobotBorisSPGL">
-      <controller id="KukaLWR+KukaLWRBorisL" begin="6" end="7"/>
-      <controller id="SchunkParallelGripper+SchunkParallelGripper" begin="7" end="9"/>
-      <!--<controller id="KukaLWRSim+KukaLWRBorisL" begin="6" end="7"/>
-      <controller id="Sim+SchunkParallelGripper" begin="7" end="9"/>-->
+      <!--<controller id="KukaLWR+KukaLWRBorisL" begin="6" end="7"/>
+      <controller id="SchunkParallelGripper+SchunkParallelGripper" begin="7" end="9"/>-->
+      <controller id="KukaLWRSim+KukaLWRBorisL" begin="6" end="7"/>
+      <controller id="Sim+SchunkParallelGripper" begin="7" end="9"/>
 
       <!--<sensor id="FTClient+FTClient"/>-->
       <!--<sensor id="FTDAQ+FTDAQ"/>-->
@@ -416,6 +426,16 @@ enable_coverage_filter_plane = "0" or "1"-->
           <vertex_frame_size v1="0.02" v2="0.02" v3="0.02"></vertex_frame_size>
           <edge_colour R="0" G="0" B="0" A="255"></edge_colour>
         </optimised_path_rendererex>
+        <collision_bounds>
+          <chain show_solid="0" show_wire="1" wire_width="2">
+            <solid_colour R="0" G="0" B="255" A="255"/>
+            <wire_colour R="0" G="0" B="255" A="255"/>
+          </chain>
+          <joint show_solid="0" show_wire="1" wire_width="2">
+            <solid_colour R="0" G="0" B="255" A="255"/>
+            <wire_colour R="0" G="0" B="255" A="255"/>
+          </joint>
+        </collision_bounds>
       </renderer>
     </planner>
 
@@ -424,9 +444,10 @@ enable_coverage_filter_plane = "0" or "1"-->
     <!--<sensor id="FTDAQ+FTDAQ"/>-->
 
     <activectrl library_path="GraspJointCtrl" config_path="GraspJointCtrl"/>
-    <activectrl library_path="GraspArmHandForce" config_path="GraspArmHandForceDR55"/>
+    <!--<activectrl library_path="GraspArmHandForce" config_path="GraspArmHandForceDR55"/>-->
     <activectrl library_path="GraspWorkspaceCtrl" config_path="GraspWorkspaceCtrlDR55"/>
     <activectrl library_path="GraspOspaceCtrl" config_path="GraspOspaceCtrl"/>
+    <activectrl library_path="GraspActiveTouchCtrl" config_path="GraspActiveTouchCtrl"/>
 
     <trajectory name="trajectory" handler="Trajectory+TrajectoryDemoDR55" idle_begin="0.5" idle_end="1.0" idle_perf="5.0" duration="25.0" trials="5"/>
 
@@ -544,7 +565,7 @@ enable_coverage_filter_plane = "0" or "1"-->
     <handler library_path="GraspDataImage" config_path="ActiveSenseGraspDataImage"/>
     <handler library_path="GraspDataPointsCurv" config_path="ActiveSenseGraspDataPointsCurv"/>
 
-    <data path="./data/demo3/data.xml"></data>
+    <!--<data path="./data/demo3/data.xml"></data>-->
     <!--<data path="./data/DemoDR55Data/DemoDR55Data.xml"></data>-->
   </manager>
 

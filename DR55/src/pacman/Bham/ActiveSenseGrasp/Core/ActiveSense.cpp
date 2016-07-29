@@ -1114,7 +1114,7 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewInfGain()
 	golem::BoundingBox::Desc boundingBoxDesc;
 	golem::Mat34& frame = boundingBoxDesc.pose;
 	const data::Point3D* location = is<const data::Point3D>(this->pointCurvItem->second.get());
-	demoOwner->context.debug("ActiveSense: locations acquired %d\n", location->getNumOfPoints());
+	demoOwner->context.debug("ActiveSense: locations acquired %d\n", location->getSize());
 	golem::Vec3 min(golem::REAL_MAX), max(-golem::REAL_MAX), v[3];
 	// retrieving axis
 	for (size_t j = 0; j < 3; ++j) {
@@ -1124,7 +1124,7 @@ pacman::HypothesisSensor::Ptr pacman::ActiveSense::selectNextBestViewInfGain()
 	}
 	demoOwner->context.debug("ActiveSense: Finding box limits\n");
 	golem::Vec3 point;
-	for (size_t i = 0; i < location->getNumOfPoints(); ++i) {
+	for (size_t i = 0; i < location->getSize(); ++i) {
 		point = location->getPoint(i);
 		for (size_t j = 0; j < 3; ++j) {
 			const golem::Real proj = point.dot(v[j]);
@@ -2116,15 +2116,15 @@ grasp::CollisionBounds::Ptr pacman::ActiveSense::selectCollisionBounds(bool draw
 
 
 	if (location) {
-		demoOwner->context.debug("ActivSense: Number of Locations %d\n", location->getNumOfPoints());
+		demoOwner->context.debug("ActivSense: Number of Locations %d\n", location->getSize());
 		// create collision bounds
 		collisionBounds.reset(new CollisionBounds(*demoOwner->getPlanner().planner, [=](size_t i, golem::Vec3& p) -> bool {
 
-			if (i < location->getNumOfPoints()) p = location->getPoint(i); return i < location->getNumOfPoints();
+			if (i < location->getSize()) p = location->getPoint(i); return i < location->getSize();
 		}, draw ? &demoOwner->objectRenderer : nullptr, draw ? &demoOwner->scene.getCS() : nullptr));
 		// draw locations
 		golem::CriticalSectionWrapper csw(demoOwner->scene.getCS());
-		for (size_t i = 0; i < location->getNumOfPoints(); ++i)
+		for (size_t i = 0; i < location->getSize(); ++i)
 			demoOwner->objectRenderer.addPoint(location->getPoint(i), golem::RGBA::BLACK);
 	}
 	else
