@@ -33,9 +33,9 @@ template <typename _PCLPointXYX> void convertPCLPointXYZ(const grasp::Cloud::Poi
 }
 
 template <typename _PCLPointXYX> void convertPCLPointXYZ(const grasp::Contact3D& src, _PCLPointXYX& dst) {
-    dst.x = static_cast<float>(src.point.x);
-    dst.y = static_cast<float>(src.point.y);
-    dst.z = static_cast<float>(src.point.z);
+	dst.x = static_cast<float>(src.global.p.x);
+	dst.y = static_cast<float>(src.global.p.y);
+	dst.z = static_cast<float>(src.global.p.z);
 }
 
 template <typename _PCLPointNormal> void convertPCLPointNormal(const grasp::Cloud::PointCurv& src, _PCLPointNormal& dst) {
@@ -52,7 +52,7 @@ template <typename _PCLPointNormal> void convertPCLPointNormal(const grasp::Clou
 
 template <typename _PCLPointNormal> void convertPCLPointNormal(const grasp::Contact3D& src, _PCLPointNormal& dst) {
     golem::Mat33 R;
-    R.fromQuat(src.orientation);
+    R.fromQuat(src.global.q);
     golem::Vec3 n(0.0, 0.0, 0.0);
     R.getColumn(2,n);//(3, n); //Surface Normal vector of contact point
     n.normalise();

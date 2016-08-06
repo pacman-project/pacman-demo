@@ -76,9 +76,13 @@ void ActiveSensOnlineModel2::insertContacts(const grasp::data::ItemContactModel:
         {
             // k->first => jointToString()
             // k->second => contactSequence (Contact3DSeq)
-            grasp::Manipulator::Link jointLink;
-            jointLink.fromString(k->first);
-            updateContacts(k->second, jointLink.getID());
+			printf("%s\n", k->first);
+			grasp::Manipulator::Link jointLink;//(k->first);
+		
+
+            jointLink.fromString(std::to_string(k->first));
+            updateContacts(k->second, jointLink.getIndex());
+
         }
 
     }
@@ -260,7 +264,7 @@ void ActiveSensOnlineModel2::getLinkNormals(const grasp::Manipulator::Waypoint::
 
         // Negating the z to get the normal
         golem::Vec3 normal = linkFrame.R * golem::Vec3(golem::REAL_ZERO, golem::REAL_ZERO, -golem::REAL_ONE);
-        linkNormals.insert(linkNormals.end(),std::make_pair(jointLink.getID(),normal));
+        linkNormals.insert(linkNormals.end(),std::make_pair(jointLink.getIndex(),normal));
     }
 
 

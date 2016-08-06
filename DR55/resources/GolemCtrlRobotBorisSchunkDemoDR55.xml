@@ -15,7 +15,7 @@
     <!--GolemCtrlDLRHitHandII-->
     <!--GolemCtrlDLRHitHandIITactile -->
     <!--GoelmCtrlSim-->
-    <controller library_path="GolemCtrlDLRHitHandII" config_path="GolemCtrlDLRHitHandIITactile" linked_chain_index="0" enable_io="1" sync_begin="1" sync_end="1">
+    <controller library_path="GolemCtrlDLRHitHandII" config_path="GolemCtrlDLRHitHandIIBorisR" linked_chain_index="0" enable_io="1" sync_begin="1" sync_end="1">
       <local_pose v1="0.0" v2="0.0" v3="0.1563" roll="1.57079633" pitch="0.0" yaw="-2.3561944901994329"/>
     </controller>
     

@@ -523,6 +523,17 @@ enable_coverage_filter_plane = "0" or "1"-->
       <sensor id="PointGrey+PointGrey"/>
       <sensor id="OpenGL+OpenGL"/>
     </recording>
+    
+  <cloud>
+      <adjust lin_keys="wsedrf" ang_keys="WSEDRF" inc_keys="-+">
+        <increment lin="0.05" ang="0.2617993877991494"/>
+        <frame_size v1="0.2" v2="0.2" v3="0.2"/>
+        <colour>
+          <solid R="255" G="0" B="0" A="255"/>
+          <wire R="255" G="0" B="0" A="255"/>
+        </colour>
+      </adjust>
+    </cloud>
   </recorder>
 
   <manager>

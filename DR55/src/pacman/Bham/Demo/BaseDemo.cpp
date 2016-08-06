@@ -1523,7 +1523,7 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 					modelMesh.push_back(Contact3D::Triangle(vertices[j->t1], vertices[j->t2], vertices[j->t3]));
 				Contact3D::Seq contacts;
 				contacts.clear();
-				if (model->second->create(data::Point3D::ConstSeq(1, features), to<Data>(dataCurrentPtr)->modelFrame, modelMesh, contacts)) {
+				if (model->second->create(*features, to<Data>(dataCurrentPtr)->modelFrame, modelMesh, contacts)) {
 					golem::CriticalSectionWrapper cswData(scene.getCS());
 					Data::Training training(grasp::Waypoint::lookup(*controller).state);
 					training.contacts = contacts;

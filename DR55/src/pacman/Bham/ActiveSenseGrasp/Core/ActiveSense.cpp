@@ -1901,8 +1901,8 @@ pacman::ActiveSense::ValueTuple pacman::ActiveSense::computeValue(HypothesisSens
 		for (grasp::Contact3D::Seq::const_iterator it = graspContacts.begin(); it != graspContacts.end(); it++)
 		{
 			golem::Mat34 frame;
-			frame.p = it->point;
-			frame.R.fromQuat(it->orientation);
+			frame.p = it->global.p;
+			frame.R.fromQuat(it->global.q);
 
 
 
@@ -2118,10 +2118,14 @@ grasp::CollisionBounds::Ptr pacman::ActiveSense::selectCollisionBounds(bool draw
 	if (location) {
 		demoOwner->context.debug("ActivSense: Number of Locations %d\n", location->getSize());
 		// create collision bounds
-		collisionBounds.reset(new CollisionBounds(*demoOwner->getPlanner().planner, [=](size_t i, golem::Vec3& p) -> bool {
 
-			if (i < location->getSize()) p = location->getPoint(i); return i < location->getSize();
-		}, draw ? &demoOwner->objectRenderer : nullptr, draw ? &demoOwner->scene.getCS() : nullptr));
+		collisionBounds.reset(new CollisionBounds(
+			*demoOwner->getPlanner().planner,
+			CollisionBounds::getBounds([=](size_t i, Vec3& p) -> bool { if (i < location->getSize()) p = location->getPoint(i); return i < location->getSize(); }, is<const data::Cluster3D>(location)),
+			draw ? &demoOwner->objectRenderer : nullptr, 
+			draw ? &demoOwner->scene.getCS() : nullptr
+			));
+
 		// draw locations
 		golem::CriticalSectionWrapper csw(demoOwner->scene.getCS());
 		for (size_t i = 0; i < location->getSize(); ++i)
