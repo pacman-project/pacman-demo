@@ -207,6 +207,7 @@ enable_coverage_filter_plane = "0" or "1"-->
       <!--<scan_pose dim="43" planner_index="1" c1="1.68882" c2="-0.635757" c3="-0.163798" c4="1.38333" c5="-0.0392965" c6="-1.1184" c7="0.675319" c8="-0.0752649" c9="0.274869" c10="0.0656979" c11="0.0656979" c12="-0.00775234" c13="-0.073988" c14="0.0669452" c15="0.0669452" c16="-0.0164831" c17="0.055089" c18="0.240513" c19="0.161973" c20="0.0778698" c21="0.175422" c22="0.107177" c23="0.107177" c24="-0.0179605" c25="0.0668399" c26="0.162448" c27="0.22528" c28="-2.11008" c29="0.918091" c30="0.206155" c31="-0.96777" c32="-1.24879" c33="1.1658" c34="-1.5667" c35="0.00052175" c36="0.00052175" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0"/>-->
       <scan_pose1 dim="43" planner_index="1" c1="2.21171" c2="-1.59865" c3="1.11655" c4="-1.41141" c5="1.57079" c6="1.91392" c7="2.74446" c8="0.170092" c9="0.48885" c10="0.0807682" c11="0.0807682" c12="-0.0142385" c13="0.538537" c14="0.0238761" c15="0.0238761" c16="-0.029323" c17="0.794905" c18="0.225309" c19="0.146769" c20="0.0128565" c21="0.790579" c22="0.18872" c23="0.18872" c24="-0.0359288" c25="0.674264" c26="0.173821" c27="0.236653" c28="-2.29378" c29="1.63412" c30="0.144971" c31="-0.253862" c32="-0.713896" c33="1.05596" c34="-2.02748" c35="0.00052175" c36="0.00052175" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0"/>
       <scan_pose2 dim="43" planner_index="1" c1="1.71328" c2="-0.629702" c3="2.96705" c4="-1.40022" c5="2.96705" c6="-1.10187" c7="0.751323" c8="0.16339" c9="0.478796" c10="0.0757417" c11="0.0757417" c12="-0.000834335" c13="0.553058" c14="0.0527788" c15="0.0527788" c16="-0.0298814" c17="0.78541" c18="0.255469" c19="0.176929" c20="0.0217925" c21="0.787228" c22="0.198773" c23="0.198773" c24="-0.0286682" c25="0.678174" c26="0.187644" c27="0.250476" c28="-1.87182" c29="0.837544" c30="-0.189242" c31="-1.39007" c32="-1.06294" c33="0.905384" c34="-1.24185" c35="0.00054175" c36="0.00054175" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0"/>
+      <scan_pose3 dim="43" planner_index="1" c1="1.71328" c2="-0.629702" c3="2.96705" c4="-1.40022" c5="2.96705" c6="-1.10187" c7="0.751323" c8="0.16339" c9="0.478796" c10="0.0757417" c11="0.0757417" c12="-0.000834335" c13="0.553058" c14="0.0527788" c15="0.0527788" c16="-0.0298814" c17="0.78541" c18="0.255469" c19="0.176929" c20="0.0217925" c21="0.787228" c22="0.198773" c23="0.198773" c24="-0.0286682" c25="0.678174" c26="0.187644" c27="0.250476" c28="-1.87182" c29="0.837544" c30="-0.189242" c31="-1.39007" c32="-1.06294" c33="0.905384" c34="-1.24185" c35="0.02" c36="0.02" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0"/>
 
       <!--<scan_pose2 dim="43" planner_index="1" c1="1.71328" c2="-0.629731" c3="2.96706" c4="-1.40018" c5="2.96706" c6="-1.10203" c7="0.75132" c8="0.184055" c9="0.482706" c10="0.0757417" c11="0.0757417" c12="-0.00586089" c13="0.545797" c14="0.055292" c15="0.055292" c16="-0.0136848" c17="0.785969" c18="0.247929" c19="0.169389" c20="0.0100639" c21="0.7755" c22="0.168614" c23="0.168614" c24="-0.01303" c25="0.693812" c26="0.193927" c27="0.256759" c28="-2.3897" c29="1.74732" c30="0.145049" c31="-0.119734" c32="-0.617652" c33="1.01868" c34="-1.99334" c35="0.00054225" c36="0.00054225" c37="0" c38="0" c39="0" c40="0" c41="0" c42="0" c43="0"/>-->
 
@@ -476,7 +477,7 @@ enable_coverage_filter_plane = "0" or "1"-->
     <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNIDemoDR55Chest"/>
     <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNIDemoDR55ChestScan"/>-->
     <!--<sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNI"/>-->
-    <sensor library_path="GraspCameraPointGrey" config_path="GraspCameraPointGrey"/>
+    <!--<sensor library_path="GraspCameraPointGrey" config_path="GraspCameraPointGrey"/>-->
     <sensor library_path="GraspFTClient" config_path="GraspFTClient"/>
     <sensor library_path="GraspFTClient" config_path="GraspFTClientDemoDR55"/>
     <!--<sensor library_path="GraspFTDAQ" config_path="GraspFTDAQ"/>-->
@@ -485,7 +486,7 @@ enable_coverage_filter_plane = "0" or "1"-->
 
     <recording label="recorder">
       <sensor id="OpenNI+OpenNI"/>
-      <sensor id="PointGrey+PointGrey"/>
+      <!--<sensor id="PointGrey+PointGrey"/>-->
       <sensor id="OpenGL+OpenGL"/>
     </recording>
   </recorder>
@@ -510,7 +511,7 @@ enable_coverage_filter_plane = "0" or "1"-->
     <handler library_path="GraspDataImage" config_path="GraspDataImageDemoDR55LeftArmScan"/>
     <handler library_path="GraspDataImage" config_path="GraspDataImageDemoDR55LeftArmScanPassing"/>
 
-    <handler library_path="GraspDataImage" config_path="GraspDataImageDemoDR55Object"/>
+    <!--<handler library_path="GraspDataImage" config_path="GraspDataImageDemoDR55Object"/>-->
     <handler library_path="GraspDataPointsCurv" config_path="GraspDataPointsCurvDemoDR55"/>
     <handler library_path="GraspDataPointsCurv" config_path="GraspDataPointsCurvDemoDR55LeftArm"/>
 
