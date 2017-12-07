@@ -1114,40 +1114,40 @@ void pacman::BaseDemoDR55::create(const Desc& desc) {
 		desc = "Press a key to: (E)stimate rack pose, (C)apture scene, (G)rasp object from scene, (O)bserve object from chest camera, run (D)emo ...";
 	}));
 
-	// model pose estimation
-	menuCtrlMap.insert(std::make_pair("KE", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
-		desc = "Press a key to: (M)odel/(Q)ery estimation of the rack pose...";
-	}));
-	menuCmdMap.insert(std::make_pair("KEM", [=]() {
-		// item name
-		readString("Enter item name: ", modelItem);
-		// scan, if needed
-		if (option("YN", "Scan? (Y/N)") == 'Y') {
-			try {
-				(void)objectCapture(Data::MODE_MODEL, modelItem);
-			}
-			catch (const Message &msg) { context.write("%s\n", msg.what()); return; }
-		}
-		// estimate
-		(void)estimatePose(Data::MODE_MODEL, modelItem);
-		// finish
-		context.write("Done!\n");
-	}));
-	menuCmdMap.insert(std::make_pair("KEQ", [=]() {
-		// item name
-		readString("Enter item name: ", queryItem);
-		// scan, if needed
-		if (option("YN", "Scan? (Y/N)") == 'Y') {
-			try {
-				(void)objectCapture(Data::MODE_QUERY, queryItem);
-			}
-			catch (const Message &msg) { context.write("%s\n", msg.what()); return; }
-		}
-		// estimate
-		(void)estimatePose(Data::MODE_QUERY, modelItem);
-		// finish
-		context.write("Done!\n");
-	}));
+	//// model pose estimation
+	//menuCtrlMap.insert(std::make_pair("KE", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+	//	desc = "Press a key to: (M)odel/(Q)ery estimation of the rack pose...";
+	//}));
+	//menuCmdMap.insert(std::make_pair("KEM", [=]() {
+	//	// item name
+	//	readString("Enter item name: ", modelItem);
+	//	// scan, if needed
+	//	if (option("YN", "Scan? (Y/N)") == 'Y') {
+	//		try {
+	//			(void)objectCapture(Data::MODE_MODEL, modelItem);
+	//		}
+	//		catch (const Message &msg) { context.write("%s\n", msg.what()); return; }
+	//	}
+	//	// estimate
+	//	(void)estimatePose(Data::MODE_MODEL, modelItem);
+	//	// finish
+	//	context.write("Done!\n");
+	//}));
+	//menuCmdMap.insert(std::make_pair("KEQ", [=]() {
+	//	// item name
+	//	readString("Enter item name: ", queryItem);
+	//	// scan, if needed
+	//	if (option("YN", "Scan? (Y/N)") == 'Y') {
+	//		try {
+	//			(void)objectCapture(Data::MODE_QUERY, queryItem);
+	//		}
+	//		catch (const Message &msg) { context.write("%s\n", msg.what()); return; }
+	//	}
+	//	// estimate
+	//	(void)estimatePose(Data::MODE_QUERY, modelItem);
+	//	// finish
+	//	context.write("Done!\n");
+	//}));
 
 	// data menu control and commands
 	menuCtrlMap.insert(std::make_pair("P", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
@@ -2364,6 +2364,9 @@ grasp::data::Item::Map::iterator pacman::BaseDemoDR55::estimatePose(Data::Mode m
 	return ptr;
 }
 
+
+
+//-----------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
 // move robot to grasp open pose, wait for force event, grasp object (closed pose), move through scan poses and capture object, add as objectScan
@@ -2391,31 +2394,33 @@ grasp::data::Item::Map::iterator pacman::BaseDemoDR55::objectGraspAndCapture(con
 	plannerIndex = 1;
 	ScopeGuard restorePlannerIndex([&]() { plannerIndex = currentPlannerIndex; });
 
+	//simulate force
+	gotoPoseLeft(graspPoseOpen, getPlanner().trajectoryDuration);
 
-	//gotoPoseLeft(graspPoseOpen, getPlanner().trajectoryDuration);
+	context.write("Waiting for force event, simulate (F)orce event or <ESC> to cancel\n");
+	ForceEvent forceEvent(graspSensorForce, graspThresholdForce);
+	forceEvent.setBias();
+	for (;;)
+	{
+		const int k = waitKey(10); // poll FT every 10ms
+		if (k == 27) // <Esc>
+			throw Cancel("Cancelled");
+		if (k == 'F')
+		{
+			context.debug("Simulated force event\n");
+			break;
+		}
 
-	//context.write("Waiting for force event, simulate (F)orce event or <ESC> to cancel\n");
-	//ForceEvent forceEvent(graspSensorForce, graspThresholdForce);
-	//forceEvent.setBias();
-	//for (;;)
-	//{
-	//	const int k = waitKey(10); // poll FT every 10ms
-	//	if (k == 27) // <Esc>
-	//		throw Cancel("Cancelled");
-	//	if (k == 'F')
-	//	{
-	//		context.debug("Simulated force event\n");
-	//		break;
-	//	}
+		if (forceEvent.detected(&context))
+			break;
+	}
 
-	//	if (forceEvent.detected(&context))
-	//		break;
-	//}
+	context.debug("Closing hand!\n");
+	gotoPoseLeft(graspPoseClosed, graspCloseDuration);
 
-	//context.debug("Closing hand!\n");
-	//gotoPoseLeft(graspPoseClosed, graspCloseDuration);
+	//close hand and proceed t
 
-	//Sleep::msleep(SecToMSec(graspEventTimeWait));
+	Sleep::msleep(SecToMSec(graspEventTimeWait));
 
 	breakPoint("Go to scan pose");
 

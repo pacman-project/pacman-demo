@@ -321,11 +321,11 @@ enable_coverage_filter_plane = "0" or "1"-->
     </controller>
     <planner library_path="GolemPlannerGraphPlanner" config_path="GolemPlannerRobotBorisSPGR">
       <controller id="KukaLWR+KukaLWRBorisR" begin="0" end="1"/>
-      <controller id="DLRHitHandII+DLRHitHandIIBorisR" begin="1" end="6"/>
-      <!--<controller id="KukaLWRSim+KukaLWRBorisR" begin="0" end="1"/>-->
-      <!--<controller id="DLRHitHandIISim+DLRHitHandIIBorisR" begin="1" end="6"/>-->
+      <controller id="DLRHitHandIISim+DLRHitHandIIBorisR" begin="1" end="6"/>
+      <!--<controller id="KukaLWRSim+KukaLWRBorisR" begin="0" end="1"/>
+      <controller id="DLRHitHandIISim+DLRHitHandIIBorisR" begin="1" end="6"/>-->
 
-      <sensor id="FTClient+FTClientDemoDR55"/>
+      <!--<sensor id="FTClient+FTClientDemoDR55"/>-->
       <!--<sensor id="FTDAQ+FTDAQ"/>-->
 
       <trajectory handler="Trajectory+TrajectoryDemoDR55" idle_begin="0.5" idle_end="1.0" idle_perf="5.0" duration="5.0" trials="10"/>
@@ -380,10 +380,10 @@ enable_coverage_filter_plane = "0" or "1"-->
     </planner>
 
     <planner library_path="GolemPlannerGraphPlanner" config_path="GolemPlannerRobotBorisSPGL">
-      <!--<controller id="KukaLWR+KukaLWRBorisL" begin="6" end="7"/>
-      <controller id="SchunkParallelGripper+SchunkParallelGripper" begin="7" end="9"/>-->
-      <controller id="KukaLWRSim+KukaLWRBorisL" begin="6" end="7"/>
-      <controller id="Sim+SchunkParallelGripper" begin="7" end="9"/>
+      <controller id="KukaLWR+KukaLWRBorisL" begin="6" end="7"/>
+      <controller id="SchunkParallelGripper+SchunkParallelGripper" begin="7" end="9"/>
+      <!--<controller id="KukaLWRSim+KukaLWRBorisL" begin="6" end="7"/>
+      <controller id="Sim+SchunkParallelGripper" begin="7" end="9"/>-->
 
       <!--<sensor id="FTClient+FTClient"/>-->
       <!--<sensor id="FTDAQ+FTDAQ"/>-->
@@ -440,14 +440,14 @@ enable_coverage_filter_plane = "0" or "1"-->
     </planner>
 
 
-    <sensor id="FTClient+FTClientDemoDR55"/>
+    <!--<sensor id="FTClient+FTClientDemoDR55"/>-->
     <!--<sensor id="FTDAQ+FTDAQ"/>-->
 
     <activectrl library_path="GraspJointCtrl" config_path="GraspJointCtrl"/>
     <!--<activectrl library_path="GraspArmHandForce" config_path="GraspArmHandForceDR55"/>-->
     <activectrl library_path="GraspWorkspaceCtrl" config_path="GraspWorkspaceCtrlDR55"/>
     <activectrl library_path="GraspOspaceCtrl" config_path="GraspOspaceCtrl"/>
-    <activectrl library_path="GraspActiveTouchCtrl" config_path="GraspActiveTouchCtrl"/>
+    <!--<activectrl library_path="GraspActiveTouchCtrl" config_path="GraspActiveTouchCtrl"/>-->
 
     <trajectory name="trajectory" handler="Trajectory+TrajectoryDemoDR55" idle_begin="0.5" idle_end="1.0" idle_perf="5.0" duration="25.0" trials="5"/>
 
@@ -511,7 +511,7 @@ enable_coverage_filter_plane = "0" or "1"-->
     <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNIDemoDR55Chest"/>
     <sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNIDemoDR55ChestScan"/>
     <!--<sensor library_path="GraspCameraOpenNI" config_path="GraspCameraOpenNI"/>-->
-    <sensor library_path="GraspCameraPointGrey" config_path="GraspCameraPointGrey"/>
+    <!--<sensor library_path="GraspCameraPointGrey" config_path="GraspCameraPointGrey"/>-->
     <sensor library_path="GraspFTClient" config_path="GraspFTClient"/>
     <sensor library_path="GraspFTClient" config_path="GraspFTClientDemoDR55"/>
     <!--<sensor library_path="GraspFTDAQ" config_path="GraspFTDAQ"/>-->
@@ -520,7 +520,7 @@ enable_coverage_filter_plane = "0" or "1"-->
 
     <recording label="recorder">
       <sensor id="OpenNI+OpenNI"/>
-      <sensor id="PointGrey+PointGrey"/>
+      <!--<sensor id="PointGrey+PointGrey"/>-->
       <sensor id="OpenGL+OpenGL"/>
     </recording>
     
@@ -556,7 +556,7 @@ enable_coverage_filter_plane = "0" or "1"-->
     <handler library_path="GraspDataImage" config_path="GraspDataImageDemoDR55LeftArmScan"/>
     <handler library_path="GraspDataImage" config_path="GraspDataImageDemoDR55LeftArmScanPassing"/>
     
-    <handler library_path="GraspDataImage" config_path="GraspDataImageDemoDR55Object"/>
+    <!--<handler library_path="GraspDataImage" config_path="GraspDataImageDemoDR55Object"/>-->
     <handler library_path="GraspDataPointsCurv" config_path="GraspDataPointsCurvDemoDR55"/>
     <handler library_path="GraspDataPointsCurv" config_path="GraspDataPointsCurvDemoDR55LeftArm"/>
 

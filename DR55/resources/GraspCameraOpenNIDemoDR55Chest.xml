@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <grasp>
-  <sensor config_joint="0" calibration_file="GraspCameraOpenNIDemoDR55Chest.cal" index="2" buffer_len="60" buffer_off="1" thread_timeout="20000" stream_timeout="1000">
+  <sensor config_joint="0" calibration_file="GraspCameraOpenNIDemoDR55Chest.cal" index="1" buffer_len="60" buffer_off="1" thread_timeout="20000" stream_timeout="1000">
     <property width="640" height="480" fps="30" mode="ir" format="203"/>
     <!--<property width="1280" height="1024" fps="30" mode="colour" format="200"/>-->
     <!--<property width="640" height="480" fps="30" mode="colour" format="200"/>-->

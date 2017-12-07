@@ -304,7 +304,7 @@ void ActiveSenseDemo::render() const {
 
 void ActiveSenseDemo::setMenus() {
 
-    menuCtrlMap.insert(std::make_pair("C", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+    menuCtrlMap.insert(std::make_pair("O", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
         desc = "Press a key to:\nchange ActiveSense (P)arameters\n(G)enerate possible camera poses\n(D)emo ActiveSense\n"
                 "(E) Goto to Camera Hypothesis Pose\n"
                 "(V) Set OpenGL View Point to Camera Hypothesis View\n(N) View from Next-Best-View Hypothesis\n(K) View from wrist-mounted sensor\n(H) Print Sensor Hypothesis Matrices\n"
@@ -317,7 +317,7 @@ void ActiveSenseDemo::setMenus() {
         //menuCmdMap.erase("CV");
     }));
 
-    menuCtrlMap.insert(std::make_pair("CP", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
+    menuCtrlMap.insert(std::make_pair("OP", [=](MenuCmdMap& menuCmdMap, std::string& desc) {
         desc =
                 "Press a key to:\n(L) List parameters\n"
                 "(S) Choose Selection Method\n(A) Choose Alternative Selection Method\n"
@@ -334,7 +334,7 @@ void ActiveSenseDemo::setMenus() {
 
     }));
 
-    menuCmdMap.insert(std::make_pair("CC", [=]()
+    menuCmdMap.insert(std::make_pair("OC", [=]()
     {
 
         grasp::data::Item::Map contactModelMap;
@@ -363,7 +363,7 @@ void ActiveSenseDemo::setMenus() {
 
     }));
 
-    menuCmdMap.insert(std::make_pair("CT", [=]()
+    menuCmdMap.insert(std::make_pair("OT", [=]()
     {
         if( toggleShowCurrentHandler ){
             UI::removeCallback(*this, getCurrentHandler());
@@ -377,7 +377,7 @@ void ActiveSenseDemo::setMenus() {
     }));
 
     //ActiveSense Demo
-    menuCmdMap.insert(std::make_pair("CD", [=]()
+    menuCmdMap.insert(std::make_pair("OD", [=]()
     {
 
         grasp::data::Item::Map contactModelMap;
@@ -471,7 +471,7 @@ void ActiveSenseDemo::setMenus() {
 
 
 	// Collect data!
-	menuCmdMap.insert(std::make_pair("CX", [=]()
+	menuCmdMap.insert(std::make_pair("OX", [=]()
 	{
 
 		grasp::data::Item::Map contactModelMap;
@@ -544,7 +544,7 @@ void ActiveSenseDemo::setMenus() {
 	}));
 	
 
-	menuCmdMap.insert(std::make_pair("CY", [=]() {
+	menuCmdMap.insert(std::make_pair("OY", [=]() {
 		context.write("Right Hand Control\n");
 		for (;;)
 		{
@@ -571,13 +571,13 @@ void ActiveSenseDemo::setMenus() {
 
 
 	// Short-cut for grasping with active sense (Same as CD option)
-	menuCmdMap.insert(std::make_pair("CZ", [&]() {
+	menuCmdMap.insert(std::make_pair("OZ", [&]() {
 
 		this->graspWithActiveSense();
 
 	}));
 
-    menuCmdMap.insert(std::make_pair("CSW", [&]() {
+    menuCmdMap.insert(std::make_pair("OSW", [&]() {
 
         this->activeSense->getOnlineModel2().showWorkpaceTree = !this->activeSense->getOnlineModel2().showWorkpaceTree;
 
@@ -586,7 +586,7 @@ void ActiveSenseDemo::setMenus() {
 
     }));
 
-    menuCmdMap.insert(std::make_pair("CSF", [&]() {
+    menuCmdMap.insert(std::make_pair("OSF", [&]() {
 
         this->activeSense->getOnlineModel2().showFreeSpace = !this->activeSense->getOnlineModel2().showFreeSpace;
 
@@ -595,7 +595,7 @@ void ActiveSenseDemo::setMenus() {
 
     }));
 
-    menuCmdMap.insert(std::make_pair("CSC", [&]() {
+    menuCmdMap.insert(std::make_pair("OSC", [&]() {
 
         this->activeSense->getOnlineModel2().showContactTree = !this->activeSense->getOnlineModel2().showContactTree;
 
@@ -604,7 +604,7 @@ void ActiveSenseDemo::setMenus() {
 
     }));
 
-    menuCmdMap.insert(std::make_pair("CSL", [&]() {
+    menuCmdMap.insert(std::make_pair("OSL", [&]() {
 
         this->activeSense->getOnlineModel2().showLastResult = !this->activeSense->getOnlineModel2().showLastResult;
 
@@ -614,7 +614,7 @@ void ActiveSenseDemo::setMenus() {
     }));
 
 
-    menuCmdMap.insert(std::make_pair("CH", [=]() {
+    menuCmdMap.insert(std::make_pair("OH", [=]() {
 
 
         U32 index = (U32)activeSense->getViewHypotheses().size();
@@ -652,7 +652,7 @@ void ActiveSenseDemo::setMenus() {
 
     }));
 
-    menuCmdMap.insert(std::make_pair("CE", [=]() {
+    menuCmdMap.insert(std::make_pair("OE", [=]() {
 
         select(sensorCurrentPtr, sensorMap.begin(), sensorMap.end(), "Select Sensor:\n", [](grasp::Sensor::Map::const_iterator ptr) -> const std::string&{
             return ptr->second->getID();
@@ -684,7 +684,7 @@ void ActiveSenseDemo::setMenus() {
 
     }));
 
-    menuCmdMap.insert(std::make_pair("CV", [&]() {
+    menuCmdMap.insert(std::make_pair("OV", [&]() {
 
         U32 index = (U32)activeSense->getViewHypotheses().size();
         Menu::selectIndex(activeSense->getViewHypotheses(), index, "Camera Hypothesis");
@@ -696,7 +696,7 @@ void ActiveSenseDemo::setMenus() {
 
     }));
 
-    menuCmdMap.insert(std::make_pair("CK", [&]() {
+    menuCmdMap.insert(std::make_pair("OK", [&]() {
 
 
 
@@ -721,7 +721,7 @@ void ActiveSenseDemo::setMenus() {
     }));
 
 
-    menuCmdMap.insert(std::make_pair("CN", [&]() {
+    menuCmdMap.insert(std::make_pair("ON", [&]() {
 
         activeSense->generateViewsFromSeq(activeSense->getParameters().configSeq);
         if (activeSense->getViewHypotheses().size())
@@ -738,7 +738,7 @@ void ActiveSenseDemo::setMenus() {
 
     }));
 
-    menuCmdMap.insert(std::make_pair("CG", [&]() {
+    menuCmdMap.insert(std::make_pair("OG", [&]() {
 
         {
             golem::CriticalSectionWrapper csw(activeSense->getCSViewHypotheses());
@@ -753,7 +753,7 @@ void ActiveSenseDemo::setMenus() {
     }));
 
 
-    menuCmdMap.insert(std::make_pair("CPL", [&]() {
+    menuCmdMap.insert(std::make_pair("OPL", [&]() {
         const ActiveSense::Parameters& params = activeSense->getParameters();
         context.write("view generation method:       %s\n", enumToString(params.generationMethod, params.getGenerationMethodMap()).c_str());
         context.write("selection method:             %s\n", enumToString(params.selectionMethod, params.getSelectionMethodMap()).c_str());
@@ -767,7 +767,7 @@ void ActiveSenseDemo::setMenus() {
         context.write("centroid calc:                %s\n", params.useManualCentroid ? "manual" : "auto from captured point cloud");
     }));
 
-    menuCmdMap.insert(std::make_pair("CPS", [&]() {
+    menuCmdMap.insert(std::make_pair("OPS", [&]() {
 
         std::map<std::string, ActiveSense::ESelectionMethod> selectionMethodMap = activeSense->getParameters().getSelectionMethodMap();
         std::map<std::string, ActiveSense::ESelectionMethod>::iterator selectionPtr(selectionMethodMap.begin());
@@ -780,7 +780,7 @@ void ActiveSenseDemo::setMenus() {
         context.write("Done!\n");
     }));
 
-    menuCmdMap.insert(std::make_pair("CPA", [&]() {
+    menuCmdMap.insert(std::make_pair("OPA", [&]() {
 
         std::map<std::string, ActiveSense::ESelectionMethod> selectionMethodMap = activeSense->getParameters().getSelectionMethodMap();
         std::map<std::string, ActiveSense::ESelectionMethod>::iterator selectionPtr(selectionMethodMap.begin());
@@ -793,7 +793,7 @@ void ActiveSenseDemo::setMenus() {
         context.write("Done!\n");
     }));
 
-    menuCmdMap.insert(std::make_pair("CPG", [&]() {
+    menuCmdMap.insert(std::make_pair("OPG", [&]() {
 
         std::map<std::string, ActiveSense::EGenerationMethod> selectionMap = activeSense->getParameters().getGenerationMethodMap();
         std::map<std::string, ActiveSense::EGenerationMethod>::iterator selectionPtr(selectionMap.begin());
@@ -810,7 +810,7 @@ void ActiveSenseDemo::setMenus() {
         context.write("Done!\n");
     }));
 
-    menuCmdMap.insert(std::make_pair("CPM", [&]() {
+    menuCmdMap.insert(std::make_pair("OPM", [&]() {
 
         std::map<std::string, ActiveSense::ECoverageMethod> selectionMap = activeSense->getParameters().getCoverageMethodMap();
         std::map<std::string, ActiveSense::ECoverageMethod>::iterator selectionPtr(selectionMap.begin());
@@ -823,7 +823,7 @@ void ActiveSenseDemo::setMenus() {
         context.write("Done!\n");
     }));
 
-    menuCmdMap.insert(std::make_pair("CPC", [&]() {
+    menuCmdMap.insert(std::make_pair("OPC", [&]() {
 
         std::map<std::string, ActiveSense::EStoppingCriteria> selectionMap = activeSense->getParameters().getStoppingCriteriaMap();
         std::map<std::string, ActiveSense::EStoppingCriteria>::iterator selectionPtr(selectionMap.begin());
