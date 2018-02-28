@@ -148,11 +148,11 @@ void DemoDR55::setMenus(){
 		this->setArmsToDefault(stopAtBreakPoint);
 
 		//// estimate pose
-		if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty() || counter == 0) {
-			breakPoint("Dishwasher pose estimation");
-			estimatePose(Data::MODE_QUERY);
-			counter++;
-		}
+		// if (to<Data>(dataCurrentPtr)->queryVertices.empty() || to<Data>(dataCurrentPtr)->queryVertices.empty() || counter == 0) {
+		// 	breakPoint("Dishwasher pose estimation");
+		// 	estimatePose(Data::MODE_QUERY);
+		// 	counter++;
+		// }
 
 		// run demo
 		for (;;) {
@@ -160,9 +160,9 @@ void DemoDR55::setMenus(){
 			// Grasp with Active Sense and lift the object
 			// Outcome (Exepected state of the robot at the end): 
 			// at the end the object should have grasped and lifted an object 
-			//this->graspWithActiveSense();
+			this->graspWithActiveSense();
 
-			//this->executePassing(stopAtBreakPoint);
+			this->executePassing(stopAtBreakPoint);
 
 			this->executePlacement(stopAtBreakPoint);
 			//releaseLeftHand(0.5, 1.0);
@@ -204,9 +204,9 @@ void DemoDR55::setMenus(){
 			// Grasp with Active Sense and lift the object
 			// Outcome (Exepected state of the robot at the end): 
 			// at the end the object should have grasped and lifted an object 
-			//this->graspWithActiveSense();
+			this->graspWithActiveSense();
 
-			//this->executePassing(stopAtBreakPoint);
+			this->executePassing(stopAtBreakPoint);
 
 			this->executePlacement(stopAtBreakPoint);
 			//releaseLeftHand(0.5, 1.0);
@@ -230,7 +230,7 @@ void DemoDR55::setMenus(){
 
 	}));
 
-	menuCmdMap.insert(std::make_pair("KR", [=]() {
+	menuCmdMap.insert(std::make_pair("KY", [=]() {
 
 		static int counter = 0;
 
