@@ -175,12 +175,27 @@ INCLUDE_DIRECTORIES(
 
 
 # TODO: add remaining libraries to GOLEM_LIBRARIES
+#SET(GOLEM_LIBRARIES    optimized GolemDefs${CMAKE_RELEASE_POSTFIX} debug GolemDefs${CMAKE_DEBUG_POSTFIX}
+#					   optimized GolemMath${CMAKE_RELEASE_POSTFIX} debug GolemMath${CMAKE_DEBUG_POSTFIX}
+#					   optimized GolemSys${CMAKE_RELEASE_POSTFIX} debug GolemSys${CMAKE_DEBUG_POSTFIX}
+#					   optimized GolemTools${CMAKE_RELEASE_POSTFIX} debug GolemTools${CMAKE_DEBUG_POSTFIX}
+#					   optimized GolemCtrl${CMAKE_RELEASE_POSTFIX} debug GolemCtrl${CMAKE_DEBUG_POSTFIX}
+#					   optimized GolemPlanner${CMAKE_RELEASE_POSTFIX} debug GolemPlanner${CMAKE_DEBUG_POSTFIX}
+#					   optimized GolemUI${CMAKE_RELEASE_POSTFIX} debug GolemUI${CMAKE_DEBUG_POSTFIX}
+#					   optimized GolemUICtrl${CMAKE_RELEASE_POSTFIX} debug GolemUICtrl${CMAKE_DEBUG_POSTFIX}
+#					   optimized GolemCtrlSM${CMAKE_RELEASE_POSTFIX} debug GolemCtrlSM${CMAKE_DEBUG_POSTFIX}
+#					   optimized GolemCtrlSingleCtrl${CMAKE_RELEASE_POSTFIX} debug GolemCtrlSingleCtrl${CMAKE_DEBUG_POSTFIX}
+#			           optimized GolemCtrlMultiCtrl${CMAKE_RELEASE_POSTFIX} debug GolemCtrlMultiCtrl${CMAKE_DEBUG_POSTFIX}
+#    )
+
+# TODO: add remaining libraries to GOLEM_LIBRARIES
 SET(GOLEM_LIBRARIES    optimized GolemDefs${CMAKE_RELEASE_POSTFIX} debug GolemDefs${CMAKE_DEBUG_POSTFIX}
 					   optimized GolemMath${CMAKE_RELEASE_POSTFIX} debug GolemMath${CMAKE_DEBUG_POSTFIX}
 					   optimized GolemSys${CMAKE_RELEASE_POSTFIX} debug GolemSys${CMAKE_DEBUG_POSTFIX}
 					   optimized GolemTools${CMAKE_RELEASE_POSTFIX} debug GolemTools${CMAKE_DEBUG_POSTFIX}
 					   optimized GolemCtrl${CMAKE_RELEASE_POSTFIX} debug GolemCtrl${CMAKE_DEBUG_POSTFIX}
 					   optimized GolemPlanner${CMAKE_RELEASE_POSTFIX} debug GolemPlanner${CMAKE_DEBUG_POSTFIX}
+					   
 					   optimized GolemUI${CMAKE_RELEASE_POSTFIX} debug GolemUI${CMAKE_DEBUG_POSTFIX}
 					   optimized GolemUICtrl${CMAKE_RELEASE_POSTFIX} debug GolemUICtrl${CMAKE_DEBUG_POSTFIX}
 					   optimized GolemCtrlSM${CMAKE_RELEASE_POSTFIX} debug GolemCtrlSM${CMAKE_DEBUG_POSTFIX}
@@ -236,13 +251,17 @@ SET(GOLEM_LIBRARIES    optimized GolemDefs${CMAKE_RELEASE_POSTFIX} debug GolemDe
  
 #			${PCL_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBS}
 
-SET(GRASP_LIBRARIES 
+
+ SET(GRASP_LIBRARIES 
 			optimized GraspCore${CMAKE_RELEASE_POSTFIX} debug GraspCore${CMAKE_DEBUG_POSTFIX}
 			optimized GraspContact${CMAKE_RELEASE_POSTFIX} debug GraspContact${CMAKE_DEBUG_POSTFIX}
 			optimized GraspApp${CMAKE_RELEASE_POSTFIX} debug GraspApp${CMAKE_DEBUG_POSTFIX}
 			optimized GraspActiveCtrl${CMAKE_RELEASE_POSTFIX} debug GraspActiveCtrl${CMAKE_DEBUG_POSTFIX}
             optimized GraspDataPointsCurv${CMAKE_RELEASE_POSTFIX} debug GraspDataPointsCurv${CMAKE_DEBUG_POSTFIX}
 			optimized GraspDataImage${CMAKE_RELEASE_POSTFIX} debug GraspDataImage${CMAKE_DEBUG_POSTFIX}
+			optimized GraspDataTrajectory${CMAKE_RELEASE_POSTFIX} debug GraspDataTrajectory${CMAKE_DEBUG_POSTFIX}
+			optimized GraspDataContactModel${CMAKE_RELEASE_POSTFIX} debug GraspDataContactModel${CMAKE_DEBUG_POSTFIX}
+			
 			optimized GraspArmHandForce${CMAKE_RELEASE_POSTFIX} debug GraspArmHandForce${CMAKE_DEBUG_POSTFIX}
 			optimized GraspJointCtrl${CMAKE_RELEASE_POSTFIX} debug GraspJointCtrl${CMAKE_DEBUG_POSTFIX}
             ${CMAKE_DL_LIBS}
@@ -254,11 +273,17 @@ SET(GRASP_LIBRARIES
  )
 
 
+
+
+
+
+
+
 # TODO: Complete GOLEM_GRASP_3RD_PARTY_LIBRARIES
 SET(GOLEM_GRASP_3RD_PARTY_LIBRARIES ${Boost_LIBRARIES} 
 									${PCL_LIBRARIES} 
-									${OpenCV_LIBS} 										 
-									expat freeglut Gdiplus)
+									${OpenCV_LIBS})										 
+									#expat freeglut Gdiplus)
 
 ### Extra dependencies (if needed) ###
 #  ${PCL_LIBRARIES} ${Boost_LIBRARIES} ${OpenCV_LIBS} (WIN32/UNIX)

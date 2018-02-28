@@ -686,5 +686,6 @@ void DemoDR55::executePassing(bool stopAtBreakPoint){
 //------------------------------------------------------------------------------
 
  int main(int argc, char *argv[]) {
+
  	return pacman::DemoDR55::Desc().main(argc, argv);
  }

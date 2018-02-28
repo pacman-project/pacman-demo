@@ -16,15 +16,15 @@
       <type type="bowllarge-rim" name="Default"/>
 
       <contact name="Default" penalty_exp="1.2">
-        <query id="Base">
+        <query id="Base" weight="1.0">
           <contact_3d type="feature" weight="1.0" kernels="10000" epsilon="1e-10" trials="100" feature_std_dev_max="5.0" pose_std_dev_max="5.0">
-            <nn_search neighbours="0" search_checks="32" search_kdtrees="1" search_leaf_max_size="10"/>
           </contact_3d>
+          <nn_search neighbours="0" search_checks="32" search_kdtrees="1" search_leaf_max_size="10"/>
         </query>
-        <query id="Any">
+        <query id="Any" weight="1.0">
           <contact_3d type="feature" weight="1.0" kernels="10000" epsilon="1e-10" trials="100" feature_std_dev_max="5.0" pose_std_dev_max="5.0">
-            <nn_search neighbours="0" search_checks="32" search_kdtrees="1" search_leaf_max_size="10"/>
           </contact_3d>
+          <nn_search neighbours="0" search_checks="32" search_kdtrees="1" search_leaf_max_size="10"/>
         </query>
 
         <configuration distance_scale="0.1" distance_stddev="1.0" distance_stddev_max="5.0" kernels="1000" transform_grad_dist="2.0">

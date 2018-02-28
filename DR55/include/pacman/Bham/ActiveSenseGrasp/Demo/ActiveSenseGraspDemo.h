@@ -24,7 +24,8 @@ namespace pacman {
 
 //------------------------------------------------------------------------------
 
-/** Grasp demo. */
+/** Grasp demo. */ 
+//pacman::BaseDemoDR55
 class ActiveSenseDemo : public pacman::BaseDemoDR55, public pacman::ActiveSenseController {
 public:
     friend class ActiveSense;

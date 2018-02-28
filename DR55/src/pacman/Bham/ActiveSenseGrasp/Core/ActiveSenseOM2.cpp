@@ -6,9 +6,9 @@
 *
 */
 
-#include <Grasp/Data/ContactModel/ContactModel.h>
 #include <Grasp/Data/Image/Image.h>
 #include <Grasp/Data/PointsCurv/PointsCurv.h>
+#include <Grasp/Data/ContactModel/ContactModel.h>
 
 #include "pacman/Bham/ActiveSenseGrasp/Core/ActiveSenseOM2.h"
 #include "pacman/Bham/ActiveSenseGrasp/Utils/PCLConversions.h"
